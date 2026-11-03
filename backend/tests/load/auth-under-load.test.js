@@ -58,7 +58,7 @@ export const options = {
   },
 };
 
-const API_URL = __ENV.API_URL || 'http://localhost:3000';
+const apiUrl = __ENV.API_URL || 'http://localhost:3000';
 
 /**
  * Test Setup - Create initial test users
@@ -72,7 +72,7 @@ export function setup() {
     const password = 'ExistingUser123!';
 
     const registerRes = http.post(
-      `${API_URL}/api/v1/auth/register`,
+      `${apiUrl}/api/v1/auth/register`,
       JSON.stringify({
         email,
         username: `existing_${Date.now()}_${i}`,
@@ -117,7 +117,7 @@ export default function (data) {
         // authenticated (the old Bearer header sent `Bearer undefined`).
         const jar = http.cookieJar();
         const loginRes = http.post(
-          `${API_URL}/api/v1/auth/login`,
+          `${apiUrl}/api/v1/auth/login`,
           JSON.stringify({
             email: user.email,
             password: user.password,
@@ -152,7 +152,7 @@ export default function (data) {
 
           // Verify the session works. The accessToken cookie in `jar` (set by
           // the login above) authenticates this GET — no Authorization header.
-          const verifyRes = http.get(`${API_URL}/api/v1/auth/profile`, {
+          const verifyRes = http.get(`${apiUrl}/api/v1/auth/profile`, {
             jar,
           });
 
@@ -176,7 +176,7 @@ export default function (data) {
         registrationAttempts.add(1);
 
         const registerRes = http.post(
-          `${API_URL}/api/v1/auth/register`,
+          `${apiUrl}/api/v1/auth/register`,
           JSON.stringify({
             email,
             username: `newuser_${timestamp}_${randomId}`,
@@ -231,7 +231,7 @@ export default function (data) {
         const user = users[Math.floor(Math.random() * users.length)];
 
         const loginRes = http.post(
-          `${API_URL}/api/v1/auth/login`,
+          `${apiUrl}/api/v1/auth/login`,
           JSON.stringify({
             email: user.email,
             password: user.password,
@@ -246,7 +246,7 @@ export default function (data) {
 
           const startTime = new Date();
           const refreshRes = http.post(
-            `${API_URL}/api/v1/auth/refresh`,
+            `${apiUrl}/api/v1/auth/refresh`,
             JSON.stringify({
               refreshToken,
             }),
@@ -278,7 +278,7 @@ export default function (data) {
         loginAttempts.add(1);
 
         const badLoginRes = http.post(
-          `${API_URL}/api/v1/auth/login`,
+          `${apiUrl}/api/v1/auth/login`,
           JSON.stringify({
             email: user.email,
             password: 'WrongPassword123!',

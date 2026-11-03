@@ -50,7 +50,7 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
   let show;
   const cleanup = createCleanupTracker();
 
-  const NONEXISTENT_ID = 999999999;
+  const nonexistentId = 999999999;
 
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
@@ -178,7 +178,7 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ horseId: NONEXISTENT_ID });
+        .send({ horseId: nonexistentId });
 
       expect(resMissing.status).toBe(404);
       // Byte-identical sentinel — divergence enables horse ID enumeration.

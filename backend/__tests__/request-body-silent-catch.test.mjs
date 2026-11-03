@@ -113,12 +113,12 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
   // equality) so a future envelope addition (e.g., requestId, traceId)
   // doesn't break every silent-catch test simultaneously. The required
   // keys are pinned; extra keys are permitted.
-  const SCANNER_FAILURE_MESSAGE = `${errorMessagePrefix} scanner failure`;
+  const scannerFailureMessage = `${errorMessagePrefix} scanner failure`;
   const expectFailClosed400 = response => {
     expect(response.status).toBe(400);
     expect(response.body).toMatchObject({
       success: false,
-      message: SCANNER_FAILURE_MESSAGE,
+      message: scannerFailureMessage,
     });
   };
 
@@ -672,13 +672,13 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       const sentinelThrows = [
         ...source.matchAll(/throw\s+new\s+RequestBodySecurityError\s*\(\s*['"`]([^'"`]*)['"`]/gs),
       ].map(m => m[1]);
-      const EXPECTED_SENTINEL_THROWS = 5;
+      const expectedSentinelThrows = 5;
       // 1 silent-catch + 1 dup-key + 1 __proto__ + 1 constructor.prototype
       // + 1 depth-cap (used at 2 sites) + 1 forbidden-query-key + 1
       // urlencoded-dup-key + 1 urlencoded-scanner-failure = 8 currently;
       // pinning the lower bound at 5 documents the architectural minimum
       // the SEC-6 refactor preserved.
-      expect(sentinelThrows.length).toBeGreaterThanOrEqual(EXPECTED_SENTINEL_THROWS);
+      expect(sentinelThrows.length).toBeGreaterThanOrEqual(expectedSentinelThrows);
 
       // Negative counterpart: any throw that uses `new AppError(...)`
       // with a message that starts with errorMessagePrefix is a SEC-6

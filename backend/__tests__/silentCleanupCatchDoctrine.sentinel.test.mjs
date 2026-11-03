@@ -15,22 +15,22 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-no-new-silent-cleanup-catch.mjs');
-const PLANT_DIR = path.join(REPO_ROOT, 'backend/__tests__/_silent_catch_doctrine_sentinel');
+const repoRoot = path.resolve(HERE, '..', '..');
+const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-new-silent-cleanup-catch.mjs');
+const plantDir = path.join(repoRoot, 'backend/__tests__/_silent_catch_doctrine_sentinel');
 
 afterEach(() => {
   // Best-effort cleanup of the planted scaffold so a test crash doesn't poison
   // the next run of the doctrine check on master.
   try {
-    fs.rmSync(PLANT_DIR, { recursive: true, force: true });
+    fs.rmSync(plantDir, { recursive: true, force: true });
   } catch {
     // intentional: cleanup is best-effort, surfacing rm errors would be noise
   }
 });
 
 function runCheck() {
-  return spawnSync('node', [CHECK], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [CHECK], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
@@ -41,8 +41,8 @@ describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
   });
 
   it('SENTINEL: fails when a NEW silent .catch is planted in a fresh test file', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'planted.test.mjs');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'planted.test.mjs');
     // The doctrine pattern matches a dot-catch with an empty arrow-fn body.
     // Build the planted shape from concatenation so the SOURCE of THIS
     // sentinel file does not itself contain the literal pattern (which
@@ -53,7 +53,7 @@ describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
     // concat) so the SOURCE of THIS sentinel file does not itself contain
     // the literal doctrine pattern, and so no-useless-concat does not fire.
     const ARROW = '=> {})';
-    const PLANTED_PATTERN = `Promise${DOT}reject(new Error("x"))${DOT}catch(() ${ARROW}`;
+    const plantedPattern = `Promise${DOT}reject(new Error("x"))${DOT}catch(() ${ARROW}`;
     fs.writeFileSync(
       planted,
       [
@@ -61,7 +61,7 @@ describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
         '// If this file is checked into git you have a bigger problem than this test.',
         "import { test } from '@jest/globals';",
         "test('placeholder', async () => {",
-        `  await ${PLANTED_PATTERN};`,
+        `  await ${plantedPattern};`,
         '});',
         '',
       ].join('\n'),
@@ -83,11 +83,11 @@ describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
   // contains the bare pattern (which would trip the gate on this file itself).
   const DOT = '.';
   const ARROW = '=> {})';
-  const SILENT_LITERAL = `${DOT}catch(() ${ARROW}`; // ".catch(() => {})"
+  const silentLiteral = `${DOT}catch(() ${ARROW}`; // ".catch(() => {})"
 
   it('SENTINEL: the literal inside a // LINE comment is NOT counted (fv6dp fix)', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'planted.test.mjs');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'planted.test.mjs');
     fs.writeFileSync(
       planted,
       [
@@ -95,7 +95,7 @@ describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
         "test('placeholder', () => {",
         // The literal appears ONLY inside an explanatory line comment — this
         // is the exact false-positive class fv6dp fixes. No real code here.
-        `  // migrated a silent ${SILENT_LITERAL} arm to a logged handler`,
+        `  // migrated a silent ${silentLiteral} arm to a logged handler`,
         '});',
         '',
       ].join('\n'),
@@ -107,14 +107,14 @@ describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
   });
 
   it('SENTINEL: the literal inside a /* */ BLOCK comment is NOT counted (fv6dp fix)', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'planted.test.mjs');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'planted.test.mjs');
     fs.writeFileSync(
       planted,
       [
         "import { test } from '@jest/globals';",
         '/*',
-        ` * Historical note: this suite used to use ${SILENT_LITERAL} for`,
+        ` * Historical note: this suite used to use ${silentLiteral} for`,
         ' * cleanup before it was replaced with a logged handler.',
         ' */',
         "test('placeholder', () => {",
@@ -132,14 +132,14 @@ describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
   it('SENTINEL: a real catch in CODE on the same line as a trailing comment STILL counts', () => {
     // Guards the fix against over-reach: stripping the trailing comment must
     // not also remove the real silent catch that precedes it on the line.
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'planted.test.mjs');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'planted.test.mjs');
     fs.writeFileSync(
       planted,
       [
         "import { test } from '@jest/globals';",
         "test('placeholder', async () => {",
-        `  await Promise${DOT}reject(new Error('x'))${SILENT_LITERAL}; // trailing comment`,
+        `  await Promise${DOT}reject(new Error('x'))${silentLiteral}; // trailing comment`,
         '});',
         '',
       ].join('\n'),

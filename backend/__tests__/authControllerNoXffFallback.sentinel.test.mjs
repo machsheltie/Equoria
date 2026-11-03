@@ -36,10 +36,10 @@ import { dirname, resolve } from 'node:path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const CONTROLLER_PATH = resolve(__dirname, '..', 'modules', 'auth', 'controllers', 'authController.mjs');
+const controllerPath = resolve(__dirname, '..', 'modules', 'auth', 'controllers', 'authController.mjs');
 
 describe('authController XFF-fallback sentinel (Equoria-twt4g / Equoria-n62tl)', () => {
-  const source = readFileSync(CONTROLLER_PATH, 'utf8');
+  const source = readFileSync(controllerPath, 'utf8');
 
   // Strip /* … */ and // … comments so doctrine commentary doesn't false-trip
   // the structural checks below. The forensic asserts target executable code.

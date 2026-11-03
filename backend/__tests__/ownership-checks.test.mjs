@@ -35,7 +35,7 @@ import { requireOwnership, findOwnedResource, validateBatchOwnership } from '../
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from './helpers/createTestHorse.mjs';
 
-const SUITE_PREFIX = 'ochk';
+const suitePrefix = 'ochk';
 
 // Fresh per-test response/next harness — scoped inside `describe` so each
 // `it` gets a clean trio without cross-test mutation.
@@ -89,9 +89,9 @@ async function createUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Ownership',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -104,7 +104,7 @@ async function createHorse(userId, overrides = {}) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: overrides.name ?? `${SUITE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
+      name: overrides.name ?? `${suitePrefix}-horse-${randomBytes(4).toString('hex')}`,
       sex: overrides.sex ?? 'Mare',
       dateOfBirth: overrides.dateOfBirth ?? new Date('2020-01-01'),
       user: { connect: { id: userId } },
@@ -115,7 +115,7 @@ async function createHorse(userId, overrides = {}) {
 async function createGroom(userId, overrides = {}) {
   return prisma.groom.create({
     data: {
-      name: overrides.name ?? `${SUITE_PREFIX}-groom-${randomBytes(4).toString('hex')}`,
+      name: overrides.name ?? `${suitePrefix}-groom-${randomBytes(4).toString('hex')}`,
       speciality: overrides.speciality ?? 'foalCare',
       personality: overrides.personality ?? 'gentle',
       user: { connect: { id: userId } },
@@ -139,7 +139,7 @@ async function createCompetitionResult(horseId, showId) {
       placement: 3,
       discipline: 'Dressage',
       runDate: new Date(),
-      showName: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+      showName: `${suitePrefix}-show-${randomBytes(4).toString('hex')}`,
       horse: { connect: { id: horseId } },
       show: { connect: { id: showId } },
     },
@@ -149,7 +149,7 @@ async function createCompetitionResult(horseId, showId) {
 async function createShow() {
   return prisma.show.create({
     data: {
-      name: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+      name: `${suitePrefix}-show-${randomBytes(4).toString('hex')}`,
       discipline: 'Dressage',
       levelMin: 1,
       levelMax: 10,
@@ -161,13 +161,13 @@ async function createShow() {
 }
 
 // Suite-scoped cleanup: deletes everything this suite created that's
-// reachable via the SUITE_PREFIX. Cascade handles child rows where
+// reachable via the suitePrefix. Cascade handles child rows where
 // the schema declares onDelete: Cascade; explicit deletes elsewhere.
 async function cleanupSuite() {
   // Find users by suite prefix; cascade through training/competition
   // via horse FKs.
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {
@@ -184,7 +184,7 @@ async function cleanupSuite() {
     await prisma.trainingLog.deleteMany({ where: { horseId: { in: horseIds } } });
     await prisma.competitionResult.deleteMany({ where: { horseId: { in: horseIds } } });
   }
-  await prisma.show.deleteMany({ where: { name: { startsWith: SUITE_PREFIX } } });
+  await prisma.show.deleteMany({ where: { name: { startsWith: suitePrefix } } });
   await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.groom.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });

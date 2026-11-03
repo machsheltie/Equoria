@@ -43,14 +43,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const BACKEND = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(HERE, '..', '..', '..');
+const BACKEND = path.join(repoRoot, 'backend');
 
 // Resolve the eslint CLI the SAME way check-backend-lint-and-format.mjs does:
 // direct filesystem probe at backend/ then repo root (hoisted installs).
 // require.resolve cannot reach eslint's bin via its "exports" map.
 function resolveEslintCli() {
-  for (const base of [BACKEND, REPO_ROOT]) {
+  for (const base of [BACKEND, repoRoot]) {
     const candidate = path.join(base, 'node_modules', 'eslint', 'bin', 'eslint.js');
     if (existsSync(candidate)) {
       return candidate;
@@ -65,15 +65,15 @@ const eslintCli = resolveEslintCli();
 // no-useless-concat (error) and the unused `x` trips no-unused-vars (error).
 // `--quiet` reports errors only, so this is exactly the shape the doctrine
 // gate fails on. Mirrors the planted-error proof in the doctrine check itself.
-const ERROR_JS = "const x = 'a' + 'b';\n";
+const errorJs = "const x = 'a' + 'b';\n";
 
 // Plant inside a gitignored runtime dir (load-results/) — must be IGNORED.
-const IGNORED_DIR = path.join(BACKEND, 'load-results');
-const IGNORED_FILE = path.join(IGNORED_DIR, '_ke6ob_sentinel_artifact.js');
+const ignoredDir = path.join(BACKEND, 'load-results');
+const ignoredFile = path.join(ignoredDir, '_ke6ob_sentinel_artifact.js');
 
 // Plant inside a real, never-ignored source dir (services/) — must be LINTED.
-const SOURCE_DIR = path.join(BACKEND, 'services');
-const SOURCE_FILE = path.join(SOURCE_DIR, '_ke6ob_sentinel_error.js');
+const sourceDir = path.join(BACKEND, 'services');
+const sourceFile = path.join(sourceDir, '_ke6ob_sentinel_error.js');
 
 function runEslintQuiet(absFile) {
   // Run from cwd=backend so eslint loads backend/eslint.config.mjs and applies
@@ -98,7 +98,7 @@ beforeAll(() => {
 });
 
 afterEach(() => {
-  for (const f of [IGNORED_FILE, SOURCE_FILE]) {
+  for (const f of [ignoredFile, sourceFile]) {
     try {
       fs.rmSync(f, { force: true });
     } catch {
@@ -107,8 +107,8 @@ afterEach(() => {
   }
   // Remove load-results/ only if we created it and it is now empty.
   try {
-    if (fs.existsSync(IGNORED_DIR) && fs.readdirSync(IGNORED_DIR).length === 0) {
-      fs.rmdirSync(IGNORED_DIR);
+    if (fs.existsSync(ignoredDir) && fs.readdirSync(ignoredDir).length === 0) {
+      fs.rmdirSync(ignoredDir);
     }
   } catch {
     // best-effort cleanup
@@ -117,10 +117,10 @@ afterEach(() => {
 
 maybe('backend/eslint.config.mjs runtime-artifact ignores (Equoria-ke6ob)', () => {
   it('ARM 1 — an eslint error in load-results/ is IGNORED (eslint --quiet stays green)', () => {
-    fs.mkdirSync(IGNORED_DIR, { recursive: true });
-    fs.writeFileSync(IGNORED_FILE, ERROR_JS);
+    fs.mkdirSync(ignoredDir, { recursive: true });
+    fs.writeFileSync(ignoredFile, errorJs);
 
-    const res = runEslintQuiet(IGNORED_FILE);
+    const res = runEslintQuiet(ignoredFile);
 
     // Exit 0: the path is ignored, so eslint finds nothing to report. (When a
     // file is matched only by an ignore pattern and passed explicitly, eslint
@@ -132,9 +132,9 @@ maybe('backend/eslint.config.mjs runtime-artifact ignores (Equoria-ke6ob)', () =
   });
 
   it('ARM 2 — the SAME error in services/ FAILS eslint --quiet (gate not weakened)', () => {
-    fs.writeFileSync(SOURCE_FILE, ERROR_JS);
+    fs.writeFileSync(sourceFile, errorJs);
 
-    const res = runEslintQuiet(SOURCE_FILE);
+    const res = runEslintQuiet(sourceFile);
 
     // Non-zero exit and eslint names a real error rule — proves the gate still
     // catches genuine errors in shipped code.

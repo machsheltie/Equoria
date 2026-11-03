@@ -23,7 +23,7 @@ import {
 } from '../modules/economy/index.mjs';
 import { InsufficientSystemAccountBalanceError } from '../modules/economy/services/financialLedgerService.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-si69u-helpers';
+const fixturePrefix = 'TestFixture-si69u-helpers';
 
 // Equoria-iomtg: the helper-behavior tests below exercise the SAME
 // creditSystemAccount / debitSystemAccountOrThrow code path, but against a
@@ -46,8 +46,8 @@ beforeAll(async () => {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      email: `${FIXTURE_PREFIX}-${tag}@test.com`,
-      username: `${FIXTURE_PREFIX}-${tag}`.slice(0, 30),
+      email: `${fixturePrefix}-${tag}@test.com`,
+      username: `${fixturePrefix}-${tag}`.slice(0, 30),
       password: 'irrelevant',
       firstName: 'Sys',
       lastName: 'Helper',
@@ -66,7 +66,7 @@ afterAll(async () => {
   }
   // Scoped cleanup of every suite-private SystemAccount row this suite created.
   await prisma.systemAccount
-    .deleteMany({ where: { name: { startsWith: `${FIXTURE_PREFIX}-acct-` } } })
+    .deleteMany({ where: { name: { startsWith: `${fixturePrefix}-acct-` } } })
     .catch(err => console.warn(`[cleanup] systemAccount: ${err.message}`));
 }, 30000);
 
@@ -74,7 +74,7 @@ beforeEach(async () => {
   // Fresh suite-private system account at balance 0 for each test — the SAME
   // helper code path the shared rows use, but isolated so absolute assertions
   // stay deterministic and we never clobber a shared singleton (Equoria-iomtg).
-  acct = `${FIXTURE_PREFIX}-acct-${randomBytes(6).toString('hex')}`;
+  acct = `${fixturePrefix}-acct-${randomBytes(6).toString('hex')}`;
   await prisma.systemAccount.create({ data: { name: acct, balance: 0 } });
 });
 

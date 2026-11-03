@@ -36,7 +36,7 @@ const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const gateLockUrl = pathToFileURL(path.join(backendRoot, 'scripts', 'gate-lock.mjs')).href;
 const scratch = mkdtempSync(path.join(tmpdir(), 'equoria-runner-shutdown-'));
 
-const CHILD_DEADLINE_MS = 30000;
+const childDeadlineMs = 30000;
 let owned = [];
 
 function isolatedTemp(name) {
@@ -52,7 +52,7 @@ function spawnNode(args, { env = {}, cwd = backendRoot } = {}) {
     env: { ...process.env, ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
-    timeout: CHILD_DEADLINE_MS,
+    timeout: childDeadlineMs,
     killSignal: 'SIGKILL',
   });
   let out = '';
@@ -97,7 +97,7 @@ describe('shutdown ordering — handler wiring in a real child process', () => {
    * Cancellation while a child is running. The owned child must be stopped and
    * AWAITED, and the gate must still be held while that happens. The grandchild
    * the harness spawns is bounded by the harness's own deadline: the harness is
-   * SIGKILLed at CHILD_DEADLINE_MS, and stopOwnedChildren escalates at 2 s.
+   * SIGKILLed at childDeadlineMs, and stopOwnedChildren escalates at 2 s.
    */
   test('a signal stops the owned child and releases the gate only afterwards', async () => {
     const tempDir = isolatedTemp('cancel-child');

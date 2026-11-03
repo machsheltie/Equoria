@@ -80,18 +80,18 @@ export function findCollisions(jobs) {
   return collisions;
 }
 
-const ALL_JOBS = [...cronJobRegistry, ...cronJobServiceRegistry];
+const allJobs = [...cronJobRegistry, ...cronJobServiceRegistry];
 
 describe('cron schedule collision sentinel (Equoria-bvddn.15)', () => {
   it('covers both registries and every job name is unique', () => {
     expect(cronJobRegistry.length).toBeGreaterThan(0);
     expect(cronJobServiceRegistry.length).toBeGreaterThan(0);
-    const names = ALL_JOBS.map(j => j.jobName);
+    const names = allJobs.map(j => j.jobName);
     expect(new Set(names).size).toBe(names.length);
   });
 
   it('no two jobs across BOTH registries start in the same minute', () => {
-    const collisions = findCollisions(ALL_JOBS).map(c => {
+    const collisions = findCollisions(allJobs).map(c => {
       const day = Math.floor(c.slot / 1440);
       const hh = String(Math.floor((c.slot % 1440) / 60)).padStart(2, '0');
       const mm = String(c.slot % 60).padStart(2, '0');
@@ -101,7 +101,7 @@ describe('cron schedule collision sentinel (Equoria-bvddn.15)', () => {
   });
 
   it('sentinel-positive: fires on a planted collision, including interval schedules', () => {
-    const planted = [...ALL_JOBS, { jobName: 'plantedJob', schedule: '5 0 * * *' }];
+    const planted = [...allJobs, { jobName: 'plantedJob', schedule: '5 0 * * *' }];
     const collisions = findCollisions(planted);
     expect(collisions.length).toBeGreaterThan(0);
     expect(collisions.some(c => c.b === 'plantedJob' || c.a === 'plantedJob')).toBe(true);

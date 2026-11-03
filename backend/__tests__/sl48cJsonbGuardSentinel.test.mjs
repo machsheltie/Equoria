@@ -33,31 +33,31 @@ import { dirname, resolve } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const BACKEND_ROOT = resolve(__dirname, '..');
+const backendRoot = resolve(__dirname, '..');
 
-const TARGET_FILES = [
+const targetFiles = [
   // Equoria-q4uem.4 (WS4 S3): the disciplineScores site (getHorseOverview)
   // moved from modules/horses/controllers/horseOverviewController.mjs into the
   // application query layer; the entry follows the site. The controller has
   // no Json-column reads left, so it is no longer an adjacent location.
-  resolve(BACKEND_ROOT, 'app', 'queries', 'horseOverviewQuery.mjs'),
+  resolve(backendRoot, 'app', 'queries', 'horseOverviewQuery.mjs'),
   // The training controller and (since getTrainableHorses moved, Equoria-8sic9) its model service.
   ...['controllers/trainingController.mjs', 'services/trainingModelService.mjs'].map(file =>
-    resolve(BACKEND_ROOT, 'modules', 'training', ...file.split('/')),
+    resolve(backendRoot, 'modules', 'training', ...file.split('/')),
   ),
 ];
 
 // JSONB fields called out by the 472l6 adjacent-locations finding. Pattern
 // matches `<ident>.<field> || []` or `<ident>.<field> || {}`.
-const JSONB_ARRAY_FIELDS = ['positiveTraits', 'negativeTraits', 'hiddenTraits'];
-const JSONB_OBJECT_FIELDS = ['disciplineScores'];
+const jsonbArrayFields = ['positiveTraits', 'negativeTraits', 'hiddenTraits'];
+const jsonbObjectFields = ['disciplineScores'];
 
 function findBareDefaults(source) {
   const violations = [];
   const lines = source.split('\n');
 
-  const arrayPattern = new RegExp(`\\b\\w+\\.(?:${JSONB_ARRAY_FIELDS.join('|')})\\s*\\|\\|\\s*\\[\\s*\\]`, 'g');
-  const objectPattern = new RegExp(`\\b\\w+\\.(?:${JSONB_OBJECT_FIELDS.join('|')})\\s*\\|\\|\\s*\\{\\s*\\}`, 'g');
+  const arrayPattern = new RegExp(`\\b\\w+\\.(?:${jsonbArrayFields.join('|')})\\s*\\|\\|\\s*\\[\\s*\\]`, 'g');
+  const objectPattern = new RegExp(`\\b\\w+\\.(?:${jsonbObjectFields.join('|')})\\s*\\|\\|\\s*\\{\\s*\\}`, 'g');
 
   lines.forEach((line, idx) => {
     for (const pattern of [arrayPattern, objectPattern]) {
@@ -73,8 +73,8 @@ function findBareDefaults(source) {
 }
 
 describe('Equoria-sl48c — JSONB guard sentinel for the 3 adjacent files', () => {
-  for (const filePath of TARGET_FILES) {
-    const relative = filePath.replace(BACKEND_ROOT, 'backend');
+  for (const filePath of targetFiles) {
+    const relative = filePath.replace(backendRoot, 'backend');
 
     it(`contains no bare \`<ident>.<jsonbField> || [] / {}\` patterns in ${relative}`, () => {
       const source = readFileSync(filePath, 'utf8');

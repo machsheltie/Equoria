@@ -40,24 +40,24 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const CHECK_DIR = path.join(REPO_ROOT, 'scripts', 'doctrine-checks');
-const CHECK = path.join(CHECK_DIR, 'check-no-unsafe-raw-sql.mjs');
-const ALLOWLIST = path.join(CHECK_DIR, 'unsafe-raw-sql-allowlist.json');
+const repoRoot = path.resolve(HERE, '..', '..', '..');
+const checkDir = path.join(repoRoot, 'scripts', 'doctrine-checks');
+const CHECK = path.join(checkDir, 'check-no-unsafe-raw-sql.mjs');
+const ALLOWLIST = path.join(checkDir, 'unsafe-raw-sql-allowlist.json');
 
 // A repo-relative path that must never exist (stale flavour (a)).
-const STALE_MISSING = 'backend/__pc042_stale_allowlist_entry_PLANTED_DOES_NOT_EXIST__.mjs';
+const staleMissing = 'backend/__pc042_stale_allowlist_entry_PLANTED_DOES_NOT_EXIST__.mjs';
 
 // A repo-relative path that DOES exist but contains NO unsafe raw-SQL callsite
 // (stale flavour (b)) — the run-all.sh harness is a stable, callsite-free file.
-const STALE_NO_CALLSITE = 'scripts/doctrine-checks/run-all.sh';
+const staleNoCallsite = 'scripts/doctrine-checks/run-all.sh';
 
 let scratchDir;
 
 beforeAll(() => {
   // Hard preconditions so the positive proofs below are not vacuous.
-  expect(fs.existsSync(path.join(REPO_ROOT, ...STALE_MISSING.split('/')))).toBe(false);
-  const noCallsiteAbs = path.join(REPO_ROOT, ...STALE_NO_CALLSITE.split('/'));
+  expect(fs.existsSync(path.join(repoRoot, ...staleMissing.split('/')))).toBe(false);
+  const noCallsiteAbs = path.join(repoRoot, ...staleNoCallsite.split('/'));
   expect(fs.existsSync(noCallsiteAbs)).toBe(true);
   expect(/\.\$(?:executeRawUnsafe|queryRawUnsafe)\s*\(/.test(fs.readFileSync(noCallsiteAbs, 'utf8'))).toBe(false);
 });
@@ -75,7 +75,7 @@ function makeScratch() {
 }
 
 function runCheck(args = []) {
-  return spawnSync('node', [CHECK, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [CHECK, ...args], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 function plantAllowlist(extraEntries) {
@@ -92,23 +92,23 @@ function plantAllowlist(extraEntries) {
 
 describe('unsafe-raw-sql allowlist — stale-entry detection (Equoria-pc042)', () => {
   it('SENTINEL-POSITIVE: FIRES (exit 1) on a planted MISSING-file entry, naming it + the shrink-only rule', () => {
-    const plantedPath = plantAllowlist([STALE_MISSING]);
+    const plantedPath = plantAllowlist([staleMissing]);
 
     const res = runCheck([plantedPath]);
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('stale allowlist entries');
-    expect(res.stderr).toContain(STALE_MISSING);
+    expect(res.stderr).toContain(staleMissing);
     expect(res.stderr).toContain('file no longer exists on disk');
     expect(res.stderr).toContain('may only SHRINK');
   });
 
   it('SENTINEL-POSITIVE: FIRES (exit 1) on a planted EXISTS-but-no-callsite entry, naming it as stale', () => {
-    const plantedPath = plantAllowlist([STALE_NO_CALLSITE]);
+    const plantedPath = plantAllowlist([staleNoCallsite]);
 
     const res = runCheck([plantedPath]);
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('stale allowlist entries');
-    expect(res.stderr).toContain(STALE_NO_CALLSITE);
+    expect(res.stderr).toContain(staleNoCallsite);
     expect(res.stderr).toContain('no $executeRawUnsafe/$queryRawUnsafe callsite remains');
     expect(res.stderr).toContain('may only SHRINK');
   });

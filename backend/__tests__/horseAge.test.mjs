@@ -14,7 +14,7 @@ import {
   gameYearsFromDays,
 } from '../utils/horseAge.mjs';
 
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const msPerDay = 1000 * 60 * 60 * 24;
 
 describe('getHorseAgeDays', () => {
   const fixedNow = new Date('2026-05-15T12:00:00.000Z');
@@ -32,7 +32,7 @@ describe('getHorseAgeDays', () => {
   });
 
   test('returns 0 when dateOfBirth is in the future', () => {
-    const future = new Date(fixedNow.getTime() + 5 * MS_PER_DAY);
+    const future = new Date(fixedNow.getTime() + 5 * msPerDay);
     expect(getHorseAgeDays(future, fixedNow)).toBe(0);
   });
 
@@ -41,23 +41,23 @@ describe('getHorseAgeDays', () => {
   });
 
   test('returns 7 when dateOfBirth is exactly 7 days ago', () => {
-    const dob = new Date(fixedNow.getTime() - 7 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 7 * msPerDay);
     expect(getHorseAgeDays(dob, fixedNow)).toBe(7);
   });
 
   test('returns 14 when dateOfBirth is exactly 14 days ago', () => {
-    const dob = new Date(fixedNow.getTime() - 14 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 14 * msPerDay);
     expect(getHorseAgeDays(dob, fixedNow)).toBe(14);
   });
 
   test('floors fractional days', () => {
     // 7.5 days ago — should floor to 7
-    const dob = new Date(fixedNow.getTime() - Math.floor(7.5 * MS_PER_DAY));
+    const dob = new Date(fixedNow.getTime() - Math.floor(7.5 * msPerDay));
     expect(getHorseAgeDays(dob, fixedNow)).toBe(7);
   });
 
   test('accepts ISO string dateOfBirth', () => {
-    const dob = new Date(fixedNow.getTime() - 14 * MS_PER_DAY).toISOString();
+    const dob = new Date(fixedNow.getTime() - 14 * msPerDay).toISOString();
     expect(getHorseAgeDays(dob, fixedNow)).toBe(14);
   });
 });
@@ -74,37 +74,37 @@ describe('getHorseAgeYears', () => {
   });
 
   test('returns 0 when dateOfBirth is in the future (AC: future → 0)', () => {
-    const future = new Date(fixedNow.getTime() + 3 * MS_PER_DAY);
+    const future = new Date(fixedNow.getTime() + 3 * msPerDay);
     expect(getHorseAgeYears(future, fixedNow)).toBe(0);
   });
 
   test('returns 0 for a 6-day-old horse (not yet 1 game-year)', () => {
-    const dob = new Date(fixedNow.getTime() - 6 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 6 * msPerDay);
     expect(getHorseAgeYears(dob, fixedNow)).toBe(0);
   });
 
   test('returns 1 when dateOfBirth is exactly 7 days ago (AC: 7d ago → 1)', () => {
-    const dob = new Date(fixedNow.getTime() - 7 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 7 * msPerDay);
     expect(getHorseAgeYears(dob, fixedNow)).toBe(1);
   });
 
   test('returns 2 when dateOfBirth is exactly 14 days ago (AC: 14d ago → 2)', () => {
-    const dob = new Date(fixedNow.getTime() - 14 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 14 * msPerDay);
     expect(getHorseAgeYears(dob, fixedNow)).toBe(2);
   });
 
   test('returns 3 when dateOfBirth is exactly 21 days ago (training-eligible boundary)', () => {
-    const dob = new Date(fixedNow.getTime() - 21 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 21 * msPerDay);
     expect(getHorseAgeYears(dob, fixedNow)).toBe(3);
   });
 
   test('returns 21 at retirement age (147 days = 21 game-years)', () => {
-    const dob = new Date(fixedNow.getTime() - 147 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 147 * msPerDay);
     expect(getHorseAgeYears(dob, fixedNow)).toBe(21);
   });
 
   test('floors at the game-week boundary (13 days → 1 year, not 2)', () => {
-    const dob = new Date(fixedNow.getTime() - 13 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 13 * msPerDay);
     expect(getHorseAgeYears(dob, fixedNow)).toBe(1);
   });
 
@@ -174,7 +174,7 @@ describe('withAgeYears (serializer decorator)', () => {
 
   test('adds ageYears=3 for a horse with dateOfBirth 21 days ago (lvjy AC)', () => {
     // AC: create horse with dob 21 days ago via API, fetch, assert ageYears===3
-    const dob = new Date(fixedNow.getTime() - 21 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 21 * msPerDay);
     // doctrine-allow: utc-date-only-fixture — pure function given an instant dob on purpose; no column is written
     const horse = { id: 42, name: 'Test', dateOfBirth: dob };
     const decorated = withAgeYears(horse, fixedNow);
@@ -189,7 +189,7 @@ describe('withAgeYears (serializer decorator)', () => {
   });
 
   test('does not mutate the input horse object', () => {
-    const dob = new Date(fixedNow.getTime() - 14 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 14 * msPerDay);
     // doctrine-allow: utc-date-only-fixture — pure function given an instant dob on purpose; no column is written
     const horse = { id: 7, dateOfBirth: dob };
     const before = { ...horse };
@@ -199,7 +199,7 @@ describe('withAgeYears (serializer decorator)', () => {
   });
 
   test('preserves the legacy age field if present (transitional)', () => {
-    const dob = new Date(fixedNow.getTime() - 21 * MS_PER_DAY);
+    const dob = new Date(fixedNow.getTime() - 21 * msPerDay);
     // doctrine-allow: utc-date-only-fixture — pure function given an instant dob on purpose; no column is written
     const horse = { id: 1, age: 99, dateOfBirth: dob };
     const decorated = withAgeYears(horse, fixedNow);

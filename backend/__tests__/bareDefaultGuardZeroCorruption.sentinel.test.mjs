@@ -37,7 +37,7 @@ import { checkDiscoveryConditions } from '../utils/traitDiscovery.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = resolve(__dirname, '..');
+const backendRoot = resolve(__dirname, '..');
 
 // ── Arm 1: real-DB behavioural ─────────────────────────────────────────────
 
@@ -112,7 +112,7 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
 // ── Arm 2: grep sentinel over the Class-1 production files ─────────────────
 
 // The 19 NOT NULL columns from migration 20260530130000_507mt.
-const NOT_NULL_HORSE_COLUMNS = [
+const notNullHorseColumns = [
   'precision',
   'strength',
   'speed',
@@ -135,7 +135,7 @@ const NOT_NULL_HORSE_COLUMNS = [
 
 // Production files that carried the harmful class on 2026-07-03 (issue body,
 // verified 2026-07-06 and again on fix day). Relative to backend/.
-const CLASS_1_FILES = [
+const class1Files = [
   // utils/bondingModifiers.mjs was deleted (Equoria-rk8rm): no caller.
   'utils/traitDiscovery.mjs',
   'utils/applyEpigeneticTraitsAtBirth.mjs',
@@ -151,13 +151,13 @@ const CLASS_1_FILES = [
   'app/queries/horseOverviewQuery.mjs',
 ];
 
-const COLUMN_ALT = NOT_NULL_HORSE_COLUMNS.join('|');
+const columnAlt = notNullHorseColumns.join('|');
 // `obj.col || <non-zero>` and `obj?.col || <non-zero>`.
-const DOTTED_PATTERN = new RegExp(`\\b\\w+(?:\\??\\.\\w+)*\\??\\.(?:${COLUMN_ALT})\\s*\\|\\|\\s*[1-9]\\d*\\b`, 'g');
+const dottedPattern = new RegExp(`\\b\\w+(?:\\??\\.\\w+)*\\??\\.(?:${columnAlt})\\s*\\|\\|\\s*[1-9]\\d*\\b`, 'g');
 // `obj[stat] || <non-zero>` — the computed-member form once found in the herd
 // genetics distance reader (index named stat*; removed with the herd reports,
 // Equoria-8grnh). The detector keeps covering the form.
-const COMPUTED_PATTERN = /\b\w+\[\s*stat\w*\s*\]\s*\|\|\s*[1-9]\d*\b/g;
+const computedPattern = /\b\w+\[\s*stat\w*\s*\]\s*\|\|\s*[1-9]\d*\b/g;
 
 function findZeroCorruptingGuards(source) {
   const violations = [];
@@ -165,7 +165,7 @@ function findZeroCorruptingGuards(source) {
     // Comments may legitimately quote the forbidden form when documenting it.
     const commentIdx = line.indexOf('//');
     const code = commentIdx >= 0 ? line.slice(0, commentIdx) : line;
-    for (const pattern of [DOTTED_PATTERN, COMPUTED_PATTERN]) {
+    for (const pattern of [dottedPattern, computedPattern]) {
       pattern.lastIndex = 0;
       let m;
       while ((m = pattern.exec(code)) !== null) {
@@ -177,9 +177,9 @@ function findZeroCorruptingGuards(source) {
 }
 
 describe('Equoria-4maxb — `|| <non-zero>` on a NOT NULL Horse column cannot return to the Class-1 files', () => {
-  it.each(CLASS_1_FILES)('%s has no zero-corrupting guard', relPath => {
+  it.each(class1Files)('%s has no zero-corrupting guard', relPath => {
     // readFileSync throws on a moved file: a dead path fails loud (Equoria-dl3kz).
-    const source = readFileSync(resolve(BACKEND_ROOT, relPath), 'utf8');
+    const source = readFileSync(resolve(backendRoot, relPath), 'utf8');
     expect(findZeroCorruptingGuards(source)).toEqual([]);
   });
 

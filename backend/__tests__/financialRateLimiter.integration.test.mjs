@@ -50,7 +50,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import { randomBytes } from 'node:crypto';
 
-const FINANCIAL_CAP = 1000; // owner ruling 2026-10-27 (was 20) // financialRateLimiter real configured max / 15-min
+const financialCap = 1000; // owner ruling 2026-10-27 (was 20) // financialRateLimiter real configured max / 15-min
 
 // Sanctioned test-env cap control (see header doc). Must be set BEFORE the
 // app.mjs import below so the limiter's per-request max() reads it. This is
@@ -58,14 +58,14 @@ const FINANCIAL_CAP = 1000; // owner ruling 2026-10-27 (was 20) // financialRate
 // the limiter, we are exercising it at its production-intent cap inside the
 // jest env that otherwise loosens ALL useEnvOverride limiters to 1000.
 const __ORIGINAL_TEST_RL_MAX = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
-process.env.TEST_RATE_LIMIT_MAX_REQUESTS = String(FINANCIAL_CAP);
+process.env.TEST_RATE_LIMIT_MAX_REQUESTS = String(financialCap);
 
 const { default: app } = await import('../app.mjs');
 const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
 const { createTestUser, cleanupTestData } = await import('../tests/helpers/testAuth.mjs');
 const { fetchCsrf } = await import('../tests/helpers/csrfHelper.mjs');
 
-const FIXTURE_PREFIX = 'TestFixture-finrl-ftjm';
+const fixturePrefix = 'TestFixture-finrl-ftjm';
 const ORIGIN = 'http://localhost:3000';
 
 let userA;
@@ -94,8 +94,8 @@ async function postClaim(token) {
 beforeAll(async () => {
   const tagA = randomBytes(4).toString('hex');
   const a = await createTestUser({
-    username: `${FIXTURE_PREFIX}-A-${tagA}`,
-    email: `${FIXTURE_PREFIX}-A-${tagA}@example.com`,
+    username: `${fixturePrefix}-A-${tagA}`,
+    email: `${fixturePrefix}-A-${tagA}@example.com`,
     money: 1000,
   });
   userA = a.user;
@@ -103,8 +103,8 @@ beforeAll(async () => {
 
   const tagB = randomBytes(4).toString('hex');
   const b = await createTestUser({
-    username: `${FIXTURE_PREFIX}-B-${tagB}`,
-    email: `${FIXTURE_PREFIX}-B-${tagB}@example.com`,
+    username: `${fixturePrefix}-B-${tagB}`,
+    email: `${fixturePrefix}-B-${tagB}@example.com`,
     money: 1000,
   });
   userB = b.user;
@@ -129,7 +129,7 @@ afterAll(async () => {
 describe('financialRateLimiter — dedicated per-user economy limiter (Equoria-ftjm)', () => {
   it('lets the first claim through and stays under the cap for the next 19 mutations (no 429)', async () => {
     // 1st: success (200, +500). Requests 2..20: cooldown 400. None are 429.
-    for (let i = 1; i <= FINANCIAL_CAP; i += 1) {
+    for (let i = 1; i <= financialCap; i += 1) {
       const res = await postClaim(tokenA);
       expect(res.status).not.toBe(429);
       if (i === 1) {
@@ -154,7 +154,7 @@ describe('financialRateLimiter — dedicated per-user economy limiter (Equoria-f
       message: expect.stringMatching(/financial action limit exceeded/i),
     });
     expect(res.body.retryAfter).toBeGreaterThan(0);
-    expect(res.body.limit).toBe(FINANCIAL_CAP);
+    expect(res.body.limit).toBe(financialCap);
     expect(res.body.window).toBeGreaterThan(0);
     // RFC standardHeaders are emitted by the shared createRateLimiter.
     expect(res.headers['ratelimit-limit']).toBeDefined();

@@ -28,7 +28,7 @@ import cronJobService from '../services/cronJobs.mjs';
 
 // The canonical job order + schedules + staleness budgets that existed as inline
 // literals before the split. Any drift here is a behaviour change, not a refactor.
-const EXPECTED_JOBS = [
+const expectedJobs = [
   { jobName: 'dailyTraitEvaluation', schedule: '0 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   { jobName: 'dailyHorseAging', schedule: '5 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   { jobName: 'dailyFoalMilestoneEvaluation', schedule: '10 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
@@ -90,8 +90,8 @@ afterEach(() => {
 
 describe('cron job registry structure (Equoria-fx4e7)', () => {
   it('exports every descriptor in the original registration order', () => {
-    expect(cronJobRegistry).toHaveLength(EXPECTED_JOBS.length);
-    expect(cronJobRegistry.map(j => j.jobName)).toEqual(EXPECTED_JOBS.map(j => j.jobName));
+    expect(cronJobRegistry).toHaveLength(expectedJobs.length);
+    expect(cronJobRegistry.map(j => j.jobName)).toEqual(expectedJobs.map(j => j.jobName));
   });
 
   it('every descriptor exports a schedule string + applyLock + staleAfterMs + a run thunk', () => {
@@ -112,7 +112,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
   });
 
   it('each descriptor schedule + staleness is byte-identical to the pre-split literals', () => {
-    for (const expected of EXPECTED_JOBS) {
+    for (const expected of expectedJobs) {
       const actual = cronJobRegistry.find(j => j.jobName === expected.jobName);
       expect(actual).toBeDefined();
       expect(actual.schedule).toBe(expected.schedule);
@@ -164,14 +164,14 @@ describe('CronJobService.start() registry wiring (Equoria-fx4e7)', () => {
     cronJobService.start();
 
     const status = cronJobService.getStatus();
-    expect(status.totalJobs).toBe(EXPECTED_JOBS.length);
+    expect(status.totalJobs).toBe(expectedJobs.length);
     expect(status.serviceRunning).toBe(true);
 
     const health = cronJobService.getHealth();
     const reportedOrder = Object.keys(health.jobs);
-    expect(reportedOrder).toEqual(EXPECTED_JOBS.map(j => j.jobName));
+    expect(reportedOrder).toEqual(expectedJobs.map(j => j.jobName));
 
-    for (const expected of EXPECTED_JOBS) {
+    for (const expected of expectedJobs) {
       expect(health.jobs[expected.jobName].stalenessMs).toBe(expected.staleAfterMs);
     }
   });

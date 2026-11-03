@@ -39,7 +39,7 @@ function freshLockPath() {
 }
 
 /** Independent hard deadline for every child, well above any test timeout. */
-const CHILD_DEADLINE_MS = 30000;
+const childDeadlineMs = 30000;
 
 /** Every child spawned by the current case; drained unconditionally in afterEach. */
 let owned = [];
@@ -53,7 +53,7 @@ function spawnSurvivor() {
   const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000);'], {
     stdio: 'ignore',
     windowsHide: true,
-    timeout: CHILD_DEADLINE_MS,
+    timeout: childDeadlineMs,
     killSignal: 'SIGKILL',
   });
   const exited = once(child, 'exit');

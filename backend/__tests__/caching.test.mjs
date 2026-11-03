@@ -19,7 +19,7 @@ import {
 } from '../utils/cacheHelper.mjs';
 
 // Unique prefix to avoid cross-test interference when tests run concurrently
-const KEY_PREFIX = `perf-cache-${Date.now()}`;
+const keyPrefix = `perf-cache-${Date.now()}`;
 
 describe('Cache Hit/Miss Behavior', () => {
   beforeEach(() => {
@@ -27,7 +27,7 @@ describe('Cache Hit/Miss Behavior', () => {
   });
 
   it('returns cached result on second call (cache HIT)', async () => {
-    const key = generateCacheKey(KEY_PREFIX, 'hit', Math.random());
+    const key = generateCacheKey(keyPrefix, 'hit', Math.random());
     let callCount = 0;
     const queryFn = async () => ({ value: ++callCount });
 
@@ -40,7 +40,7 @@ describe('Cache Hit/Miss Behavior', () => {
   });
 
   it('re-executes queryFn after cache invalidation', async () => {
-    const key = generateCacheKey(KEY_PREFIX, 'invalidate', Math.random());
+    const key = generateCacheKey(keyPrefix, 'invalidate', Math.random());
     let callCount = 0;
     const queryFn = async () => ({ value: ++callCount });
 
@@ -55,8 +55,8 @@ describe('Cache Hit/Miss Behavior', () => {
   });
 
   it('different keys have independent cache entries', async () => {
-    const keyA = generateCacheKey(KEY_PREFIX, 'keyA', Math.random());
-    const keyB = generateCacheKey(KEY_PREFIX, 'keyB', Math.random());
+    const keyA = generateCacheKey(keyPrefix, 'keyA', Math.random());
+    const keyB = generateCacheKey(keyPrefix, 'keyB', Math.random());
 
     let countA = 0;
     let countB = 0;
@@ -77,7 +77,7 @@ describe('Cache Hit/Miss Behavior', () => {
   it('cache statistics reflect local hits and misses', async () => {
     resetCacheStatistics();
 
-    const key = generateCacheKey(KEY_PREFIX, 'stats', Math.random());
+    const key = generateCacheKey(keyPrefix, 'stats', Math.random());
     const queryFn = async () => ({ ok: true });
 
     // Miss
@@ -91,7 +91,7 @@ describe('Cache Hit/Miss Behavior', () => {
   });
 
   it('null result from queryFn is NOT cached', async () => {
-    const key = generateCacheKey(KEY_PREFIX, 'null', Math.random());
+    const key = generateCacheKey(keyPrefix, 'null', Math.random());
     let callCount = 0;
     const queryFn = async () => {
       callCount++;

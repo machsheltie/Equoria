@@ -1,55 +1,55 @@
 import { describe, it, expect } from '@jest/globals';
 import { createRedisCircuitBreaker } from '../utils/redisCircuitBreaker.mjs';
 
-// Import DEFAULT_CIRCUIT_OPTIONS by importing the module directly
+// Import defaultCircuitOptions by importing the module directly
 // redisCircuitBreaker.mjs exports it as a named export
 import * as circuitBreakerModule from '../utils/redisCircuitBreaker.mjs';
 
-const DEFAULT_CIRCUIT_OPTIONS = circuitBreakerModule.defaultCircuitOptions;
+const defaultCircuitOptions = circuitBreakerModule.defaultCircuitOptions;
 
-// ─── DEFAULT_CIRCUIT_OPTIONS ──────────────────────────────────────────────────
+// ─── defaultCircuitOptions ──────────────────────────────────────────────────
 
-describe('DEFAULT_CIRCUIT_OPTIONS', () => {
+describe('defaultCircuitOptions', () => {
   it('is an object', () => {
-    expect(typeof DEFAULT_CIRCUIT_OPTIONS).toBe('object');
-    expect(DEFAULT_CIRCUIT_OPTIONS).not.toBeNull();
+    expect(typeof defaultCircuitOptions).toBe('object');
+    expect(defaultCircuitOptions).not.toBeNull();
   });
 
   it('has errorThresholdPercentage as a number', () => {
-    expect(typeof DEFAULT_CIRCUIT_OPTIONS.errorThresholdPercentage).toBe('number');
-    expect(DEFAULT_CIRCUIT_OPTIONS.errorThresholdPercentage).toBeGreaterThan(0);
-    expect(DEFAULT_CIRCUIT_OPTIONS.errorThresholdPercentage).toBeLessThanOrEqual(100);
+    expect(typeof defaultCircuitOptions.errorThresholdPercentage).toBe('number');
+    expect(defaultCircuitOptions.errorThresholdPercentage).toBeGreaterThan(0);
+    expect(defaultCircuitOptions.errorThresholdPercentage).toBeLessThanOrEqual(100);
   });
 
   it('has resetTimeout as a positive number', () => {
-    expect(typeof DEFAULT_CIRCUIT_OPTIONS.resetTimeout).toBe('number');
-    expect(DEFAULT_CIRCUIT_OPTIONS.resetTimeout).toBeGreaterThan(0);
+    expect(typeof defaultCircuitOptions.resetTimeout).toBe('number');
+    expect(defaultCircuitOptions.resetTimeout).toBeGreaterThan(0);
   });
 
   it('has timeout as a positive number', () => {
-    expect(typeof DEFAULT_CIRCUIT_OPTIONS.timeout).toBe('number');
-    expect(DEFAULT_CIRCUIT_OPTIONS.timeout).toBeGreaterThan(0);
+    expect(typeof defaultCircuitOptions.timeout).toBe('number');
+    expect(defaultCircuitOptions.timeout).toBeGreaterThan(0);
   });
 
   it('has volumeThreshold as a positive number', () => {
-    expect(typeof DEFAULT_CIRCUIT_OPTIONS.volumeThreshold).toBe('number');
-    expect(DEFAULT_CIRCUIT_OPTIONS.volumeThreshold).toBeGreaterThan(0);
+    expect(typeof defaultCircuitOptions.volumeThreshold).toBe('number');
+    expect(defaultCircuitOptions.volumeThreshold).toBeGreaterThan(0);
   });
 
   it('has halfOpenRequests as a positive number', () => {
-    expect(typeof DEFAULT_CIRCUIT_OPTIONS.halfOpenRequests).toBe('number');
-    expect(DEFAULT_CIRCUIT_OPTIONS.halfOpenRequests).toBeGreaterThan(0);
+    expect(typeof defaultCircuitOptions.halfOpenRequests).toBe('number');
+    expect(defaultCircuitOptions.halfOpenRequests).toBeGreaterThan(0);
   });
 
   it('has errorFilter as a function', () => {
-    expect(typeof DEFAULT_CIRCUIT_OPTIONS.errorFilter).toBe('function');
+    expect(typeof defaultCircuitOptions.errorFilter).toBe('function');
   });
 });
 
 // ─── errorFilter (test-mode behavior) ────────────────────────────────────────
 
-describe('DEFAULT_CIRCUIT_OPTIONS.errorFilter (test mode)', () => {
-  const { errorFilter } = DEFAULT_CIRCUIT_OPTIONS;
+describe('defaultCircuitOptions.errorFilter (test mode)', () => {
+  const { errorFilter } = defaultCircuitOptions;
 
   it('returns true (filtered/ignored) for non-ECONNREFUSED errors in test mode', () => {
     const err = new Error('some other error');
@@ -174,20 +174,20 @@ describe('createRedisCircuitBreaker', () => {
 
 // ─── errorFilter — production env (line 44) ──────────────────────────────────
 
-describe('DEFAULT_CIRCUIT_OPTIONS.errorFilter (production env)', () => {
+describe('defaultCircuitOptions.errorFilter (production env)', () => {
   it('returns false for any error code when NODE_ENV is not test', () => {
     const original = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
     try {
       const e1 = new Error('timeout');
       e1.code = 'ETIMEDOUT';
-      expect(DEFAULT_CIRCUIT_OPTIONS.errorFilter(e1)).toBe(false);
+      expect(defaultCircuitOptions.errorFilter(e1)).toBe(false);
 
       const e2 = new Error('conn');
       e2.code = 'ECONNREFUSED';
-      expect(DEFAULT_CIRCUIT_OPTIONS.errorFilter(e2)).toBe(false);
+      expect(defaultCircuitOptions.errorFilter(e2)).toBe(false);
 
-      expect(DEFAULT_CIRCUIT_OPTIONS.errorFilter(null)).toBe(false);
+      expect(defaultCircuitOptions.errorFilter(null)).toBe(false);
     } finally {
       process.env.NODE_ENV = original;
     }

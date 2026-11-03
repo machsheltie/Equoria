@@ -58,18 +58,18 @@ import { fileURLToPath } from 'node:url';
 import { describe, test, expect, afterAll } from '@jest/globals';
 
 const __filename = fileURLToPath(import.meta.url);
-const BACKEND_DIR = path.resolve(path.dirname(__filename), '..', '..');
-const REAPER_PATH = path.join(BACKEND_DIR, 'scripts', 'reap-orphan-jest.mjs');
+const backendDir = path.resolve(path.dirname(__filename), '..', '..');
+const reaperPath = path.join(backendDir, 'scripts', 'reap-orphan-jest.mjs');
 
 // Unique markers (bd id embedded) so assertions can verify, by PID + command
 // line, that they are looking at OUR fixtures and nothing else.
-const MARKER_ORPHAN = 'equoria-fbk1q-jest-lookalike-orphan';
-const MARKER_SURVIVOR = 'equoria-fbk1q-jest-lookalike-survivor';
+const markerOrphan = 'equoria-fbk1q-jest-lookalike-orphan';
+const markerSurvivor = 'equoria-fbk1q-jest-lookalike-survivor';
 // Deliberately contains NO 'jest' substring — falls outside the reaper's net.
-const MARKER_PLAIN = 'equoria-fbk1q-plain-lookalike-orphan';
+const markerPlain = 'equoria-fbk1q-plain-lookalike-orphan';
 
 // Lookalike body: idle for 120s then exit on its own (leak backstop).
-const LOOKALIKE_EVAL = 'setTimeout(() => {}, 120000)';
+const lookalikeEval = 'setTimeout(() => {}, 120000)';
 
 /** Every PID this file spawns, killed unconditionally in afterAll. */
 const spawnedPids = new Set();
@@ -124,7 +124,7 @@ function getCommandLine(pid) {
 function spawnOrphan(marker) {
   const intermediateSrc = `
 import { spawn } from 'node:child_process';
-const child = spawn(process.execPath, ['-e', ${JSON.stringify(LOOKALIKE_EVAL)}, ${JSON.stringify(marker)}], {
+const child = spawn(process.execPath, ['-e', ${JSON.stringify(lookalikeEval)}, ${JSON.stringify(marker)}], {
   detached: true,
   stdio: 'ignore',
   windowsHide: true,
@@ -168,7 +168,7 @@ process.stdout.write(String(child.pid));
  * loop from being held open; the PID is tracked and killed in afterAll.
  */
 function spawnSurvivor(marker) {
-  const child = spawn(process.execPath, ['-e', LOOKALIKE_EVAL, marker], {
+  const child = spawn(process.execPath, ['-e', lookalikeEval, marker], {
     detached: true,
     stdio: 'ignore',
     windowsHide: true,
@@ -180,8 +180,8 @@ function spawnSurvivor(marker) {
 
 /** Runs the reaper exactly the way the posttest lifecycle script does. */
 function runReaper() {
-  return spawnSync(process.execPath, [REAPER_PATH], {
-    cwd: BACKEND_DIR,
+  return spawnSync(process.execPath, [reaperPath], {
+    cwd: backendDir,
     encoding: 'utf8',
     timeout: 90000,
     windowsHide: true,
@@ -211,9 +211,9 @@ const describeWin32 = process.platform === 'win32' ? describe : describe.skip;
 describeWin32('reap-orphan-jest sentinel (Equoria-fbk1q)', () => {
   test('kills the orphaned jest-lookalike, spares the live-parent lookalike and the non-jest orphan', async () => {
     // --- Arrange: one process inside the net, two outside it -------------
-    const orphanPid = await spawnOrphan(MARKER_ORPHAN);
-    const plainOrphanPid = await spawnOrphan(MARKER_PLAIN);
-    const survivorPid = spawnSurvivor(MARKER_SURVIVOR);
+    const orphanPid = await spawnOrphan(markerOrphan);
+    const plainOrphanPid = await spawnOrphan(markerPlain);
+    const survivorPid = spawnSurvivor(markerSurvivor);
 
     expect(isAlive(orphanPid)).toBe(true);
     expect(isAlive(plainOrphanPid)).toBe(true);
@@ -222,15 +222,15 @@ describeWin32('reap-orphan-jest sentinel (Equoria-fbk1q)', () => {
     // Precondition: verify BY PID, against the same CIM data the reaper
     // reads, that each fixture genuinely falls inside/outside its net.
     const orphanCmd = getCommandLine(orphanPid);
-    expect(orphanCmd).toContain(MARKER_ORPHAN);
+    expect(orphanCmd).toContain(markerOrphan);
     expect(orphanCmd).toMatch(/jest/i);
 
     const plainCmd = getCommandLine(plainOrphanPid);
-    expect(plainCmd).toContain(MARKER_PLAIN);
+    expect(plainCmd).toContain(markerPlain);
     expect(plainCmd).not.toMatch(/jest/i);
 
     const survivorCmd = getCommandLine(survivorPid);
-    expect(survivorCmd).toContain(MARKER_SURVIVOR);
+    expect(survivorCmd).toContain(markerSurvivor);
     expect(survivorCmd).toMatch(/jest/i);
 
     // --- Sentinel-positivity: would-fail-if-noop -------------------------

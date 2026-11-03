@@ -11,7 +11,7 @@ import { releaseShowEscrow } from '../../__tests__/helpers/releaseShowEscrow.mjs
 import { withBreedTemperamentAndGaits } from '../../__tests__/helpers/createTestHorse.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';
 
-const DEFAULT_ORIGIN = 'http://localhost:3000';
+const defaultOrigin = 'http://localhost:3000';
 
 // Per-module-instance ID tracking. Each Jest worker gets its own module cache,
 // so these sets accumulate only the IDs created by the current test file.
@@ -30,7 +30,7 @@ const _createdShowIds = new Set();
  */
 export const withAuth = (supertestRequest, userData = {}) => {
   const token = generateTestToken(userData);
-  return supertestRequest.set('Authorization', `Bearer ${token}`).set('Origin', DEFAULT_ORIGIN);
+  return supertestRequest.set('Authorization', `Bearer ${token}`).set('Origin', defaultOrigin);
 };
 
 /**
@@ -46,7 +46,7 @@ export const withSeededPlayerAuth = (method, endpoint, userData = {}) => {
   }
   return agent[method](endpoint)
     .set('Authorization', `Bearer ${token}`)
-    .set('Origin', DEFAULT_ORIGIN);
+    .set('Origin', defaultOrigin);
 };
 
 /**
@@ -60,10 +60,10 @@ export const withSeededPlayerAuth = (method, endpoint, userData = {}) => {
  */
 export async function withAuthCsrf(supertestRequest, userData = {}) {
   const token = generateTestToken(userData);
-  const csrf = await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
+  const csrf = await fetchCsrf(app, { origin: defaultOrigin });
   return supertestRequest
     .set('Authorization', `Bearer ${token}`)
-    .set('Origin', DEFAULT_ORIGIN)
+    .set('Origin', defaultOrigin)
     .set('Cookie', csrf.cookieHeader)
     .set('X-CSRF-Token', csrf.csrfToken);
 }
@@ -84,10 +84,10 @@ export async function withSeededPlayerAuthCsrf(method, endpoint, userData = {}) 
   if (typeof agent[method] !== 'function') {
     throw new Error(`Invalid HTTP method: ${method}`);
   }
-  const csrf = await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
+  const csrf = await fetchCsrf(app, { origin: defaultOrigin });
   return agent[method](endpoint)
     .set('Authorization', `Bearer ${token}`)
-    .set('Origin', DEFAULT_ORIGIN)
+    .set('Origin', defaultOrigin)
     .set('Cookie', csrf.cookieHeader)
     .set('X-CSRF-Token', csrf.csrfToken);
 }

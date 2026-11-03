@@ -24,7 +24,7 @@
  *     composite uniques they replaced are gone. These exist only in raw
  *     migration SQL — Prisma cannot express a partial index — so nothing else
  *     in the repository notices if a schema-reconciliation migration drops
- *     them. See ACTIVE_PARTIAL_INDEXES below.
+ *     them. See activePartialIndexes below.
  *  4. Sentinel-positive: a PLANTED migration with the literal defect class
  *     (bare duplicate ADD CONSTRAINT) makes the replay FAIL — proving the
  *     sentinel detects the regression rather than merely passing when
@@ -51,18 +51,18 @@ import pg from 'pg';
 const { Client } = pg;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const DB_PACKAGE = path.join(REPO_ROOT, 'packages', 'database');
-const SCHEMA_PATH = path.join(DB_PACKAGE, 'prisma', 'schema.prisma');
-const MIGRATIONS_DIR = path.join(DB_PACKAGE, 'prisma', 'migrations');
-const PRISMA_CLI = path.join(DB_PACKAGE, 'node_modules', 'prisma', 'build', 'index.js');
+const repoRoot = path.resolve(HERE, '..', '..', '..');
+const dbPackage = path.join(repoRoot, 'packages', 'database');
+const schemaPath = path.join(dbPackage, 'prisma', 'schema.prisma');
+const migrationsDir = path.join(dbPackage, 'prisma', 'migrations');
+const prismaCli = path.join(dbPackage, 'node_modules', 'prisma', 'build', 'index.js');
 
 // Sorts after every real migration (14-digit timestamps start with "2").
-const PLANTED_MIGRATION_NAME = '99991231235959_planted_duplicate_constraint_sentinel';
-const PLANTED_DIR = path.join(MIGRATIONS_DIR, PLANTED_MIGRATION_NAME);
+const plantedMigrationName = '99991231235959_planted_duplicate_constraint_sentinel';
+const plantedDir = path.join(migrationsDir, plantedMigrationName);
 
-const REPLAY_DB_PREFIX = 'equoria_replay_sentinel_';
-const replayDbName = `${REPLAY_DB_PREFIX}${randomBytes(6).toString('hex')}`;
+const replayDbPrefix = 'equoria_replay_sentinel_';
+const replayDbName = `${replayDbPrefix}${randomBytes(6).toString('hex')}`;
 
 /**
  * The three ACTIVE-only partial unique indexes on the staff-assignment tables
@@ -80,7 +80,7 @@ const replayDbName = `${REPLAY_DB_PREFIX}${randomBytes(6).toString('hex')}`;
  *
  * Listed in `pg_class.relname` order so the catalog query's `ORDER BY` matches.
  */
-const ACTIVE_PARTIAL_INDEXES = Object.freeze([
+const activePartialIndexes = Object.freeze([
   Object.freeze({
     index: 'groom_assignments_active_foalId_groomId_key',
     table: 'groom_assignments',
@@ -103,7 +103,7 @@ const ACTIVE_PARTIAL_INDEXES = Object.freeze([
  * so they capped assignment HISTORY at one inactive row per pair. If one of
  * these names comes back, the defect came back with it.
  */
-const RETIRED_COMPOSITE_UNIQUES = Object.freeze([
+const retiredCompositeUniques = Object.freeze([
   'rider_assignments_riderId_horseId_isActive_key',
   'trainer_assignments_trainerId_horseId_isActive_key',
   'groom_assignments_foalId_groomId_isActive_key',
@@ -129,7 +129,7 @@ async function readActiveUniqueIndexes(client) {
        JOIN pg_class c ON c.oid = i.indexrelid
       WHERE c.relname = ANY($1::text[])
       ORDER BY c.relname`,
-    [ACTIVE_PARTIAL_INDEXES.map(entry => entry.index)],
+    [activePartialIndexes.map(entry => entry.index)],
   );
   return rows;
 }
@@ -141,7 +141,7 @@ async function readActiveUniqueIndexes(client) {
  * @param {Array<{indexName: string, isUnique: boolean, predicate: string | null}>} rows
  */
 function assertActiveOnlyPartialUniques(rows) {
-  expect(rows.map(row => row.indexName)).toEqual(ACTIVE_PARTIAL_INDEXES.map(entry => entry.index));
+  expect(rows.map(row => row.indexName)).toEqual(activePartialIndexes.map(entry => entry.index));
   for (const row of rows) {
     expect(row.isUnique).toBe(true);
     // Postgres renders `WHERE "isActive"` (a bare boolean column) as `"isActive"`.
@@ -173,7 +173,7 @@ function replayUrl() {
 
 /** Hard guard: refuse to CREATE/DROP anything that is not our random temp DB. */
 function assertIsReplayDb(name) {
-  if (!name.startsWith(REPLAY_DB_PREFIX) || name === 'equoria') {
+  if (!name.startsWith(replayDbPrefix) || name === 'equoria') {
     throw new Error(`Refusing to operate on non-sentinel database "${name}"`);
   }
 }
@@ -189,9 +189,9 @@ async function withAdmin(fn) {
 }
 
 function runPrisma(args, databaseUrl) {
-  return execFileSync(process.execPath, [PRISMA_CLI, ...args, `--schema=${SCHEMA_PATH}`], {
+  return execFileSync(process.execPath, [prismaCli, ...args, `--schema=${schemaPath}`], {
     env: { ...process.env, DATABASE_URL: databaseUrl },
-    cwd: DB_PACKAGE,
+    cwd: dbPackage,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -205,7 +205,7 @@ describe('fresh-database migration replay sentinel (Equoria-fefh2.14)', () => {
 
   afterAll(async () => {
     // Planted migration must never outlive the test run — fail loudly if it does.
-    expect(existsSync(PLANTED_DIR)).toBe(false);
+    expect(existsSync(plantedDir)).toBe(false);
     assertIsReplayDb(replayDbName);
     await withAdmin(client => client.query(`DROP DATABASE IF EXISTS "${replayDbName}" WITH (FORCE)`));
   }, 60_000);
@@ -256,7 +256,7 @@ describe('fresh-database migration replay sentinel (Equoria-fefh2.14)', () => {
       assertActiveOnlyPartialUniques(await readActiveUniqueIndexes(client));
 
       // Each one covers the right pair of columns, in order.
-      for (const entry of ACTIVE_PARTIAL_INDEXES) {
+      for (const entry of activePartialIndexes) {
         const { rows } = await client.query('SELECT indexdef FROM pg_indexes WHERE indexname = $1', [entry.index]);
         expect(rows).toHaveLength(1);
         expect(rows[0].indexdef).toMatch(new RegExp(`\\("${entry.columns[0]}", "${entry.columns[1]}"\\)`));
@@ -269,7 +269,7 @@ describe('fresh-database migration replay sentinel (Equoria-fefh2.14)', () => {
            FROM pg_index i
            JOIN pg_class c ON c.oid = i.indexrelid
           WHERE c.relname = ANY($1::text[])`,
-        [[...RETIRED_COMPOSITE_UNIQUES]],
+        [[...retiredCompositeUniques]],
       );
       expect(retired.rows).toEqual([]);
     } finally {
@@ -288,7 +288,7 @@ describe('fresh-database migration replay sentinel (Equoria-fefh2.14)', () => {
     //
     // The mutation is applied to the disposable replay database only (the hard
     // guard above refuses any other target) and is undone before the test ends.
-    const target = ACTIVE_PARTIAL_INDEXES[1]; // rider_assignments
+    const target = activePartialIndexes[1]; // rider_assignments
     const client = new Client({ connectionString: replayUrl() });
     await client.connect();
     try {
@@ -339,9 +339,9 @@ describe('fresh-database migration replay sentinel (Equoria-fefh2.14)', () => {
       '',
     ].join('\n');
 
-    mkdirSync(PLANTED_DIR, { recursive: true });
+    mkdirSync(plantedDir, { recursive: true });
     try {
-      writeFileSync(path.join(PLANTED_DIR, 'migration.sql'), plantedSql, 'utf8');
+      writeFileSync(path.join(plantedDir, 'migration.sql'), plantedSql, 'utf8');
 
       let failure = null;
       try {
@@ -355,11 +355,11 @@ describe('fresh-database migration replay sentinel (Equoria-fefh2.14)', () => {
       const combined = `${failure.stdout ?? ''}\n${failure.stderr ?? ''}\n${failure.message}`;
       expect(combined).toMatch(/already exists/i);
     } finally {
-      rmSync(PLANTED_DIR, { recursive: true, force: true });
+      rmSync(plantedDir, { recursive: true, force: true });
     }
 
     // The failed planted migration leaves a failed row in the replay DB's
     // _prisma_migrations; the DB is dropped in afterAll, so no residue.
-    expect(existsSync(PLANTED_DIR)).toBe(false);
+    expect(existsSync(plantedDir)).toBe(false);
   }, 120_000);
 });

@@ -27,10 +27,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SCHEMA_PATH = path.resolve(HERE, '..', '..', 'packages', 'database', 'prisma', 'schema.prisma');
+const schemaPath = path.resolve(HERE, '..', '..', 'packages', 'database', 'prisma', 'schema.prisma');
 
 function loadSchema() {
-  return fs.readFileSync(SCHEMA_PATH, 'utf8');
+  return fs.readFileSync(schemaPath, 'utf8');
 }
 
 // Pull out the doc-block immediately preceding a named field (the run of

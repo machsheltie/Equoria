@@ -52,7 +52,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   // Per-worker prefix isolates this suite's test users from any other suite's
   // broad pre-clean. Prevents the flaky FK violation where a user committed
   // on line "user.create" was no longer visible when "horse.create" ran.
-  const RUN_PREFIX = `sqli-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
+  const runPrefix = `sqli-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
   const expectBlocked = response => {
     expect([200, 400, 403, 404]).toContain(response.status);
     const success =
@@ -78,12 +78,12 @@ describe('SQL Injection Attempts Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    const uid = `${RUN_PREFIX}-${randomBytes(8).toString('hex')}-${++_seq}`;
+    const uid = `${runPrefix}-${randomBytes(8).toString('hex')}-${++_seq}`;
     // Pre-clean: remove only users from THIS worker's prior iterations.
     // The previous filter (username startsWith 'testuser-') also matched
     // users other suites owned, which could leave an inconsistent FK
     // target when horse.create ran on a different pooled connection.
-    await prisma.user.deleteMany({ where: { username: { startsWith: RUN_PREFIX } } });
+    await prisma.user.deleteMany({ where: { username: { startsWith: runPrefix } } });
 
     // Create the user + horse + groom atomically. With default Prisma
     // pooling (20 test connections) the previous three-step form exposed a
@@ -95,8 +95,8 @@ describe('SQL Injection Attempts Integration Tests', () => {
     const tx = await prisma.$transaction(async client => {
       const user = await client.user.create({
         data: {
-          email: `${RUN_PREFIX}-${uid}@example.com`,
-          username: `${RUN_PREFIX}-${uid}`,
+          email: `${runPrefix}-${uid}@example.com`,
+          username: `${runPrefix}-${uid}`,
           password: 'hashedPassword123',
           firstName: 'Test',
           lastName: 'User',
@@ -149,7 +149,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
     await prisma.groom.deleteMany({
       where: {
         name: {
-          startsWith: `TestGroom-${RUN_PREFIX}-`,
+          startsWith: `TestGroom-${runPrefix}-`,
         },
       },
     });
@@ -157,7 +157,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
     await prisma.horse.deleteMany({
       where: {
         name: {
-          startsWith: `TestHorse-${RUN_PREFIX}-`,
+          startsWith: `TestHorse-${runPrefix}-`,
         },
       },
     });
@@ -165,7 +165,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
     await prisma.user.deleteMany({
       where: {
         email: {
-          startsWith: `${RUN_PREFIX}-`,
+          startsWith: `${runPrefix}-`,
         },
       },
     });

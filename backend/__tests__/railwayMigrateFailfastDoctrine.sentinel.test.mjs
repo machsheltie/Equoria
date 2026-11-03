@@ -45,8 +45,8 @@ import {
 } from '../../scripts/doctrine-checks/check-railway-migrate-failfast.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-railway-migrate-failfast.mjs');
+const repoRoot = path.resolve(HERE, '..', '..');
+const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-railway-migrate-failfast.mjs');
 
 // The fail-open startCommand shape as it shipped before the fix (the defect this
 // issue removes): a `|| echo` swallow after migrate deploy. The exact
@@ -54,13 +54,13 @@ const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-railway-migrat
 // to double-prove it does not false-positive. Single-quoted here to satisfy the
 // backend `quotes`/`no-useless-escape` lint rules — the detector cares only
 // about `migrate deploy` and the operator that follows it, not quote escaping.
-const FAIL_OPEN_START_COMMAND =
+const failOpenStartCommand =
   'startCommand = "sh -c \'cd /app/packages/database && ' +
   '(DATABASE_URL=${DIRECT_URL:-$DATABASE_URL} npx prisma migrate deploy ' +
   '|| echo skipped) && cd /app/backend && node server.mjs\'"';
 
 // The fail-fast form (what the fix installs): migrate deploy chained with `&&`.
-const FAIL_FAST_START_COMMAND =
+const failFastStartCommand =
   'startCommand = "sh -c \'cd /app/packages/database && ' +
   '(DATABASE_URL=${DIRECT_URL:-$DATABASE_URL} npx prisma migrate deploy) ' +
   '&& cd /app/backend && node server.mjs\'"';
@@ -73,12 +73,12 @@ function tomlWith(startCommandLine) {
 // literal sits on the line AFTER `start:` (how Prettier wraps a long string),
 // and a `//` comment carrying a fail-open `startCommand:` literal is planted
 // to prove comments are ignored (a clean fixture must still PASS).
-const IAC_FAIL_OPEN_START =
+const iacFailOpenStart =
   '"sh -c \'cd /app/packages/database && ' +
   '(DATABASE_URL=${DIRECT_URL:-$DATABASE_URL} npx prisma migrate deploy ' +
   '|| echo skipped) && cd /app/backend && node server.mjs\'"';
 
-const IAC_FAIL_FAST_START =
+const iacFailFastStart =
   '"sh -c \'cd /app/packages/database && ' +
   '(DATABASE_URL=${DIRECT_URL:-$DATABASE_URL} npx prisma migrate deploy) ' +
   '&& cd /app/backend && node server.mjs\'"';
@@ -119,7 +119,7 @@ function writeFixture(content, fileName = 'railway.toml') {
 }
 
 function runCheck(args = []) {
-  return spawnSync('node', [CHECK, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [CHECK, ...args], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 describe('check-railway-migrate-failfast.mjs (Equoria-oey96.35)', () => {
@@ -133,7 +133,7 @@ describe('check-railway-migrate-failfast.mjs (Equoria-oey96.35)', () => {
   });
 
   it('SENTINEL: FAILS on a planted .railway/railway.ts with the exact `|| echo` swallow', () => {
-    const fixture = writeFixture(iacWith(IAC_FAIL_OPEN_START), 'railway.ts');
+    const fixture = writeFixture(iacWith(iacFailOpenStart), 'railway.ts');
     const res = runCheck([fixture]);
     expect(res.status).toBe(1);
     expect(res.stderr).toMatch(/railway-migrate-failfast.*FAIL/);
@@ -141,7 +141,7 @@ describe('check-railway-migrate-failfast.mjs (Equoria-oey96.35)', () => {
   });
 
   it('NEGATIVE CONTROL: PASSES on a clean fail-fast (`&&`) railway.ts fixture (fail-open text in comments is ignored)', () => {
-    const fixture = writeFixture(iacWith(IAC_FAIL_FAST_START), 'railway.ts');
+    const fixture = writeFixture(iacWith(iacFailFastStart), 'railway.ts');
     const res = runCheck([fixture]);
     expect(res.status).toBe(0);
     expect(res.stdout).toMatch(/railway-migrate-failfast.*OK/);
@@ -149,7 +149,7 @@ describe('check-railway-migrate-failfast.mjs (Equoria-oey96.35)', () => {
   });
 
   it('SENTINEL: FAILS on a planted railway.toml with the exact `|| echo` swallow', () => {
-    const fixture = writeFixture(tomlWith(FAIL_OPEN_START_COMMAND));
+    const fixture = writeFixture(tomlWith(failOpenStartCommand));
     const res = runCheck([fixture]);
     expect(res.status).toBe(1);
     expect(res.stderr).toMatch(/railway-migrate-failfast.*FAIL/);
@@ -157,7 +157,7 @@ describe('check-railway-migrate-failfast.mjs (Equoria-oey96.35)', () => {
   });
 
   it('NEGATIVE CONTROL: PASSES on a clean fail-fast (`&&`) fixture', () => {
-    const fixture = writeFixture(tomlWith(FAIL_FAST_START_COMMAND));
+    const fixture = writeFixture(tomlWith(failFastStartCommand));
     const res = runCheck([fixture]);
     expect(res.status).toBe(0);
     expect(res.stdout).toMatch(/railway-migrate-failfast.*OK/);
@@ -224,9 +224,9 @@ describe('check-railway-migrate-failfast.mjs (Equoria-oey96.35)', () => {
   });
 
   it('extractStartCommandsFromIac reads `start:` literals wrapped onto the next line, keeps escaped quotes, and ignores comments', () => {
-    const found = extractStartCommandsFromIac(iacWith(IAC_FAIL_FAST_START));
+    const found = extractStartCommandsFromIac(iacWith(iacFailFastStart));
     expect(found).toHaveLength(1);
-    expect(found[0].value).toBe(IAC_FAIL_FAST_START);
+    expect(found[0].value).toBe(iacFailFastStart);
     expect(found[0].line).toBe(8); // the `start:` key line; the literal itself is wrapped onto line 9
 
     const escaped =

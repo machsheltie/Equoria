@@ -30,7 +30,7 @@ const WEBP = Buffer.concat([
   Buffer.from('WEBP', 'latin1'),
 ]);
 // A shell/polyglot disguised as a .jpg — real attack payload.
-const SHELL_SCRIPT = Buffer.from('#!/bin/sh\nrm -rf /\n', 'latin1');
+const shellScript = Buffer.from('#!/bin/sh\nrm -rf /\n', 'latin1');
 
 function expectRejected(fn) {
   let threw = false;
@@ -119,7 +119,7 @@ describe('magic-byte sniff (sentinel: gate fires on content spoof)', () => {
       assertSafeUpload({
         filename: 'photo.jpg',
         declaredMimeType: 'image/jpeg',
-        buffer: SHELL_SCRIPT,
+        buffer: shellScript,
       }),
     );
   });

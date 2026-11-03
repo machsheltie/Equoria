@@ -26,7 +26,7 @@ import performanceMonitorRouter from '../utils/performanceMonitor.mjs';
 // Story 21-7 AC4 (Equoria-w981): critical-path SLA. /metrics is an ops
 // endpoint with no DB work — it must return well under 100 ms on warm cache.
 // A regression past the budget fails CI via npm run test:performance.
-const METRICS_SLA_MS = 100;
+const metricsSlaMs = 100;
 
 describe('performanceMonitor router (Equoria-rr7)', () => {
   let app;
@@ -87,7 +87,7 @@ describe('performanceMonitor router (Equoria-rr7)', () => {
       expect(typeof res.body.data.cache.redisAvailable).toBe('boolean');
     });
 
-    it(`warm response latency under ${METRICS_SLA_MS}ms SLA (FR-100, Story 21-7 AC4)`, async () => {
+    it(`warm response latency under ${metricsSlaMs}ms SLA (FR-100, Story 21-7 AC4)`, async () => {
       // Warm the router once — first call pays JIT + module-init cost.
       await request(app).get('/api/performance/metrics');
 
@@ -105,13 +105,13 @@ describe('performanceMonitor router (Equoria-rr7)', () => {
       samples.sort((a, b) => a - b);
       const median = samples[1];
 
-      if (median >= METRICS_SLA_MS) {
+      if (median >= metricsSlaMs) {
         logger.warn(
           `[Equoria-w981] /metrics median warm latency = ${median.toFixed(1)}ms ` +
-            `(samples: ${samples.map(s => s.toFixed(1)).join(', ')}, budget ${METRICS_SLA_MS}ms)`,
+            `(samples: ${samples.map(s => s.toFixed(1)).join(', ')}, budget ${metricsSlaMs}ms)`,
         );
       }
-      expect(median).toBeLessThan(METRICS_SLA_MS);
+      expect(median).toBeLessThan(metricsSlaMs);
     });
   });
 

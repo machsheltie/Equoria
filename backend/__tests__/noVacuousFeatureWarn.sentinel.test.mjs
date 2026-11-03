@@ -45,24 +45,24 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const BACKEND_ROOT = resolve(__dirname, '..');
+const backendRoot = resolve(__dirname, '..');
 
 // Match `console.warn(...)` calls whose argument string is the vacuous TODO
 // shape from Equoria-igkff. The phrases below are the literal patterns from
 // the original anti-pattern; any new variation that telegraphs "feature
 // missing" should be added here so the gate keeps catching drift.
-const VACUOUS_PHRASES = [
+const vacuousPhrases = [
   /not implemented yet/i,
   /implemented yet[^.]*-?\s*add this feature/i,
   /add this feature/i,
   /No \w+ implemented yet/i,
 ];
 
-const CONSOLE_WARN_CALL = /console\.warn\s*\(\s*['"`]([^'"`]+)['"`]/g;
+const consoleWarnCall = /console\.warn\s*\(\s*['"`]([^'"`]+)['"`]/g;
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'coverage', 'dist', 'build', '.next', '.cache']);
+const skipDirs = new Set(['node_modules', '.git', 'coverage', 'dist', 'build', '.next', '.cache']);
 
-const TEST_FILE_RE = /\.(test|spec|sentinel)\.m?js$/;
+const testFileRe = /\.(test|spec|sentinel)\.m?js$/;
 
 function walk(dir, acc = []) {
   for (const entry of readdirSync(dir)) {
@@ -74,11 +74,11 @@ function walk(dir, acc = []) {
       continue; // junction/broken-link defensive skip
     }
     if (stat.isDirectory()) {
-      if (SKIP_DIRS.has(entry)) {
+      if (skipDirs.has(entry)) {
         continue;
       }
       walk(full, acc);
-    } else if (TEST_FILE_RE.test(entry)) {
+    } else if (testFileRe.test(entry)) {
       acc.push(full);
     }
   }
@@ -86,7 +86,7 @@ function walk(dir, acc = []) {
 }
 
 describe('🔒 Sentinel — no vacuous feature-warn in test files (Equoria-igkff)', () => {
-  const testFiles = walk(BACKEND_ROOT);
+  const testFiles = walk(backendRoot);
 
   // Skip self — this file LEGITIMATELY contains the phrases inside string
   // literals as part of the regex definitions, and a self-match would create
@@ -102,14 +102,14 @@ describe('🔒 Sentinel — no vacuous feature-warn in test files (Equoria-igkff
     const violations = [];
     for (const file of filesToScan) {
       const src = readFileSync(file, 'utf8');
-      CONSOLE_WARN_CALL.lastIndex = 0;
+      consoleWarnCall.lastIndex = 0;
       let m;
-      while ((m = CONSOLE_WARN_CALL.exec(src)) !== null) {
+      while ((m = consoleWarnCall.exec(src)) !== null) {
         const arg = m[1];
-        for (const phrase of VACUOUS_PHRASES) {
+        for (const phrase of vacuousPhrases) {
           if (phrase.test(arg)) {
             // Report path relative to backend root for readability.
-            const rel = file.slice(BACKEND_ROOT.length + 1).replace(/\\/g, '/');
+            const rel = file.slice(backendRoot.length + 1).replace(/\\/g, '/');
             violations.push(`${rel}: "${arg}"`);
             break;
           }

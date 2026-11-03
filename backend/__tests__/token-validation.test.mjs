@@ -35,7 +35,7 @@ function buildMockRes() {
 
 describe('Token Validation Unit Tests', () => {
   let req, res, next;
-  const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
+  const jwtSecret = process.env.JWT_SECRET || 'test-secret-key';
 
   beforeEach(() => {
     req = {
@@ -138,7 +138,7 @@ describe('Token Validation Unit Tests', () => {
           userId: user.id,
           iat: Math.floor(Date.now() / 1000) - 8 * 24 * 60 * 60, // 8 days ago
         },
-        JWT_SECRET,
+        jwtSecret,
         { expiresIn: '30d' }, // Token technically valid for 30 days
       );
 
@@ -164,7 +164,7 @@ describe('Token Validation Unit Tests', () => {
           userId: user.id,
           iat: Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60,
         },
-        JWT_SECRET,
+        jwtSecret,
         { expiresIn: '30d' },
       );
 
@@ -185,7 +185,7 @@ describe('Token Validation Unit Tests', () => {
           userId: user.id,
           iat: Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60 + 15),
         },
-        JWT_SECRET,
+        jwtSecret,
         { expiresIn: '30d' },
       );
 
@@ -331,7 +331,7 @@ describe('Token Validation Unit Tests', () => {
 
     it('should handle legacy id field mapping', async () => {
       // Create token with id instead of userId
-      const token = jwt.sign({ id: 99999 }, JWT_SECRET, { expiresIn: '15m' });
+      const token = jwt.sign({ id: 99999 }, jwtSecret, { expiresIn: '15m' });
 
       req.cookies.accessToken = token;
 
@@ -395,7 +395,7 @@ describe('Token Validation Unit Tests', () => {
     });
 
     it('should reject token without userId field', async () => {
-      const token = jwt.sign({ username: 'test' }, JWT_SECRET, { expiresIn: '15m' });
+      const token = jwt.sign({ username: 'test' }, jwtSecret, { expiresIn: '15m' });
 
       req.cookies.accessToken = token;
 

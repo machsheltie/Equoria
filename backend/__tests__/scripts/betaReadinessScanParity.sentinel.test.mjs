@@ -32,10 +32,10 @@ import {
 } from '../../../scripts/doctrine-checks/check-beta-readiness-scan-parity.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..', '..');
-const SCRIPT = path.join(REPO_ROOT, 'scripts', 'check-beta-readiness.sh');
-const WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'test.yml');
-const LIBRARY = path.join(REPO_ROOT, 'scripts', 'lib', 'beta-readiness-scans.sh');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..', '..');
+const SCRIPT = path.join(repoRoot, 'scripts', 'check-beta-readiness.sh');
+const WORKFLOW = path.join(repoRoot, '.github', 'workflows', 'test.yml');
+const LIBRARY = path.join(repoRoot, 'scripts', 'lib', 'beta-readiness-scans.sh');
 
 const scriptText = fs.readFileSync(SCRIPT, 'utf-8');
 const workflowText = fs.readFileSync(WORKFLOW, 'utf-8');

@@ -14,13 +14,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const SCRIPT = path.join(REPO_ROOT, 'backend/scripts/validate-breed-sql-profiles.mjs');
+const repoRoot = path.resolve(HERE, '..', '..');
+const SCRIPT = path.join(repoRoot, 'backend/scripts/validate-breed-sql-profiles.mjs');
 
 describe('validate-breed-sql-profiles dry-run validator (Equoria-mxhpi)', () => {
   it('SENTINEL: runs against the 2 in-repo sample files and surfaces structural defects', () => {
     const res = spawnSync('node', [SCRIPT], {
-      cwd: REPO_ROOT,
+      cwd: repoRoot,
       encoding: 'utf8',
       timeout: 30000,
     });

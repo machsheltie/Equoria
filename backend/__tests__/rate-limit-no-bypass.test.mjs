@@ -52,10 +52,10 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
  * the login timing anchor (a real bcrypt compare, ~0.3s), so the cap is kept
  * small: 50 took ~17s for nothing the test needs; 5 trips the same 429.
  */
-const TEST_FLOOD_MAX = 5;
-const TEST_FLOOD_HEADROOM = 5;
+const testFloodMax = 5;
+const testFloodHeadroom = 5;
 
-const BYPASS_HEADERS = [
+const bypassHeaders = [
   'x-test-bypass-rate-limit',
   'x-test-skip-csrf',
   'x-test-bypass-auth',
@@ -77,12 +77,12 @@ const BYPASS_HEADERS = [
  *
  * Equoria-ocn9 re-review fix.
  */
-const TEST_NET_RANGES = ['192.0.2', '198.51.100', '203.0.113'];
-const SEEN_TEST_IPS = new Map(); // testName -> ip, for collision detection
+const testNetRanges = ['192.0.2', '198.51.100', '203.0.113'];
+const seenTestIps = new Map(); // testName -> ip, for collision detection
 
 function uniqueTestIp(testName) {
-  if (SEEN_TEST_IPS.has(testName)) {
-    return SEEN_TEST_IPS.get(testName);
+  if (seenTestIps.has(testName)) {
+    return seenTestIps.get(testName);
   }
 
   // 24-bit FNV-1a hash for good distribution over short strings.
@@ -93,7 +93,7 @@ function uniqueTestIp(testName) {
   }
   hash = hash >>> 0; // coerce to unsigned 32-bit
 
-  const range = TEST_NET_RANGES[hash % TEST_NET_RANGES.length];
+  const range = testNetRanges[hash % testNetRanges.length];
   const octet3 = (hash >>> 8) & 0xff;
   // Avoid octet4 = 0 (network address) and 255 (broadcast). Map the masked
   // bits into [1..254] inclusive — `& 0xfd` zeros bit 1 and only reaches
@@ -105,7 +105,7 @@ function uniqueTestIp(testName) {
   // Collision check across the lifetime of this Jest worker. If two test
   // names produce the same IP, fail loudly NOW rather than letting tests
   // share a rate-limit bucket and produce mysterious flakes.
-  for (const [otherName, otherIp] of SEEN_TEST_IPS.entries()) {
+  for (const [otherName, otherIp] of seenTestIps.entries()) {
     if (otherIp === ip) {
       throw new Error(
         `[uniqueTestIp] hash collision: "${testName}" and "${otherName}" both map to ${ip}. ` +
@@ -113,7 +113,7 @@ function uniqueTestIp(testName) {
       );
     }
   }
-  SEEN_TEST_IPS.set(testName, ip);
+  seenTestIps.set(testName, ip);
   return ip;
 }
 
@@ -153,10 +153,10 @@ describe('/api/v1/auth/login authRateLimiter — real-path no-bypass coverage (E
   it('returns 429 after the configured max failed attempts, with RateLimit-* headers', async () => {
     const ip = uniqueTestIp('hard-limit-trip');
     const previousMax = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
-    process.env.TEST_RATE_LIMIT_MAX_REQUESTS = String(TEST_FLOOD_MAX);
+    process.env.TEST_RATE_LIMIT_MAX_REQUESTS = String(testFloodMax);
     let blocked = null;
     try {
-      for (let i = 0; i < TEST_FLOOD_MAX + TEST_FLOOD_HEADROOM; i++) {
+      for (let i = 0; i < testFloodMax + testFloodHeadroom; i++) {
         const res = await failedLogin(ip);
         if (res.status === 429) {
           blocked = res;
@@ -192,7 +192,7 @@ describe('/api/v1/auth/login authRateLimiter — real-path no-bypass coverage (E
    * Both responses must include RateLimit-Remaining, and the second value
    * must be strictly less than the first.
    */
-  it.each(BYPASS_HEADERS)(
+  it.each(bypassHeaders)(
     'bypass header %s does NOT prevent the counter from decrementing on real /api/v1/auth/login',
     async header => {
       const ip = uniqueTestIp(`bypass-${header}`);
@@ -217,7 +217,7 @@ describe('/api/v1/auth/login authRateLimiter — real-path no-bypass coverage (E
 
   it('sending all known bypass headers together does NOT skip the limiter on real /api/v1/auth/login', async () => {
     const ip = uniqueTestIp('bypass-combined');
-    const allBypasses = Object.fromEntries(BYPASS_HEADERS.map(h => [h, 'true']));
+    const allBypasses = Object.fromEntries(bypassHeaders.map(h => [h, 'true']));
 
     const baseline = await failedLogin(ip);
     expect(baseline.status).toBe(401);

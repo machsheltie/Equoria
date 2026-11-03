@@ -41,8 +41,8 @@ import { checkedInDeviceCookie } from '../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
-const METRICS_ROUTE = '/api/v1/performance/metrics';
-const PUBLIC_HEALTH_ROUTES = ['/health', '/ready'];
+const metricsRoute = '/api/v1/performance/metrics';
+const publicHealthRoutes = ['/health', '/ready'];
 
 describe('INTEGRATION: performance metrics admin guard (Equoria-xfqy4)', () => {
   let regularToken;
@@ -71,8 +71,8 @@ describe('INTEGRATION: performance metrics admin guard (Equoria-xfqy4)', () => {
   }, 120000);
 
   describe('anonymous → 401 (THE fix: detailed metrics no longer public)', () => {
-    it(`GET ${METRICS_ROUTE} returns 401 without a token`, async () => {
-      const res = await request(app).get(METRICS_ROUTE).set('Origin', ORIGIN);
+    it(`GET ${metricsRoute} returns 401 without a token`, async () => {
+      const res = await request(app).get(metricsRoute).set('Origin', ORIGIN);
       expect(res.status).toBe(401);
       expect(res.body.success).toBe(false);
       // Sentinel: the reconnaissance payload must NOT leak to an anonymous caller.
@@ -81,9 +81,9 @@ describe('INTEGRATION: performance metrics admin guard (Equoria-xfqy4)', () => {
   });
 
   describe('authenticated NON-admin → 403 (requireRole admin)', () => {
-    it(`GET ${METRICS_ROUTE} returns 403 for a non-admin user`, async () => {
+    it(`GET ${metricsRoute} returns 403 for a non-admin user`, async () => {
       const res = await request(app)
-        .get(METRICS_ROUTE)
+        .get(metricsRoute)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${regularToken}`);
       expect(res.status).toBe(403);
@@ -95,9 +95,9 @@ describe('INTEGRATION: performance metrics admin guard (Equoria-xfqy4)', () => {
   });
 
   describe('authenticated admin → 200 (gate passes, metrics returned)', () => {
-    it(`GET ${METRICS_ROUTE} returns 200 with the metrics payload for an admin`, async () => {
+    it(`GET ${metricsRoute} returns 200 with the metrics payload for an admin`, async () => {
       const res = await request(app)
-        .get(METRICS_ROUTE)
+        .get(metricsRoute)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Cookie', adminDevice);
@@ -113,7 +113,7 @@ describe('INTEGRATION: performance metrics admin guard (Equoria-xfqy4)', () => {
   });
 
   describe('lightweight public health/readiness remain public (AC: not collaterally gated)', () => {
-    it.each(PUBLIC_HEALTH_ROUTES)('GET %s returns 200 without a token', async route => {
+    it.each(publicHealthRoutes)('GET %s returns 200 without a token', async route => {
       const res = await request(app).get(route).set('Origin', ORIGIN);
       // /health and /ready are intentionally unauthenticated liveness/readiness
       // probes. /ready may report 503 if the DB ping fails, but it must NEVER

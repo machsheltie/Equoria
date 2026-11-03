@@ -27,8 +27,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-const AUDIT_SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../scripts/audit-breedless-horses.mjs');
-const SRC = readFileSync(AUDIT_SRC_PATH, 'utf8');
+const auditSrcPath = join(dirname(fileURLToPath(import.meta.url)), '../scripts/audit-breedless-horses.mjs');
+const SRC = readFileSync(auditSrcPath, 'utf8');
 
 // Strip block and line comments — the file explains the destructive remedies it
 // deliberately does NOT perform, and those sentences must not trip the guard.

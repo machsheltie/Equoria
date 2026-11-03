@@ -14,20 +14,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-no-unversioned-api.mjs');
-const PLANT_DIR = path.join(REPO_ROOT, 'frontend/src/_no_unversioned_api_doctrine_sentinel');
+const repoRoot = path.resolve(HERE, '..', '..');
+const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-unversioned-api.mjs');
+const plantDir = path.join(repoRoot, 'frontend/src/_no_unversioned_api_doctrine_sentinel');
 
 afterEach(() => {
   try {
-    fs.rmSync(PLANT_DIR, { recursive: true, force: true });
+    fs.rmSync(plantDir, { recursive: true, force: true });
   } catch {
     // best-effort cleanup
   }
 });
 
 function runCheck() {
-  return spawnSync('node', [CHECK], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [CHECK], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 describe('check-no-unversioned-api.mjs (Equoria-4bs3s)', () => {
@@ -38,8 +38,8 @@ describe('check-no-unversioned-api.mjs (Equoria-4bs3s)', () => {
   });
 
   it('SENTINEL: fails when a NEW unversioned `/api/...` literal is planted', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'planted.ts');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'planted.ts');
     // Build the path from concat so this sentinel's own source doesn't
     // trip the doctrine on the test file itself (the regex is non-greedy
     // about matching literal /api/<X>/ inside string quotes; concat
@@ -65,8 +65,8 @@ describe('check-no-unversioned-api.mjs (Equoria-4bs3s)', () => {
   });
 
   it('SENTINEL: allows /api/v1/... (canonical) and /api/internal/... (4bs3s-sibling exempt)', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'allowed.ts');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'allowed.ts');
     fs.writeFileSync(
       planted,
       [

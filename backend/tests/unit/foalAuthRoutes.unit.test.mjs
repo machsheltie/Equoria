@@ -15,7 +15,7 @@
  *     of what status previous requests returned, since foalRateLimiter counts
  *     ALL requests (skipSuccessfulRequests: false, skipFailedRequests: false).
  *     Each rate-limit test uses a fresh user so per-user counters don't bleed.
- *   - Hardcoded NON_EXISTENT_HORSE_ID is used where the test only cares about
+ *   - Hardcoded nonExistentHorseId is used where the test only cares about
  *     auth/rate-limit behaviour, not the controller's success path.
  */
 
@@ -32,7 +32,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ts = randomBytes(8).toString('hex');
-const NON_EXISTENT_HORSE_ID = 999_999_999;
+const nonExistentHorseId = 999_999_999;
 
 let app;
 let testUser;
@@ -122,7 +122,7 @@ afterAll(async () => {
 describe('Foal routes auth enforcement (real DB)', () => {
   it('rejects unauthenticated access to foal development', async () => {
     const response = await request(app)
-      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}/development`)
+      .get(`/api/foals/${nonExistentHorseId}/development`)
       .set('Origin', 'http://localhost:3000')
       .expect(401);
 
@@ -139,7 +139,7 @@ describe('Foal routes auth enforcement (real DB)', () => {
   // with the same 401 + message assertions.
   it('rejects unauthenticated access to the foal record', async () => {
     const response = await request(app)
-      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}`)
+      .get(`/api/foals/${nonExistentHorseId}`)
       .set('Origin', 'http://localhost:3000')
       .expect(401);
 
@@ -149,7 +149,7 @@ describe('Foal routes auth enforcement (real DB)', () => {
 
   it('rejects unauthenticated access to the foal activity log', async () => {
     const response = await request(app)
-      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}/activities`)
+      .get(`/api/foals/${nonExistentHorseId}/activities`)
       .set('Origin', 'http://localhost:3000')
       .expect(401);
 
@@ -171,17 +171,17 @@ describe('Foal routes auth enforcement (real DB)', () => {
     // First two requests count toward the per-user limit (any status is fine
     // — controller may 404 on the bogus horse id, that's not the contract).
     await request(app)
-      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}/activities`)
+      .get(`/api/foals/${nonExistentHorseId}/activities`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${activityToken}`);
 
     await request(app)
-      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}/activities`)
+      .get(`/api/foals/${nonExistentHorseId}/activities`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${activityToken}`);
 
     const response = await request(app)
-      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}/activities`)
+      .get(`/api/foals/${nonExistentHorseId}/activities`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${activityToken}`)
       .expect(429);
@@ -192,17 +192,17 @@ describe('Foal routes auth enforcement (real DB)', () => {
 
   it('rate limits the foal record read — 429 on Nth+1 request', async () => {
     await request(app)
-      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}`)
+      .get(`/api/foals/${nonExistentHorseId}`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${recordToken}`);
 
     await request(app)
-      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}`)
+      .get(`/api/foals/${nonExistentHorseId}`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${recordToken}`);
 
     const response = await request(app)
-      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}`)
+      .get(`/api/foals/${nonExistentHorseId}`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${recordToken}`)
       .expect(429);
@@ -217,7 +217,7 @@ describe('Foal routes auth enforcement (real DB)', () => {
     // "horse exists but is owned by someone else." We use a non-existent
     // ID rather than seeding+abandoning a real horse.
     const response = await request(app)
-      .get(`/api/foals/${NON_EXISTENT_HORSE_ID}/development`)
+      .get(`/api/foals/${nonExistentHorseId}/development`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(404);

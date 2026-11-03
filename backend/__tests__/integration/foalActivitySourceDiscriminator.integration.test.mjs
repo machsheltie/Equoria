@@ -82,7 +82,7 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
   // The collision activityType: deliberately use the SAME string for a groom
   // row and an enrichment row. Pre-8yhe3 the blind groupBy would have summed
   // both into one count. The discriminator must exclude the enrichment row.
-  const COLLISION_TASK = 'trustBuilding';
+  const collisionTask = 'trustBuilding';
 
   it('SENTINEL: a planted enrichment-source row is NOT counted, even when its activityType collides with a counted groom key', async () => {
     // Two groom-source rows for the collision task → these SHOULD be counted.
@@ -91,7 +91,7 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
         data: {
           foalId: foal.id,
           day: 0,
-          activityType: COLLISION_TASK,
+          activityType: collisionTask,
           outcome: 'good',
           bondingChange: 2,
           description: 'groom-stream event',
@@ -104,7 +104,7 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
       data: {
         foalId: foal.id,
         day: 0,
-        activityType: COLLISION_TASK,
+        activityType: collisionTask,
         outcome: 'good',
         bondingChange: 1,
         description: 'enrichment-stream collision event',
@@ -116,7 +116,7 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
     // Enforcement fires: count is 2 (groom rows only), NOT 3.
     // Without the source filter this would be 3 — the planted enrichment row
     // would have leaked into the trait-driving count.
-    expect(derived[COLLISION_TASK]).toBe(2);
+    expect(derived[collisionTask]).toBe(2);
 
     // deriveTotalActivityCount is also source-scoped: 2 groom rows, NOT 3.
     // (3 FoalActivity rows physically exist for this foal — 1 is enrichment.)
@@ -142,14 +142,14 @@ describe('FoalActivity source-discriminator enforcement (Equoria-8yhe3)', () => 
     const derived = await deriveTaskCountsFromActivities(foal.id);
     expect(derived.legacyNullTask).toBe(1);
     // And the collision groom count is still exactly 2 (enrichment still excluded).
-    expect(derived[COLLISION_TASK]).toBe(2);
+    expect(derived[collisionTask]).toBe(2);
   });
 
   it('reconcile derives the groom-only floor (enrichment collision does NOT inflate taskLog) and is idempotent', async () => {
     const first = await reconcileTaskLogFromActivities(foal.id);
     expect(first.changed).toBe(true);
     // taskLog reflects groom-only counts: the collision key is 2, NOT 3.
-    expect(first.after[COLLISION_TASK]).toBe(2);
+    expect(first.after[collisionTask]).toBe(2);
     expect(first.after.legacyNullTask).toBe(1);
 
     // Persisted cache matches the source-filtered derivation (no double-count).

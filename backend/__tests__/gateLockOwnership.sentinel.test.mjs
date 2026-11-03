@@ -41,7 +41,7 @@ const gateLockUrl = pathToFileURL(path.join(backendRoot, 'scripts', 'gate-lock.m
 const scratch = mkdtempSync(path.join(tmpdir(), 'equoria-gate-ownership-'));
 
 /** Independent hard deadline for every child, well above any test timeout. */
-const CHILD_DEADLINE_MS = 30000;
+const childDeadlineMs = 30000;
 
 let caseId = 0;
 function freshLockPath() {
@@ -57,7 +57,7 @@ function spawnOwned(args, { stdio = ['ignore', 'pipe', 'pipe'] } = {}) {
     stdio,
     windowsHide: true,
     // Finite deadline independent of the test: Node kills the child itself.
-    timeout: CHILD_DEADLINE_MS,
+    timeout: childDeadlineMs,
     killSignal: 'SIGKILL',
   });
   // Register the exit promise NOW so a child that exits before anyone awaits

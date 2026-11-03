@@ -164,19 +164,19 @@
  * PostgreSQL's SQLSTATE as the connector reports it, e.g. `code: "23514"`.
  * Five characters, digits and upper-case letters, per the SQLSTATE grammar.
  */
-const POSTGRES_SQLSTATE = /\bcode:\s*"([0-9A-Z]{5})"/;
+const postgresSqlstate = /\bcode:\s*"([0-9A-Z]{5})"/;
 
 /** A SQLSTATE standing alone in a structured field, as `meta.code` carries it. */
-const SQLSTATE_ALONE = /^[0-9A-Z]{5}$/;
+const sqlstateAlone = /^[0-9A-Z]{5}$/;
 
 /** The connector envelope. Its presence is what makes a message worth reading. */
-const POSTGRES_ENVELOPE = 'PostgresError {';
+const postgresEnvelope = 'PostgresError {';
 
 /**
  * Prisma's own error names. Used as STRUCTURAL evidence that a value came from a
  * Prisma client before any of its message text is trusted.
  */
-const PRISMA_ERROR_NAME = /^PrismaClient[A-Za-z]*Error$/;
+const prismaErrorName = /^PrismaClient[A-Za-z]*Error$/;
 
 /**
  * The constraint PostgreSQL names in its own message. In a
@@ -186,7 +186,7 @@ const PRISMA_ERROR_NAME = /^PrismaClient[A-Za-z]*Error$/;
  * rather than required, so one pattern reads both and neither depends on that
  * nesting surviving a Prisma bump.
  */
-const POSTGRES_CONSTRAINT =
+const postgresConstraint =
   /\bviolates\s+(?:check|unique|foreign key|not-null|exclusion)\s+constraint\s+\\?"([^"\\]+)/;
 
 /**
@@ -206,7 +206,7 @@ function isPrismaClientError(reason) {
     typeof clientVersion === 'string' &&
     clientVersion.length > 0 &&
     typeof name === 'string' &&
-    PRISMA_ERROR_NAME.test(name)
+    prismaErrorName.test(name)
   );
 }
 
@@ -217,7 +217,7 @@ function isPrismaClientError(reason) {
  * @returns {string | undefined}
  */
 function constraintIn(message) {
-  return typeof message === 'string' ? POSTGRES_CONSTRAINT.exec(message)?.[1] : undefined;
+  return typeof message === 'string' ? postgresConstraint.exec(message)?.[1] : undefined;
 }
 
 /**
@@ -235,11 +235,11 @@ function describeDriverRejection(reason) {
   }
 
   const message = /** @type {{ message?: unknown }} */ (reason).message;
-  if (typeof message !== 'string' || !message.includes(POSTGRES_ENVELOPE)) {
+  if (typeof message !== 'string' || !message.includes(postgresEnvelope)) {
     return null;
   }
 
-  const sqlstate = POSTGRES_SQLSTATE.exec(message)?.[1];
+  const sqlstate = postgresSqlstate.exec(message)?.[1];
   if (!sqlstate) {
     return null;
   }
@@ -283,7 +283,7 @@ export function describePrismaRejection(reason) {
     // fired — a caller asserting a raw-SQL constraint violation would have got a
     // signature that a dropped column or a syntax error also produces.
     const meta = /** @type {{ meta?: { code?: unknown, message?: unknown } }} */ (reason).meta;
-    if (typeof meta?.code === 'string' && SQLSTATE_ALONE.test(meta.code)) {
+    if (typeof meta?.code === 'string' && sqlstateAlone.test(meta.code)) {
       const constraint = constraintIn(meta.message);
       return constraint ? `${code} ${meta.code} on ${constraint}` : `${code} ${meta.code}`;
     }

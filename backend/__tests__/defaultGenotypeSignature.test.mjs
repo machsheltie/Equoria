@@ -18,7 +18,7 @@ import { genericDefaults } from '../modules/horses/index.mjs';
 
 // The 17-locus all-Bay signature a legacy "First Horse" carries (pre-color-system
 // mint: fixed genericDefaults, missing the .1 Prl/BR1 loci).
-const LEGACY_ALL_BAY = {
+const legacyAllBay = {
   E_Extension: 'E/e',
   A_Agouti: 'A/a',
   Cr_Cream: 'n/n',
@@ -44,22 +44,22 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
   });
 
   it('returns true for the legacy 17-locus all-Bay starter signature', () => {
-    expect(isDefaultSignature(LEGACY_ALL_BAY)).toBe(true);
+    expect(isDefaultSignature(legacyAllBay)).toBe(true);
   });
 
   it('is insensitive to JSONB key ordering', () => {
-    const reversed = Object.fromEntries(Object.entries(LEGACY_ALL_BAY).reverse());
+    const reversed = Object.fromEntries(Object.entries(legacyAllBay).reverse());
     expect(isDefaultSignature(reversed)).toBe(true);
   });
 
   it('SENTINEL: a single real-color locus disqualifies (customization preserved)', () => {
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, E_Extension: 'e/e' })).toBe(false); // chestnut
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, Cr_Cream: 'Cr/n' })).toBe(false); // buckskin
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, G_Gray: 'G/g' })).toBe(false); // gray
+    expect(isDefaultSignature({ ...legacyAllBay, E_Extension: 'e/e' })).toBe(false); // chestnut
+    expect(isDefaultSignature({ ...legacyAllBay, Cr_Cream: 'Cr/n' })).toBe(false); // buckskin
+    expect(isDefaultSignature({ ...legacyAllBay, G_Gray: 'G/g' })).toBe(false); // gray
   });
 
   it('SENTINEL: a missing REQUIRED (non-optional) locus disqualifies', () => {
-    const missingRequired = { ...LEGACY_ALL_BAY };
+    const missingRequired = { ...legacyAllBay };
     delete missingRequired.A_Agouti; // A_Agouti is not in signatureOptionalLoci
     expect(isDefaultSignature(missingRequired)).toBe(false);
   });
@@ -73,13 +73,13 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
     // (post-.1 row) is still default; a legacy row missing the keys entirely
     // (predates .1) is tolerated as default by signatureOptionalLoci carve-out.
     const withOptionalAtDefault = {
-      ...LEGACY_ALL_BAY,
+      ...legacyAllBay,
       Prl_Pearl: 'n/n',
       BR1_Brindle1: 'n/n',
     };
     expect(isDefaultSignature(withOptionalAtDefault)).toBe(true);
 
-    const withoutOptional = { ...LEGACY_ALL_BAY };
+    const withoutOptional = { ...legacyAllBay };
     delete withoutOptional.Prl_Pearl;
     delete withoutOptional.BR1_Brindle1;
     expect(isDefaultSignature(withoutOptional)).toBe(true);
@@ -93,8 +93,8 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
     // the Equoria-3x7j3 follow-up scenario, now resolved by .1 landing. A real
     // Prl/BR1-carrying horse is no longer "default" and is preserved by the
     // destructive recolor.
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, Prl_Pearl: 'Prl/prl' })).toBe(false);
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, BR1_Brindle1: 'br1/n' })).toBe(false);
+    expect(isDefaultSignature({ ...legacyAllBay, Prl_Pearl: 'Prl/prl' })).toBe(false);
+    expect(isDefaultSignature({ ...legacyAllBay, BR1_Brindle1: 'br1/n' })).toBe(false);
   });
 
   it('returns false for null / undefined / non-object / array inputs', () => {

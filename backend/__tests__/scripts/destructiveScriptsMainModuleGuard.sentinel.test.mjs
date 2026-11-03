@@ -45,18 +45,18 @@ import { fileURLToPath } from 'node:url';
 import { describe, test, expect } from '@jest/globals';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..', '..');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..', '..');
 // Equoria-o706s: scan both backend/scripts/ AND backend/seed/. Both hold
 // standalone CLI entry points that run destructive prisma writes / seeds at
 // module top level, so both need the c3kb6/5z0if main-module guard enforced.
 // (backend/seed/userSeed.mjs's guard from 9eh0t was previously unenforced.)
-const BACKEND_SCRIPTS_DIR = path.join(REPO_ROOT, 'backend', 'scripts');
-const BACKEND_SEED_DIR = path.join(REPO_ROOT, 'backend', 'seed');
-const SCAN_DIRS = [BACKEND_SCRIPTS_DIR, BACKEND_SEED_DIR];
+const backendScriptsDir = path.join(repoRoot, 'backend', 'scripts');
+const backendSeedDir = path.join(repoRoot, 'backend', 'seed');
+const scanDirs = [backendScriptsDir, backendSeedDir];
 
 // Markers that indicate a script performs destructive (mutating) DB operations
 // or runs prisma migrate, either of which MUST be guarded.
-const DESTRUCTIVE_PATTERNS = [
+const destructivePatterns = [
   /prisma\.\w+\.(?:deleteMany|delete|updateMany|update|create|createMany|upsert)\s*\(/,
   /\$executeRaw(?:Unsafe)?\s*[`(]/,
   /\$queryRaw(?:Unsafe)?\s*[`(].*?(?:DROP|TRUNCATE|DELETE|UPDATE|INSERT|ALTER)/is,
@@ -95,7 +95,7 @@ const DESTRUCTIVE_PATTERNS = [
 //     if (currentFileUrl === executedFileUrl) { ... }
 //   Accepted as the legacy/three-slash sibling of the file:// template form
 //   (does no harm on bare import — fail-safe for the c3kb6 concern).
-const MAIN_GUARD_PATTERNS = [
+const mainGuardPatterns = [
   /import\.meta\.url\s*===\s*`file:\/\/\$\{process\.argv\[1\]/,
   /fileURLToPath\s*\(\s*import\.meta\.url\s*\)\s*===\s*process\.argv\[1\]/,
   /import\.meta\.url\s*===\s*pathToFileURL\s*\(\s*process\.argv\[1\]\s*\)\s*\.href/,
@@ -106,8 +106,8 @@ const MAIN_GUARD_PATTERNS = [
 // `if (... __filename === process.argv[1])` is only a valid main-module guard
 // when __filename was bound from fileURLToPath(import.meta.url). This pattern
 // pair (the alias binding AND the comparison) must BOTH be present.
-const FILENAME_ALIAS_BINDING = /__filename\s*=\s*fileURLToPath\s*\(\s*import\.meta\.url\s*\)/;
-const FILENAME_ALIAS_GUARD = /__filename\s*===\s*process\.argv\[1\]/;
+const filenameAliasBinding = /__filename\s*=\s*fileURLToPath\s*\(\s*import\.meta\.url\s*\)/;
+const filenameAliasGuard = /__filename\s*===\s*process\.argv\[1\]/;
 
 /**
  * Returns true iff the file contains at least one main-module guard pattern.
@@ -116,12 +116,12 @@ const FILENAME_ALIAS_GUARD = /__filename\s*===\s*process\.argv\[1\]/;
  * the canonical idiom; the guard's presence is the contract.)
  */
 function hasMainModuleGuard(source) {
-  if (MAIN_GUARD_PATTERNS.some(p => p.test(source))) {
+  if (mainGuardPatterns.some(p => p.test(source))) {
     return true;
   }
   // __filename-alias form: only valid if __filename was bound from
   // fileURLToPath(import.meta.url) AND used in the `=== process.argv[1]` guard.
-  return FILENAME_ALIAS_BINDING.test(source) && FILENAME_ALIAS_GUARD.test(source);
+  return filenameAliasBinding.test(source) && filenameAliasGuard.test(source);
 }
 
 /**
@@ -132,7 +132,7 @@ function hasMainModuleGuard(source) {
  *    documentation that mentions the pattern.
  *  - Asserting at least one DESTRUCTIVE_PATTERN matches the code body.
  *
- * A guarded script will still match DESTRUCTIVE_PATTERNS (the call exists
+ * A guarded script will still match destructivePatterns (the call exists
  * lexically) but the guard's presence proves the call only runs when the
  * file is the entry point.
  */
@@ -140,7 +140,7 @@ function fileMentionsDestructiveOp(source) {
   // Strip line comments (// ...) and block comments (/* ... */). Imperfect
   // but adequate: keeps source structure, removes documentation hits.
   const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-  return DESTRUCTIVE_PATTERNS.some(p => p.test(stripped));
+  return destructivePatterns.some(p => p.test(stripped));
 }
 
 /**
@@ -152,7 +152,7 @@ function fileMentionsDestructiveOp(source) {
  */
 function listScripts() {
   const files = [];
-  for (const dir of SCAN_DIRS) {
+  for (const dir of scanDirs) {
     if (!fs.existsSync(dir)) {
       continue;
     }
@@ -287,7 +287,7 @@ describe('Equoria-5z0if — destructive scripts must have main-module guard', ()
         continue;
       }
       if (!hasMainModuleGuard(source)) {
-        unguarded.push(path.relative(REPO_ROOT, filePath));
+        unguarded.push(path.relative(repoRoot, filePath));
       }
     }
 

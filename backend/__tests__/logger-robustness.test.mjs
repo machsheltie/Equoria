@@ -71,7 +71,7 @@ describe('logger robustness (21R-OBS-3)', () => {
   // ── Defect #2: oversized metadata gets truncated ─────────────────────────────
 
   describe('size cap', () => {
-    const SIZE_CAP_BYTES = 4096;
+    const sizeCapBytes = 4096;
 
     it('truncates the JSON suffix when metadata exceeds the size cap', () => {
       const huge = 'A'.repeat(50_000); // ~50 KB single field
@@ -83,7 +83,7 @@ describe('logger robustness (21R-OBS-3)', () => {
       // The captured line MUST be bounded. Pre-fix it would be ~50 KB.
       // Post-fix: prefix (~30 chars) + cap + truncation marker. Allow
       // generous slack (~200 chars) for the marker + level/timestamp.
-      expect(line.length).toBeLessThanOrEqual(SIZE_CAP_BYTES + 500);
+      expect(line.length).toBeLessThanOrEqual(sizeCapBytes + 500);
       // Truncation must be VISIBLE — silent truncation would mask
       // dropped forensic data with no signal.
       expect(line).toMatch(/\[truncated-\d+-bytes\]/);

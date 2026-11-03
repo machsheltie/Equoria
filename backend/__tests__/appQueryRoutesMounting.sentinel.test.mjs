@@ -84,7 +84,7 @@ const retiredDuplicateRoutes = ['GET /:id/history', 'GET /trainable/:userId'];
 
 // The full Equoria-y8u2j pre-split inventory (parent + sub-routers), now split
 // between the query router and the module router tree.
-const PRE_SPLIT_HORSES_INVENTORY = [
+const preSplitHorsesInventory = [
   'GET /',
   'POST /',
   'POST /batch-update',
@@ -102,7 +102,7 @@ const PRE_SPLIT_HORSES_INVENTORY = [
 describe('application query routers mounting sentinel (Equoria-q4uem.4)', () => {
   it('UNION: horseQueryRoutes + horseRoutes still host every pre-split horses route', () => {
     const union = new Set([...sigsOf(horseQueryRoutes), ...sigsOf(horseRoutes)]);
-    for (const sig of PRE_SPLIT_HORSES_INVENTORY) {
+    for (const sig of preSplitHorsesInventory) {
       expect(union.has(sig)).toBe(true);
     }
   });

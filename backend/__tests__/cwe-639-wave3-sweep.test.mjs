@@ -55,7 +55,7 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
   let groomB;
   const cleanup = createCleanupTracker();
 
-  const NONEXISTENT_ID = 999999999;
+  const nonexistentId = 999999999;
 
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
@@ -182,7 +182,7 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
       expect(JSON.stringify(resCrossUser.body)).not.toContain('not authorized');
 
       const resMissing = await request(app)
-        .get(`/api/v1/horses/${NONEXISTENT_ID}/xp`)
+        .get(`/api/v1/horses/${nonexistentId}/xp`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -207,7 +207,7 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
       expect(JSON.stringify(resCrossUser.body)).not.toContain('not authorized');
 
       const resMissing = await request(app)
-        .post(`/api/v1/horses/${NONEXISTENT_ID}/allocate-stat`)
+        .post(`/api/v1/horses/${nonexistentId}/allocate-stat`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -281,7 +281,7 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
       expect(JSON.stringify(resCrossUser.body)).not.toContain('do not have permission');
 
       const resMissing = await request(app)
-        .delete(`/api/v1/groom-assignments/${NONEXISTENT_ID}`)
+        .delete(`/api/v1/groom-assignments/${nonexistentId}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)

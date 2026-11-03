@@ -19,9 +19,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 // runs from the repo root, the targeted script from backend/.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CHECK = path.resolve(HERE, '..', '..', '..', 'scripts', 'doctrine-checks', 'check-staff-routes-guarded.mjs');
-const MOUNT_CHECK = path.resolve(HERE, '..', '..', '..', 'scripts', 'doctrine-checks', 'check-staff-routes-mount.mjs');
+const mountCheck = path.resolve(HERE, '..', '..', '..', 'scripts', 'doctrine-checks', 'check-staff-routes-mount.mjs');
 const BACKEND = path.resolve(HERE, '..', '..');
-const REAL_ROUTES_FILE = path.resolve(HERE, '..', '..', 'modules', 'staff', 'routes', 'staffRoutes.mjs');
+const realRoutesFile = path.resolve(HERE, '..', '..', 'modules', 'staff', 'routes', 'staffRoutes.mjs');
 
 let scanStaffRoutes;
 let scanRouteImporters;
@@ -31,14 +31,14 @@ let tmp;
 
 // Planted test data, not usage: noCommonJsInMjs scans string literals, so the token is built, not written.
 const CR = ['create', 'Require'].join('');
-const IMPORT_EXPRESS = "import express from 'express';";
-const IMPORT_GUARDS =
+const importExpress = "import express from 'express';";
+const importGuards =
   'import { requireStaffCapability, requireAnyStaffCapability, requireStaffRole } from ' +
   "'../middleware/requireStaffCapability.mjs';";
-const IMPORT_CONTROLLERS = "import { handler, h, done, replyToTicket } from '../controllers/staffController.mjs';";
+const importControllers = "import { handler, h, done, replyToTicket } from '../controllers/staffController.mjs';";
 // Lines 1-4 of every planted file; the first snippet line is line 5. The file
 // ends with `export default router;`.
-const HEADER = [IMPORT_EXPRESS, IMPORT_GUARDS, IMPORT_CONTROLLERS, 'const router = express.Router();'];
+const HEADER = [importExpress, importGuards, importControllers, 'const router = express.Router();'];
 const file = (...lines) => `${[...HEADER, ...lines, 'export default router;'].join('\n')}\n`;
 
 /** Plant files into <tmp>/case-*\/routes and return that routes dir. */
@@ -56,7 +56,7 @@ const lines = failures => failures.map(f => f.line);
 
 beforeAll(async () => {
   ({ scanStaffRoutes, scanRouteImporters, scanFreshProofCapabilityUse } = await import(pathToFileURL(CHECK).href));
-  ({ scanStaffMount } = await import(pathToFileURL(MOUNT_CHECK).href));
+  ({ scanStaffMount } = await import(pathToFileURL(mountCheck).href));
   tmp = mkdtempSync(path.join(tmpdir(), 'equoria-staff-guard-'));
 });
 
@@ -147,8 +147,8 @@ describe('check-staff-routes-guarded: guards', () => {
 
   test('a supported multi-line route on an aliased Router passes', () => {
     const body = [
-      IMPORT_EXPRESS,
-      IMPORT_GUARDS,
+      importExpress,
+      importGuards,
       "import { replyToTicket } from '../controllers/x.mjs';",
       'const desk = express.Router({ mergeParams: true });',
       'desk.post(',
@@ -208,8 +208,8 @@ describe('check-staff-routes-guarded: guards', () => {
     const failures = scan(
       'shadow.mjs',
       [
-        IMPORT_EXPRESS,
-        IMPORT_CONTROLLERS,
+        importExpress,
+        importControllers,
         'const requireStaffCapability = () => (req, res, next) => next();',
         'const router = express.Router();',
         "router.get('/x', requireStaffCapability('roles.manage'), handler);",
@@ -223,8 +223,8 @@ describe('check-staff-routes-guarded: guards', () => {
     const failures = scan(
       'global.mjs',
       [
-        IMPORT_EXPRESS,
-        IMPORT_CONTROLLERS,
+        importExpress,
+        importControllers,
         'globalThis.requireStaffCapability = () => (req, res, next) => next();',
         'const router = express.Router();',
         "router.get('/x', requireStaffCapability('roles.manage'), handler);",
@@ -238,9 +238,9 @@ describe('check-staff-routes-guarded: guards', () => {
     const failures = scan(
       'fake.mjs',
       [
-        IMPORT_EXPRESS,
+        importExpress,
         "import { requireStaffCapability } from '../../elsewhere/middleware/requireStaffCapability.mjs';",
-        IMPORT_CONTROLLERS,
+        importControllers,
         'const router = express.Router();',
         "router.get('/x', requireStaffCapability('roles.manage'), handler);",
         'export default router;',
@@ -290,9 +290,9 @@ describe('check-staff-routes-guarded: registration shapes', () => {
 
   test('a Router under any variable name is checked, including a named Router import', () => {
     const alias = [
-      IMPORT_EXPRESS,
-      IMPORT_GUARDS,
-      IMPORT_CONTROLLERS,
+      importExpress,
+      importGuards,
+      importControllers,
       'const staff = express.Router();',
       "staff.post('/x', handler);",
       "staff.get('/ok', requireStaffCapability('roles.manage'), handler);",
@@ -303,7 +303,7 @@ describe('check-staff-routes-guarded: registration shapes', () => {
     expect(failures[0].reason).toContain('POST /x');
     const named = [
       "import { Router } from 'express';",
-      IMPORT_CONTROLLERS,
+      importControllers,
       'const desk = Router();',
       "desk.get('/x', handler);",
       'export default desk;',
@@ -313,7 +313,7 @@ describe('check-staff-routes-guarded: registration shapes', () => {
 
   test('a second Router, a missing Router and a missing default export fail', () => {
     expect(lines(scan('two.mjs', file('const other = express.Router();')))).toEqual([5]);
-    const bare = [IMPORT_EXPRESS, IMPORT_GUARDS].join('\n');
+    const bare = [importExpress, importGuards].join('\n');
     expect(
       scan('bare.mjs', bare)
         .map(f => f.reason)
@@ -371,7 +371,7 @@ describe('check-staff-routes-guarded: grammar rejects every unrecognized shape',
       "realRouter.search('/x', h);",
       "realRouter.param('id', h);",
     ].join('\n');
-    const dir = plantMany({ 'staffRoutes.mjs': readFileSync(REAL_ROUTES_FILE, 'utf8'), 'extras.mjs': extras });
+    const dir = plantMany({ 'staffRoutes.mjs': readFileSync(realRoutesFile, 'utf8'), 'extras.mjs': extras });
     const failures = scanStaffRoutes(dir);
     expect(new Set(failures.map(f => path.basename(f.file)))).toEqual(new Set(['extras.mjs']));
     expect(lines(failures)).toEqual(expect.arrayContaining([1, 2, 3]));
@@ -552,10 +552,10 @@ describe('check-staff-routes-guarded: time-back and jobs.hold are mounted nowher
 });
 
 describe('check-staff-routes-mount: the staff Router is mounted once, in the pinned shape', () => {
-  const REAL_ROUTERS = readFileSync(path.join(BACKEND, 'app', 'routers.mjs'), 'utf8');
-  const REAL_APP = readFileSync(path.join(BACKEND, 'app.mjs'), 'utf8');
+  const realRouters = readFileSync(path.join(BACKEND, 'app', 'routers.mjs'), 'utf8');
+  const realApp = readFileSync(path.join(BACKEND, 'app.mjs'), 'utf8');
   const MOUNT = "  staffRouter.use('/', staffRoutes);\n";
-  const APP_MOUNT = "app.use('/api/v1/staff', staffRouter);\n";
+  const appMount = "app.use('/api/v1/staff', staffRouter);\n";
   const TERMINAL = '  staffRouter.use(createNotFoundHandler({ spaHtml: null, logger }));\n';
 
   /** Replace `from` with `to` (which must be present) and return [text, line of the edit]. */
@@ -565,14 +565,11 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
     return [text.replace(from, to), text.slice(0, at).split('\n').length];
   };
   // app.mjs's own relative imports, mirrored so the middleware classification can read them.
-  const APP_DEPS = Object.fromEntries(
-    [...REAL_APP.matchAll(/from '\.\/([^']+)'/g)].map(([, rel]) => [
-      rel,
-      readFileSync(path.join(BACKEND, rel), 'utf8'),
-    ]),
+  const appDeps = Object.fromEntries(
+    [...realApp.matchAll(/from '\.\/([^']+)'/g)].map(([, rel]) => [rel, readFileSync(path.join(BACKEND, rel), 'utf8')]),
   );
-  const scanWith = ({ routers = REAL_ROUTERS, app = REAL_APP, files = {} }) =>
-    scanStaffMount(mirror({ ...APP_DEPS, ...files, 'app/routers.mjs': routers, 'app.mjs': app }));
+  const scanWith = ({ routers = realRouters, app = realApp, files = {} }) =>
+    scanStaffMount(mirror({ ...appDeps, ...files, 'app/routers.mjs': routers, 'app.mjs': app }));
   const where = failures => failures.map(f => `${path.basename(f.file)}:${f.line}`);
 
   test('the real routers.mjs and app.mjs pass, in place and mirrored', () => {
@@ -586,7 +583,7 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
     ['staffRoutes leaked to another binding', `${MOUNT}  globalThis.leak = staffRoutes;\n`],
     ['a /staff route on another router', `${MOUNT}  authRouter.post('/staff/x', h);\n`],
   ])('routers.mjs: %s fails on the added line', (_name, to) => {
-    const [routers, line] = edit(REAL_ROUTERS, MOUNT, to);
+    const [routers, line] = edit(realRouters, MOUNT, to);
     expect(where(scanWith({ routers }))).toContain(`routers.mjs:${line + 1}`);
   });
 
@@ -598,7 +595,7 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
     ['an array path', `${TERMINAL}  authRouter.post(['/ok', '/staff/x'], h);\n`],
     ['a regex path', `${TERMINAL}  authRouter.post(/^\\/staff/, h);\n`],
   ])('routers.mjs: %s fails on the added line', (_name, to) => {
-    const [routers, line] = edit(REAL_ROUTERS, TERMINAL, to);
+    const [routers, line] = edit(realRouters, TERMINAL, to);
     expect(where(scanWith({ routers }))).toContain(`routers.mjs:${line + 1}`);
   });
 
@@ -607,7 +604,7 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
     ['the terminal handler given SPA html', TERMINAL, TERMINAL.replace('spaHtml: null', 'spaHtml')],
     ['a different terminal handler', TERMINAL, '  staffRouter.use((req, res) => res.sendStatus(404));\n'],
   ])('routers.mjs: %s fails on the mount line', (_name, from, to) => {
-    const [routers] = edit(REAL_ROUTERS, from, to);
+    const [routers] = edit(realRouters, from, to);
     const [, mountLine] = edit(routers, MOUNT, MOUNT);
     expect(where(scanWith({ routers }))).toContain(`routers.mjs:${mountLine}`);
   });
@@ -630,28 +627,28 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
       "import { staffRoutes } from '../modules/staff/index.mjs';",
     ],
   ])('routers.mjs: %s fails', (_name, from, to) => {
-    const [routers] = edit(REAL_ROUTERS, from, to);
+    const [routers] = edit(realRouters, from, to);
     const failures = scanWith({ routers });
     expect(failures.length).toBeGreaterThan(0);
     expect(failures.every(f => path.basename(f.file) === 'routers.mjs')).toBe(true);
   });
 
   test.each([
-    ['a second staff mount', `${APP_MOUNT}app.use('/api/v1/staff', staffRouter);\n`],
-    ['an app-level route under /api/v1/staff', `${APP_MOUNT}app.post('/api/v1/staff/x', h);\n`],
-    ['staffRouter mounted somewhere else too', `${APP_MOUNT}app.use('/api/v1/other', staffRouter);\n`],
-    ['an app-level route as an expression-free template', `${APP_MOUNT}app.post(\`/api/v1/staff/x\`, h);\n`],
-    ['an app-level route in another case', `${APP_MOUNT}app.post('/API/V1/Staff/x', h);\n`],
-    ['an app-level array path', `${APP_MOUNT}app.use(['/api/v1/staff'], h);\n`],
+    ['a second staff mount', `${appMount}app.use('/api/v1/staff', staffRouter);\n`],
+    ['an app-level route under /api/v1/staff', `${appMount}app.post('/api/v1/staff/x', h);\n`],
+    ['staffRouter mounted somewhere else too', `${appMount}app.use('/api/v1/other', staffRouter);\n`],
+    ['an app-level route as an expression-free template', `${appMount}app.post(\`/api/v1/staff/x\`, h);\n`],
+    ['an app-level route in another case', `${appMount}app.post('/API/V1/Staff/x', h);\n`],
+    ['an app-level array path', `${appMount}app.use(['/api/v1/staff'], h);\n`],
   ])('app.mjs: %s fails on the added line', (_name, to) => {
-    const [app, line] = edit(REAL_APP, APP_MOUNT, to);
+    const [app, line] = edit(realApp, appMount, to);
     expect(where(scanWith({ app }))).toContain(`app.mjs:${line + 1}`);
   });
 
   // Inserted directly ABOVE the staff mount, so the new line takes its line number.
-  const AUTH_MOUNT = "app.use('/api/v1', authRouter);\n";
+  const authMount = "app.use('/api/v1', authRouter);\n";
   test.each([
-    ['authRouter moved above the staff mount', AUTH_MOUNT],
+    ['authRouter moved above the staff mount', authMount],
     ["a new app.use('/api', someRouter)", "app.use('/api', someRouter);\n"],
     ['a pathless router use', 'app.use(sneakyRouter);\n'],
     ["an app.use('/') of an unclassifiable value", "app.use('/', mystery);\n"],
@@ -659,15 +656,15 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
     ['a verb handler on a covering path', "app.all('/api/*', h);\n"],
     ['app handed to another helper', 'registerExtras(app);\n'],
   ])('app.mjs ordering: %s fails', (_name, line) => {
-    const withoutAuth = line === AUTH_MOUNT ? REAL_APP.replace(AUTH_MOUNT, '') : REAL_APP;
-    const [app, at] = edit(withoutAuth, APP_MOUNT, `${line}${APP_MOUNT}`);
+    const withoutAuth = line === authMount ? realApp.replace(authMount, '') : realApp;
+    const [app, at] = edit(withoutAuth, appMount, `${line}${appMount}`);
     expect(where(scanWith({ app }))).toContain(`app.mjs:${at}`);
   });
 
   // Equoria-fvdru: a Router imported from a middleware directory under a name
   // without 'route' in it is not middleware. The import goes first, the use
   // directly above the staff mount.
-  const ROUTES_IMPORT = "import r from '../modules/x/routes/xRoutes.mjs';\n";
+  const routesImport = "import r from '../modules/x/routes/xRoutes.mjs';\n";
   test.each([
     [
       'a Router built in utils',
@@ -684,7 +681,7 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
       'a middleware module passing an imported router on',
       "import metrics from './utils/metrics.mjs';",
       "app.use('/', metrics);",
-      { 'utils/metrics.mjs': `${ROUTES_IMPORT}export default r;\n` },
+      { 'utils/metrics.mjs': `${routesImport}export default r;\n` },
     ],
     [
       'a Router factory taken by reference',
@@ -698,11 +695,11 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
     ['a middleware import that does not resolve', "import ghost from './middleware/ghost.mjs';", 'app.use(ghost);'],
   ])('app.mjs ordering: %s above the staff mount fails', (_name, importLine, useLine, files = {}) => {
     const [withImport] = edit(
-      REAL_APP,
+      realApp,
       "import express from 'express';\n",
       `import express from 'express';\n${importLine}\n`,
     );
-    const [app, at] = edit(withImport, APP_MOUNT, `${useLine}\n${APP_MOUNT}`);
+    const [app, at] = edit(withImport, appMount, `${useLine}\n${appMount}`);
     expect(where(scanWith({ app, files }))).toContain(`app.mjs:${at}`);
   });
 
@@ -714,28 +711,28 @@ describe('check-staff-routes-mount: the staff Router is mounted once, in the pin
     ['publicRouter aliased', 'const pr = publicRouter;\n'],
     ['publicRouter mounted a second time', "app.use('/', publicRouter);\n"],
   ])('app.mjs: %s fails on the added line', (_name, line) => {
-    const [app, at] = edit(REAL_APP, APP_MOUNT, `${line}${APP_MOUNT}`);
+    const [app, at] = edit(realApp, appMount, `${line}${appMount}`);
     expect(where(scanWith({ app }))).toContain(`app.mjs:${at}`);
   });
 
   test('app.mjs ordering: covering middleware above the staff mount stays allowed', () => {
-    const [app] = edit(REAL_APP, APP_MOUNT, `app.use(express.json());\napp.use('/api', apiLimiter);\n${APP_MOUNT}`);
+    const [app] = edit(realApp, appMount, `app.use(express.json());\napp.use('/api', apiLimiter);\n${appMount}`);
     expect(scanWith({ app })).toEqual([]);
   });
 
   // publicRouter is mounted at '/' before the staff Router, so its own paths are pinned.
-  const PUBLIC_ANCHOR = "  publicRouter.get('/health', healthHandler);\n";
+  const publicAnchor = "  publicRouter.get('/health', healthHandler);\n";
   test.each([
     ['a covering /api path', "  publicRouter.use('/api', h);\n"],
     ['a path under /api/v1/staff', "  publicRouter.get('/api/v1/staff/x', h);\n"],
     ['a pathless use', '  publicRouter.use(h);\n'],
   ])('routers.mjs: publicRouter with %s fails on the added line', (_name, to) => {
-    const [routers, line] = edit(REAL_ROUTERS, PUBLIC_ANCHOR, `${PUBLIC_ANCHOR}${to}`);
+    const [routers, line] = edit(realRouters, publicAnchor, `${publicAnchor}${to}`);
     expect(where(scanWith({ routers }))).toContain(`routers.mjs:${line + 1}`);
   });
 
   test('app.mjs: mounting at another path fails', () => {
-    const [app] = edit(REAL_APP, APP_MOUNT, "app.use('/api/v1/stewards', staffRouter);\n");
+    const [app] = edit(realApp, appMount, "app.use('/api/v1/stewards', staffRouter);\n");
     expect(where(scanWith({ app })).some(w => w.startsWith('app.mjs:'))).toBe(true);
   });
 });

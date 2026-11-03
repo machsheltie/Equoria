@@ -30,7 +30,7 @@ import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 // Synthetic UUID — never created in the real DB; all refreshToken.count queries
 // for this userId will return 0, triggering sessionUpgradeRequired paths.
-const GHOST_USER_ID = '00000000-0000-0000-0000-000000000099';
+const ghostUserId = '00000000-0000-0000-0000-000000000099';
 
 function signRefreshToken(payload) {
   return jwt.sign(
@@ -132,7 +132,7 @@ describe('cleanupExpiredTokens()', () => {
 
 describe('validateRefreshToken() — DB paths', () => {
   it('returns isValid=false, error="Invalid token type" for a correctly-signed access JWT (type check, line 245)', async () => {
-    const token = signRefreshToken({ userId: GHOST_USER_ID, type: 'access' });
+    const token = signRefreshToken({ userId: ghostUserId, type: 'access' });
     const result = await validateRefreshToken(token);
     expect(result.isValid).toBe(false);
     expect(result.error).toBe('Invalid token type');
@@ -140,7 +140,7 @@ describe('validateRefreshToken() — DB paths', () => {
   });
 
   it('returns sessionUpgradeRequired when refresh JWT is not in DB (user has 0 tokens, lines 258-279)', async () => {
-    const token = signRefreshToken({ userId: GHOST_USER_ID, type: 'refresh' });
+    const token = signRefreshToken({ userId: ghostUserId, type: 'refresh' });
     const result = await validateRefreshToken(token);
     expect(result.isValid).toBe(false);
     expect(result.error).toBe('sessionUpgradeRequired');
@@ -169,8 +169,8 @@ describe('detectTokenReuse()', () => {
   });
 
   it('returns isReuse=false, reason="sessionUpgradeRequired" for valid refresh JWT with no DB tokens (lines 334-341)', async () => {
-    // GHOST_USER_ID has 0 tokens → validateRefreshToken returns sessionUpgradeRequired
-    const token = signRefreshToken({ userId: GHOST_USER_ID, type: 'refresh' });
+    // ghostUserId has 0 tokens → validateRefreshToken returns sessionUpgradeRequired
+    const token = signRefreshToken({ userId: ghostUserId, type: 'refresh' });
     const result = await detectTokenReuse(token);
     expect(result.isReuse).toBe(false);
     expect(result.reason).toBe('sessionUpgradeRequired');
@@ -181,7 +181,7 @@ describe('detectTokenReuse()', () => {
   it('returns isReuse=true, reason="Token not found" for access-type JWT signed with refresh secret (not SESSION_UPGRADE path)', async () => {
     // validateRefreshToken returns "Invalid token type" — not sessionUpgradeRequired
     // so detectTokenReuse continues, hashes the token, DB returns null → "Token not found"
-    const token = signRefreshToken({ userId: GHOST_USER_ID, type: 'access' });
+    const token = signRefreshToken({ userId: ghostUserId, type: 'access' });
     const result = await detectTokenReuse(token);
     expect(result.isReuse).toBe(true);
     expect(result.reason).toBe('Token not found');
@@ -416,9 +416,9 @@ describe('rotateRefreshToken + validateRefreshToken happy-path + detectTokenReus
   });
 
   it('rotateRefreshToken: !validation.isValid path — success=false, familyInvalidated=false (lines 431-439)', async () => {
-    // GHOST_USER_ID: detectTokenReuse → isReuse=false (SESSION_UPGRADE), then
+    // ghostUserId: detectTokenReuse → isReuse=false (SESSION_UPGRADE), then
     // validateRefreshToken → isValid=false → !validation.isValid branch fires
-    const token = signRefreshToken({ userId: GHOST_USER_ID, type: 'refresh' });
+    const token = signRefreshToken({ userId: ghostUserId, type: 'refresh' });
     const result = await rotateRefreshToken(token);
     expect(result.success).toBe(false);
     expect(result.familyInvalidated).toBe(false);

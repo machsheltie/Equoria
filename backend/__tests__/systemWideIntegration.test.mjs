@@ -127,7 +127,7 @@ describe('System-Wide Data Integrity', () => {
   // path (the paid Horse Trader purchase), so it also proves the wallet debit
   // that makes acquisition legitimate.
   test('Horse acquisition increments owner horse count, sets ownership FK, and debits the wallet', async () => {
-    const STORE_PRICE = 1000; // mirrors marketplaceController.STORE_PRICE
+    const storePrice = 1000; // mirrors marketplaceController.storePrice
     const initialCount = await prisma.horse.count({ where: { userId: testUser.id } });
     const before = await prisma.user.findUnique({
       where: { id: testUser.id },
@@ -155,7 +155,7 @@ describe('System-Wide Data Integrity', () => {
       where: { id: testUser.id },
       select: { money: true },
     });
-    expect(Number(after.money)).toBe(Number(before.money) - STORE_PRICE);
+    expect(Number(after.money)).toBe(Number(before.money) - storePrice);
 
     // Cleanup
     await prisma.horse.deleteMany({ where: { id: newHorse.id } });

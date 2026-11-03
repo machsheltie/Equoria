@@ -44,13 +44,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = path.resolve(HERE, '..'); // .../backend
-const TARGET_DIRS = [
-  path.join(BACKEND_ROOT, '__tests__'),
-  path.join(BACKEND_ROOT, 'tests'),
-  path.join(BACKEND_ROOT, 'modules'),
+const backendRoot = path.resolve(HERE, '..'); // .../backend
+const targetDirs = [
+  path.join(backendRoot, '__tests__'),
+  path.join(backendRoot, 'tests'),
+  path.join(backendRoot, 'modules'),
 ];
-const PLANT_DIR = path.join(BACKEND_ROOT, '__tests__', '_deep_prisma_import_sentinel_scratch');
+const plantDir = path.join(backendRoot, '__tests__', '_deep_prisma_import_sentinel_scratch');
 
 // Assembled via array-join so neither the self-scan nor the no-useless-concat
 // lint rule fires on this line. Matches both forms the regression could take:
@@ -115,7 +115,7 @@ function findMatches(dirs) {
 
 afterEach(() => {
   try {
-    fs.rmSync(PLANT_DIR, { recursive: true, force: true });
+    fs.rmSync(plantDir, { recursive: true, force: true });
   } catch {
     // best-effort cleanup; surfacing rm errors would be noise
   }
@@ -123,7 +123,7 @@ afterEach(() => {
 
 afterAll(() => {
   try {
-    fs.rmSync(PLANT_DIR, { recursive: true, force: true });
+    fs.rmSync(plantDir, { recursive: true, force: true });
   } catch {
     // best-effort cleanup
   }
@@ -131,7 +131,7 @@ afterAll(() => {
 
 describe('no deep @prisma/client node_modules import in backend test tree (Equoria-fefh2.44)', () => {
   it('baseline: zero deep-import matches across __tests__, tests, and modules', () => {
-    const hits = findMatches(TARGET_DIRS);
+    const hits = findMatches(targetDirs);
     // Defensively exclude THIS sentinel's own path in case the walker
     // re-enters its scratch dir on a future refactor.
     const filtered = hits.filter(h => !h.includes('noDeepPrismaClientImportInTests.sentinel.test.mjs'));
@@ -139,24 +139,24 @@ describe('no deep @prisma/client node_modules import in backend test tree (Equor
   });
 
   it('SENTINEL: scan fires when a fresh test file imports @prisma/client by deep node_modules path', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'planted.test.mjs');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'planted.test.mjs');
     // Reconstruct the exact regression line in the PLANTED file (so the
     // planted file contains the literal forbidden path) while THIS source
     // never does. The literal generated-client path `@prisma/client/index.js`
     // IS a .js file; this string is written into a scratch file, never imported.
-    const PLANTED_LINE = `const { PrismaClient } = await import('../../packages/${FORBIDDEN}/index.js');`; // doctrine-allow: stale-js-extension
+    const plantedLine = `const { PrismaClient } = await import('../../packages/${FORBIDDEN}/index.js');`; // doctrine-allow: stale-js-extension
     fs.writeFileSync(
       planted,
       [
         '// PLANTED by noDeepPrismaClientImportInTests.sentinel.test.mjs — Equoria-fefh2.44.',
         '// Reintroducing the deep generated-client import is the exact flake regression.',
-        PLANTED_LINE,
+        plantedLine,
         '',
       ].join('\n'),
     );
 
-    const hits = findMatches(TARGET_DIRS);
+    const hits = findMatches(targetDirs);
     const plantedHit = hits.find(h => h.includes('planted.test.mjs'));
     expect(plantedHit).toBeDefined();
   });

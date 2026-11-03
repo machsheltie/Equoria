@@ -25,9 +25,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = path.resolve(HERE, '..'); // .../backend
-const TARGET_DIRS = [path.join(BACKEND_ROOT, 'tests'), path.join(BACKEND_ROOT, '__tests__')];
-const PLANT_DIR = path.join(BACKEND_ROOT, '__tests__', '_console_log_sentinel_scratch');
+const backendRoot = path.resolve(HERE, '..'); // .../backend
+const targetDirs = [path.join(backendRoot, 'tests'), path.join(backendRoot, '__tests__')];
+const plantDir = path.join(backendRoot, '__tests__', '_console_log_sentinel_scratch');
 
 // Build the trigger string at runtime so THIS file's own source does not
 // match the scan against backend/__tests__/. Assembled via array-join (not
@@ -97,7 +97,7 @@ function findMatches(dirs) {
 
 afterEach(() => {
   try {
-    fs.rmSync(PLANT_DIR, { recursive: true, force: true });
+    fs.rmSync(plantDir, { recursive: true, force: true });
   } catch {
     // best-effort cleanup; surfacing rm errors would be noise
   }
@@ -105,7 +105,7 @@ afterEach(() => {
 
 afterAll(() => {
   try {
-    fs.rmSync(PLANT_DIR, { recursive: true, force: true });
+    fs.rmSync(plantDir, { recursive: true, force: true });
   } catch {
     // best-effort cleanup
   }
@@ -113,7 +113,7 @@ afterAll(() => {
 
 describe('no bare-console trigger in backend/tests + backend/__tests__ (Equoria-326tg)', () => {
   it('baseline: zero residual matches in either tests directory', () => {
-    const hits = findMatches(TARGET_DIRS);
+    const hits = findMatches(targetDirs);
     // Exclude THIS sentinel file's own path defensively, in case the
     // walker re-enters its own scratch dir on a future refactor.
     const filtered = hits.filter(h => !h.includes('noConsoleLogInTestsDirs.sentinel.test.mjs'));
@@ -121,22 +121,22 @@ describe('no bare-console trigger in backend/tests + backend/__tests__ (Equoria-
   });
 
   it('SENTINEL: scan fires when a fresh file under backend/__tests__ contains the literal pattern', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'planted.test.mjs');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'planted.test.mjs');
     // Build the planted source via concatenation so the PLANTED file
     // contains the literal trigger but THIS sentinel source does not.
-    const PLANTED_LINE = `${TRIGGER}('planted-by-326tg-sentinel');`;
+    const plantedLine = `${TRIGGER}('planted-by-326tg-sentinel');`;
     fs.writeFileSync(
       planted,
       [
         '// PLANTED by noConsoleLogInTestsDirs.sentinel.test.mjs — Equoria-326tg.',
         '// If this file ever lands on master you have a bigger problem than this test.',
-        PLANTED_LINE,
+        plantedLine,
         '',
       ].join('\n'),
     );
 
-    const hits = findMatches(TARGET_DIRS);
+    const hits = findMatches(targetDirs);
     const plantedHit = hits.find(h => h.includes('planted.test.mjs'));
     expect(plantedHit).toBeDefined();
   });

@@ -33,14 +33,14 @@ import { cleanupTestHorses, testHorseData } from './helpers/createTestHorse.mjs'
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const PREFIX = `TestFixture-4urzd-${randomBytes(4).toString('hex')}`;
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 
 const EVENINGS = [
   ['summer, 20:30 EDT', new Date('2026-10-17T00:30:00.000Z')],
   ['winter, 22:30 EST', new Date('2026-12-12T03:30:00.000Z')],
 ];
 
-const REAL_EXCEPT_DATE = [
+const realExceptDate = [
   'hrtime',
   'nextTick',
   'performance',
@@ -59,7 +59,7 @@ const REAL_EXCEPT_DATE = [
 
 /** Run `fn` with the wall clock (Date only) frozen at `instant`. */
 async function at(instant, fn) {
-  jest.useFakeTimers({ now: instant, doNotFake: REAL_EXCEPT_DATE });
+  jest.useFakeTimers({ now: instant, doNotFake: realExceptDate });
   try {
     return await fn();
   } finally {
@@ -121,7 +121,7 @@ describe.each(EVENINGS)('the Eastern evening window (%s) — Equoria-4urzd', (_l
     const eastern = await makeHorse({ dateOfBirth: birthDateForAge(3, now) });
     // The UTC-date pattern on purpose: it proves the instant is in the window.
     // doctrine-allow: utc-date-only-fixture
-    const utcDated = await makeHorse({ dateOfBirth: new Date(now.getTime() - 21 * DAY_MS) });
+    const utcDated = await makeHorse({ dateOfBirth: new Date(now.getTime() - 21 * dayMs) });
 
     const stored = await loadHorse(eastern.id);
     const storedUtc = await loadHorse(utcDated.id);

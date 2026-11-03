@@ -42,9 +42,9 @@ import { reapStaleExecutingShows, staleClaimThresholdMs } from '../services/jobs
 import { releaseShowEscrow } from './helpers/releaseShowEscrow.mjs';
 import { testHorseData } from './helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-c7mx0-reaper';
+const fixturePrefix = 'TestFixture-c7mx0-reaper';
 const PRIZE = 1000; // divisible by the 50/30/20 slots — no floor crumbs
-const ENTRY_FEE = PRIZE / 10; // the prize is always 10x the entry fee (owner ruling 2026-10-23)
+const entryFee = PRIZE / 10; // the prize is always 10x the entry fee (owner ruling 2026-10-23)
 
 let creator;
 let entrants;
@@ -78,8 +78,8 @@ async function makeUser(money, suffix) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
+      username: `${fixturePrefix}-${suffix}-${tag}`,
+      email: `${fixturePrefix}-${suffix}-${tag}@example.com`,
       password: pw,
       firstName: 'Reaper',
       lastName: suffix,
@@ -94,7 +94,7 @@ async function makeHorse(ownerId) {
   const h = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
+      name: `${fixturePrefix}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: competitionDateOfBirth(),
       age: 7,
@@ -138,9 +138,9 @@ async function buildFundedShow() {
     {
       user: { id: creator.id },
       body: {
-        name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+        name: `${fixturePrefix}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
-        entryFee: ENTRY_FEE,
+        entryFee,
         level: 1,
       },
     },
@@ -278,7 +278,7 @@ describe('[Equoria-c7mx0] show-execution reaper', () => {
     const stranded = await prisma.show.findUnique({ where: { id: showId } });
     expect(stranded.status).toBe('executing');
     expect(stranded.prizeEscrow).toBe(PRIZE);
-    expect(stranded.feeEscrow).toBe(ENTRY_FEE * entrants.length);
+    expect(stranded.feeEscrow).toBe(entryFee * entrants.length);
     expect(await prisma.competitionResult.count({ where: { showId } })).toBe(0);
 
     // ── Reap ──────────────────────────────────────────────────────────────
@@ -313,10 +313,10 @@ describe('[Equoria-c7mx0] show-execution reaper', () => {
     // each entrant's wallet moved by (staged prize - entry fee).
     for (let i = 0; i < entrants.length; i++) {
       expect(await moneyOf(entrants[i].id)).toBe(
-        entrantMoneyBefore[i] - ENTRY_FEE + expectedPrizeByHorseId[entrantHorses[i].id],
+        entrantMoneyBefore[i] - entryFee + expectedPrizeByHorseId[entrantHorses[i].id],
       );
     }
-    expect(await moneyOf(creator.id)).toBe(creatorBefore - PRIZE + ENTRY_FEE * entrants.length);
+    expect(await moneyOf(creator.id)).toBe(creatorBefore - PRIZE + entryFee * entrants.length);
     expect(await totalMoney(allUserIds)).toBe(conservationBefore);
 
     // Per-show escrow columns drained to zero — the frozen money is free.
@@ -427,12 +427,12 @@ describe('[Equoria-c7mx0] show-execution reaper', () => {
     expect(untouched.status).toBe('executing');
     expect(untouched.claimedAt).not.toBeNull();
     expect(untouched.prizeEscrow).toBe(PRIZE);
-    expect(untouched.feeEscrow).toBe(ENTRY_FEE * entrants.length);
+    expect(untouched.feeEscrow).toBe(entryFee * entrants.length);
     expect(await prisma.competitionResult.count({ where: { showId } })).toBe(0);
     // The suite-owned wallet total is down by exactly prize + fees: that
     // money sits (correctly untouched) in the show's escrow columns while
     // the claim is fresh — the reaper moved nothing.
-    expect(await totalMoney(allUserIds)).toBe(conservationBefore - PRIZE - ENTRY_FEE * entrants.length);
+    expect(await totalMoney(allUserIds)).toBe(conservationBefore - PRIZE - entryFee * entrants.length);
   }, 60000);
   // Placed LAST deliberately: this case drives a real reap to completion,
   // which leaves the shared fixture horses in a post-competition cooldown.

@@ -50,8 +50,8 @@ export const options = {
   },
 };
 
-const API_URL_1 = __ENV.API_URL || 'http://localhost:3000';
-const API_URL_2 = __ENV.API_URL_2 || 'http://localhost:3001';
+const apiUrl1 = __ENV.API_URL || 'http://localhost:3000';
+const apiUrl2 = __ENV.API_URL_2 || 'http://localhost:3001';
 
 /**
  * Test Setup - Create test user and verify Redis connectivity
@@ -62,7 +62,7 @@ export function setup() {
 
   // Register test user on server 1
   const registerRes = http.post(
-    `${API_URL_1}/api/v1/auth/register`,
+    `${apiUrl1}/api/v1/auth/register`,
     JSON.stringify({
       email,
       username: `distributed_${Date.now()}`,
@@ -87,7 +87,7 @@ export function setup() {
   // re-login per isolate (on BOTH servers) with email+password.
   const setupJar = http.cookieJar();
   const loginRes = http.post(
-    `${API_URL_1}/api/v1/auth/login`,
+    `${apiUrl1}/api/v1/auth/login`,
     JSON.stringify({
       email,
       password,
@@ -102,11 +102,11 @@ export function setup() {
   // accessToken cookie on login; logging in on server 2 with the same jar adds
   // a localhost:3001-scoped cookie that authenticates this profile GET. This
   // confirms both instances accept the shared credentials / Redis session.
-  http.post(`${API_URL_2}/api/v1/auth/login`, JSON.stringify({ email, password }), {
+  http.post(`${apiUrl2}/api/v1/auth/login`, JSON.stringify({ email, password }), {
     headers: { 'Content-Type': 'application/json' },
     jar: setupJar,
   });
-  const verifyRes = http.get(`${API_URL_2}/api/v1/auth/profile`, {
+  const verifyRes = http.get(`${apiUrl2}/api/v1/auth/profile`, {
     jar: setupJar,
   });
 
@@ -133,11 +133,11 @@ export default function (data) {
   // server's accessToken cookie per request — the cookie-auth equivalent of the
   // old "same Bearer token on both servers". No Authorization header anywhere.
   const jar = http.cookieJar();
-  http.post(`${API_URL_1}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
+  http.post(`${apiUrl1}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
     headers: { 'Content-Type': 'application/json' },
     jar,
   });
-  http.post(`${API_URL_2}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
+  http.post(`${apiUrl2}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
     headers: { 'Content-Type': 'application/json' },
     jar,
   });
@@ -156,7 +156,7 @@ export default function (data) {
 
       for (let i = 0; i < 10; i++) {
         const startTime = new Date();
-        const res = http.get(`${API_URL_1}/api/v1/auth/profile`, params);
+        const res = http.get(`${apiUrl1}/api/v1/auth/profile`, params);
         const duration = new Date() - startTime;
 
         redisLatency.add(duration);
@@ -188,7 +188,7 @@ export default function (data) {
 
       for (let i = 0; i < 5; i++) {
         const startTime = new Date();
-        const res = http.get(`${API_URL_2}/api/v1/auth/profile`, params);
+        const res = http.get(`${apiUrl2}/api/v1/auth/profile`, params);
         const duration = new Date() - startTime;
 
         redisLatency.add(duration);
@@ -222,7 +222,7 @@ export default function (data) {
 
     // Test 3: Alternating requests between servers
     group('Cross-Server Rate Limit Consistency', () => {
-      const servers = [API_URL_1, API_URL_2];
+      const servers = [apiUrl1, apiUrl2];
       let _totalRequests = 0;
       let rateLimitHits = 0;
 
@@ -236,7 +236,7 @@ export default function (data) {
           rateLimitHits++;
           totalRateLimitHits.add(1);
 
-          if (serverUrl === API_URL_1) {
+          if (serverUrl === apiUrl1) {
             rateLimitHitsServer1.add(1);
           } else {
             rateLimitHitsServer2.add(1);
@@ -262,7 +262,7 @@ export default function (data) {
       // Trigger rate limit
       let hitLimit = false;
       for (let i = 0; i < 15; i++) {
-        const res = http.get(`${API_URL_1}/api/v1/auth/profile`, params);
+        const res = http.get(`${apiUrl1}/api/v1/auth/profile`, params);
         if (res.status === 429) {
           hitLimit = true;
           break;
@@ -274,7 +274,7 @@ export default function (data) {
         sleep(2);
 
         // Verify rate limit is still enforced (window hasn't expired yet)
-        const verifyRes = http.get(`${API_URL_1}/api/v1/auth/profile`, params);
+        const verifyRes = http.get(`${apiUrl1}/api/v1/auth/profile`, params);
         check(verifyRes, {
           'rate limit persists within window': r => r.status === 429,
         });
@@ -285,7 +285,7 @@ export default function (data) {
     group('Redis Availability Check', () => {
       // Make request and measure Redis response time
       const startTime = new Date();
-      const res = http.get(`${API_URL_1}/health`, {
+      const res = http.get(`${apiUrl1}/health`, {
         headers: { 'Content-Type': 'application/json' },
       });
       const duration = new Date() - startTime;

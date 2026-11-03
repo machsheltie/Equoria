@@ -29,8 +29,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-no-shadcn-semantic-colors.mjs');
+const repoRoot = path.resolve(HERE, '..', '..');
+const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-shadcn-semantic-colors.mjs');
 
 let scratchRoot;
 
@@ -53,7 +53,7 @@ function makeFixture(files) {
 }
 
 function runCheck(args = []) {
-  return spawnSync('node', [CHECK, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [CHECK, ...args], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 describe('check-no-shadcn-semantic-colors.mjs (Equoria-z7t3l)', () => {

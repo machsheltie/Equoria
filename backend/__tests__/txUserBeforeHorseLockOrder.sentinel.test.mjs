@@ -39,13 +39,13 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = resolve(__dirname, '..');
+const backendRoot = resolve(__dirname, '..');
 
-const PRISMA_WRITE = '(?:update|updateMany|create|createMany|delete|deleteMany|upsert)';
+const prismaWrite = '(?:update|updateMany|create|createMany|delete|deleteMany|upsert)';
 
 /** A write that takes an exclusive row lock on `User`. */
-const USER_WRITE = new RegExp(
-  String.raw`\.user\.${PRISMA_WRITE}\s*\(` +
+const userWrite = new RegExp(
+  String.raw`\.user\.${prismaWrite}\s*\(` +
     // debitMoneyOrThrow's first statement is `client.user.updateMany(...)`.
     String.raw`|\bdebitMoneyOrThrow\s*\(` +
     // transferUserMoneyOrThrow's writes are `tx.user.updateMany(...)` on both
@@ -61,8 +61,8 @@ const USER_WRITE = new RegExp(
 );
 
 /** A write that takes an exclusive row lock on `Horse`. */
-const HORSE_WRITE = new RegExp(
-  String.raw`\.horse\.${PRISMA_WRITE}\s*\(` +
+const horseWrite = new RegExp(
+  String.raw`\.horse\.${prismaWrite}\s*\(` +
     // Raw statements bypass the Prisma model API but take the same lock.
     String.raw`|UPDATE\s+"horses"` +
     // inventoryController's guarded `tx.horse.updateMany` helper.
@@ -115,8 +115,8 @@ function lineOf(source, index) {
 export function analyzeUserBeforeHorse(source) {
   return transactionBlocks(source)
     .map(block => {
-      const userAt = firstIndexOf(USER_WRITE, block.body);
-      const horseAt = firstIndexOf(HORSE_WRITE, block.body);
+      const userAt = firstIndexOf(userWrite, block.body);
+      const horseAt = firstIndexOf(horseWrite, block.body);
       if (userAt === -1 || horseAt === -1) {
         return null;
       }
@@ -128,7 +128,7 @@ export function analyzeUserBeforeHorse(source) {
     .filter(Boolean);
 }
 
-const GUARDED_FILES = [
+const guardedFiles = [
   'modules/marketplace/controllers/marketplaceController.mjs',
   'modules/economy/vet/controllers/vetController.mjs',
   'modules/economy/farrier/controllers/farrierController.mjs',
@@ -150,8 +150,8 @@ const GUARDED_FILES = [
 ];
 
 describe('SENTINEL: User rows are locked before Horse rows inside a transaction', () => {
-  it.each(GUARDED_FILES)('%s writes the User row before the Horse row', relativePath => {
-    const source = readFileSync(resolve(BACKEND_ROOT, relativePath), 'utf8');
+  it.each(guardedFiles)('%s writes the User row before the Horse row', relativePath => {
+    const source = readFileSync(resolve(backendRoot, relativePath), 'utf8');
     const mixedBlocks = analyzeUserBeforeHorse(source);
 
     // Non-vacuity: each guarded file must still HAVE a transaction that writes

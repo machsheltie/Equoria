@@ -43,7 +43,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { debitMoneyOrThrow, InsufficientFundsError, systemAccountBurn } from '../modules/economy/index.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-kl16c-conserv';
+const fixturePrefix = 'TestFixture-kl16c-conserv';
 const createdUserIds = [];
 
 async function makeUser(money) {
@@ -51,8 +51,8 @@ async function makeUser(money) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@example.com`,
       password: 'irrelevant-hash',
       firstName: 'Cons',
       lastName: 'Kl16c',
@@ -142,7 +142,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
     // the money vanished untraceably. A regression that dropped the internal
     // pairing from debitMoneyOrThrow would make real sinks look like this.
     const user = await makeUser(1000);
-    const PLANTED_CATEGORY = `kl16c_planted_unpaired_${randomBytes(4).toString('hex')}`;
+    const plantedCategory = `kl16c_planted_unpaired_${randomBytes(4).toString('hex')}`;
 
     const userBefore = await userMoney(user.id);
 
@@ -161,7 +161,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
     expect(userBefore - userAfter).toBe(250);
     // ...but NO counterparty row exists for it under the planted category...
     const planted = await prisma.userTransaction.findMany({
-      where: { userId: user.id, category: PLANTED_CATEGORY },
+      where: { userId: user.id, category: plantedCategory },
     });
     expect(planted).toHaveLength(0);
     // ...and this user has NO burn-credit row AT ALL, in contrast to the
@@ -200,7 +200,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
 
   it('SENTINEL: parent-tx rollback rolls back BOTH the user debit and the burn credit', async () => {
     const user = await makeUser(1000);
-    const ROLLBACK_CATEGORY = `kl16c_rollback_${randomBytes(4).toString('hex')}`;
+    const rollbackCategory = `kl16c_rollback_${randomBytes(4).toString('hex')}`;
 
     await expect(
       prisma.$transaction(async tx => {
@@ -208,7 +208,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
           userId: user.id,
           amount: 300,
           systemAccount: systemAccountBurn,
-          category: ROLLBACK_CATEGORY,
+          category: rollbackCategory,
           description: 'rollback sentinel — should not persist',
         });
         // Force rollback AFTER the paired debit+credit.
@@ -222,14 +222,14 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
     // No paired ledger row survived the rollback (counterparty row gone too) —
     // proving the burn credit rolled back together with the user debit.
     const ledger = await prisma.userTransaction.findMany({
-      where: { userId: user.id, category: ROLLBACK_CATEGORY },
+      where: { userId: user.id, category: rollbackCategory },
     });
     expect(ledger).toHaveLength(0);
   });
 
   it('throws InsufficientFundsError without crediting burn (no half-move on a failed debit)', async () => {
     const user = await makeUser(50);
-    const FAIL_CATEGORY = `kl16c_insufficient_${randomBytes(4).toString('hex')}`;
+    const failCategory = `kl16c_insufficient_${randomBytes(4).toString('hex')}`;
 
     await expect(
       prisma.$transaction(async tx =>
@@ -237,7 +237,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
           userId: user.id,
           amount: 100, // more than the 50 balance
           systemAccount: systemAccountBurn,
-          category: FAIL_CATEGORY,
+          category: failCategory,
         }),
       ),
     ).rejects.toBeInstanceOf(InsufficientFundsError);
@@ -245,7 +245,7 @@ describe('debitMoneyOrThrow money-conservation sentinel (Equoria-kl16c)', () => 
     // No credit row was written — the debit predicate failed BEFORE the
     // credit, so there is no orphan counterparty row tied to this user.
     const ledger = await prisma.userTransaction.findMany({
-      where: { userId: user.id, category: FAIL_CATEGORY },
+      where: { userId: user.id, category: failCategory },
     });
     expect(ledger).toHaveLength(0);
     expect(await userMoney(user.id)).toBe(50);

@@ -53,10 +53,10 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 // and username unique per run; the username stays within the 3-30 char
 // /^[A-Za-z0-9_]+$/ register-validator charset (underscore allowed, no hyphens).
 const SUFFIX = randomBytes(6).toString('hex');
-const REGISTER_EMAIL = `auth-simple-register-${SUFFIX}@example.com`;
-const LOGIN_EMAIL = `auth-simple-login-${SUFFIX}@example.com`;
-const REGISTER_USERNAME = `authsimpletest_${SUFFIX}`;
-const LOGIN_USERNAME = `authsimplelogin_${SUFFIX}`;
+const registerEmail = `auth-simple-register-${SUFFIX}@example.com`;
+const loginEmail = `auth-simple-login-${SUFFIX}@example.com`;
+const registerUsername = `authsimpletest_${SUFFIX}`;
+const loginUsername = `authsimplelogin_${SUFFIX}`;
 
 // Create a simple test app without all the middleware
 const createTestApp = () => {
@@ -92,7 +92,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
   });
 
   // Own test emails — keep scope narrow to avoid deleting users from parallel test suites
-  const TEST_EMAILS = [REGISTER_EMAIL, LOGIN_EMAIL];
+  const testEmails = [registerEmail, loginEmail];
 
   beforeEach(async () => {
     // Delete in order to avoid foreign key constraint violations
@@ -100,19 +100,19 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
     await prisma.trainingLog.deleteMany({
       where: {
         horse: {
-          user: { email: { in: TEST_EMAILS } },
+          user: { email: { in: testEmails } },
         },
       },
     });
 
     // 2. Delete horses
     await prisma.horse.deleteMany({
-      where: { user: { email: { in: TEST_EMAILS } } },
+      where: { user: { email: { in: testEmails } } },
     });
 
     // 3. Then delete users
     await prisma.user.deleteMany({
-      where: { email: { in: TEST_EMAILS } },
+      where: { email: { in: testEmails } },
     });
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
@@ -122,27 +122,27 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
     await prisma.trainingLog.deleteMany({
       where: {
         horse: {
-          user: { email: { in: TEST_EMAILS } },
+          user: { email: { in: testEmails } },
         },
       },
     });
 
     // 2. Delete horses
     await prisma.horse.deleteMany({
-      where: { user: { email: { in: TEST_EMAILS } } },
+      where: { user: { email: { in: testEmails } } },
     });
 
     // 3. Then delete users
     await prisma.user.deleteMany({
-      where: { email: { in: TEST_EMAILS } },
+      where: { email: { in: testEmails } },
     });
     // prisma.$disconnect() removed — global teardown handles disconnection
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   it('should register a new user', async () => {
     const userData = {
-      username: REGISTER_USERNAME, // Changed from name: 'Test User'
-      email: REGISTER_EMAIL,
+      username: registerUsername, // Changed from name: 'Test User'
+      email: registerEmail,
       password: 'TestPassword123!',
       firstName: 'Test', // Added
       lastName: 'User', // Added
@@ -167,8 +167,8 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
   it('should login with valid credentials', async () => {
     // First register a user
     const userData = {
-      username: LOGIN_USERNAME, // Changed from name: 'Test User'
-      email: LOGIN_EMAIL,
+      username: loginUsername, // Changed from name: 'Test User'
+      email: loginEmail,
       password: 'TestPassword123!',
       firstName: 'LoginTest', // Added
       lastName: 'User', // Added
@@ -179,7 +179,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
 
     // Then login
     const loginData = {
-      email: LOGIN_EMAIL,
+      email: loginEmail,
       password: 'TestPassword123!',
     };
 

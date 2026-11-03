@@ -45,8 +45,8 @@ import { generateRequestId } from '../../middleware/auth.mjs';
 import { createResourceManagementMiddleware } from '../../middleware/resourceManagement.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const AUTH_SRC = resolve(__dirname, '../../middleware/auth.mjs');
-const RESOURCE_SRC = resolve(__dirname, '../../middleware/resourceManagement.mjs');
+const authSrc = resolve(__dirname, '../../middleware/auth.mjs');
+const resourceSrc = resolve(__dirname, '../../middleware/resourceManagement.mjs');
 
 describe('generateRequestId — crypto entropy (Equoria-dew6i)', () => {
   it('emits a fixed-length 16-character lowercase hex string', () => {
@@ -122,7 +122,7 @@ describe('resourceManagement requestId fallback — crypto entropy (Equoria-dew6
 
 describe('source sentinel — no Math.random in security request-ID paths (Equoria-dew6i)', () => {
   it('auth.mjs generateRequestId does not use Math.random', () => {
-    const src = readFileSync(AUTH_SRC, 'utf8');
+    const src = readFileSync(authSrc, 'utf8');
     const helper = src.slice(src.indexOf('export const generateRequestId'));
     const line = helper.slice(0, helper.indexOf('\n', helper.indexOf('=>')));
     expect(line).not.toMatch(/Math\.random/);
@@ -130,7 +130,7 @@ describe('source sentinel — no Math.random in security request-ID paths (Equor
   });
 
   it('resourceManagement.mjs request-id fallback does not use Math.random', () => {
-    const src = readFileSync(RESOURCE_SRC, 'utf8');
+    const src = readFileSync(resourceSrc, 'utf8');
     // The fallback assignment line.
     const idx = src.indexOf("req.headers['x-request-id'] ||");
     expect(idx).toBeGreaterThan(-1);

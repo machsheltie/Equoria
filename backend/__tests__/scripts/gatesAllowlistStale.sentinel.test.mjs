@@ -35,13 +35,13 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const CHECK_DIR = path.join(REPO_ROOT, 'scripts', 'doctrine-checks');
-const GATES_CHECK = path.join(CHECK_DIR, 'check-gates-run-on-prs.mjs');
-const GATES_ALLOWLIST = path.join(CHECK_DIR, 'gates-allowlist.txt');
+const repoRoot = path.resolve(HERE, '..', '..', '..');
+const checkDir = path.join(repoRoot, 'scripts', 'doctrine-checks');
+const gatesCheck = path.join(checkDir, 'check-gates-run-on-prs.mjs');
+const gatesAllowlist = path.join(checkDir, 'gates-allowlist.txt');
 
 // A job key that must never name a real `*-gate` job in any workflow.
-const STALE_JOB_KEY = 'fefh-iz9gp-stale-gate-planted-does-not-exist-gate';
+const staleJobKey = 'fefh-iz9gp-stale-gate-planted-does-not-exist-gate';
 
 let scratchDir;
 
@@ -58,27 +58,27 @@ function makeScratch() {
 }
 
 function runCheck(args = []) {
-  return spawnSync('node', [GATES_CHECK, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [gatesCheck, ...args], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 describe('gates-allowlist — stale-entry detection (Equoria-iz9gp)', () => {
   it('SENTINEL-POSITIVE: FIRES (exit 1) on a planted stale entry, naming it + the shrink-only rule', () => {
     const dir = makeScratch();
-    const canonical = fs.readFileSync(GATES_ALLOWLIST, 'utf8');
-    const planted = `${canonical}\n${STALE_JOB_KEY}\n`;
+    const canonical = fs.readFileSync(gatesAllowlist, 'utf8');
+    const planted = `${canonical}\n${staleJobKey}\n`;
     const plantedPath = path.join(dir, 'gates-allowlist-PLANTED.txt');
     fs.writeFileSync(plantedPath, planted, 'utf8');
 
     const res = runCheck([plantedPath]);
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('stale allowlist entries');
-    expect(res.stderr).toContain(STALE_JOB_KEY);
+    expect(res.stderr).toContain(staleJobKey);
     expect(res.stderr).toContain('may only SHRINK');
   });
 
   it('control: the override mechanism itself passes with the canonical (all-real) entries', () => {
     const dir = makeScratch();
-    const canonical = fs.readFileSync(GATES_ALLOWLIST, 'utf8');
+    const canonical = fs.readFileSync(gatesAllowlist, 'utf8');
     const copyPath = path.join(dir, 'gates-allowlist-PLANTED-canonical-copy.txt');
     fs.writeFileSync(copyPath, canonical, 'utf8');
 

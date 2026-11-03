@@ -33,11 +33,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = path.resolve(HERE, '..');
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '__tests__', 'tests']);
+const backendRoot = path.resolve(HERE, '..');
+const skipDirs = new Set(['node_modules', '.git', 'dist', 'coverage', '__tests__', 'tests']);
 
 /** Only match real import statements, not relative paths quoted in comments. */
-const IMPORT_RE = /^\s*import\s+[^;]*?\sfrom\s+'(\.\.?\/[^']+\.mjs)'\s*;?\s*$/gm;
+const importRe = /^\s*import\s+[^;]*?\sfrom\s+'(\.\.?\/[^']+\.mjs)'\s*;?\s*$/gm;
 
 function collectMjsFiles(dir, acc) {
   let ents;
@@ -49,7 +49,7 @@ function collectMjsFiles(dir, acc) {
   for (const e of ents) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) {
+      if (skipDirs.has(e.name)) {
         continue;
       }
       collectMjsFiles(full, acc);
@@ -67,18 +67,18 @@ function collectMjsFiles(dir, acc) {
 describe('no broken relative imports in backend source (Equoria-rg7s4 / zzod8)', () => {
   it('every relative .mjs import in non-test backend source resolves to a real file', () => {
     const files = [];
-    collectMjsFiles(BACKEND_ROOT, files);
+    collectMjsFiles(backendRoot, files);
 
     const broken = [];
     for (const file of files) {
       const src = fs.readFileSync(file, 'utf8');
       let m;
-      IMPORT_RE.lastIndex = 0;
-      while ((m = IMPORT_RE.exec(src)) !== null) {
+      importRe.lastIndex = 0;
+      while ((m = importRe.exec(src)) !== null) {
         const spec = m[1];
         const target = path.resolve(path.dirname(file), spec);
         if (!fs.existsSync(target)) {
-          broken.push(`${path.relative(BACKEND_ROOT, file)} -> ${spec}`);
+          broken.push(`${path.relative(backendRoot, file)} -> ${spec}`);
         }
       }
     }

@@ -29,20 +29,20 @@ import { fileURLToPath } from 'node:url';
 import { describe, test, expect } from '@jest/globals';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..', '..');
-const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..', '..');
+const backendRoot = path.join(repoRoot, 'backend');
 
 // Detector regex: literal `7 * 24 * 60 * 60 * 1000` with arbitrary internal
 // whitespace. Also catches `N * 7 * 24 * 60 * 60 * 1000` because the
 // numeric prefix is matched separately by the host code.
-const WEEK_MS_LITERAL = /\b7\s*\*\s*24\s*\*\s*60\s*\*\s*60\s*\*\s*1000\b/;
+const weekMsLiteral = /\b7\s*\*\s*24\s*\*\s*60\s*\*\s*60\s*\*\s*1000\b/;
 
 function stripComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 }
 
 // Production directories (NOT __tests__, NOT *.test.mjs).
-const PRODUCTION_DIRS = [
+const productionDirs = [
   'modules',
   'services',
   'middleware',
@@ -55,7 +55,7 @@ const PRODUCTION_DIRS = [
 ];
 
 function isProductionFile(absPath) {
-  const rel = path.relative(BACKEND_ROOT, absPath).replace(/\\/g, '/');
+  const rel = path.relative(backendRoot, absPath).replace(/\\/g, '/');
   if (!rel.endsWith('.mjs')) {
     return false;
   }
@@ -70,7 +70,7 @@ function isProductionFile(absPath) {
   }
   // Must live under one of the production dirs (first path segment).
   const first = rel.split('/')[0];
-  return PRODUCTION_DIRS.includes(first);
+  return productionDirs.includes(first);
 }
 
 // Allowlist: the constants file itself (defines MS_PER_DAY * 7).
@@ -96,50 +96,50 @@ function walkMjs(root) {
 }
 
 describe('Equoria-maint — no magic 7 * 24 * 60 * 60 * 1000 literal in backend production', () => {
-  test('WEEK_MS_LITERAL fires on a synthetic violation (PLANTED)', () => {
+  test('weekMsLiteral fires on a synthetic violation (PLANTED)', () => {
     const synthetic = 'const x = 7 * 24 * 60 * 60 * 1000;';
-    expect(WEEK_MS_LITERAL.test(stripComments(synthetic))).toBe(true);
+    expect(weekMsLiteral.test(stripComments(synthetic))).toBe(true);
   });
 
-  test('WEEK_MS_LITERAL fires on a multiplied form (PLANTED)', () => {
+  test('weekMsLiteral fires on a multiplied form (PLANTED)', () => {
     const synthetic = 'const x = 3 * 7 * 24 * 60 * 60 * 1000;';
-    expect(WEEK_MS_LITERAL.test(stripComments(synthetic))).toBe(true);
+    expect(weekMsLiteral.test(stripComments(synthetic))).toBe(true);
   });
 
-  test('WEEK_MS_LITERAL fires on whitespace variation (PLANTED)', () => {
+  test('weekMsLiteral fires on whitespace variation (PLANTED)', () => {
     const synthetic = 'const x = 7  *  24*60 * 60 *1000;';
-    expect(WEEK_MS_LITERAL.test(stripComments(synthetic))).toBe(true);
+    expect(weekMsLiteral.test(stripComments(synthetic))).toBe(true);
   });
 
-  test('WEEK_MS_LITERAL does NOT match a comment-only mention (NEGATIVE)', () => {
+  test('weekMsLiteral does NOT match a comment-only mention (NEGATIVE)', () => {
     const commentOnly = `
       // Replaces 7 * 24 * 60 * 60 * 1000 (which was banned by maint).
       /* 7 * 24 * 60 * 60 * 1000 also appears here in a block comment. */
       export const X = MS_PER_WEEK;
     `;
-    expect(WEEK_MS_LITERAL.test(stripComments(commentOnly))).toBe(false);
+    expect(weekMsLiteral.test(stripComments(commentOnly))).toBe(false);
   });
 
-  test('WEEK_MS_LITERAL does NOT match unrelated arithmetic (NEGATIVE)', () => {
+  test('weekMsLiteral does NOT match unrelated arithmetic (NEGATIVE)', () => {
     // 7 days, 12 hours, etc — different total — must not false-positive.
-    expect(WEEK_MS_LITERAL.test('const x = 7 * 24 * 60 * 60;')).toBe(false);
-    expect(WEEK_MS_LITERAL.test('const x = 14 * 24 * 60 * 60 * 1000;')).toBe(false);
-    expect(WEEK_MS_LITERAL.test('const x = 7 * 24 * 3600 * 1000;')).toBe(false);
+    expect(weekMsLiteral.test('const x = 7 * 24 * 60 * 60;')).toBe(false);
+    expect(weekMsLiteral.test('const x = 14 * 24 * 60 * 60 * 1000;')).toBe(false);
+    expect(weekMsLiteral.test('const x = 7 * 24 * 3600 * 1000;')).toBe(false);
   });
 
   test('no production backend file uses the bare 7 * 24 * 60 * 60 * 1000 literal', () => {
-    const files = walkMjs(BACKEND_ROOT).filter(isProductionFile);
+    const files = walkMjs(backendRoot).filter(isProductionFile);
     expect(files.length).toBeGreaterThan(50); // sanity: real production tree
 
     const violations = [];
     for (const filePath of files) {
-      const rel = path.relative(REPO_ROOT, filePath);
+      const rel = path.relative(repoRoot, filePath);
       if (ALLOWLIST.includes(path.normalize(rel))) {
         continue;
       }
       const source = fs.readFileSync(filePath, 'utf8');
       const stripped = stripComments(source);
-      if (WEEK_MS_LITERAL.test(stripped)) {
+      if (weekMsLiteral.test(stripped)) {
         violations.push(rel);
       }
     }

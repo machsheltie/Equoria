@@ -54,10 +54,10 @@ import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const MARE_COUNT = Number.parseInt(process.env.MARE_COUNT ?? '6', 10);
-const PARALLEL_SWEEPS = Number.parseInt(process.env.PARALLEL_SWEEPS ?? '3', 10);
-const GESTATION_DAYS = 7; // mirrors foalingService GESTATION_DAYS
-const ADVANCE_DAYS = GESTATION_DAYS + 2; // push every mare past the cutoff
+const mareCount = Number.parseInt(process.env.MARE_COUNT ?? '6', 10);
+const parallelSweeps = Number.parseInt(process.env.PARALLEL_SWEEPS ?? '3', 10);
+const gestationDays = 7; // mirrors foalingService gestationDays
+const advanceDays = gestationDays + 2; // push every mare past the cutoff
 
 const stamp = randomBytes(8).toString('hex');
 
@@ -66,7 +66,7 @@ async function main() {
     suite: 'bulk-foaling-cron-concurrency',
     issue: 'Equoria-fx5cb',
     startedAt: new Date().toISOString(),
-    config: { MARE_COUNT, PARALLEL_SWEEPS, ADVANCE_DAYS },
+    config: { MARE_COUNT: mareCount, PARALLEL_SWEEPS: parallelSweeps, ADVANCE_DAYS: advanceDays },
     mares: [],
     invariant: 'foals_materialised_per_mare <= 1',
     violations: [],
@@ -112,7 +112,7 @@ async function main() {
 
     // Provision N in-foal mares already past gestation cutoff so a single
     // runFoalingJob() sweep treats every one as due.
-    const inFoalSince = new Date(Date.now() - (GESTATION_DAYS + 1) * 24 * 60 * 60 * 1000);
+    const inFoalSince = new Date(Date.now() - (gestationDays + 1) * 24 * 60 * 60 * 1000);
     const sire = await createTestHorse(
       prisma,
       {
@@ -126,7 +126,7 @@ async function main() {
     );
 
     const mares = [];
-    for (let i = 0; i < MARE_COUNT; i += 1) {
+    for (let i = 0; i < mareCount; i += 1) {
       const mare = await createTestHorse(
         prisma,
         {
@@ -148,9 +148,9 @@ async function main() {
     // identical entrypoint to runFoalingJobScheduled(). If candidate
     // selection + materialisation is not atomic per mare, two sweeps both
     // create a foal for the same mare.
-    const advancedNow = new Date(Date.now() + ADVANCE_DAYS * 24 * 60 * 60 * 1000);
+    const advancedNow = new Date(Date.now() + advanceDays * 24 * 60 * 60 * 1000);
     const sweepResults = await Promise.all(
-      Array.from({ length: PARALLEL_SWEEPS }, () =>
+      Array.from({ length: parallelSweeps }, () =>
         runFoalingJob({ now: advancedNow }).catch(err => ({
           foalsBorn: 0,
           errors: [{ damId: null, error: err.message }],

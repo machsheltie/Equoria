@@ -15,20 +15,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-no-new-rethrow-after-log.mjs');
-const PLANT_DIR = path.join(REPO_ROOT, 'backend/services/_rethrow_doctrine_sentinel_plant');
+const repoRoot = path.resolve(HERE, '..', '..');
+const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-new-rethrow-after-log.mjs');
+const plantDir = path.join(repoRoot, 'backend/services/_rethrow_doctrine_sentinel_plant');
 
 afterEach(() => {
   try {
-    fs.rmSync(PLANT_DIR, { recursive: true, force: true });
+    fs.rmSync(plantDir, { recursive: true, force: true });
   } catch {
     // best-effort cleanup
   }
 });
 
 function runCheck() {
-  return spawnSync('node', [CHECK], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [CHECK], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 describe('check-no-new-rethrow-after-log.mjs (Equoria-ej9k1)', () => {
@@ -39,8 +39,8 @@ describe('check-no-new-rethrow-after-log.mjs (Equoria-ej9k1)', () => {
   });
 
   it('SENTINEL: fails when a NEW catch+log+throw is planted in a fresh service file', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'plantedService.mjs');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'plantedService.mjs');
     // Build the source from concat so this sentinel file itself doesn't
     // contain the literal pattern (the doctrine check would otherwise flag
     // this test file as a violation and break the baseline-clean test
@@ -88,8 +88,8 @@ describe('check-no-new-rethrow-after-log.mjs (Equoria-ej9k1)', () => {
   const buildRethrowLiteral = () => `catch (e) ${OPEN} logger.error('boom')${SEMI} throw e${SEMI} ${CLOSE}`;
 
   it('SENTINEL: the literal inside a // LINE comment is NOT counted (08aav fix)', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'plantedService.mjs');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'plantedService.mjs');
     fs.writeFileSync(
       planted,
       [
@@ -110,8 +110,8 @@ describe('check-no-new-rethrow-after-log.mjs (Equoria-ej9k1)', () => {
   });
 
   it('SENTINEL: the literal inside a /* */ BLOCK comment is NOT counted (08aav fix)', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'plantedService.mjs');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'plantedService.mjs');
     fs.writeFileSync(
       planted,
       [
@@ -136,8 +136,8 @@ describe('check-no-new-rethrow-after-log.mjs (Equoria-ej9k1)', () => {
   it('SENTINEL: a real log-then-rethrow in CODE STILL counts (08aav guards against over-reach)', () => {
     // Guards the fix against over-reach: stripping comments must not also
     // remove the real log-then-rethrow that constitutes a genuine violation.
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'plantedService.mjs');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'plantedService.mjs');
     fs.writeFileSync(
       planted,
       [

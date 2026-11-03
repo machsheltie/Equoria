@@ -138,7 +138,7 @@ describe('module-import TDZ circular-dependency sentinel (Equoria-hk739)', () =>
 //
 // No `--env-file` (S6 review, I1): backend/.env.test is gitignored and absent in CI; the child
 // inherits this process's environment, which Jest's setup has already loaded.
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 // Imports `url` as the entry point of a fresh Node process. `process.exit(0)` after a successful
 // import keeps the probe about evaluation order (a route module may open handles on import).
@@ -150,13 +150,13 @@ function importAlone(url) {
       '-e',
       `const m = await import(${JSON.stringify(url)}); if (Object.keys(m).length === 0) throw new Error('no exports'); process.exit(0);`,
     ],
-    { cwd: REPO_ROOT, encoding: 'utf8', env: { ...process.env, NODE_ENV: 'test' }, timeout: 120_000 },
+    { cwd: repoRoot, encoding: 'utf8', env: { ...process.env, NODE_ENV: 'test' }, timeout: 120_000 },
   );
 }
 
 describe('import-only evaluation-order smoke from the former hk739 cycle entry points (WS4 S6)', () => {
   // The modules whose `const` the two cycles read back (and the barrel/route files on the way).
-  const ENTRY_POINTS = [
+  const entryPoints = [
     'backend/modules/auth/controllers/authController.mjs',
     'backend/modules/auth/index.mjs',
     'backend/modules/auth/routes/authRoutes.mjs',
@@ -169,9 +169,9 @@ describe('import-only evaluation-order smoke from the former hk739 cycle entry p
     'backend/modules/auth/services/onboardingService.mjs',
     'backend/modules/competition/services/conformationShowScoring.mjs',
   ];
-  for (const file of [...ENTRY_POINTS, ...CONVERTED]) {
+  for (const file of [...entryPoints, ...CONVERTED]) {
     it(`${file} evaluates as the entry point of a fresh process without a temporal-dead-zone error`, () => {
-      const res = importAlone(pathToFileURL(path.join(REPO_ROOT, file)).href);
+      const res = importAlone(pathToFileURL(path.join(repoRoot, file)).href);
       expect(res.stderr).not.toMatch(/before initialization/);
       expect(res.status).toBe(0);
     });

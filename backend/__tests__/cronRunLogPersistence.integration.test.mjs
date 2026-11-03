@@ -39,13 +39,13 @@ function expectValidDate(value) {
 }
 
 const TAG = `9wby-${randomBytes(4).toString('hex')}`;
-const JOB_SUCCESS = `${TAG}-success`;
-const JOB_ERROR = `${TAG}-error`;
-const JOB_HEALTH = `${TAG}-health`;
+const jobSuccess = `${TAG}-success`;
+const jobError = `${TAG}-error`;
+const jobHealth = `${TAG}-health`;
 
 describe('Equoria-9wby: CronRunLog persistence', () => {
-  // Equoria-iwpcj: this suite seeds JOB_SUCCESS/JOB_ERROR/JOB_HEALTH into the
-  // shared CronJobService singleton in beforeEach (and JOB_TIE mid-test) and
+  // Equoria-iwpcj: this suite seeds jobSuccess/jobError/jobHealth into the
+  // shared CronJobService singleton in beforeEach (and jobTie mid-test) and
   // clears its heartbeats. Snapshot the singleton before the suite and restore
   // it after, so those mutations don't leak into sibling suites in the same
   // jest worker that iterate cronJobService.jobs (getHealth / getStatus /
@@ -59,7 +59,7 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
     // clear schema-not-found error rather than producing confusing test
     // failures further down.
     await prisma.cronRunLog.findMany({
-      where: { jobName: JOB_SUCCESS },
+      where: { jobName: jobSuccess },
       take: 1,
     });
   });
@@ -77,13 +77,13 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
     cronJobService.heartbeats.clear();
     // Ensure the test job names are seeded in this.jobs so getHealth()
     // surfaces them (it iterates this.jobs.keys()).
-    cronJobService.jobs.set(JOB_SUCCESS, { running: false, scheduled: false });
-    cronJobService.jobs.set(JOB_ERROR, { running: false, scheduled: false });
-    cronJobService.jobs.set(JOB_HEALTH, { running: false, scheduled: false });
+    cronJobService.jobs.set(jobSuccess, { running: false, scheduled: false });
+    cronJobService.jobs.set(jobError, { running: false, scheduled: false });
+    cronJobService.jobs.set(jobHealth, { running: false, scheduled: false });
   });
 
   it('persists exactly one CronRunLog row on a successful run, with typed counters', async () => {
-    const result = await cronJobService.runWithHeartbeat(JOB_SUCCESS, async () => ({
+    const result = await cronJobService.runWithHeartbeat(jobSuccess, async () => ({
       totalProcessed: 7,
       birthdaysFound: 3,
       milestonesEvaluated: 2,
@@ -94,7 +94,7 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
 
     expect(result.totalProcessed).toBe(7);
 
-    const rows = await prisma.cronRunLog.findMany({ where: { jobName: JOB_SUCCESS } });
+    const rows = await prisma.cronRunLog.findMany({ where: { jobName: jobSuccess } });
     expect(rows.length).toBe(1);
     const row = rows[0];
     expect(row.status).toBe('success');
@@ -115,12 +115,12 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
 
   it('persists exactly one CronRunLog row on an errored run, with errorMessage', async () => {
     await expect(
-      cronJobService.runWithHeartbeat(JOB_ERROR, async () => {
+      cronJobService.runWithHeartbeat(jobError, async () => {
         throw new Error('9wby-synthetic-failure');
       }),
     ).rejects.toThrow('9wby-synthetic-failure');
 
-    const rows = await prisma.cronRunLog.findMany({ where: { jobName: JOB_ERROR } });
+    const rows = await prisma.cronRunLog.findMany({ where: { jobName: jobError } });
     expect(rows.length).toBe(1);
     const row = rows[0];
     expect(row.status).toBe('error');
@@ -133,12 +133,12 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
   it('getHealthWithHistory returns recentRuns[N] per job, sorted by startedAt DESC', async () => {
     // Plant 3 runs for the health-test job so we can assert ordering + the
     // recentRuns limit.
-    await cronJobService.runWithHeartbeat(JOB_HEALTH, async () => ({ totalProcessed: 1 }));
-    await cronJobService.runWithHeartbeat(JOB_HEALTH, async () => ({ totalProcessed: 2 }));
-    await cronJobService.runWithHeartbeat(JOB_HEALTH, async () => ({ totalProcessed: 3 }));
+    await cronJobService.runWithHeartbeat(jobHealth, async () => ({ totalProcessed: 1 }));
+    await cronJobService.runWithHeartbeat(jobHealth, async () => ({ totalProcessed: 2 }));
+    await cronJobService.runWithHeartbeat(jobHealth, async () => ({ totalProcessed: 3 }));
 
     const health = await cronJobService.getHealthWithHistory({ recentRunsLimit: 5 });
-    const jobBlock = health.jobs[JOB_HEALTH];
+    const jobBlock = health.jobs[jobHealth];
     expect(jobBlock).toBeDefined();
     expect(Array.isArray(jobBlock.recentRuns)).toBe(true);
     expect(jobBlock.recentRuns.length).toBe(3);
@@ -167,15 +167,15 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
     // `id desc` tiebreak, the last-inserted (highest id) row must sort first.
     // This plants 3 rows with an IDENTICAL startedAt to force the tie on every
     // run (not just when the clock happens to collide).
-    const JOB_TIE = `${TAG}-tie`;
-    cronJobService.jobs.set(JOB_TIE, { running: false, scheduled: false });
+    const jobTie = `${TAG}-tie`;
+    cronJobService.jobs.set(jobTie, { running: false, scheduled: false });
     const sharedStart = new Date('2026-05-01T00:00:00.000Z');
     // Insert ascending so ascending id == ascending horsesProcessed; the
     // tiebreak must surface horsesProcessed=3 (highest id) first.
     for (const n of [1, 2, 3]) {
       await prisma.cronRunLog.create({
         data: {
-          jobName: JOB_TIE,
+          jobName: jobTie,
           startedAt: sharedStart,
           finishedAt: sharedStart,
           status: 'success',
@@ -185,7 +185,7 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
     }
 
     const health = await cronJobService.getHealthWithHistory({ recentRunsLimit: 5 });
-    const recent = health.jobs[JOB_TIE].recentRuns;
+    const recent = health.jobs[jobTie].recentRuns;
     expect(recent.length).toBe(3);
     expect(recent[0].horsesProcessed).toBe(3);
     expect(recent[1].horsesProcessed).toBe(2);
@@ -193,11 +193,11 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
   });
 
   it('getHealthWithHistory respects the recentRunsLimit argument', async () => {
-    await cronJobService.runWithHeartbeat(JOB_HEALTH, async () => ({ totalProcessed: 1 }));
-    await cronJobService.runWithHeartbeat(JOB_HEALTH, async () => ({ totalProcessed: 2 }));
-    await cronJobService.runWithHeartbeat(JOB_HEALTH, async () => ({ totalProcessed: 3 }));
+    await cronJobService.runWithHeartbeat(jobHealth, async () => ({ totalProcessed: 1 }));
+    await cronJobService.runWithHeartbeat(jobHealth, async () => ({ totalProcessed: 2 }));
+    await cronJobService.runWithHeartbeat(jobHealth, async () => ({ totalProcessed: 3 }));
 
     const health = await cronJobService.getHealthWithHistory({ recentRunsLimit: 2 });
-    expect(health.jobs[JOB_HEALTH].recentRuns.length).toBe(2);
+    expect(health.jobs[jobHealth].recentRuns.length).toBe(2);
   });
 });

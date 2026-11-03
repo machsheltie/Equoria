@@ -68,10 +68,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(__dirname, '../..');
+const repoRoot = resolve(__dirname, '../..');
 
 function read(relPath) {
-  return readFileSync(resolve(REPO_ROOT, relPath), 'utf8');
+  return readFileSync(resolve(repoRoot, relPath), 'utf8');
 }
 
 describe('Beta-readiness env sentinel (Equoria-aih8)', () => {
@@ -122,7 +122,7 @@ describe('Beta-readiness env sentinel (Equoria-aih8)', () => {
 
     for (const envFile of ['backend/env.beta.example', 'backend/env.beta-readiness.example']) {
       it(`${envFile} exists (tracked template)`, () => {
-        expect(existsSync(resolve(REPO_ROOT, envFile))).toBe(true);
+        expect(existsSync(resolve(repoRoot, envFile))).toBe(true);
       });
 
       for (const key of FORBIDDEN) {

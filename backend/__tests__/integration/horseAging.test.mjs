@@ -44,7 +44,7 @@ import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { testHorseData } from '../helpers/createTestHorse.mjs';
 
-const NAME_PREFIX = 'AgingRegression-';
+const namePrefix = 'AgingRegression-';
 
 describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
   let testUser;
@@ -56,7 +56,7 @@ describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
     // deleteMany() (CLAUDE.md rule 2: scoped cleanup only).
     if (createdHorseIds.length > 0) {
       await prisma.horse.deleteMany({
-        where: { id: { in: createdHorseIds }, name: { startsWith: NAME_PREFIX } },
+        where: { id: { in: createdHorseIds }, name: { startsWith: namePrefix } },
       });
     }
     if (testBreed) {
@@ -82,7 +82,7 @@ describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
       },
     });
     testBreed = await prisma.breed.create({
-      data: { name: `${NAME_PREFIX}Breed ${tag}`, description: 'aging regression fixture' },
+      data: { name: `${namePrefix}Breed ${tag}`, description: 'aging regression fixture' },
     });
   });
 
@@ -104,7 +104,7 @@ describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
     const horse = await prisma.horse.create({
       data: await testHorseData(prisma, {
         ...fixtureColor(),
-        name: `${NAME_PREFIX}${label}-${randomBytes(4).toString('hex')}`,
+        name: `${namePrefix}${label}-${randomBytes(4).toString('hex')}`,
         sex: 'Colt',
         dateOfBirth,
         age: 0, // game-years; cron recomputes from dateOfBirth

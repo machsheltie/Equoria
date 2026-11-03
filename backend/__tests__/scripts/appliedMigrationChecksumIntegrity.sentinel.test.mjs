@@ -54,8 +54,8 @@ import pg from 'pg';
 const { Client } = pg;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const MIGRATIONS_DIR = path.join(REPO_ROOT, 'packages', 'database', 'prisma', 'migrations');
+const repoRoot = path.resolve(HERE, '..', '..', '..');
+const migrationsDir = path.join(repoRoot, 'packages', 'database', 'prisma', 'migrations');
 
 /**
  * Prisma's migration checksum: lowercase hex sha256 over the file's raw bytes.
@@ -191,7 +191,7 @@ export function explainDrift(drift) {
 
 describe('applied-migration checksum integrity (Equoria-mxftz)', () => {
   test('every applied migration file still hashes to the checksum recorded when it was applied', async () => {
-    const onDisk = readMigrationChecksums(MIGRATIONS_DIR);
+    const onDisk = readMigrationChecksums(migrationsDir);
     const applied = await readAppliedChecksums();
 
     // Guard against a vacuous pass: an empty directory or an unmigrated
@@ -208,7 +208,7 @@ describe('applied-migration checksum integrity (Equoria-mxftz)', () => {
   }, 60_000);
 
   test("reproduces the stored checksum, proving the algorithm is Prisma's own", async () => {
-    const onDisk = readMigrationChecksums(MIGRATIONS_DIR);
+    const onDisk = readMigrationChecksums(migrationsDir);
     const applied = await readAppliedChecksums();
 
     // Not a tautology of the test above: this asserts the two maps genuinely

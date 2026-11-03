@@ -88,7 +88,7 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
   };
 
   describe('top-level body credentials must be redacted', () => {
-    const SENSITIVE_FIELDS = [
+    const sensitiveFields = [
       ['password', 'PROOF-OF-EXPOSURE-pwd'],
       ['newPassword', 'PROOF-OF-EXPOSURE-newpwd'],
       ['oldPassword', 'PROOF-OF-EXPOSURE-oldpwd'],
@@ -107,7 +107,7 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
       ['ssn', 'PROOF-OF-EXPOSURE-ssn'],
     ];
 
-    SENSITIVE_FIELDS.forEach(([fieldName, sentinelValue]) => {
+    sensitiveFields.forEach(([fieldName, sentinelValue]) => {
       it(`redacts top-level body.${fieldName}`, () => {
         const req = buildReq({ email: 'user@example.com', [fieldName]: sentinelValue });
         const err = new Error('validation failed');
@@ -285,7 +285,7 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
     // normalise the key (strip non-alphanumerics) before lookup so the same
     // semantic field is redacted regardless of casing convention.
 
-    const SNAKE_CASE_FIELDS = [
+    const snakeCaseFields = [
       ['access_token', 'PROOF-snake-access-token'],
       ['refresh_token', 'PROOF-snake-refresh-token'],
       ['csrf_token', 'PROOF-snake-csrf'],
@@ -297,7 +297,7 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
       ['credit_card', 'PROOF-snake-card'],
     ];
 
-    SNAKE_CASE_FIELDS.forEach(([fieldName, sentinelValue]) => {
+    snakeCaseFields.forEach(([fieldName, sentinelValue]) => {
       it(`redacts top-level body.${fieldName} (snake_case variant of camelCase entry)`, () => {
         const req = buildReq({ email: 'user@example.com', [fieldName]: sentinelValue });
 

@@ -14,9 +14,9 @@
  * MAX_DEPTH parse runs again), then synchronously calls verifyJsonBody
  * and asserts on the boundary effect.
  *
- * Sentinel-strength: the TRUE_BYPASS_VALUES list contains only env
+ * Sentinel-strength: the trueBypassValues list contains only env
  * strings that produce NaN under the original parseInt (cap fully
- * disabled pre-fix). The COINCIDENTALLY_HARDENED_VALUES list contains
+ * disabled pre-fix). The coincidentallyHardenedValues list contains
  * env strings that the original parseInt clamped to a small finite
  * number; we additionally use jest.spyOn(realLogger, 'error') to
  * observe the real logger's call args, proving the validator's
@@ -38,8 +38,8 @@
 import { afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals';
 
 // Module path used for dynamic import — resolves relative to THIS file.
-const MIDDLEWARE_PATH = '../middleware/requestBodySecurity.mjs';
-const LOGGER_PATH = '../utils/logger.mjs';
+const middlewarePath = '../middleware/requestBodySecurity.mjs';
+const loggerPath = '../utils/logger.mjs';
 
 function buildDeepArrayBuffer(depth) {
   let s = '';
@@ -82,14 +82,14 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
   // false, so the depth cap is fully disabled. These tests fail RED
   // before the fix and PASS GREEN after. This is the genuine sentinel
   // set for the original defect.
-  const TRUE_BYPASS_VALUES = ['invalid', '', '   ', 'NaN', 'abc123', 'Infinity', '-Infinity'];
+  const trueBypassValues = ['invalid', '', '   ', 'NaN', 'abc123', 'Infinity', '-Infinity'];
 
-  for (const bad of TRUE_BYPASS_VALUES) {
+  for (const bad of trueBypassValues) {
     it(`true-bypass: rejects 64-deep when REQUEST_BODY_MAX_DEPTH=${JSON.stringify(bad)} (NaN pre-fix)`, async () => {
       process.env.REQUEST_BODY_MAX_DEPTH = bad;
       jest.resetModules();
 
-      const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
+      const { verifyJsonBody } = await import(middlewarePath);
       const buffer = buildDeepArrayBuffer(64);
 
       let thrown = null;
@@ -115,9 +115,9 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
   // The mock's error fn captures every logger.error invocation; the
   // assertion proves the validator's rejection branch fired with the
   // offending value (only the rejection path logs that shape).
-  const COINCIDENTALLY_HARDENED_VALUES = ['0', '-5', '-1', '32abc', '0x20', '3.14'];
+  const coincidentallyHardenedValues = ['0', '-5', '-1', '32abc', '0x20', '3.14'];
 
-  for (const bad of COINCIDENTALLY_HARDENED_VALUES) {
+  for (const bad of coincidentallyHardenedValues) {
     it(`hardened: validator rejection branch fires when REQUEST_BODY_MAX_DEPTH=${JSON.stringify(bad)} (real logger spied for call args)`, async () => {
       process.env.REQUEST_BODY_MAX_DEPTH = bad;
       jest.resetModules();
@@ -129,11 +129,11 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
       // module mocking; the logger module is the real one. (Per
       // Equoria-p6fx no-mocks doctrine; jest.spyOn-on-real-instance
       // is permitted as observation, not replacement.)
-      const loggerMod = await import(LOGGER_PATH);
+      const loggerMod = await import(loggerPath);
       const realLogger = loggerMod.default ?? loggerMod;
       const errorSpy = jest.spyOn(realLogger, 'error');
 
-      const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
+      const { verifyJsonBody } = await import(middlewarePath);
 
       // The validator's rejection branch logs with the offending raw
       // value in `provided`. Either log shape (regex-fail or
@@ -164,18 +164,18 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
   // builder(33) rejects at DEFAULT_MAX_DEPTH=32. This pins fallback to
   // exactly 32; a wrong fallback (e.g. 200) would break exactly one
   // of the two assertions.
-  const UPPER_BOUND_BYPASS_VALUES = [
+  const upperBoundBypassValues = [
     '999999999999999999999999', // ~1e24, well above MAX_SAFE_INTEGER
     '1000000000000000', // 1e15, below MAX_SAFE_INTEGER but absurdly large
     '10000', // 1e4, sane integer but above any defensible operator setting
   ];
 
-  for (const big of UPPER_BOUND_BYPASS_VALUES) {
+  for (const big of upperBoundBypassValues) {
     it(`upper-bound: REQUEST_BODY_MAX_DEPTH=${JSON.stringify(big)} falls back to exactly DEFAULT_MAX_DEPTH (boundary bracketed)`, async () => {
       process.env.REQUEST_BODY_MAX_DEPTH = big;
       jest.resetModules();
 
-      const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
+      const { verifyJsonBody } = await import(middlewarePath);
 
       // builder(32) → scanArray reaches depth=32 → 32 > 32 false → accepted
       expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(32))).not.toThrow();
@@ -189,53 +189,53 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
   // accepted as-is (cap silently became 300 — a 9.4× expansion of the
   // attack surface). Post-iteration-3 it falls back to default 32. The
   // bracketing pins fallback to exactly DEFAULT_MAX_DEPTH; a regression
-  // that loosened MAX_ALLOWED_OVERRIDE back to a value ≥300 would
+  // that loosened maxAllowedOverride back to a value ≥300 would
   // break this test. (Blind Hunter F3 / Edge Case Hunter F3.)
   it("tightened-ceiling: REQUEST_BODY_MAX_DEPTH='300' (between old/new ceiling) falls back to default", async () => {
     process.env.REQUEST_BODY_MAX_DEPTH = '300';
     jest.resetModules();
 
-    const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
+    const { verifyJsonBody } = await import(middlewarePath);
 
     // Bracketed at default boundary — proves fallback is exactly 32, not 300.
     expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(32))).not.toThrow();
     expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(33))).toThrow(/nesting too deep/i);
   });
 
-  // Iteration-3 boundary test for MAX_ALLOWED_OVERRIDE itself. Pins the
-  // ceiling: env = str(MAX_ALLOWED_OVERRIDE) accepted (cap = override),
-  // env = str(MAX_ALLOWED_OVERRIDE+1) rejected (falls back). A regression
+  // Iteration-3 boundary test for maxAllowedOverride itself. Pins the
+  // ceiling: env = str(maxAllowedOverride) accepted (cap = override),
+  // env = str(maxAllowedOverride+1) rejected (falls back). A regression
   // that flipped `>` to `>=` (or shifted the constant by 1) would break
   // exactly one assertion. (Blind Hunter F7.)
   //
   // We import the constant from the middleware module so the test
   // tracks the source of truth; a config change that legitimately moves
   // the ceiling won't require a test edit beyond the import.
-  it('ceiling: env=str(MAX_ALLOWED_OVERRIDE) accepts; env=str(MAX_ALLOWED_OVERRIDE+1) falls back to default', async () => {
+  it('ceiling: env=str(maxAllowedOverride) accepts; env=str(maxAllowedOverride+1) falls back to default', async () => {
     jest.resetModules();
-    const { maxAllowedOverride: MAX_ALLOWED_OVERRIDE } = await import(MIDDLEWARE_PATH);
-    expect(typeof MAX_ALLOWED_OVERRIDE).toBe('number');
-    expect(MAX_ALLOWED_OVERRIDE).toBeGreaterThan(0);
+    const { maxAllowedOverride } = await import(middlewarePath);
+    expect(typeof maxAllowedOverride).toBe('number');
+    expect(maxAllowedOverride).toBeGreaterThan(0);
 
     // env at exactly the ceiling: accepted, cap = override.
-    // builder(MAX_ALLOWED_OVERRIDE) → scanArray reaches depth=MAX_ALLOWED_OVERRIDE
-    // → not > MAX_ALLOWED_OVERRIDE → accepted.
-    process.env.REQUEST_BODY_MAX_DEPTH = String(MAX_ALLOWED_OVERRIDE);
+    // builder(maxAllowedOverride) → scanArray reaches depth=maxAllowedOverride
+    // → not > maxAllowedOverride → accepted.
+    process.env.REQUEST_BODY_MAX_DEPTH = String(maxAllowedOverride);
     jest.resetModules();
     {
-      const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
-      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(MAX_ALLOWED_OVERRIDE))).not.toThrow();
-      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(MAX_ALLOWED_OVERRIDE + 1))).toThrow(
+      const { verifyJsonBody } = await import(middlewarePath);
+      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(maxAllowedOverride))).not.toThrow();
+      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(maxAllowedOverride + 1))).toThrow(
         /nesting too deep/i,
       );
     }
 
     // env one above ceiling: falls back to DEFAULT_MAX_DEPTH (32).
     // Bracketed at default boundary to prove fallback is exactly default.
-    process.env.REQUEST_BODY_MAX_DEPTH = String(MAX_ALLOWED_OVERRIDE + 1);
+    process.env.REQUEST_BODY_MAX_DEPTH = String(maxAllowedOverride + 1);
     jest.resetModules();
     {
-      const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
+      const { verifyJsonBody } = await import(middlewarePath);
       expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(32))).not.toThrow();
       expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(33))).toThrow(/nesting too deep/i);
     }
@@ -245,7 +245,7 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
     process.env.REQUEST_BODY_MAX_DEPTH = '32';
     jest.resetModules();
 
-    const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
+    const { verifyJsonBody } = await import(middlewarePath);
 
     // Post-Equoria-21kz: buildDeepArrayBuffer(N) produces N nested EMPTY
     // arrays; scanArray now checks depth before the early `]` short-circuit,
@@ -263,7 +263,7 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
     process.env.REQUEST_BODY_MAX_DEPTH = '8';
     jest.resetModules();
 
-    const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
+    const { verifyJsonBody } = await import(middlewarePath);
     expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(16))).toThrow(/nesting too deep/i);
   });
 
@@ -271,7 +271,7 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
     process.env.REQUEST_BODY_MAX_DEPTH = '8';
     jest.resetModules();
 
-    const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
+    const { verifyJsonBody } = await import(middlewarePath);
     expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(4))).not.toThrow();
   });
 });

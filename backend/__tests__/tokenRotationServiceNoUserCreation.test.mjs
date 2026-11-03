@@ -29,7 +29,7 @@ import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 // A syntactically-valid UUID that is NOT in the DB. createTokenPair must never
 // materialise a User for this id. Generated fresh per run so it can never
 // collide with a real row.
-const GHOST_USER_ID = randomUUID();
+const ghostUserId = randomUUID();
 
 describe('createTokenPair() — no test-user auto-creation (Equoria-x243u)', () => {
   const cleanup = createCleanupTracker();
@@ -39,11 +39,8 @@ describe('createTokenPair() — no test-user auto-creation (Equoria-x243u)', () 
     // delete exactly the ghost id this suite could have caused — children
     // (tokens, userId-scoped) before the parent (user, id-scoped). On a green
     // run these delete zero rows. Fail-loud so a leaked fixture surfaces.
-    cleanup.add(
-      () => prisma.refreshToken.deleteMany({ where: { userId: GHOST_USER_ID } }),
-      'refreshToken(ghost userId)',
-    );
-    cleanup.add(() => prisma.user.deleteMany({ where: { id: GHOST_USER_ID } }), 'user(ghost id)');
+    cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: ghostUserId } }), 'refreshToken(ghost userId)');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: ghostUserId } }), 'user(ghost id)');
     return cleanup.run();
   }, 30000);
 
@@ -63,23 +60,23 @@ describe('createTokenPair() — no test-user auto-creation (Equoria-x243u)', () 
 
   it('does NOT create a User row for a non-existent userId', async () => {
     // Sanity: the ghost user must not pre-exist.
-    const before = await prisma.user.findUnique({ where: { id: GHOST_USER_ID } });
+    const before = await prisma.user.findUnique({ where: { id: ghostUserId } });
     expect(before).toBeNull();
 
     // Call the production function. With the backdoor present (current master),
     // a User row IS inserted here — which the assertion below catches.
-    await callTolerantOfThrow(GHOST_USER_ID);
+    await callTolerantOfThrow(ghostUserId);
 
-    const after = await prisma.user.findUnique({ where: { id: GHOST_USER_ID } });
+    const after = await prisma.user.findUnique({ where: { id: ghostUserId } });
     expect(after).toBeNull();
   });
 
   it('does NOT create a User even when an explicit familyId and role are passed', async () => {
     // The backdoor ran regardless of familyId/role arguments — cover that shape
     // too so a partial reintroduction (guarded on one arg path) is still caught.
-    await callTolerantOfThrow(GHOST_USER_ID, 'x243u-family-explicit', 'admin');
+    await callTolerantOfThrow(ghostUserId, 'x243u-family-explicit', 'admin');
 
-    const after = await prisma.user.findUnique({ where: { id: GHOST_USER_ID } });
+    const after = await prisma.user.findUnique({ where: { id: ghostUserId } });
     expect(after).toBeNull();
   });
 });

@@ -43,13 +43,13 @@ import { testHorseData } from './helpers/createTestHorse.mjs';
 const SENTINEL = `TestFixture-HorseQueryIndexes-${randomBytes(6).toString('hex')}`;
 // Comfortable margin above what an empty lane-shaped table needs to flip
 // both plans away from Seq Scan (measured; see module docstring).
-const FIXTURE_HORSE_COUNT = 800;
+const fixtureHorseCount = 800;
 // A pool of "sire" horses created first (individually, so their real ids
 // are known) that the bulk population's sireId legitimately references —
 // giving the sireId column a genuine non-null distribution so the planner
 // has real statistics to estimate selectivity from, rather than a column
 // that is entirely NULL.
-const SIRE_POOL_SIZE = 40;
+const sirePoolSize = 40;
 
 const suiteCleanup = createCleanupTracker();
 let user;
@@ -71,7 +71,7 @@ beforeAll(async () => {
   });
 
   const sireIds = [];
-  for (let i = 0; i < SIRE_POOL_SIZE; i += 1) {
+  for (let i = 0; i < sirePoolSize; i += 1) {
     const sire = await prisma.horse.create({
       data: await testHorseData(prisma, {
         ...fixtureColor(),
@@ -87,7 +87,7 @@ beforeAll(async () => {
   }
 
   const bulk = [];
-  for (let i = 0; i < FIXTURE_HORSE_COUNT - SIRE_POOL_SIZE; i += 1) {
+  for (let i = 0; i < fixtureHorseCount - sirePoolSize; i += 1) {
     bulk.push({
       ...fixtureColor(),
       name: `${SENTINEL}-bulk-${i}`,

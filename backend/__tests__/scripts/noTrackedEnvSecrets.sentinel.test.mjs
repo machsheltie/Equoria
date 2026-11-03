@@ -46,7 +46,7 @@ import {
 } from '../../../scripts/doctrine-checks/check-no-tracked-env-secrets.mjs';
 import { withoutGitEnv } from '../../../scripts/preflight/changed-checks.mjs';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
 describe('no-tracked-env-secrets gate — filename layer (Equoria-07so3)', () => {
   it('classifies real env files as real (must never be tracked)', () => {
@@ -216,7 +216,7 @@ const hookEnv = () => {
 };
 
 function trackedFiles(baseEnv = process.env) {
-  return execSync('git ls-files', { cwd: REPO_ROOT, encoding: 'utf8', env: childEnv(baseEnv) })
+  return execSync('git ls-files', { cwd: repoRoot, encoding: 'utf8', env: childEnv(baseEnv) })
     .split('\n')
     .map(s => s.trim())
     .filter(Boolean);
@@ -237,7 +237,7 @@ describe('no-tracked-env-secrets gate — REAL REPO is currently clean (Equoria-
   it('no tracked env-ish file (the .example templates) leaks a non-placeholder secret', () => {
     const leaks = [];
     for (const f of tracked.filter(isEnvIshFile)) {
-      const abs = path.join(REPO_ROOT, f);
+      const abs = path.join(repoRoot, f);
       if (!existsSync(abs)) {
         continue;
       }

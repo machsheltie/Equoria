@@ -40,13 +40,13 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = resolve(__dirname, '..');
+const backendRoot = resolve(__dirname, '..');
 
-const PRISMA_WRITE = '(?:update|updateMany|create|createMany|delete|deleteMany|upsert)';
+const prismaWrite = '(?:update|updateMany|create|createMany|delete|deleteMany|upsert)';
 
 /** A write that takes an exclusive row lock on `email_verification_tokens`. */
-const TOKEN_WRITE = new RegExp(
-  String.raw`\.emailVerificationToken\.${PRISMA_WRITE}\s*\(` +
+const tokenWrite = new RegExp(
+  String.raw`\.emailVerificationToken\.${prismaWrite}\s*\(` +
     // The shared revocation helper's only statement is an updateMany on that table.
     String.raw`|\brevokePendingEmailChanges\s*\(` +
     String.raw`|UPDATE\s+email_verification_tokens`,
@@ -54,7 +54,7 @@ const TOKEN_WRITE = new RegExp(
 );
 
 /** A write that takes an exclusive row lock on `User`. Reads are excluded. */
-const USER_WRITE = new RegExp(String.raw`\.user\.${PRISMA_WRITE}\s*\(` + String.raw`|UPDATE\s+"users"`, 'g');
+const userWrite = new RegExp(String.raw`\.user\.${prismaWrite}\s*\(` + String.raw`|UPDATE\s+"users"`, 'g');
 
 /**
  * Paren-match every `$transaction( … )` call in `source`.
@@ -116,8 +116,8 @@ function lastIndexOf(pattern, text) {
 export function analyzeTokenBeforeUser(source) {
   return transactionBlocks(source)
     .map(block => {
-      const lastTokenAt = lastIndexOf(TOKEN_WRITE, block.body);
-      const firstUserAt = firstIndexOf(USER_WRITE, block.body);
+      const lastTokenAt = lastIndexOf(tokenWrite, block.body);
+      const firstUserAt = firstIndexOf(userWrite, block.body);
       if (lastTokenAt === -1 || firstUserAt === -1) {
         return null;
       }
@@ -129,7 +129,7 @@ export function analyzeTokenBeforeUser(source) {
     .filter(Boolean);
 }
 
-const GUARDED_FILES = [
+const guardedFiles = [
   'modules/auth/controllers/passwordController.mjs',
   'modules/auth/services/emailChangeService.mjs',
   'modules/auth/services/emailVerificationService.mjs',
@@ -138,8 +138,8 @@ const GUARDED_FILES = [
 ];
 
 describe('SENTINEL: token rows are locked before the User row inside a transaction', () => {
-  it.each(GUARDED_FILES)('%s writes token rows before the User row', relativePath => {
-    const source = readFileSync(resolve(BACKEND_ROOT, relativePath), 'utf8');
+  it.each(guardedFiles)('%s writes token rows before the User row', relativePath => {
+    const source = readFileSync(resolve(backendRoot, relativePath), 'utf8');
     const mixedBlocks = analyzeTokenBeforeUser(source);
 
     // Non-vacuity: each guarded file must still HAVE a transaction touching

@@ -36,14 +36,14 @@ import {
 } from '../../../scripts/lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..', '..');
-const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..', '..');
+const backendRoot = path.join(repoRoot, 'backend');
 // Equoria-u70px/hpgl3: the repo-root tests/ directory lives OUTSIDE backend/
 // and so escaped the original backend-only walk. Two root suites (breeds,
 // progression) kept importing the deleted db/index.mjs and only failed at
 // runtime (suite-load error), not at sentinel time. Scanning root tests/ here
 // closes that gap so the regression class is caught statically.
-const ROOT_TESTS_ROOT = path.join(REPO_ROOT, 'tests');
+const rootTestsRoot = path.join(repoRoot, 'tests');
 
 // Matches `db/index.mjs` or `db/index` referenced from any relative import
 // path, in any import-like position. Allows `.mjs` to be optional (some test
@@ -60,12 +60,12 @@ const ROOT_TESTS_ROOT = path.join(REPO_ROOT, 'tests');
 // the leading `./`|`../` and the trailing `db/index`, while still anchoring to
 // a quoted relative-import string (leading `.`/`..` + slash) so arbitrary text
 // that merely contains `db/index.mjs` (e.g. a verbose log line) is NOT flagged.
-const DB_INDEX_IMPORT_PATTERN = /['"]\s*\.{1,2}[\\/](?:[\w.\\/-]*[\\/])?db\/index(?:\.mjs)?\s*['"]/;
+const dbIndexImportPattern = /['"]\s*\.{1,2}[\\/](?:[\w.\\/-]*[\\/])?db\/index(?:\.mjs)?\s*['"]/;
 
 // This test file itself contains documentation references to the
 // deprecated path so the patterns above will match against it. Excluded
 // so the sentinel does not self-match.
-const SELF_TEST_PATH = path.normalize('backend/__tests__/scripts/noDeprecatedDbIndexImport.sentinel.test.mjs');
+const selfTestPath = path.normalize('backend/__tests__/scripts/noDeprecatedDbIndexImport.sentinel.test.mjs');
 
 /**
  * Walk backend/ recursively, returning every .mjs path. Skips node_modules,
@@ -129,31 +129,31 @@ function stripComments(source) {
 }
 
 describe('Equoria-4wl0r — no imports of deprecated backend/db/index.mjs shim', () => {
-  test('DB_INDEX_IMPORT_PATTERN fires on a static-import violation (PLANTED)', () => {
+  test('dbIndexImportPattern fires on a static-import violation (PLANTED)', () => {
     const synthetic = "import prisma from '../db/index.mjs';";
-    expect(DB_INDEX_IMPORT_PATTERN.test(stripComments(synthetic))).toBe(true);
+    expect(dbIndexImportPattern.test(stripComments(synthetic))).toBe(true);
   });
 
-  test('DB_INDEX_IMPORT_PATTERN fires on deeper-relative import (PLANTED)', () => {
+  test('dbIndexImportPattern fires on deeper-relative import (PLANTED)', () => {
     const synthetic = "import prisma from '../../../db/index.mjs';";
-    expect(DB_INDEX_IMPORT_PATTERN.test(stripComments(synthetic))).toBe(true);
+    expect(dbIndexImportPattern.test(stripComments(synthetic))).toBe(true);
   });
 
-  test('DB_INDEX_IMPORT_PATTERN fires on a dynamic-import violation (PLANTED)', () => {
+  test('dbIndexImportPattern fires on a dynamic-import violation (PLANTED)', () => {
     const synthetic = "const { default: prisma } = await import('../../db/index.mjs');";
-    expect(DB_INDEX_IMPORT_PATTERN.test(stripComments(synthetic))).toBe(true);
+    expect(dbIndexImportPattern.test(stripComments(synthetic))).toBe(true);
   });
 
-  test('DB_INDEX_IMPORT_PATTERN fires on a join(__dirname, ...) dynamic-import (PLANTED)', () => {
+  test('dbIndexImportPattern fires on a join(__dirname, ...) dynamic-import (PLANTED)', () => {
     const synthetic = "const { default: prisma } = await import(join(__dirname, '../../../db/index.mjs'));";
-    expect(DB_INDEX_IMPORT_PATTERN.test(stripComments(synthetic))).toBe(true);
+    expect(dbIndexImportPattern.test(stripComments(synthetic))).toBe(true);
   });
 
-  test('DB_INDEX_IMPORT_PATTERN fires on the repo-root tests/ shape (PLANTED)', () => {
+  test('dbIndexImportPattern fires on the repo-root tests/ shape (PLANTED)', () => {
     // Equoria-u70px: the exact shape the breeds/progression root suites used —
     // `../backend/db/index.mjs` (root tests/ reach DOWN into backend/db/).
     const synthetic = "import prisma from '../backend/db/index.mjs';";
-    expect(DB_INDEX_IMPORT_PATTERN.test(stripComments(synthetic))).toBe(true);
+    expect(dbIndexImportPattern.test(stripComments(synthetic))).toBe(true);
   });
 
   test('detector ignores comment-only mentions (NEGATIVE CONTROL)', () => {
@@ -162,7 +162,7 @@ describe('Equoria-4wl0r — no imports of deprecated backend/db/index.mjs shim',
       /* Do not import '../../db/index.mjs' — the shim was deleted. */
       export function noop() {}
     `;
-    expect(DB_INDEX_IMPORT_PATTERN.test(stripComments(commentOnly))).toBe(false);
+    expect(dbIndexImportPattern.test(stripComments(commentOnly))).toBe(false);
   });
 
   test('detector ignores canonical-path imports (NEGATIVE CONTROL)', () => {
@@ -170,17 +170,17 @@ describe('Equoria-4wl0r — no imports of deprecated backend/db/index.mjs shim',
       import prisma from '../../packages/database/prismaClient.mjs';
       const { default: x } = await import('../../packages/database/prismaClient.mjs');
     `;
-    expect(DB_INDEX_IMPORT_PATTERN.test(stripComments(benign))).toBe(false);
+    expect(dbIndexImportPattern.test(stripComments(benign))).toBe(false);
   });
 
   test('no backend tree (*.mjs) imports the deprecated db/index.mjs path', () => {
-    const files = walkMjs(BACKEND_ROOT);
+    const files = walkMjs(backendRoot);
     expect(files.length).toBeGreaterThan(100); // sanity
 
     const violations = [];
     for (const filePath of files) {
-      const rel = path.relative(REPO_ROOT, filePath);
-      if (path.normalize(rel) === SELF_TEST_PATH) {
+      const rel = path.relative(repoRoot, filePath);
+      if (path.normalize(rel) === selfTestPath) {
         continue;
       }
       // Equoria-27lqy: tolerate a file that vanished between the walk and the
@@ -191,7 +191,7 @@ describe('Equoria-4wl0r — no imports of deprecated backend/db/index.mjs shim',
         continue;
       }
       const stripped = stripComments(source);
-      if (DB_INDEX_IMPORT_PATTERN.test(stripped)) {
+      if (dbIndexImportPattern.test(stripped)) {
         violations.push(rel);
       }
     }
@@ -203,19 +203,19 @@ describe('Equoria-4wl0r — no imports of deprecated backend/db/index.mjs shim',
   // backend/). The breeds + progression suites that motivated this extension
   // are migrated to packages/database/prismaClient.mjs, so this must be green.
   test('no repo-root tests/ (*.mjs) imports the deprecated db/index.mjs path', () => {
-    const files = walkMjs(ROOT_TESTS_ROOT);
+    const files = walkMjs(rootTestsRoot);
     expect(files.length).toBeGreaterThan(0); // sanity: the dir exists and has suites
 
     const violations = [];
     for (const filePath of files) {
-      const rel = path.relative(REPO_ROOT, filePath);
+      const rel = path.relative(repoRoot, filePath);
       // Equoria-27lqy: tolerate a file that vanished mid-walk (see above).
       const source = readScannedFileSyncTolerant(filePath, 'noDeprecatedDbIndexImport');
       if (source === null) {
         continue;
       }
       const stripped = stripComments(source);
-      if (DB_INDEX_IMPORT_PATTERN.test(stripped)) {
+      if (dbIndexImportPattern.test(stripped)) {
         violations.push(rel);
       }
     }
@@ -224,7 +224,7 @@ describe('Equoria-4wl0r — no imports of deprecated backend/db/index.mjs shim',
   });
 
   test('backend/db/index.mjs shim file is deleted', () => {
-    const shimPath = path.join(BACKEND_ROOT, 'db', 'index.mjs');
+    const shimPath = path.join(backendRoot, 'db', 'index.mjs');
     expect(fs.existsSync(shimPath)).toBe(false);
   });
 });

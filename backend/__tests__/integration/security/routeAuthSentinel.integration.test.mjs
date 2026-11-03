@@ -74,7 +74,7 @@ function expectUnauthenticatedRejection(res, label) {
 
 // Representative mutation per router category. Each path is verified to exist in
 // the route files (a 404 here fails the test by design — see the helper).
-const REPRESENTATIVE_MUTATIONS = [
+const representativeMutations = [
   // authRouter — core game create
   {
     label: 'POST /api/v1/horses (authRouter — create horse)',
@@ -134,7 +134,7 @@ const REPRESENTATIVE_MUTATIONS = [
 ];
 
 describe('Route-auth sentinel — representative mutations reject unauthenticated callers (Equoria-jk9oj.1)', () => {
-  it.each(REPRESENTATIVE_MUTATIONS)(
+  it.each(representativeMutations)(
     'rejects $label without auth (401/403, not 2xx, not 404)',
     async ({ method, path, body, label }) => {
       const agent = request(app);
@@ -145,8 +145,8 @@ describe('Route-auth sentinel — representative mutations reject unauthenticate
   );
 
   it('covers at least one endpoint per router category (auth + admin)', () => {
-    const hasAuthRouter = REPRESENTATIVE_MUTATIONS.some(m => !m.path.startsWith('/api/v1/admin'));
-    const hasAdminRouter = REPRESENTATIVE_MUTATIONS.some(m => m.path.startsWith('/api/v1/admin'));
+    const hasAuthRouter = representativeMutations.some(m => !m.path.startsWith('/api/v1/admin'));
+    const hasAdminRouter = representativeMutations.some(m => m.path.startsWith('/api/v1/admin'));
     expect(hasAuthRouter).toBe(true);
     expect(hasAdminRouter).toBe(true);
   });

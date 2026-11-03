@@ -15,7 +15,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import { createNotFoundHandler } from '../../middleware/notFoundHandler.mjs';
 
-const SPA_HTML = '<!doctype html><html><body>spa</body></html>';
+const spaHtml = '<!doctype html><html><body>spa</body></html>';
 
 function mockReq(originalUrl, method = 'GET') {
   const [pathOnly] = originalUrl.split('?');
@@ -75,7 +75,7 @@ describe('notFoundHandler', () => {
 
     beforeEach(() => {
       process.env.NODE_ENV = 'production';
-      handler = createNotFoundHandler({ spaHtml: SPA_HTML, logger: silentLogger });
+      handler = createNotFoundHandler({ spaHtml, logger: silentLogger });
     });
 
     it('returns a JSON 404 for an unknown /api route, never the SPA html', () => {
@@ -115,7 +115,7 @@ describe('notFoundHandler', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.contentType).toBe('html');
-      expect(res.body).toBe(SPA_HTML);
+      expect(res.body).toBe(spaHtml);
       expect(res.headers['Cache-Control']).toBe('no-store');
     });
   });
@@ -123,7 +123,7 @@ describe('notFoundHandler', () => {
   describe('outside production', () => {
     it('returns JSON 404 for a client-side route even when SPA html is available', () => {
       process.env.NODE_ENV = 'development';
-      const handler = createNotFoundHandler({ spaHtml: SPA_HTML, logger: silentLogger });
+      const handler = createNotFoundHandler({ spaHtml, logger: silentLogger });
       const res = mockRes();
       handler(mockReq('/horses/5'), res);
 

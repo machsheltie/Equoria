@@ -531,13 +531,13 @@ describe('throw-still-503 — alerting throw must not prevent the 503 response',
     // _alertTimestamps is the REAL Map reference; we can replace its
     // prototype temporarily.
 
-    const TEST_KEY = `rl:throw-503-sentinel-${Date.now()}`;
+    const testKey = `rl:throw-503-sentinel-${Date.now()}`;
 
     // Arrange: build the middleware in outage mode.
     const middleware = createRateLimiter({
       windowMs: 60 * 1000,
       max: 100,
-      keyPrefix: TEST_KEY,
+      keyPrefix: testKey,
       failClosed: true,
       _redisExpectedFn: () => true, // outage: Redis expected
       _redisConnectedFn: () => false, // outage: Redis down
@@ -557,7 +557,7 @@ describe('throw-still-503 — alerting throw must not prevent the 503 response',
     } finally {
       // Restore the Map's get method unconditionally.
       _alertTimestamps.get = origGet;
-      _alertTimestamps.delete(TEST_KEY);
+      _alertTimestamps.delete(testKey);
     }
 
     // The 503 MUST still fire even though emitDegradationAlert threw.
@@ -697,37 +697,37 @@ describe('Healthy Redis — fail-closed wrapper delegates to underlying limiter'
 
 describe('emitDegradationAlert — direct throttle-window gating (Equoria-hnud7 follow-up)', () => {
   // Use a unique key for this suite to avoid contamination with the 503 DI tests above.
-  const THROTTLE_TEST_KEY = `rl:direct-throttle-test-${Date.now()}`;
+  const throttleTestKey = `rl:direct-throttle-test-${Date.now()}`;
 
   afterEach(() => {
     // Clean up the timestamp entry so tests are independent.
-    _alertTimestamps.delete(THROTTLE_TEST_KEY);
+    _alertTimestamps.delete(throttleTestKey);
   });
 
   it('first call to emitDegradationAlert writes a timestamp to _alertTimestamps', () => {
     // Pre-condition: key is absent.
-    expect(_alertTimestamps.has(THROTTLE_TEST_KEY)).toBe(false);
+    expect(_alertTimestamps.has(throttleTestKey)).toBe(false);
 
     const beforeCall = Date.now();
-    emitDegradationAlert(THROTTLE_TEST_KEY);
+    emitDegradationAlert(throttleTestKey);
     const afterCall = Date.now();
 
     // Post-condition: key exists and its value is a timestamp in the current moment.
-    expect(_alertTimestamps.has(THROTTLE_TEST_KEY)).toBe(true);
-    const writtenTs = _alertTimestamps.get(THROTTLE_TEST_KEY);
+    expect(_alertTimestamps.has(throttleTestKey)).toBe(true);
+    const writtenTs = _alertTimestamps.get(throttleTestKey);
     expect(writtenTs).toBeGreaterThanOrEqual(beforeCall);
     expect(writtenTs).toBeLessThanOrEqual(afterCall);
   });
 
   it('second call within throttle window does NOT update the timestamp (suppressed)', () => {
     // First call fires and records timestamp T1.
-    emitDegradationAlert(THROTTLE_TEST_KEY);
-    const t1 = _alertTimestamps.get(THROTTLE_TEST_KEY);
+    emitDegradationAlert(throttleTestKey);
+    const t1 = _alertTimestamps.get(throttleTestKey);
 
     // Immediately call again — still within the 60s throttle window.
     // The function should return early without updating _alertTimestamps.
-    emitDegradationAlert(THROTTLE_TEST_KEY);
-    const t2 = _alertTimestamps.get(THROTTLE_TEST_KEY);
+    emitDegradationAlert(throttleTestKey);
+    const t2 = _alertTimestamps.get(throttleTestKey);
 
     // The timestamp must be unchanged — the second call was suppressed.
     // If the throttle logic were removed and both calls fired, t2 would be
@@ -740,15 +740,15 @@ describe('emitDegradationAlert — direct throttle-window gating (Equoria-hnud7 
   it('a call after manually clearing the timestamp fires again (window reset)', () => {
     // Simulate "window has expired" by manually clearing the entry
     // (equivalent to 60s passing and a GC, but without actually sleeping).
-    emitDegradationAlert(THROTTLE_TEST_KEY);
-    const t1 = _alertTimestamps.get(THROTTLE_TEST_KEY);
+    emitDegradationAlert(throttleTestKey);
+    const t1 = _alertTimestamps.get(throttleTestKey);
 
     // Simulate window expiry by setting the timestamp to the past (> 60s ago).
     const expiredTs = Date.now() - 61 * 1000;
-    _alertTimestamps.set(THROTTLE_TEST_KEY, expiredTs);
+    _alertTimestamps.set(throttleTestKey, expiredTs);
 
-    emitDegradationAlert(THROTTLE_TEST_KEY);
-    const t2 = _alertTimestamps.get(THROTTLE_TEST_KEY);
+    emitDegradationAlert(throttleTestKey);
+    const t2 = _alertTimestamps.get(throttleTestKey);
 
     // The "expired" window allowed the second alert to fire and overwrite with
     // the current time. Proof it fired: t2 is fresh (~now), strictly greater

@@ -43,7 +43,7 @@ import { AppError } from '../errors/index.mjs';
 // connection-acquire budget (an infrastructure knob the test merely inherited), NOT
 // the interactive `timeout` and NOT a jest/assertion timeout — no assertion is
 // loosened, no forced-P2028 case is weakened.
-const HAPPY_PATH_TX_OPTIONS = { maxWait: 20000 };
+const happyPathTxOptions = { maxWait: 20000 };
 
 describe('isRetryableTxError (Equoria-7x9po)', () => {
   it('classifies Prisma P2028 as retryable', () => {
@@ -130,7 +130,7 @@ describe('withRetryableTxMapping (Equoria-7x9po)', () => {
         prisma.$transaction(async tx => {
           await tx.$queryRaw`SELECT 1`;
           throw genuine;
-        }, HAPPY_PATH_TX_OPTIONS),
+        }, happyPathTxOptions),
         { message: 'should not be used' },
       );
     } catch (err) {
@@ -154,7 +154,7 @@ describe('runRetryableTransaction (Equoria-7x9po)', () => {
       async tx => {
         return tx.$queryRaw`SELECT 42 AS answer`;
       },
-      { txOptions: HAPPY_PATH_TX_OPTIONS },
+      { txOptions: happyPathTxOptions },
     );
     expect(Number(rows[0].answer)).toBe(42);
   }, 20000);

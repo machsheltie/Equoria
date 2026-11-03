@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { sanitizeLogData } from '../middleware/auditLog.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const AUDIT_SRC = path.resolve(HERE, '..', 'middleware', 'auditLog.mjs');
+const auditSrc = path.resolve(HERE, '..', 'middleware', 'auditLog.mjs');
 
 describe('sanitizeLogData applied to req.params + req.query (Equoria-wp0ib)', () => {
   it('SENTINEL: ?token=abc123 → requestQuery.token === "[REDACTED]"', () => {
@@ -71,7 +71,7 @@ describe('sanitizeLogData applied to req.params + req.query (Equoria-wp0ib)', ()
   // for params/query (the original wp0ib defect). A grep over the source is
   // the most direct check that's both simple and immune to refactor noise.
   it('SENTINEL WIRING: middleware passes req.params + req.query through sanitizeLogData (not verbatim)', () => {
-    const src = fs.readFileSync(AUDIT_SRC, 'utf8');
+    const src = fs.readFileSync(auditSrc, 'utf8');
     // Every requestParams: assignment must use sanitizeLogData(...).
     const requestParamsLines = src.match(/^\s*requestParams:\s*[^,\n]+/gm) || [];
     const requestQueryLines = src.match(/^\s*requestQuery:\s*[^,\n]+/gm) || [];

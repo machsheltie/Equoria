@@ -21,7 +21,7 @@
  *   2. No planter or whole-tree scanner exists OUTSIDE the TREE set. The
  *      detector is a static heuristic over each test file's code (comments
  *      stripped): an fs write (sync, callback or promises API) whose path
- *      argument derives from the checkout (REPO_ROOT/BACKEND/__dirname/
+ *      argument derives from the checkout (repoRoot/BACKEND/__dirname/
  *      process.cwd()/…, followed through const/assignment/object-key
  *      definitions; only an os.tmpdir() value is temp, so a mkdtemp() with a
  *      repo prefix counts as in-tree), a reference to scripts/doctrine-checks,
@@ -57,9 +57,9 @@ import { extractShardPatterns } from '../../../scripts/doctrine-checks/check-ci-
 import { readdirSyncTolerant, readScannedFileSyncTolerant } from '../../../scripts/lib/doctrine-scan-patterns.mjs';
 
 const BACKEND = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const REPO_ROOT = path.dirname(BACKEND);
+const repoRoot = path.dirname(BACKEND);
 const LABEL = 'tree-lane-pinning';
-const SKIP_DIRS = new Set(['node_modules', '.git', 'coverage', 'dist', 'build']);
+const skipDirs = new Set(['node_modules', '.git', 'coverage', 'dist', 'build']);
 
 function listBackendTestFiles() {
   const out = [];
@@ -67,7 +67,7 @@ function listBackendTestFiles() {
     for (const entry of readdirSyncTolerant(dir, { withFileTypes: true }, LABEL)) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!SKIP_DIRS.has(entry.name)) {
+        if (!skipDirs.has(entry.name)) {
           walk(full);
         }
       } else if (/\.test\.m?js$/.test(entry.name)) {
@@ -83,7 +83,7 @@ function listBackendTestFiles() {
 // Static detector for tree-touching suites
 // ---------------------------------------------------------------------------
 
-const FS_WRITE_FNS = [
+const fsWriteFns = [
   'writeFileSync',
   'writeFile',
   'appendFileSync',
@@ -107,15 +107,15 @@ const FS_WRITE_FNS = [
   'rmdirSync',
   'rmdir',
 ];
-const WRITE_ALT = FS_WRITE_FNS.join('|');
-const FS_MODULE = '[\'"](?:node:)?fs(?:/promises)?[\'"]';
+const writeAlt = fsWriteFns.join('|');
+const fsModule = '[\'"](?:node:)?fs(?:/promises)?[\'"]';
 // Expressions that name the repository checkout (or this file's place in it).
 // process.cwd() counts: Jest runs suites with cwd = backend/.
-const ROOT_TOKEN =
+const rootToken =
   /\b(?:[A-Z_]*ROOT[A-Z_]*|repoRoot|projectRoot|rootDir|BACKEND[A-Z_]*|backendDir|HERE|__dirname|__filename)\b|import\.meta\.(?:url|dirname|filename)|\bprocess\.cwd\s*\(/;
 // Only the OS temp dir makes a path temp. A mkdtemp() whose prefix is in the
 // repo (mkdtempSync(path.join(BACKEND, 'x-'))) creates a directory IN the tree.
-const TEMP_TOKEN = /\btmpdir\s*\(/;
+const tempToken = /\btmpdir\s*\(/;
 // Bounded argument span: survives nested calls like readdirSync(join(a, b), {...}).
 const SPAN = '[\\s\\S]{0,200}?';
 
@@ -130,7 +130,7 @@ function fsBindings(code) {
   // Every import form: `{ a, b as c, promises as fsp }`, `fs`, `* as fs`, `fs, { a }`,
   // from fs, node:fs, fs/promises or node:fs/promises.
   const importRe = new RegExp(
-    `import\\s+(?:(?:\\*\\s+as\\s+)?(\\w+)\\s*,?\\s*)?(?:\\{([^}]*)\\})?\\s*from\\s*${FS_MODULE}`,
+    `import\\s+(?:(?:\\*\\s+as\\s+)?(\\w+)\\s*,?\\s*)?(?:\\{([^}]*)\\})?\\s*from\\s*${fsModule}`,
     'g',
   );
   for (const m of code.matchAll(importRe)) {
@@ -142,7 +142,7 @@ function fsBindings(code) {
       const local = (alias || original || '').trim();
       if (original?.trim() === 'promises') {
         namespaces.push(local);
-      } else if (original && FS_WRITE_FNS.includes(original.trim())) {
+      } else if (original && fsWriteFns.includes(original.trim())) {
         writers.push([original.trim(), local]);
       }
     }
@@ -163,7 +163,7 @@ function fsBindings(code) {
       const local = (alias || original || '').trim();
       if (original?.trim() === 'promises') {
         namespaces.push(local);
-      } else if (original && FS_WRITE_FNS.includes(original.trim())) {
+      } else if (original && fsWriteFns.includes(original.trim())) {
         writers.push([original.trim(), local]);
       }
     }
@@ -173,14 +173,14 @@ function fsBindings(code) {
 
 /** True when `expr` names the checkout: a root token or a tainted name, and no temp dir. */
 function namesRepo(expr, tainted) {
-  if (TEMP_TOKEN.test(expr)) {
+  if (tempToken.test(expr)) {
     return false;
   }
-  return ROOT_TOKEN.test(expr) || [...tainted].some(name => new RegExp(`\\b${name}\\b`).test(expr));
+  return rootToken.test(expr) || [...tainted].some(name => new RegExp(`\\b${name}\\b`).test(expr));
 }
 
 /**
- * Names whose value is derived from the checkout: `const PLANT = path.join(REPO_ROOT, …)`,
+ * Names whose value is derived from the checkout: `const PLANT = path.join(repoRoot, …)`,
  * `testDocsPath = join(__dirname, …)`, `{ abs: path.join(BACKEND, …) }`, transitively.
  * A name built from mkdtemp()/tmpdir() is never tainted (per-definition temp check).
  */
@@ -248,7 +248,7 @@ function treeTouchReasons(source) {
   // Each call regex captures the fs function's ORIGINAL name (group 1) for writtenArguments().
   const callRes = [
     ...writers.map(([original, local]) => [original, new RegExp(`(?<![\\w.])${local}\\s*\\(`, 'g')]),
-    ...namespaces.map(ns => [null, new RegExp(`\\b${ns}\\.(?:promises\\.)?(${WRITE_ALT})\\s*\\(`, 'g')]),
+    ...namespaces.map(ns => [null, new RegExp(`\\b${ns}\\.(?:promises\\.)?(${writeAlt})\\s*\\(`, 'g')]),
   ];
   const writesRepo = callRes.some(([original, re]) =>
     [...code.matchAll(re)].some(m => {
@@ -512,7 +512,7 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
       const planted = {
         nsWrite: "import fs from 'node:fs';\nfs.writeFileSync(path.join(BACKEND, 'services/x.mjs'), src);",
         aliasViaTaintedConst:
-          "import { mkdirSync, rmSync as wipe } from 'fs';\nconst PLANT = path.join(REPO_ROOT, 'backend/x');\nmkdirSync(PLANT);\nwipe(PLANT);",
+          "import { mkdirSync, rmSync as wipe } from 'fs';\nconst PLANT = path.join(repoRoot, 'backend/x');\nmkdirSync(PLANT);\nwipe(PLANT);",
         mixedImport:
           "import fs, { existsSync } from 'node:fs';\nconst p = join(__dirname, 'fixtures');\nif (!existsSync(p)) fs.mkdirSync(p);",
         objectKey:
@@ -523,8 +523,8 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
           "import fs from 'fs';\nconst e = fs.readdirSync(join(ROOT, 'backend'), { withFileTypes: true });",
         promisesAlias: "import { promises as fsp } from 'fs';\nawait fsp.writeFile(path.join(BACKEND, 'x.mjs'), s);",
         promisesAliasNodeFs:
-          'import { existsSync, promises as fsp } from "node:fs";\nawait fsp.mkdir(path.join(REPO_ROOT, \'backend/x\'));',
-        fsPromisesModule: "import { writeFile } from 'fs/promises';\nawait writeFile(path.join(REPO_ROOT, 'x'), s);",
+          'import { existsSync, promises as fsp } from "node:fs";\nawait fsp.mkdir(path.join(repoRoot, \'backend/x\'));',
+        fsPromisesModule: "import { writeFile } from 'fs/promises';\nawait writeFile(path.join(repoRoot, 'x'), s);",
         nsPromises: "import fs from 'node:fs';\nawait fs.promises.rm(path.join(BACKEND, 'x'), { recursive: true });",
         statWalk:
           "import { readdirSync, statSync } from 'fs';\nfor (const n of readdirSync(dir)) {\n  if (statSync(join(dir, n)).isDirectory()) walk(join(dir, n));\n}",
@@ -535,7 +535,7 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
           "import fs from 'node:fs';\nconst dir = fs.mkdtempSync(path.join(BACKEND, 'x-'));\nfs.writeFileSync(path.join(dir, 'a'), '');",
         destructuredPromises:
           "import fs from 'node:fs';\nconst { promises: fsp } = fs;\nawait fsp.writeFile(path.join(BACKEND, 'x.mjs'), s);",
-        promisesRebound: "import fs from 'fs';\nconst fsp = fs.promises;\nawait fsp.rm(path.join(REPO_ROOT, 'x'));",
+        promisesRebound: "import fs from 'fs';\nconst fsp = fs.promises;\nawait fsp.rm(path.join(repoRoot, 'x'));",
         destructuredWriter:
           "import fs from 'fs';\nconst { writeFileSync: put } = fs;\nput(path.join(BACKEND, 'x.mjs'), s);",
         copyIntoRepo:
@@ -611,7 +611,7 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
   });
 
   describe('CI runs the TREE set serially', () => {
-    const workflowText = readFileSync(path.join(REPO_ROOT, '.github/workflows/test.yml'), 'utf8');
+    const workflowText = readFileSync(path.join(repoRoot, '.github/workflows/test.yml'), 'utf8');
 
     it('exactly one shard selects every TREE suite, and that shard is marked serial', () => {
       const patterns = extractShardPatterns(workflowText).map(p => ({ ...p, re: new RegExp(p.pattern) }));

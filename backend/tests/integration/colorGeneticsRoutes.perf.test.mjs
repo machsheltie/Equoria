@@ -34,11 +34,11 @@ import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const GENETICS_BUDGET_MS = 300;
+const geneticsBudgetMs = 300;
 
 // Full 17-locus genotype matching the CORE_LOCI set used by the prediction
 // service. Choosing realistic complexity so the JSONB roundtrip is exercised.
-const FULL_GENOTYPE = {
+const fullGenotype = {
   E_Extension: 'E/e',
   A_Agouti: 'A/a',
   Cr_Cream: 'n/n',
@@ -91,7 +91,7 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
         dateOfBirth: gameCalendarDate(new Date(), -Math.round(4 * 365.25)),
         age: 4,
         userId: perfUser.id,
-        colorGenotype: FULL_GENOTYPE,
+        colorGenotype: fullGenotype,
         phenotype: { colorName: 'Bay', markings: { face: 'star' } },
       }),
     });
@@ -114,7 +114,7 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
     }
   });
 
-  test(`GET /horses/:id/genetics warm response < ${GENETICS_BUDGET_MS}ms (FR-33)`, async () => {
+  test(`GET /horses/:id/genetics warm response < ${geneticsBudgetMs}ms (FR-33)`, async () => {
     const start = performance.now();
     const res = await request(app)
       .get(`/api/v1/horses/${perfHorse.id}/genetics`)
@@ -123,9 +123,9 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
     const elapsed = performance.now() - start;
 
     expect(res.status).toBe(200);
-    if (elapsed >= GENETICS_BUDGET_MS) {
-      console.warn(`[z594] genetics warm latency = ${elapsed.toFixed(1)}ms (budget ${GENETICS_BUDGET_MS}ms)`);
+    if (elapsed >= geneticsBudgetMs) {
+      console.warn(`[z594] genetics warm latency = ${elapsed.toFixed(1)}ms (budget ${geneticsBudgetMs}ms)`);
     }
-    expect(elapsed).toBeLessThan(GENETICS_BUDGET_MS);
+    expect(elapsed).toBeLessThan(geneticsBudgetMs);
   });
 });

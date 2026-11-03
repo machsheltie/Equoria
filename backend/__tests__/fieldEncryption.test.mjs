@@ -8,7 +8,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 
-const ORIGINAL_ENV = { ...process.env };
+const originalEnv = { ...process.env };
 
 async function freshImport() {
   // Reset the module registry so the key is re-resolved from the current env.
@@ -19,13 +19,13 @@ async function freshImport() {
 
 describe('fieldEncryption (AES-256-GCM)', () => {
   beforeEach(() => {
-    process.env = { ...ORIGINAL_ENV };
+    process.env = { ...originalEnv };
     // 64 hex chars = 32 bytes for AES-256.
     process.env.FIELD_ENCRYPTION_KEY = 'a'.repeat(64);
   });
 
   afterEach(() => {
-    process.env = { ...ORIGINAL_ENV };
+    process.env = { ...originalEnv };
   });
 
   it('round-trips a value: decrypt(encrypt(x)) === x', async () => {

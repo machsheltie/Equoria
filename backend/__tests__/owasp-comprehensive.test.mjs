@@ -64,13 +64,13 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
   // name-based delete can touch our row, and the random suffix prevents
   // leftover-from-prior-run collisions. (The runner's --retryTimes=1 of that
   // era never took effect and has been removed: Equoria-i4aen. Tests run once.)
-  const SUITE_BREED_PREFIX = `OWASPSuite_${randomBytes(6).toString('hex')}_Breed`;
+  const suiteBreedPrefix = `OWASPSuite_${randomBytes(6).toString('hex')}_Breed`;
 
   beforeAll(async () => {
     // Always create our own breed � never findFirst against a shared name.
     testBreed = await prisma.breed.create({
       data: {
-        name: SUITE_BREED_PREFIX,
+        name: suiteBreedPrefix,
         description: 'Test breed for OWASP security tests',
       },
     });

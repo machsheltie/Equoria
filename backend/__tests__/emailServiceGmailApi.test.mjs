@@ -14,10 +14,10 @@ import { URLSearchParams } from 'node:url';
 import { createGmailApiTransport, readGmailConfig } from '../utils/gmailApiTransport.mjs';
 import { sendStaffCheckinCodeEmail, _resetTransporter } from '../utils/emailService.mjs';
 
-const CLIENT_ID = 'test-client-id.apps.googleusercontent.com';
-const CLIENT_SECRET = 'GOCSPX-test-client-secret-s4rf4';
-const REFRESH_TOKEN = '1//test-refresh-token-s4rf4';
-const ACCESS_TOKEN = 'ya29.test-access-token-s4rf4';
+const clientId = 'test-client-id.apps.googleusercontent.com';
+const clientSecret = 'GOCSPX-test-client-secret-s4rf4';
+const refreshToken = '1//test-refresh-token-s4rf4';
+const accessToken = 'ya29.test-access-token-s4rf4';
 
 // ---- the fake Google -------------------------------------------------------
 
@@ -73,7 +73,7 @@ beforeEach(() => {
   tokenCount = 0;
   tokenHandler = res => {
     tokenCount += 1;
-    json(res, 200, { access_token: `${ACCESS_TOKEN}-${tokenCount}`, expires_in: 3599, token_type: 'Bearer' });
+    json(res, 200, { access_token: `${accessToken}-${tokenCount}`, expires_in: 3599, token_type: 'Bearer' });
   };
   sendHandler = res => json(res, 200, { id: 'gmail-msg-1', threadId: 't-1', labelIds: ['SENT'] });
 });
@@ -84,9 +84,9 @@ const decodeRaw = entry => Buffer.from(JSON.parse(entry.body).raw, 'base64url').
 
 function makeTransport(overrides = {}) {
   return createGmailApiTransport({
-    clientId: CLIENT_ID,
-    clientSecret: CLIENT_SECRET,
-    refreshToken: REFRESH_TOKEN,
+    clientId,
+    clientSecret,
+    refreshToken,
     sender: 'equoriagame@gmail.com',
     oauthUrl: `${baseUrl}/token`,
     apiUrl: baseUrl,
@@ -115,14 +115,14 @@ describe('Gmail API transport', () => {
     const form = new URLSearchParams(token.body);
     expect(Object.fromEntries(form)).toEqual({
       grant_type: 'refresh_token',
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      refresh_token: REFRESH_TOKEN,
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
     });
 
     const [send] = sendRequests();
     expect(send.method).toBe('POST');
-    expect(send.headers.authorization).toBe(`Bearer ${ACCESS_TOKEN}-1`);
+    expect(send.headers.authorization).toBe(`Bearer ${accessToken}-1`);
     const raw = decodeRaw(send);
     expect(raw).toMatch(/^To: rider@example\.com$/m);
     expect(raw).toMatch(/^Subject: Your foal has arrived$/m);
@@ -167,8 +167,8 @@ describe('Gmail API transport', () => {
     expect(tokenRequests()).toHaveLength(2);
     const [first, second] = sendRequests();
     expect(sendRequests()).toHaveLength(2);
-    expect(first.headers.authorization).toBe(`Bearer ${ACCESS_TOKEN}-1`);
-    expect(second.headers.authorization).toBe(`Bearer ${ACCESS_TOKEN}-2`);
+    expect(first.headers.authorization).toBe(`Bearer ${accessToken}-1`);
+    expect(second.headers.authorization).toBe(`Bearer ${accessToken}-2`);
   });
 
   it('a second 401 fails rather than looping', async () => {
@@ -192,9 +192,9 @@ describe('Gmail API transport', () => {
     expect(caught.message).toMatch(/HTTP 500/);
     expect(caught.message).toMatch(/INTERNAL/);
     for (const text of [caught.message, caught.stack]) {
-      expect(text).not.toContain(CLIENT_SECRET);
-      expect(text).not.toContain(REFRESH_TOKEN);
-      expect(text).not.toContain(ACCESS_TOKEN);
+      expect(text).not.toContain(clientSecret);
+      expect(text).not.toContain(refreshToken);
+      expect(text).not.toContain(accessToken);
       expect(text).not.toContain('north paddock');
     }
   });
@@ -212,8 +212,8 @@ describe('Gmail API transport', () => {
 
     expect(caught.message).toMatch(/HTTP 400 invalid_grant/);
     for (const text of [caught.message, caught.stack]) {
-      expect(text).not.toContain(CLIENT_SECRET);
-      expect(text).not.toContain(REFRESH_TOKEN);
+      expect(text).not.toContain(clientSecret);
+      expect(text).not.toContain(refreshToken);
     }
     expect(sendRequests()).toHaveLength(0);
   });
@@ -224,7 +224,7 @@ describe('Gmail API transport', () => {
       if (tokenCount === 1) {
         json(res, 400, { error: 'invalid_grant', error_description: 'Bad Request' });
       } else {
-        json(res, 200, { access_token: `${ACCESS_TOKEN}-${tokenCount}`, expires_in: 3599 });
+        json(res, 200, { access_token: `${accessToken}-${tokenCount}`, expires_in: 3599 });
       }
     };
     const transport = makeTransport();
@@ -236,7 +236,7 @@ describe('Gmail API transport', () => {
     expect(result.messageId).toBe('gmail-msg-1');
     expect(tokenRequests()).toHaveLength(2);
     expect(sendRequests()).toHaveLength(1);
-    expect(sendRequests()[0].headers.authorization).toBe(`Bearer ${ACCESS_TOKEN}-2`);
+    expect(sendRequests()[0].headers.authorization).toBe(`Bearer ${accessToken}-2`);
   });
 
   it('rejects within timeoutMs when Google never answers', async () => {
@@ -250,7 +250,7 @@ describe('Gmail API transport', () => {
 
 // ---- selection inside emailService -----------------------------------------
 
-const ENV_KEYS = [
+const envKeys = [
   'NODE_ENV',
   'GMAIL_CLIENT_ID',
   'GMAIL_CLIENT_SECRET',
@@ -265,8 +265,8 @@ const ENV_KEYS = [
 ];
 
 async function withEnv(values, fn) {
-  const saved = Object.fromEntries(ENV_KEYS.map(key => [key, process.env[key]]));
-  for (const key of ENV_KEYS) {
+  const saved = Object.fromEntries(envKeys.map(key => [key, process.env[key]]));
+  for (const key of envKeys) {
     delete process.env[key];
   }
   Object.assign(process.env, values);
@@ -274,7 +274,7 @@ async function withEnv(values, fn) {
   try {
     return await fn();
   } finally {
-    for (const key of ENV_KEYS) {
+    for (const key of envKeys) {
       if (saved[key] === undefined) {
         delete process.env[key];
       } else {
@@ -286,9 +286,9 @@ async function withEnv(values, fn) {
 }
 
 const gmailEnv = () => ({
-  GMAIL_CLIENT_ID: CLIENT_ID,
-  GMAIL_CLIENT_SECRET: CLIENT_SECRET,
-  GMAIL_REFRESH_TOKEN: REFRESH_TOKEN,
+  GMAIL_CLIENT_ID: clientId,
+  GMAIL_CLIENT_SECRET: clientSecret,
+  GMAIL_REFRESH_TOKEN: refreshToken,
   GMAIL_OAUTH_URL: `${baseUrl}/token`,
   GMAIL_API_URL: baseUrl,
 });
@@ -305,7 +305,7 @@ describe('emailService transport selection', () => {
     expect(result).toEqual({ success: true, messageId: 'gmail-msg-1' });
     expect(tokenRequests()).toHaveLength(1);
     const [send] = sendRequests();
-    expect(send.headers.authorization).toBe(`Bearer ${ACCESS_TOKEN}-1`);
+    expect(send.headers.authorization).toBe(`Bearer ${accessToken}-1`);
     const raw = decodeRaw(send);
     expect(raw).toMatch(/^To: steward@example\.com$/m);
     expect(raw).toMatch(/^Subject: Your Steward's Office code$/m);
@@ -314,7 +314,7 @@ describe('emailService transport selection', () => {
   });
 
   it('half-configured Gmail throws in production and names the missing variables', async () => {
-    await withEnv({ NODE_ENV: 'production', GMAIL_CLIENT_ID: CLIENT_ID, ...deadSmtpEnv }, async () => {
+    await withEnv({ NODE_ENV: 'production', GMAIL_CLIENT_ID: clientId, ...deadSmtpEnv }, async () => {
       await expect(sendStaffCheckinCodeEmail('steward@example.com', '111111')).rejects.toThrow(
         /Missing: GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN/,
       );
@@ -332,9 +332,9 @@ describe('emailService transport selection', () => {
   });
 
   it('half-configured Gmail counts as not configured outside production', () => {
-    expect(readGmailConfig({ NODE_ENV: 'test', GMAIL_REFRESH_TOKEN: REFRESH_TOKEN })).toBeNull();
+    expect(readGmailConfig({ NODE_ENV: 'test', GMAIL_REFRESH_TOKEN: refreshToken })).toBeNull();
     expect(readGmailConfig({ NODE_ENV: 'test' })).toBeNull();
-    expect(() => readGmailConfig({ NODE_ENV: 'production', GMAIL_CLIENT_SECRET: CLIENT_SECRET })).toThrow(
+    expect(() => readGmailConfig({ NODE_ENV: 'production', GMAIL_CLIENT_SECRET: clientSecret })).toThrow(
       /Missing: GMAIL_CLIENT_ID, GMAIL_REFRESH_TOKEN/,
     );
   });

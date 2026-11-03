@@ -21,19 +21,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const PRE_COMMIT_HOOK = path.join(REPO_ROOT, '.husky/pre-commit');
-const DOCTRINE_CHECK_REL = 'scripts/doctrine-checks/check-no-new-silent-cleanup-catch.mjs';
+const repoRoot = path.resolve(HERE, '..', '..');
+const preCommitHook = path.join(repoRoot, '.husky/pre-commit');
+const doctrineCheckRel = 'scripts/doctrine-checks/check-no-new-silent-cleanup-catch.mjs';
 
 describe('.husky/pre-commit doctrine gate (Equoria-64tby)', () => {
-  const src = fs.readFileSync(PRE_COMMIT_HOOK, 'utf8');
+  const src = fs.readFileSync(preCommitHook, 'utf8');
 
   it('exists as a regular file', () => {
-    expect(fs.statSync(PRE_COMMIT_HOOK).isFile()).toBe(true);
+    expect(fs.statSync(preCommitHook).isFile()).toBe(true);
   });
 
   it('invokes the silent-cleanup-catch doctrine ratchet', () => {
-    expect(src).toContain(DOCTRINE_CHECK_REL);
+    expect(src).toContain(doctrineCheckRel);
   });
 
   it('blocks the commit (non-zero exit) when the ratchet fails', () => {

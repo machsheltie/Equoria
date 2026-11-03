@@ -149,15 +149,15 @@ describe('CronJobService.evaluateFoalTraits() — currentDay > 6 early exit', ()
 
 // ─── transitionElectionStatuses() — real DB integration ──────────────────────
 
-const CRON_PREFIX = 'cron-elec';
+const cronPrefix = 'cron-elec';
 
 async function createCronUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${CRON_PREFIX}-${uid}`,
-      username: `${CRON_PREFIX}_${uid}`,
-      email: `${CRON_PREFIX}-${uid}@example.com`,
+      id: `${cronPrefix}-${uid}`,
+      username: `${cronPrefix}_${uid}`,
+      email: `${cronPrefix}-${uid}@example.com`,
       firstName: 'Cron',
       lastName: 'ElecTest',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -170,7 +170,7 @@ async function createCronClub(leaderId) {
   const uid = randomBytes(4).toString('hex');
   return prisma.club.create({
     data: {
-      name: `${CRON_PREFIX}-${uid}`,
+      name: `${cronPrefix}-${uid}`,
       type: 'discipline',
       category: 'racing',
       description: 'Cron test club',
@@ -184,7 +184,7 @@ async function createCronClub(leaderId) {
 
 async function cleanupCronElecSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: CRON_PREFIX } },
+    where: { id: { startsWith: cronPrefix } },
     select: { id: true },
   });
   if (users.length === 0) {

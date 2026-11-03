@@ -41,7 +41,7 @@ import { requireOwnership } from '../middleware/ownership.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from './helpers/createTestHorse.mjs';
 
-const SUITE_PREFIX = 'mwown';
+const suitePrefix = 'mwown';
 
 function makeReqRes(user) {
   let statusValue;
@@ -83,9 +83,9 @@ async function createUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Mw',
       lastName: 'Own',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -98,7 +98,7 @@ async function createHorse(userId) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${SUITE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
+      name: `${suitePrefix}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
       user: { connect: { id: userId } },
@@ -109,7 +109,7 @@ async function createHorse(userId) {
 async function createGroom(userId) {
   return prisma.groom.create({
     data: {
-      name: `${SUITE_PREFIX}-groom-${randomBytes(4).toString('hex')}`,
+      name: `${suitePrefix}-groom-${randomBytes(4).toString('hex')}`,
       speciality: 'foalCare',
       personality: 'gentle',
       user: { connect: { id: userId } },
@@ -130,7 +130,7 @@ async function createGroomAssignment(groomId, horseId, userId) {
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {

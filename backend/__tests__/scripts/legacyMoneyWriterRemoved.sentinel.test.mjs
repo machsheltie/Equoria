@@ -50,14 +50,14 @@ import { fileURLToPath } from 'node:url';
 import { describe, test, expect } from '@jest/globals';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..', '..');
-const BACKEND_DIR = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..', '..');
+const backendDir = path.join(repoRoot, 'backend');
 
 // The four legacy non-ledger money writers retired by Equoria-709qm.
 const FORBIDDEN = Object.freeze(['updateUserMoney', 'transferEntryFees', 'updateHorseEarnings', 'updateHorseRewards']);
 
 // Directory names that hold test / build code — excluded from the PRODUCTION scan.
-const EXCLUDED_DIRS = new Set(['node_modules', '__tests__', 'tests', 'coverage', 'dist', 'build']);
+const excludedDirs = new Set(['node_modules', '__tests__', 'tests', 'coverage', 'dist', 'build']);
 
 /**
  * Strip block and line comments so a documentation mention of a forbidden name
@@ -98,7 +98,7 @@ function forbiddenRefsIn(source) {
 function listProductionMjs(dir, acc = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
-      if (EXCLUDED_DIRS.has(entry.name)) {
+      if (excludedDirs.has(entry.name)) {
         continue;
       }
       listProductionMjs(path.join(dir, entry.name), acc);
@@ -164,7 +164,7 @@ describe('Equoria-709qm — legacy non-ledger money writers stay removed', () =>
   });
 
   test('no production backend file defines, exports, or imports a forbidden money writer', () => {
-    const files = listProductionMjs(BACKEND_DIR);
+    const files = listProductionMjs(backendDir);
     expect(files.length).toBeGreaterThan(50); // sanity: the walk found the tree
 
     const violations = [];
@@ -172,7 +172,7 @@ describe('Equoria-709qm — legacy non-ledger money writers stay removed', () =>
       const source = fs.readFileSync(filePath, 'utf8');
       const hits = forbiddenRefsIn(source);
       if (hits.length > 0) {
-        violations.push(`${path.relative(REPO_ROOT, filePath)} → ${hits.join(', ')}`);
+        violations.push(`${path.relative(repoRoot, filePath)} → ${hits.join(', ')}`);
       }
     }
 

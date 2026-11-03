@@ -54,13 +54,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const BACKEND = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(HERE, '..', '..', '..');
+const BACKEND = path.join(repoRoot, 'backend');
 
 // Resolve the eslint CLI the SAME way check-backend-lint-and-format.mjs does:
 // direct filesystem probe at backend/ then repo root (hoisted installs).
 function resolveEslintCli() {
-  for (const base of [BACKEND, REPO_ROOT]) {
+  for (const base of [BACKEND, repoRoot]) {
     const candidate = path.join(base, 'node_modules', 'eslint', 'bin', 'eslint.js');
     if (existsSync(candidate)) {
       return candidate;

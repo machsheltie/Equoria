@@ -21,13 +21,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = path.resolve(HERE, '..');
+const backendRoot = path.resolve(HERE, '..');
 
-const PLANT_CONTROLLER_DIR = path.join(BACKEND_ROOT, 'modules/horses/controllers/_max_lines_doctrine_sentinel_plant');
-const PLANT_ROUTE_DIR = path.join(BACKEND_ROOT, 'modules/horses/routes/_max_lines_doctrine_sentinel_plant');
+const plantControllerDir = path.join(backendRoot, 'modules/horses/controllers/_max_lines_doctrine_sentinel_plant');
+const plantRouteDir = path.join(backendRoot, 'modules/horses/routes/_max_lines_doctrine_sentinel_plant');
 
 afterEach(() => {
-  for (const dir of [PLANT_CONTROLLER_DIR, PLANT_ROUTE_DIR]) {
+  for (const dir of [plantControllerDir, plantRouteDir]) {
     try {
       fs.rmSync(dir, { recursive: true, force: true });
     } catch {
@@ -52,11 +52,11 @@ function runLint(targetRelToBackend) {
   // Invoke ESLint via its raw .js entrypoint with the current Node binary —
   // works identically on Windows + POSIX without `shell: true` (which would
   // mangle quoting and trigger DEP0190). Resolving the project's
-  // eslint.config.mjs happens automatically because cwd is BACKEND_ROOT,
+  // eslint.config.mjs happens automatically because cwd is backendRoot,
   // matching how `npm run lint` invokes the same entrypoint.
-  const eslintJs = path.join(BACKEND_ROOT, 'node_modules', 'eslint', 'bin', 'eslint.js');
+  const eslintJs = path.join(backendRoot, 'node_modules', 'eslint', 'bin', 'eslint.js');
   return spawnSync(process.execPath, [eslintJs, '--no-warn-ignored', targetRelToBackend], {
-    cwd: BACKEND_ROOT,
+    cwd: backendRoot,
     encoding: 'utf8',
     shell: false,
     timeout: 60_000,
@@ -65,8 +65,8 @@ function runLint(targetRelToBackend) {
 
 describe('ESLint max-lines doctrine — controllers + routes (Equoria-xod8b / y8u2j)', () => {
   it('SENTINEL: controllers-layer rule fires when a > 800-effective-line controller is planted', () => {
-    fs.mkdirSync(PLANT_CONTROLLER_DIR, { recursive: true });
-    const planted = path.join(PLANT_CONTROLLER_DIR, 'plantedController.mjs');
+    fs.mkdirSync(plantControllerDir, { recursive: true });
+    const planted = path.join(plantControllerDir, 'plantedController.mjs');
     // 803 effective non-blank non-comment lines — just past the 800 cap.
     fs.writeFileSync(planted, buildOversizeSource(803));
 
@@ -83,8 +83,8 @@ describe('ESLint max-lines doctrine — controllers + routes (Equoria-xod8b / y8
   });
 
   it('SENTINEL: routes-layer rule (Equoria-y8u2j) fires when a > 800-effective-line route file is planted', () => {
-    fs.mkdirSync(PLANT_ROUTE_DIR, { recursive: true });
-    const planted = path.join(PLANT_ROUTE_DIR, 'plantedRoutes.mjs');
+    fs.mkdirSync(plantRouteDir, { recursive: true });
+    const planted = path.join(plantRouteDir, 'plantedRoutes.mjs');
     fs.writeFileSync(planted, buildOversizeSource(803));
 
     const res = runLint('modules/horses/routes/_max_lines_doctrine_sentinel_plant/plantedRoutes.mjs');
@@ -95,8 +95,8 @@ describe('ESLint max-lines doctrine — controllers + routes (Equoria-xod8b / y8
   });
 
   it('NEGATIVE CONTROL: a fresh 100-line controller passes the max-lines rule', () => {
-    fs.mkdirSync(PLANT_CONTROLLER_DIR, { recursive: true });
-    const planted = path.join(PLANT_CONTROLLER_DIR, 'plantedSmallController.mjs');
+    fs.mkdirSync(plantControllerDir, { recursive: true });
+    const planted = path.join(plantControllerDir, 'plantedSmallController.mjs');
     fs.writeFileSync(planted, buildOversizeSource(100));
 
     const res = runLint('modules/horses/controllers/_max_lines_doctrine_sentinel_plant/plantedSmallController.mjs');

@@ -34,14 +34,14 @@ import {
 } from '../../../scripts/lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..', '..');
-const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..', '..');
+const backendRoot = path.join(repoRoot, 'backend');
 
 // Forbidden patterns. Both detect the construct in real code; both are
 // stripped of comments before matching so that documentation mentions do
 // not false-flag.
-const CREATE_REQUIRE_PATTERN = /createRequire\s*\(\s*import\.meta\.url\s*\)/;
-const MODULE_EXPORTS_PATTERN = /(?:^|[^.\w])(?:module\.exports|exports\.\w+)\s*=/m;
+const createRequirePattern = /createRequire\s*\(\s*import\.meta\.url\s*\)/;
+const moduleExportsPattern = /(?:^|[^.\w])(?:module\.exports|exports\.\w+)\s*=/m;
 
 // Allowlist of currently-known violations that have their own tracking issue.
 // REMOVE entries here as those issues land — do not let this list grow.
@@ -51,7 +51,7 @@ const ALLOWLIST = [];
 
 // Test file itself contains the patterns it detects (planted-violation
 // synthetic + this comment). Excluded so the sentinel does not self-match.
-const SELF_TEST_PATH = path.normalize('backend/__tests__/scripts/noCommonJsInMjs.sentinel.test.mjs');
+const selfTestPath = path.normalize('backend/__tests__/scripts/noCommonJsInMjs.sentinel.test.mjs');
 
 function isAllowed(relPath) {
   const norm = path.normalize(relPath);
@@ -120,19 +120,19 @@ function stripComments(source) {
 }
 
 describe('Equoria-6gcvi — NO COMMONJS MIXING in backend tree (*.mjs)', () => {
-  test('CREATE_REQUIRE_PATTERN fires on a synthetic violation (PLANTED)', () => {
+  test('createRequirePattern fires on a synthetic violation (PLANTED)', () => {
     const synthetic = `import { createRequire } from 'module';
 const require = createRequire(import.meta.url);`;
-    expect(CREATE_REQUIRE_PATTERN.test(stripComments(synthetic))).toBe(true);
+    expect(createRequirePattern.test(stripComments(synthetic))).toBe(true);
   });
 
-  test('MODULE_EXPORTS_PATTERN fires on a synthetic violation (PLANTED)', () => {
+  test('moduleExportsPattern fires on a synthetic violation (PLANTED)', () => {
     const synthetic = `function foo() {}
 module.exports = foo;`;
-    expect(MODULE_EXPORTS_PATTERN.test(stripComments(synthetic))).toBe(true);
+    expect(moduleExportsPattern.test(stripComments(synthetic))).toBe(true);
 
     const namedExports = 'exports.bar = function () {};';
-    expect(MODULE_EXPORTS_PATTERN.test(stripComments(namedExports))).toBe(true);
+    expect(moduleExportsPattern.test(stripComments(namedExports))).toBe(true);
   });
 
   test('detector ignores comment-only mentions (NEGATIVE CONTROL)', () => {
@@ -141,25 +141,25 @@ module.exports = foo;`;
       /* module.exports = ... is also forbidden. */
       export function noop() {}
     `;
-    expect(CREATE_REQUIRE_PATTERN.test(stripComments(commentOnly))).toBe(false);
-    expect(MODULE_EXPORTS_PATTERN.test(stripComments(commentOnly))).toBe(false);
+    expect(createRequirePattern.test(stripComments(commentOnly))).toBe(false);
+    expect(moduleExportsPattern.test(stripComments(commentOnly))).toBe(false);
   });
 
   test('detector ignores property-access dot prefix (e.g. `foo.module.exports`)', () => {
     // The (?:^|[^.\w]) prefix prevents false positives on properties named
     // .exports on namespaced objects.
     const benign = 'const x = foo.module.exports;';
-    expect(MODULE_EXPORTS_PATTERN.test(stripComments(benign))).toBe(false);
+    expect(moduleExportsPattern.test(stripComments(benign))).toBe(false);
   });
 
   test('no backend tree (*.mjs) uses createRequire (outside allowlist)', () => {
-    const files = walkMjs(BACKEND_ROOT);
+    const files = walkMjs(backendRoot);
     expect(files.length).toBeGreaterThan(100); // sanity
 
     const violations = [];
     for (const filePath of files) {
-      const rel = path.relative(REPO_ROOT, filePath);
-      if (isAllowed(rel) || path.normalize(rel) === SELF_TEST_PATH) {
+      const rel = path.relative(repoRoot, filePath);
+      if (isAllowed(rel) || path.normalize(rel) === selfTestPath) {
         continue;
       }
       // Equoria-27lqy: tolerate a file that vanished between the walk and the
@@ -170,7 +170,7 @@ module.exports = foo;`;
         continue;
       }
       const stripped = stripComments(source);
-      if (CREATE_REQUIRE_PATTERN.test(stripped)) {
+      if (createRequirePattern.test(stripped)) {
         violations.push(rel);
       }
     }
@@ -179,12 +179,12 @@ module.exports = foo;`;
   });
 
   test('no backend tree (*.mjs) uses module.exports / exports.x = (no allowlist)', () => {
-    const files = walkMjs(BACKEND_ROOT);
+    const files = walkMjs(backendRoot);
 
     const violations = [];
     for (const filePath of files) {
-      const rel = path.relative(REPO_ROOT, filePath);
-      if (path.normalize(rel) === SELF_TEST_PATH) {
+      const rel = path.relative(repoRoot, filePath);
+      if (path.normalize(rel) === selfTestPath) {
         continue;
       }
       // Equoria-27lqy: tolerate a file that vanished mid-walk (see above).
@@ -193,7 +193,7 @@ module.exports = foo;`;
         continue;
       }
       const stripped = stripComments(source);
-      if (MODULE_EXPORTS_PATTERN.test(stripped)) {
+      if (moduleExportsPattern.test(stripped)) {
         violations.push(rel);
       }
     }
@@ -206,7 +206,7 @@ module.exports = foo;`;
     // be removed. This test prevents the allowlist from rotting into an
     // ineffective comment.
     for (const rel of ALLOWLIST) {
-      const filePath = path.join(REPO_ROOT, rel);
+      const filePath = path.join(repoRoot, rel);
       if (!fs.existsSync(filePath)) {
         // File may have been moved/deleted by the linked fix — that's fine,
         // but the entry needs cleanup too. Surface the staleness.
@@ -214,7 +214,7 @@ module.exports = foo;`;
       }
       const source = fs.readFileSync(filePath, 'utf8');
       const stripped = stripComments(source);
-      const stillViolates = CREATE_REQUIRE_PATTERN.test(stripped);
+      const stillViolates = createRequirePattern.test(stripped);
       if (!stillViolates) {
         throw new Error(
           `Allowlist entry ${rel} no longer matches the forbidden pattern. ` +

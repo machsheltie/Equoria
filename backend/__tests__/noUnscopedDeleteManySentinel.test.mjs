@@ -45,14 +45,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..');
 
 // Roots the backend Jest project scans (jest.config.js: roots + testMatch).
-const SCAN_ROOTS = [path.join(repoRoot, 'backend'), path.join(repoRoot, 'tests')];
+const scanRoots = [path.join(repoRoot, 'backend'), path.join(repoRoot, 'tests')];
 
-const SKIP_DIRS = new Set(['node_modules', 'coverage', 'dist', 'build', '.archive', '.backups', '.git']);
+const skipDirs = new Set(['node_modules', 'coverage', 'dist', 'build', '.archive', '.backups', '.git']);
 
 // Exact repo-relative paths (POSIX separators) of KNOWN unscoped-deleteMany
 // files owned by sibling issues. See header. Remove an entry when its sibling
 // issue scopes the call.
-const KNOWN_OFFENDER_ALLOWLIST = new Set([
+const knownOffenderAllowlist = new Set([
   // Empty: rofku, lkady, and 2apsk all landed their scoped-deleteMany fixes.
 ]);
 
@@ -61,8 +61,8 @@ const KNOWN_OFFENDER_ALLOWLIST = new Set([
 // has non-whitespace before the closing brace and is NOT matched. `\s` covers
 // newlines, so a call split across lines (`deleteMany(\n{}\n)`) is still
 // matched when the regex is run against the whole-file source.
-const UNSCOPED_DELETE_MANY = /\.deleteMany\(\s*(?:\{\s*\})?\s*\)/;
-const UNSCOPED_DELETE_MANY_GLOBAL = /\.deleteMany\(\s*(?:\{\s*\})?\s*\)/g;
+const unscopedDeleteMany = /\.deleteMany\(\s*(?:\{\s*\})?\s*\)/;
+const unscopedDeleteManyGlobal = /\.deleteMany\(\s*(?:\{\s*\})?\s*\)/g;
 
 function collectFiles(rootDir) {
   let entries;
@@ -80,7 +80,7 @@ function collectFiles(rootDir) {
     const dir = entry.parentPath ?? entry.path ?? rootDir;
     const abs = path.join(dir, entry.name);
     const rel = path.relative(repoRoot, abs).split(path.sep).join('/');
-    if (rel.split('/').some(seg => SKIP_DIRS.has(seg))) {
+    if (rel.split('/').some(seg => skipDirs.has(seg))) {
       continue;
     }
     files.push({ abs, rel });
@@ -103,7 +103,7 @@ function isScanTarget(rel) {
 function scanAll() {
   const offenders = [];
   const seen = new Set();
-  for (const root of SCAN_ROOTS) {
+  for (const root of scanRoots) {
     for (const { abs, rel } of collectFiles(root)) {
       if (seen.has(rel)) {
         continue;
@@ -133,7 +133,7 @@ function scanAll() {
 
       const hits = [];
       codeLines.forEach((line, i) => {
-        if (UNSCOPED_DELETE_MANY.test(line)) {
+        if (unscopedDeleteMany.test(line)) {
           hits.push(i + 1);
         }
       });
@@ -144,8 +144,8 @@ function scanAll() {
       // surplus are multiline; record the offender with an approximate
       // "multiline" marker since exact line attribution is not meaningful.
       const codeSrc = codeLines.join('\n');
-      UNSCOPED_DELETE_MANY_GLOBAL.lastIndex = 0;
-      const wholeFileCount = (codeSrc.match(UNSCOPED_DELETE_MANY_GLOBAL) || []).length;
+      unscopedDeleteManyGlobal.lastIndex = 0;
+      const wholeFileCount = (codeSrc.match(unscopedDeleteManyGlobal) || []).length;
       if (wholeFileCount > hits.length) {
         hits.push('multiline');
       }
@@ -162,7 +162,7 @@ describe('🛡️ STATIC SENTINEL: no unscoped deleteMany in test files (Equoria
   const offenderPaths = new Set(offenders.map(o => o.rel));
 
   it('no NON-allowlisted test file contains an unscoped deleteMany() / deleteMany({})', () => {
-    const unexpected = offenders.filter(o => !KNOWN_OFFENDER_ALLOWLIST.has(o.rel));
+    const unexpected = offenders.filter(o => !knownOffenderAllowlist.has(o.rel));
     if (unexpected.length) {
       const detail = unexpected.map(o => `  - ${o.rel} (lines ${o.lines.join(', ')})`).join('\n');
       throw new Error(
@@ -177,10 +177,10 @@ describe('🛡️ STATIC SENTINEL: no unscoped deleteMany in test files (Equoria
   it('every allowlisted known-offender still actually has an unscoped deleteMany (no stale allowlist)', () => {
     // When a sibling issue scopes its file, its allowlist entry must be removed.
     // This catches a stale entry so the allowlist cannot quietly rot.
-    const stale = [...KNOWN_OFFENDER_ALLOWLIST].filter(p => !offenderPaths.has(p));
+    const stale = [...knownOffenderAllowlist].filter(p => !offenderPaths.has(p));
     if (stale.length) {
       throw new Error(
-        'Stale KNOWN_OFFENDER_ALLOWLIST entries (file no longer has an unscoped ' +
+        'Stale knownOffenderAllowlist entries (file no longer has an unscoped ' +
           'deleteMany — its sibling issue was fixed). Remove these from the ' +
           `allowlist in noUnscopedDeleteManySentinel.test.mjs:\n${stale.map(p => `  - ${p}`).join('\n')}`,
       );

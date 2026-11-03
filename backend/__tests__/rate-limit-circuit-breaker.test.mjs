@@ -232,20 +232,20 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
       // If a regression made useEnvOverride:false accidentally honor env vars,
       // the env-set 999999 cap would mean no request ever returns 429 and
       // this test would fail loudly.
-      const HARD_MAX = 3;
+      const hardMax = 3;
       const previousMax = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
       process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '999999';
       try {
         const app = express();
         const limiter = createRateLimiter({
           windowMs: 60000,
-          max: HARD_MAX,
+          max: hardMax,
           keyPrefix: 'no-override-real-assertion',
           useEnvOverride: false, // env knob MUST be ignored
         });
         app.get('/probe', limiter, (_req, res) => res.status(200).json({ ok: true }));
 
-        for (let i = 0; i < HARD_MAX; i++) {
+        for (let i = 0; i < hardMax; i++) {
           const res = await request(app).get('/probe');
           expect(res.status).toBe(200);
         }

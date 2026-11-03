@@ -22,12 +22,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '../..');
-const CHECK = path.join(REPO_ROOT, 'scripts', 'doctrine-checks', 'check-playwright-workers-budget.mjs');
+const repoRoot = path.resolve(HERE, '../..');
+const CHECK = path.join(repoRoot, 'scripts', 'doctrine-checks', 'check-playwright-workers-budget.mjs');
 
 function runCheck(args = []) {
   const result = spawnSync(process.execPath, [CHECK, ...args], {
-    cwd: REPO_ROOT,
+    cwd: repoRoot,
     encoding: 'utf8',
     env: { ...process.env },
   });

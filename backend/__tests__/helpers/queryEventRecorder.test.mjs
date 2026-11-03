@@ -21,7 +21,7 @@ import { createQueryEventRecorder } from './queryEventRecorder.mjs';
 const { PrismaClient } = await import('../../../packages/database/prismaClient.mjs');
 const { buildDatabaseUrl } = await import('../../../packages/database/dbPoolConfig.mjs');
 
-const LATE_MS = 25;
+const lateMs = 25;
 const client = new PrismaClient({
   datasources: { db: { url: buildDatabaseUrl(process.env.DATABASE_URL, process.env) } },
   log: [{ emit: 'event', level: 'query' }],
@@ -30,7 +30,7 @@ const client = new PrismaClient({
 
 // The real client, except its query events reach the recorder late.
 const lateEvents = {
-  $on: (type, listener) => client.$on(type, event => setTimeout(() => listener(event), LATE_MS)),
+  $on: (type, listener) => client.$on(type, event => setTimeout(() => listener(event), lateMs)),
   $queryRawUnsafe: (...args) => client.$queryRawUnsafe(...args),
 };
 
@@ -49,7 +49,7 @@ describe('queryEventRecorder — late query events (Equoria-hajbq)', () => {
   it('carries no statement into the next measurement', async () => {
     await recorder.measure(() => client.$queryRawUnsafe('SELECT 8 AS "hajbq_previous"'));
     // Outlasts the late delivery, so a straggler from the previous measurement would land here.
-    const { statements } = await recorder.measure(() => new Promise(resolve => setTimeout(resolve, LATE_MS * 3)));
+    const { statements } = await recorder.measure(() => new Promise(resolve => setTimeout(resolve, lateMs * 3)));
 
     expect(statements).toEqual([]);
   });

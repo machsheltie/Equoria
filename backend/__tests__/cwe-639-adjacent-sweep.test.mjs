@@ -59,7 +59,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   // instead of a per-test swallowed finally-block delete. Reset each beforeEach.
   let extraHorseIds = [];
 
-  const NONEXISTENT_ID = 999999999;
+  const nonexistentId = 999999999;
 
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
@@ -189,7 +189,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ groomId: NONEXISTENT_ID, horseId: horseA.id });
+        .send({ groomId: nonexistentId, horseId: horseA.id });
 
       // Status codes equal AND the errors array equal — disclosure-resistant.
       expect(resForeignGroom.status).toBe(resMissingGroom.status);
@@ -213,7 +213,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ groomId: groomA.id, horseId: NONEXISTENT_ID });
+        .send({ groomId: groomA.id, horseId: nonexistentId });
 
       expect(resForeignHorse.status).toBe(resMissingHorse.status);
       expect(resForeignHorse.body).toEqual(resMissingHorse.body);
@@ -237,7 +237,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
       const crossUserError = await assignGroomToFoal(horseA.id, groomB.id, userA.id).catch(e => e);
 
       // Same call shape, but with a non-existent groom ID.
-      const missingError = await assignGroomToFoal(horseA.id, NONEXISTENT_ID, userA.id).catch(e => e);
+      const missingError = await assignGroomToFoal(horseA.id, nonexistentId, userA.id).catch(e => e);
 
       expect(crossUserError).toBeInstanceOf(Error);
       expect(missingError).toBeInstanceOf(Error);
@@ -246,7 +246,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
       // both errors must read 'Groom with ID <id> not found' — the only ID-
       // dependent variation is the literal ID the caller supplied.
       expect(crossUserError.message).toBe(`Groom with ID ${groomB.id} not found`);
-      expect(missingError.message).toBe(`Groom with ID ${NONEXISTENT_ID} not found`);
+      expect(missingError.message).toBe(`Groom with ID ${nonexistentId} not found`);
       // Sentinel: the leaky substring must be gone.
       expect(crossUserError.message).not.toContain('You do not own');
     });
@@ -297,7 +297,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         .send({
           name: `CweFoalA-${randomBytes(4).toString('hex')}`,
           breedId: breed.id,
-          sireId: NONEXISTENT_ID,
+          sireId: nonexistentId,
           damId: horseA.id,
         });
 
@@ -337,7 +337,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
           name: `CweFoalA-${randomBytes(4).toString('hex')}`,
           breedId: breed.id,
           sireId: horseA.id,
-          damId: NONEXISTENT_ID,
+          damId: nonexistentId,
         });
 
       expect(resMissingDam.status).toBe(404);

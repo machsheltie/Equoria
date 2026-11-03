@@ -22,7 +22,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from './helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-vllv4';
+const fixturePrefix = 'TestFixture-vllv4';
 
 let user;
 const createdUserIds = [];
@@ -33,8 +33,8 @@ beforeAll(async () => {
   user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@test.com`,
+      username: `${fixturePrefix}-${tag}`,
+      email: `${fixturePrefix}-${tag}@test.com`,
       password: pw,
       firstName: 'FK',
       lastName: 'Integrity',
@@ -101,7 +101,7 @@ describe('trait_history_logs FK integrity (Equoria-vllv4)', () => {
     const horse = await prisma.horse.create({
       data: await testHorseData(prisma, {
         ...fixtureColor(),
-        name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
+        name: `${fixturePrefix}-horse-${randomBytes(4).toString('hex')}`,
         sex: 'Mare',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
@@ -129,7 +129,7 @@ describe('trait_history_logs FK integrity (Equoria-vllv4)', () => {
     const horse = await prisma.horse.create({
       data: await testHorseData(prisma, {
         ...fixtureColor(),
-        name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
+        name: `${fixturePrefix}-horse-${randomBytes(4).toString('hex')}`,
         sex: 'Mare',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
@@ -138,7 +138,7 @@ describe('trait_history_logs FK integrity (Equoria-vllv4)', () => {
     });
     const groom = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-groom-${randomBytes(4).toString('hex')}`,
+        name: `${fixturePrefix}-groom-${randomBytes(4).toString('hex')}`,
         speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'gentle',

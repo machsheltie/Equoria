@@ -32,7 +32,7 @@ import { createRateLimiter } from '../../middleware/rateLimiting.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const MIDDLEWARE_DIR = join(__dirname, '../../middleware');
+const middlewareDir = join(__dirname, '../../middleware');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -53,13 +53,13 @@ function buildCsrfApp() {
 }
 
 // 24-bit FNV-1a hash across RFC 5737 test ranges → per-test unique rate-limit bucket
-const TEST_NET_RANGES = ['192.0.2', '198.51.100', '203.0.113'];
+const testNetRanges = ['192.0.2', '198.51.100', '203.0.113'];
 function uniqueTestIp(label) {
   let hash = 2166136261;
   for (let i = 0; i < label.length; i++) {
     hash = Math.imul(hash ^ label.charCodeAt(i), 16777619) >>> 0;
   }
-  const range = TEST_NET_RANGES[hash % TEST_NET_RANGES.length];
+  const range = testNetRanges[hash % testNetRanges.length];
   const o3 = (hash >>> 8) & 0xff;
   const o4 = (((hash >>> 16) & 0xff) % 254) + 1;
   return `${range}.${o3}.${o4}`;
@@ -77,7 +77,7 @@ function buildRateLimitApp(limiter) {
 
 describe('csrf.mjs — structural: no bypass-header awareness in source (Equoria-v0d6)', () => {
   it('csrf.mjs source contains no x-test-skip-csrf or any bypass path', () => {
-    const src = readFileSync(join(MIDDLEWARE_DIR, 'csrf.mjs'), 'utf8');
+    const src = readFileSync(join(middlewareDir, 'csrf.mjs'), 'utf8');
     expect(src).not.toContain('x-test-skip-csrf');
     expect(src).not.toContain('skipCsrf');
     expect(src).not.toContain('bypassCsrf');
@@ -114,7 +114,7 @@ describe('csrfProtection — x-test-skip-csrf header is ignored (Equoria-v0d6)',
 
 describe('rateLimiting.mjs — structural: no x-test-bypass-rate-limit in source (Equoria-v0d6)', () => {
   it('rateLimiting.mjs source contains no x-test-bypass-rate-limit or per-request bypass logic', () => {
-    const src = readFileSync(join(MIDDLEWARE_DIR, 'rateLimiting.mjs'), 'utf8');
+    const src = readFileSync(join(middlewareDir, 'rateLimiting.mjs'), 'utf8');
     expect(src).not.toContain('x-test-bypass-rate-limit');
     expect(src).not.toContain('bypassRateLimit');
     // Per-request bypass via headers would need to read the header — confirm absent

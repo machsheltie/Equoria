@@ -48,13 +48,13 @@ import { createRateLimiter } from '../middleware/rateLimiting.mjs';
 import { resolveE2eRateLimitMax, applyE2eRateLimitOverride } from '../middleware/e2eRateLimitOverride.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(__dirname, '../..');
-const read = relPath => readFileSync(resolve(REPO_ROOT, relPath), 'utf8');
+const repoRoot = resolve(__dirname, '../..');
+const read = relPath => readFileSync(resolve(repoRoot, relPath), 'utf8');
 
 // The env-default caps used by app.mjs (RATE_LIMIT_MAX_BY_ENV). Referenced here
 // only as the `configuredMax` the helper falls back to — NOT redefining them.
-const BETA_DEFAULT = 3000;
-const PROD_DEFAULT = 100;
+const betaDefault = 3000;
+const prodDefault = 100;
 
 describe('resolveE2eRateLimitMax — pure resolution (Equoria-jz9v2)', () => {
   describe('unset override ⇒ env default (every real deploy path)', () => {
@@ -64,12 +64,10 @@ describe('resolveE2eRateLimitMax — pure resolution (Equoria-jz9v2)', () => {
       });
     }
     it('null / empty / whitespace-only envValue returns configuredMax', () => {
-      expect(resolveE2eRateLimitMax({ nodeEnv: 'beta', envValue: null, configuredMax: BETA_DEFAULT })).toBe(
-        BETA_DEFAULT,
-      );
-      expect(resolveE2eRateLimitMax({ nodeEnv: 'beta', envValue: '', configuredMax: BETA_DEFAULT })).toBe(BETA_DEFAULT);
-      expect(resolveE2eRateLimitMax({ nodeEnv: 'beta', envValue: '   ', configuredMax: BETA_DEFAULT })).toBe(
-        BETA_DEFAULT,
+      expect(resolveE2eRateLimitMax({ nodeEnv: 'beta', envValue: null, configuredMax: betaDefault })).toBe(betaDefault);
+      expect(resolveE2eRateLimitMax({ nodeEnv: 'beta', envValue: '', configuredMax: betaDefault })).toBe(betaDefault);
+      expect(resolveE2eRateLimitMax({ nodeEnv: 'beta', envValue: '   ', configuredMax: betaDefault })).toBe(
+        betaDefault,
       );
     });
   });
@@ -77,26 +75,26 @@ describe('resolveE2eRateLimitMax — pure resolution (Equoria-jz9v2)', () => {
   describe('explicit override honored in non-prod overridable envs', () => {
     for (const nodeEnv of ['beta', 'test', 'beta-readiness']) {
       it(`${nodeEnv}: '100000' returns 100000`, () => {
-        expect(resolveE2eRateLimitMax({ nodeEnv, envValue: '100000', configuredMax: BETA_DEFAULT })).toBe(100000);
+        expect(resolveE2eRateLimitMax({ nodeEnv, envValue: '100000', configuredMax: betaDefault })).toBe(100000);
       });
       it(`${nodeEnv}: a LOW '2' returns 2 (override can lower as well as raise)`, () => {
-        expect(resolveE2eRateLimitMax({ nodeEnv, envValue: '2', configuredMax: BETA_DEFAULT })).toBe(2);
+        expect(resolveE2eRateLimitMax({ nodeEnv, envValue: '2', configuredMax: betaDefault })).toBe(2);
       });
       it(`${nodeEnv}: whitespace-padded ' 5 ' parses to 5`, () => {
-        expect(resolveE2eRateLimitMax({ nodeEnv, envValue: ' 5 ', configuredMax: BETA_DEFAULT })).toBe(5);
+        expect(resolveE2eRateLimitMax({ nodeEnv, envValue: ' 5 ', configuredMax: betaDefault })).toBe(5);
       });
     }
   });
 
   describe('production is NEVER overridable (posture unchanged by construction)', () => {
     it("production: '2' is ignored, returns configuredMax", () => {
-      expect(resolveE2eRateLimitMax({ nodeEnv: 'production', envValue: '2', configuredMax: PROD_DEFAULT })).toBe(
-        PROD_DEFAULT,
+      expect(resolveE2eRateLimitMax({ nodeEnv: 'production', envValue: '2', configuredMax: prodDefault })).toBe(
+        prodDefault,
       );
     });
     it("production: '100000' is ignored, returns configuredMax", () => {
-      expect(resolveE2eRateLimitMax({ nodeEnv: 'production', envValue: '100000', configuredMax: PROD_DEFAULT })).toBe(
-        PROD_DEFAULT,
+      expect(resolveE2eRateLimitMax({ nodeEnv: 'production', envValue: '100000', configuredMax: prodDefault })).toBe(
+        prodDefault,
       );
     });
   });
@@ -113,8 +111,8 @@ describe('resolveE2eRateLimitMax — pure resolution (Equoria-jz9v2)', () => {
   describe('invalid override values are ignored (fall back to configuredMax)', () => {
     for (const bad of ['abc', '0', '-5', '10.5', '3000abc', 'NaN', 'Infinity', '1e999']) {
       it(`beta: '${bad}' is rejected, returns configuredMax`, () => {
-        expect(resolveE2eRateLimitMax({ nodeEnv: 'beta', envValue: bad, configuredMax: BETA_DEFAULT })).toBe(
-          BETA_DEFAULT,
+        expect(resolveE2eRateLimitMax({ nodeEnv: 'beta', envValue: bad, configuredMax: betaDefault })).toBe(
+          betaDefault,
         );
       });
     }
@@ -164,7 +162,7 @@ describe('SENTINEL-POSITIVE: overridden limiter STILL FIRES (not a blanket disab
 
   it('(b) LOW override under NODE_ENV=beta → limiter 429s at the low ceiling', async () => {
     // Resolve exactly as app.mjs would, with a deliberately tiny override.
-    const resolved = resolveE2eRateLimitMax({ nodeEnv: 'beta', envValue: '2', configuredMax: BETA_DEFAULT });
+    const resolved = resolveE2eRateLimitMax({ nodeEnv: 'beta', envValue: '2', configuredMax: betaDefault });
     expect(resolved).toBe(2); // sanity: override applied
 
     const app = appWithLimiter(resolved, 'rl:test-e2e-override-low');
@@ -198,16 +196,16 @@ describe('SENTINEL-POSITIVE: overridden limiter STILL FIRES (not a blanket disab
 });
 
 describe('applyE2eRateLimitOverride — env-reading shim (Equoria-jz9v2)', () => {
-  const ORIG_E2E = process.env.E2E_RATE_LIMIT_MAX;
-  const ORIG_NODE_ENV = process.env.NODE_ENV;
+  const origE2e = process.env.E2E_RATE_LIMIT_MAX;
+  const origNodeEnv = process.env.NODE_ENV;
   afterEach(() => {
     // Restore env so no test leaks the override into sibling suites.
-    if (ORIG_E2E === undefined) {
+    if (origE2e === undefined) {
       delete process.env.E2E_RATE_LIMIT_MAX;
     } else {
-      process.env.E2E_RATE_LIMIT_MAX = ORIG_E2E;
+      process.env.E2E_RATE_LIMIT_MAX = origE2e;
     }
-    process.env.NODE_ENV = ORIG_NODE_ENV;
+    process.env.NODE_ENV = origNodeEnv;
   });
 
   it('returns configuredMax when E2E_RATE_LIMIT_MAX is unset', () => {
@@ -236,15 +234,15 @@ describe('SENTINEL-POSITIVE: createRateLimiter FACTORY applies the override to E
   // This is the mechanism that covers auth/mutation/query/profile/foal/etc. in
   // one place — the override is applied inside getEffectiveMax, so no limiter's
   // `max:` literal is touched (authRateLimitDocDrift stays green).
-  const ORIG_E2E = process.env.E2E_RATE_LIMIT_MAX;
-  const ORIG_NODE_ENV = process.env.NODE_ENV;
+  const origE2e = process.env.E2E_RATE_LIMIT_MAX;
+  const origNodeEnv = process.env.NODE_ENV;
   afterEach(() => {
-    if (ORIG_E2E === undefined) {
+    if (origE2e === undefined) {
       delete process.env.E2E_RATE_LIMIT_MAX;
     } else {
-      process.env.E2E_RATE_LIMIT_MAX = ORIG_E2E;
+      process.env.E2E_RATE_LIMIT_MAX = origE2e;
     }
-    process.env.NODE_ENV = ORIG_NODE_ENV;
+    process.env.NODE_ENV = origNodeEnv;
   });
 
   function appWithBase(baseMax, keyPrefix) {

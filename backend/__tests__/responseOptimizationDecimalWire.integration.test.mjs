@@ -53,11 +53,11 @@ import { generateTestToken } from '../tests/helpers/authHelper.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-6ftvc-wire';
+const fixturePrefix = 'TestFixture-6ftvc-wire';
 
 // Two decimal places, the shape of `@db.Decimal(10, 2)`, and NOT a whole number —
 // a whole number would survive several wrong implementations by accident.
-const SESSION_RATE = '17.50';
+const sessionRate = '17.50';
 
 // ─── Layer 1: the pure function ──────────────────────────────────────────────
 
@@ -68,13 +68,13 @@ describe('Equoria-6ftvc — SerializationService.compressDataStructure and Prism
     // fails across module realms, which is precisely the bug Equoria-oeg8k fixed
     // for Date in this same function. `Object.prototype.toString` reads the
     // value's own `Symbol.toStringTag`, so it crosses realms by construction.
-    const rate = new Prisma.Decimal(SESSION_RATE);
+    const rate = new Prisma.Decimal(sessionRate);
     expect(Object.prototype.toString.call(rate)).toBe('[object Decimal]');
   });
 
   it('emits a Decimal as a JSON NUMBER, not its internal {s,e,d} representation', () => {
     const compressed = SerializationService.compressDataStructure({
-      sessionRate: new Prisma.Decimal(SESSION_RATE),
+      sessionRate: new Prisma.Decimal(sessionRate),
     });
 
     // The value the frontend can do arithmetic on.
@@ -143,7 +143,7 @@ describe('Equoria-6ftvc / wl6ln — responseOptimization() res.json override', (
   it('puts a Decimal on the wire as a number (6ftvc)', () => {
     const sent = throughMiddleware({
       success: true,
-      groom: { id: 7, sessionRate: new Prisma.Decimal(SESSION_RATE) },
+      groom: { id: 7, sessionRate: new Prisma.Decimal(sessionRate) },
     });
     expect(JSON.stringify(sent)).toBe('{"success":true,"groom":{"id":7,"sessionRate":17.5}}');
   });
@@ -176,8 +176,8 @@ describe('Equoria-6ftvc — GET /api/v1/grooms/:id/profile over real HTTP', () =
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
-        username: `${FIXTURE_PREFIX}-${suffix}`,
-        email: `${FIXTURE_PREFIX}-${suffix}@example.com`,
+        username: `${fixturePrefix}-${suffix}`,
+        email: `${fixturePrefix}-${suffix}@example.com`,
         password: 'irrelevant-not-a-login-test',
         firstName: 'Wire',
         lastName: 'Decimal',
@@ -192,12 +192,12 @@ describe('Equoria-6ftvc — GET /api/v1/grooms/:id/profile over real HTTP', () =
     // That is the point: the middleware, not the controller, is what this asserts.
     const groom = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-groom-${suffix}`,
+        name: `${fixturePrefix}-groom-${suffix}`,
         speciality: 'general',
         personality: 'gentle',
         skillLevel: 'novice',
         startAge: 20,
-        sessionRate: SESSION_RATE,
+        sessionRate,
         userId: user.id,
       },
     });

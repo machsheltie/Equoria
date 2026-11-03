@@ -45,8 +45,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // Repo root is three levels up from backend/__tests__/ .
-const REPO_ROOT = resolve(__dirname, '../..');
-const BMAD_DIR = join(REPO_ROOT, '_bmad-output');
+const repoRoot = resolve(__dirname, '../..');
+const bmadDir = join(repoRoot, '_bmad-output');
 
 // Phrases that COMMAND agents to USE the bypass header (the lie shape).
 // Each is a verbatim fragment from the pre-fix project-context.md files
@@ -61,7 +61,7 @@ const BMAD_DIR = join(REPO_ROOT, '_bmad-output');
 // these regexes do not match.
 //
 // Extended 2026-05-28 (Equoria-ht2nb) to cover x-test-skip-csrf commands.
-const OUTDATED_ASSERTIONS = [
+const outdatedAssertions = [
   // x-test-bypass-rate-limit command shapes (sr00q)
   /tests must use bypass header/i,
   /x-test-bypass-rate-limit['"`\s]+header (required on all test|for tests)/i,
@@ -99,7 +99,7 @@ function walkMd(dir, acc = []) {
 }
 
 describe('🔒 Sentinel — _bmad-output bypass-header doc freshness (Equoria-sr00q)', () => {
-  const mdFiles = walkMd(BMAD_DIR);
+  const mdFiles = walkMd(bmadDir);
 
   // Skip self, even though it lives outside _bmad-output — defensive against
   // a future repo restructure that nests this file under there.
@@ -109,7 +109,7 @@ describe('🔒 Sentinel — _bmad-output bypass-header doc freshness (Equoria-sr
     // The directory may legitimately be empty / removed in a clean repo.
     // Guard the assertion ONLY if it exists — and surface zero-files-scanned
     // as a visible debug, not a silent pass.
-    if (existsSync(BMAD_DIR)) {
+    if (existsSync(bmadDir)) {
       expect(filesToScan.length).toBeGreaterThan(0);
     } else {
       // Sentinel becomes a no-op when _bmad-output/ is removed. The other
@@ -120,7 +120,7 @@ describe('🔒 Sentinel — _bmad-output bypass-header doc freshness (Equoria-sr
   });
 
   it('no _bmad-output md file commands agents to USE the x-test-bypass-rate-limit header', () => {
-    if (!existsSync(BMAD_DIR)) {
+    if (!existsSync(bmadDir)) {
       return;
     }
     const violations = [];
@@ -129,9 +129,9 @@ describe('🔒 Sentinel — _bmad-output bypass-header doc freshness (Equoria-sr
       const lines = src.split('\n');
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        for (const re of OUTDATED_ASSERTIONS) {
+        for (const re of outdatedAssertions) {
           if (re.test(line)) {
-            const rel = file.slice(REPO_ROOT.length + 1).replace(/\\/g, '/');
+            const rel = file.slice(repoRoot.length + 1).replace(/\\/g, '/');
             violations.push(`${rel}:${i + 1} — ${line.trim()}`);
             break;
           }
@@ -152,7 +152,7 @@ describe('🔒 Sentinel — _bmad-output bypass-header doc freshness (Equoria-sr
 
   it('regex set fires on planted x-test-skip-csrf command shapes (sentinel-positive, Equoria-ht2nb)', () => {
     // Planted-violation strings — the four shapes the ht2nb fix targeted.
-    // Each MUST match at least one OUTDATED_ASSERTIONS pattern so a future
+    // Each MUST match at least one outdatedAssertions pattern so a future
     // doc re-introducing a CSRF-bypass command would be caught.
     const plantedCommands = [
       "Set `Authorization: Bearer <token>` and `x-test-skip-csrf: 'true'` headers on every authenticated request",
@@ -161,7 +161,7 @@ describe('🔒 Sentinel — _bmad-output bypass-header doc freshness (Equoria-sr
       'uses `createTestUser`, `cleanupTestData`, `x-test-skip-csrf` header for CSRF bypass during test',
     ];
     for (const planted of plantedCommands) {
-      const matched = OUTDATED_ASSERTIONS.some(re => re.test(planted));
+      const matched = outdatedAssertions.some(re => re.test(planted));
       expect({ planted, matched }).toEqual({ planted, matched: true });
     }
 
@@ -173,7 +173,7 @@ describe('🔒 Sentinel — _bmad-output bypass-header doc freshness (Equoria-sr
       "Non-admin tests needed `x-test-skip-csrf: true` header — the memory routes live on `authRouter` which applies `applyCsrfProtection`, and under `JEST_WORKER_ID` the backend honors the bypass (production/beta refuses it per Story 21S-2's hardening).",
     ];
     for (const legit of legitimateHistorical) {
-      const matched = OUTDATED_ASSERTIONS.some(re => re.test(legit));
+      const matched = outdatedAssertions.some(re => re.test(legit));
       expect({ legit, matched }).toEqual({ legit, matched: false });
     }
   });

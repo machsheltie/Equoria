@@ -16,23 +16,23 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-no-prisma-in-routes.mjs');
+const repoRoot = path.resolve(HERE, '..', '..');
+const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-prisma-in-routes.mjs');
 // The planted file lives directly in modules/_doctrine_sentinel/routes/
 // so the scan picks it up via the `modules/<x>/routes/*.mjs` walk.
-const PLANT_DIR = path.join(REPO_ROOT, 'backend/modules/_becrm_doctrine_sentinel/routes');
+const plantDir = path.join(repoRoot, 'backend/modules/_becrm_doctrine_sentinel/routes');
 
 afterEach(() => {
   // Best-effort cleanup so a test crash doesn't poison subsequent runs.
   try {
-    fs.rmSync(path.dirname(PLANT_DIR), { recursive: true, force: true });
+    fs.rmSync(path.dirname(plantDir), { recursive: true, force: true });
   } catch {
     // intentional: cleanup is best-effort
   }
 });
 
 function runCheck() {
-  return spawnSync('node', [CHECK], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [CHECK], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 describe('check-no-prisma-in-routes.mjs (Equoria-becrm)', () => {
@@ -43,7 +43,7 @@ describe('check-no-prisma-in-routes.mjs (Equoria-becrm)', () => {
   });
 
   it('SENTINEL: fails when a prisma import is planted in a routes file', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
+    fs.mkdirSync(plantDir, { recursive: true });
     // Build the planted source by concatenation so THIS sentinel file
     // does not itself contain the literal `prismaClient.mjs` import
     // string (which would trigger the check on the sentinel and break
@@ -55,7 +55,7 @@ describe('check-no-prisma-in-routes.mjs (Equoria-becrm)', () => {
       'const router = express.Router();\n' +
       "router.get('/', async (req, res) => res.json(await prisma.horse.findMany()));\n" +
       'export default router;\n';
-    fs.writeFileSync(path.join(PLANT_DIR, 'plantedRoutes.mjs'), plantedSource);
+    fs.writeFileSync(path.join(plantDir, 'plantedRoutes.mjs'), plantedSource);
 
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -64,7 +64,7 @@ describe('check-no-prisma-in-routes.mjs (Equoria-becrm)', () => {
   });
 
   it('SENTINEL: fails when a bare `prisma.X` call is planted in a routes file', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
+    fs.mkdirSync(plantDir, { recursive: true });
     // No import — just the call expression — to prove the second branch of
     // the scan (the `\bprisma\.[A-Za-z_$]` regex) also fires.
     const plantedSource =
@@ -75,7 +75,7 @@ describe('check-no-prisma-in-routes.mjs (Equoria-becrm)', () => {
       'const prisma = undefined;\n' +
       "router.get('/', async (req, res) => { await prisma.horse.findMany(); res.end(); });\n" +
       'export default router;\n';
-    fs.writeFileSync(path.join(PLANT_DIR, 'plantedCall.mjs'), plantedSource);
+    fs.writeFileSync(path.join(plantDir, 'plantedCall.mjs'), plantedSource);
 
     const res = runCheck();
     expect(res.status).toBe(1);

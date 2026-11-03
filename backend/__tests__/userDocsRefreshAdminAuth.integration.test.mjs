@@ -41,7 +41,7 @@ import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import { checkedInDeviceCookie } from '../tests/helpers/staffDeviceFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const ADMIN_REFRESH_ROUTE = '/api/v1/admin/docs/refresh';
+const adminRefreshRoute = '/api/v1/admin/docs/refresh';
 
 describe('User-documentation refresh access control (Equoria-bs6fc)', () => {
   let admin;
@@ -91,7 +91,7 @@ describe('User-documentation refresh access control (Equoria-bs6fc)', () => {
   });
 
   it('anonymous POST /api/v1/admin/docs/refresh is rejected by auth (401)', async () => {
-    const res = await request(app).post(ADMIN_REFRESH_ROUTE).set('Origin', ORIGIN);
+    const res = await request(app).post(adminRefreshRoute).set('Origin', ORIGIN);
     // authenticateToken runs before csrfProtection on the adminRouter, so an
     // unauthenticated caller is rejected at the auth boundary, not allowed in.
     expect(res.status).not.toBe(200);
@@ -106,7 +106,7 @@ describe('User-documentation refresh access control (Equoria-bs6fc)', () => {
     // access cookie yields a token that validates for this header-auth POST.
     const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [adminDevice] });
     const res = await request(app)
-      .post(ADMIN_REFRESH_ROUTE)
+      .post(adminRefreshRoute)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Cookie', csrf.cookieHeader)

@@ -67,9 +67,9 @@ export default async function globalTeardown() {
  */
 
 // TEST-only matcher — reserved fixture/seed email domains + name prefixes.
-// Mirrors purge-leaked-test-fixtures.mjs#TEST_USER_WHERE. No real player
+// Mirrors purge-leaked-test-fixtures.mjs#testUserWhere. No real player
 // account uses these domains.
-const TEST_USER_WHERE = {
+const testUserWhere = {
   OR: [
     { email: { endsWith: '@test.com' } },
     { email: { endsWith: '@example.com' } },
@@ -98,7 +98,7 @@ async function cleanupDatabase() {
 
       // Identify matched TEST users by reserved-pattern scope.
       const users = await prisma.user.findMany({
-        where: TEST_USER_WHERE,
+        where: testUserWhere,
         select: { id: true },
       });
       const userIds = users.map(u => u.id);

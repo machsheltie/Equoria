@@ -19,27 +19,27 @@ import { fileURLToPath } from 'node:url';
 import { withoutGitEnv } from '../../../scripts/preflight/changed-checks.mjs';
 
 export const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
+export const repoRoot = path.resolve(HERE, '..', '..', '..');
 export const CHECK = path.join(
-  REPO_ROOT,
+  repoRoot,
   'scripts/doctrine-checks/check-module-dependency-graph.mjs',
 );
 export const ALLOWLIST = path.join(
-  REPO_ROOT,
+  repoRoot,
   'scripts/doctrine-checks/module-dependency-graph-allowlist.json',
 );
-export const MODULES = path.join(REPO_ROOT, 'backend/modules');
-export const UTILS = path.join(REPO_ROOT, 'backend/utils');
-export const RUN_ID = `${process.pid}-${randomBytes(4).toString('hex')}`;
-export const PLANT_TOKEN = '_ws4graphplant_';
-export const PLANT_MODULE = `${PLANT_TOKEN}${RUN_ID}`;
-export const PLANT_MODULE_B = `${PLANT_TOKEN}${RUN_ID}b`;
-export const TEST_LABEL =
+export const MODULES = path.join(repoRoot, 'backend/modules');
+export const UTILS = path.join(repoRoot, 'backend/utils');
+export const runId = `${process.pid}-${randomBytes(4).toString('hex')}`;
+export const plantToken = '_ws4graphplant_';
+export const plantModule = `${plantToken}${runId}`;
+export const plantModuleB = `${plantToken}${runId}b`;
+export const testLabel =
   "// Test-consumed only (other modules' tests; Equoria-7t1tn tracks moving those tests\n// into the owning module, after which these lines go).\n";
 export const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-export const relPosix = abs => path.relative(REPO_ROOT, abs).split(path.sep).join('/');
-export const PM = `backend/modules/${PLANT_MODULE}`;
-export const PMB = `backend/modules/${PLANT_MODULE_B}`;
+export const relPosix = abs => path.relative(repoRoot, abs).split(path.sep).join('/');
+export const PM = `backend/modules/${plantModule}`;
+export const PMB = `backend/modules/${plantModuleB}`;
 
 /** Every path this suite creates (files and EVERY new directory), removed deepest-first in afterEach. */
 export const planted = [];
@@ -100,7 +100,7 @@ export function readdirOrEmpty(dir) {
 export function strayPlants() {
   const found = [];
   for (const top of readdirOrEmpty(MODULES)) {
-    if (top.includes(PLANT_TOKEN)) {
+    if (top.includes(plantToken)) {
       found.push(top);
     }
     const abs = path.join(MODULES, top);
@@ -116,14 +116,14 @@ export function strayPlants() {
     }
     if (isDir) {
       for (const inner of readdirOrEmpty(abs)) {
-        if (inner.includes(PLANT_TOKEN)) {
+        if (inner.includes(plantToken)) {
           found.push(`${top}/${inner}`);
         }
       }
     }
   }
   for (const name of readdirOrEmpty(UTILS)) {
-    if (name.includes(PLANT_TOKEN)) {
+    if (name.includes(plantToken)) {
       found.push(`utils/${name}`);
     }
   }
@@ -142,7 +142,7 @@ function childEnv(baseEnv) {
 
 export function runCheck(args = [], baseEnv = process.env) {
   const res = spawnSync('node', [CHECK, ...args], {
-    cwd: REPO_ROOT,
+    cwd: repoRoot,
     encoding: 'utf8',
     env: childEnv(baseEnv),
   });
@@ -151,7 +151,7 @@ export function runCheck(args = [], baseEnv = process.env) {
 
 /** A git command in the repo (used by the rfv9j M1 arm to simulate a tracked reserved-name file). */
 export function gitInRepo(args, baseEnv = process.env) {
-  return spawnSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8', env: childEnv(baseEnv) });
+  return spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8', env: childEnv(baseEnv) });
 }
 
 /** Run the check with one extra allow-list entry, then restore the file byte-for-byte. */

@@ -23,21 +23,21 @@ describe('Inventory Equip — same-category swap', () => {
   let csrf;
 
   // Two saddles from TACK_INVENTORY
-  const SADDLE_A_ID = 'dressage-saddle'; // itemId
-  const SADDLE_B_ID = 'jumping-saddle'; // itemId
+  const saddleAId = 'dressage-saddle'; // itemId
+  const saddleBId = 'jumping-saddle'; // itemId
 
-  const INV_A = {
+  const invA = {
     id: 'inv-saddle-a',
-    itemId: SADDLE_A_ID,
+    itemId: saddleAId,
     category: 'saddle',
     name: 'Dressage Saddle',
     bonus: 8,
     quantity: 1,
     equippedToHorseId: null,
   };
-  const INV_B = {
+  const invB = {
     id: 'inv-saddle-b',
-    itemId: SADDLE_B_ID,
+    itemId: saddleBId,
     category: 'saddle',
     name: 'Jumping Saddle',
     bonus: 7,
@@ -56,7 +56,7 @@ describe('Inventory Equip — same-category swap', () => {
     // Seed inventory into user settings
     await prisma.user.update({
       where: { id: testUser.id },
-      data: { settings: { inventory: [INV_A, INV_B] } },
+      data: { settings: { inventory: [invA, invB] } },
     });
 
     // Equoria-rnbzn: per-user CSRF binding. The equip mutations below carry
@@ -91,11 +91,11 @@ describe('Inventory Equip — same-category swap', () => {
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ inventoryItemId: INV_A.id, horseId: testHorse.id })
+      .send({ inventoryItemId: invA.id, horseId: testHorse.id })
       .expect(200);
 
     expect(res.body.success).toBe(true);
-    const itemA = res.body.data.items.find(i => i.id === INV_A.id);
+    const itemA = res.body.data.items.find(i => i.id === invA.id);
     expect(itemA.equippedToHorseId).toBe(testHorse.id);
   });
 
@@ -109,14 +109,14 @@ describe('Inventory Equip — same-category swap', () => {
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ inventoryItemId: INV_B.id, horseId: testHorse.id })
+      .send({ inventoryItemId: invB.id, horseId: testHorse.id })
       .expect(200);
 
     expect(res.body.success).toBe(true);
 
     const items = res.body.data.items;
-    const itemA = items.find(i => i.id === INV_A.id);
-    const itemB = items.find(i => i.id === INV_B.id);
+    const itemA = items.find(i => i.id === invA.id);
+    const itemB = items.find(i => i.id === invB.id);
 
     // saddleB is the new active saddle
     expect(itemB.equippedToHorseId).toBe(testHorse.id);
@@ -133,8 +133,8 @@ describe('Inventory Equip — same-category swap', () => {
       .expect(200);
 
     const items = res.body.data.items;
-    const itemA = items.find(i => i.id === INV_A.id);
-    const itemB = items.find(i => i.id === INV_B.id);
+    const itemA = items.find(i => i.id === invA.id);
+    const itemB = items.find(i => i.id === invB.id);
 
     expect(itemB.equippedToHorseId).toBe(testHorse.id);
     expect(itemA.equippedToHorseId).toBeNull();

@@ -66,10 +66,10 @@ const BACKEND = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
  * Patterns may only reach the backend's own test trees, never the whole repo.
  * Rooted at the config's absolute forward-slash directory (Equoria-43y7o).
  */
-const ALLOWED_PATTERN_ROOTS = [`${securityGlobRoot}/__tests__/`, `${securityGlobRoot}/modules/`];
+const allowedPatternRoots = [`${securityGlobRoot}/__tests__/`, `${securityGlobRoot}/modules/`];
 
 /** The auth module is control source, not a domain module: its scope is pinned. */
-const REQUIRED_SCOPE_PATTERNS = [
+const requiredScopePatterns = [
   '<rootDir>/__tests__/**/*.test.mjs',
   '<rootDir>/modules/auth/__tests__/**/*.test.mjs',
   '<rootDir>/modules/auth/__tests__/**/*.spec.mjs',
@@ -91,7 +91,7 @@ const REQUIRED_SCOPE_PATTERNS = [
  * genuinely renamed or retired, update this list in the same commit and say why
  * — never to make a red gate green.
  */
-const REQUIRED_MODULE_CONTROL_TESTS = [
+const requiredModuleControlTests = [
   // Equoria-q4uem.4 (WS4 S1): moved from modules/labs/__tests__/ when labs
   // was dissolved; the admin module owns the /memory and /optimization gates.
   'modules/admin/__tests__/memoryAdminGuard.integration.test.mjs',
@@ -116,7 +116,7 @@ const REQUIRED_MODULE_CONTROL_TESTS = [
   'modules/users/__tests__/userUpdateMassAssignment.integration.test.mjs',
 ];
 
-const LIST_TESTS_TIMEOUT_MS = 180_000;
+const listTestsTimeoutMs = 180_000;
 
 const toPosixRelative = absolute => path.relative(BACKEND, absolute).split(path.sep).join('/');
 
@@ -191,7 +191,7 @@ describe('security suite scope sentinel (Equoria-ugxuc)', () => {
       // gate that proves nothing must fail HERE, with a readable reason.
       expect(selectedTests().length).toBeGreaterThan(0);
     },
-    LIST_TESTS_TIMEOUT_MS,
+    listTestsTimeoutMs,
   );
 
   test('every testMatch pattern is rooted in the backend test trees', () => {
@@ -208,7 +208,7 @@ describe('security suite scope sentinel (Equoria-ugxuc)', () => {
     expect(securityConfig.testMatch.filter(pattern => pattern.includes('<rootDir>'))).toEqual([]);
 
     const strays = securityConfig.testMatch.filter(
-      pattern => !ALLOWED_PATTERN_ROOTS.some(root => pattern.startsWith(root)),
+      pattern => !allowedPatternRoots.some(root => pattern.startsWith(root)),
     );
 
     // A bare '**/__tests__/**' lands here — the exact re-broadening regression.
@@ -220,28 +220,28 @@ describe('security suite scope sentinel (Equoria-ugxuc)', () => {
     () => {
       // Deleting these silently drops the whole auth control surface from the
       // gate while every other case still passes. That is the unsafe direction.
-      for (const required of REQUIRED_SCOPE_PATTERNS) {
+      for (const required of requiredScopePatterns) {
         expect(scopePatterns).toContain(required);
       }
 
       const authSelected = selectedTests().filter(file => file.startsWith('modules/auth/__tests__/'));
       expect(authSelected.length).toBeGreaterThan(0);
     },
-    LIST_TESTS_TIMEOUT_MS,
+    listTestsTimeoutMs,
   );
 
   test(
     'every pinned module-resident control suite is actually selected',
     () => {
       const selected = new Set(selectedTests());
-      const missed = REQUIRED_MODULE_CONTROL_TESTS.filter(file => !selected.has(file));
+      const missed = requiredModuleControlTests.filter(file => !selected.has(file));
 
       // Independent of the config: this fires when a convention token is
       // dropped, a pattern stops matching, or a control suite is quietly
       // excluded. The one-way ratchet the first sentinel lacked.
       expect(missed).toEqual([]);
     },
-    LIST_TESTS_TIMEOUT_MS,
+    listTestsTimeoutMs,
   );
 
   test(
@@ -257,7 +257,7 @@ describe('security suite scope sentinel (Equoria-ugxuc)', () => {
       // (docs/SECURITY_TESTING.md) and the gate still did not run it.
       expect(missed).toEqual([]);
     },
-    LIST_TESTS_TIMEOUT_MS,
+    listTestsTimeoutMs,
   );
 
   test(
@@ -272,7 +272,7 @@ describe('security suite scope sentinel (Equoria-ugxuc)', () => {
       // nothing, and the suite silently shrinks by one control.
       expect(missed).toEqual([]);
     },
-    LIST_TESTS_TIMEOUT_MS,
+    listTestsTimeoutMs,
   );
 
   test(
@@ -293,7 +293,7 @@ describe('security suite scope sentinel (Equoria-ugxuc)', () => {
 
       expect(actualModuleSelection).toEqual(expectedModuleSelection);
     },
-    LIST_TESTS_TIMEOUT_MS,
+    listTestsTimeoutMs,
   );
 
   test(
@@ -312,7 +312,7 @@ describe('security suite scope sentinel (Equoria-ugxuc)', () => {
       // run in the same job. This is the readable early failure.
       expect(missing).toEqual([]);
     },
-    LIST_TESTS_TIMEOUT_MS,
+    listTestsTimeoutMs,
   );
 
   test('a checkout under a dot-prefixed directory selects the same layers (Equoria-43y7o)', () => {

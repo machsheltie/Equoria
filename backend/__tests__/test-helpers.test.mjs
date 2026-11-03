@@ -38,7 +38,7 @@ import { createTestUser, createTestRefreshToken } from '../__tests__/setup.mjs';
 import { verifyTokenFamilyState, assertFamilyInvalidation } from '../__tests__/config/test-helpers.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
-const SUITE_PREFIX = `helpers-9z7u-${Date.now()}`;
+const suitePrefix = `helpers-9z7u-${Date.now()}`;
 
 let testUser;
 const createdFamilyIds = [];
@@ -46,8 +46,8 @@ const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   testUser = await createTestUser({
-    email: `${SUITE_PREFIX}-main@example.com`,
-    username: `${SUITE_PREFIX}_main`,
+    email: `${suitePrefix}-main@example.com`,
+    username: `${suitePrefix}_main`,
   });
 });
 
@@ -74,7 +74,7 @@ afterAll(() => {
 });
 
 const newFamilyId = label => {
-  const familyId = `${SUITE_PREFIX}-fam-${label}-${Math.random().toString(36).slice(2, 8)}`;
+  const familyId = `${suitePrefix}-fam-${label}-${Math.random().toString(36).slice(2, 8)}`;
   createdFamilyIds.push(familyId);
   return familyId;
 };

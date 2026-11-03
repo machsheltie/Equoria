@@ -45,7 +45,7 @@ export const options = {
   },
 };
 
-const API_URL = __ENV.API_URL || 'http://localhost:3000';
+const apiUrl = __ENV.API_URL || 'http://localhost:3000';
 
 /**
  * Test Setup - Create test user and get auth token
@@ -56,7 +56,7 @@ export function setup() {
 
   // Register test user
   const registerRes = http.post(
-    `${API_URL}/api/v1/auth/register`,
+    `${apiUrl}/api/v1/auth/register`,
     JSON.stringify({
       email,
       username: `loadtest_${Date.now()}`,
@@ -76,7 +76,7 @@ export function setup() {
 
   // Login to get token
   const loginRes = http.post(
-    `${API_URL}/api/v1/auth/login`,
+    `${apiUrl}/api/v1/auth/login`,
     JSON.stringify({
       email,
       password,
@@ -106,7 +106,7 @@ export default function (data) {
   // iteration; the per-VU jar captures the accessToken cookie and auto-sends
   // it on the profile GETs below. No Authorization header anywhere.
   const jar = http.cookieJar();
-  http.post(`${API_URL}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
+  http.post(`${apiUrl}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
     headers: { 'Content-Type': 'application/json' },
     jar,
   });
@@ -121,7 +121,7 @@ export default function (data) {
   // Test 1: Rapid GET requests to /api/v1/auth/profile
   for (let i = 0; i < 5; i++) {
     const startTime = new Date();
-    const res = http.get(`${API_URL}/api/v1/auth/profile`, params);
+    const res = http.get(`${apiUrl}/api/v1/auth/profile`, params);
     const duration = new Date() - startTime;
 
     requestDuration.add(duration);
@@ -156,7 +156,7 @@ export default function (data) {
   // Test 2: Authentication endpoints (stricter rate limits)
   const authStartTime = new Date();
   const authRes = http.post(
-    `${API_URL}/api/v1/auth/login`,
+    `${apiUrl}/api/v1/auth/login`,
     JSON.stringify({
       email: data.email,
       password: data.password,

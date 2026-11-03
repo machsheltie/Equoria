@@ -42,7 +42,7 @@ const projectConfig = {
 const environmentContext = { console, docblockPragmas: {}, testPath: __filename };
 const NL = String.fromCharCode(10);
 
-const LEAKY_SANDBOX_CODE = `
+const leakySandboxCode = `
   globalThis.__payload = new Array(50000).fill('retained');
   globalThis.__sweep = setInterval(() => globalThis.__payload.length, 1e9);
   globalThis.__sweep.unref();
@@ -84,7 +84,7 @@ function forceGarbageCollection() {
 // This does not soften the guard: a context something really holds survives
 // every round AND the escalation, and the planted violation proves that in the
 // same run. It only stops paying for a heap snapshot per round.
-const GC_ROUNDS = 6;
+const gcRounds = 6;
 
 async function environmentRetainedAfterTeardown(EnvironmentClass, sandboxCode) {
   let environment = new EnvironmentClass({ globalConfig: {}, projectConfig }, environmentContext);
@@ -101,7 +101,7 @@ async function environmentRetainedAfterTeardown(EnvironmentClass, sandboxCode) {
   environment = null;
 
   let retained = await detector.isLeaking();
-  for (let round = 0; retained && round < GC_ROUNDS; round += 1) {
+  for (let round = 0; retained && round < gcRounds; round += 1) {
     forceGarbageCollection();
     await settle();
     retained = await detector.isLeaking();
@@ -119,13 +119,13 @@ async function environmentRetainedAfterTeardown(EnvironmentClass, sandboxCode) {
 
 describe('sandbox timer release sentinel', () => {
   test('planted violation: the bare Node environment stays retained by an unref interval created in the sandbox', async () => {
-    await expect(environmentRetainedAfterTeardown(NodeEnvironment, LEAKY_SANDBOX_CODE)).resolves.toBe(true);
+    await expect(environmentRetainedAfterTeardown(NodeEnvironment, leakySandboxCode)).resolves.toBe(true);
     // Generous: the escalation snapshot is the slow step and scales with the
     // shard's heap. Measured 23.2s against a 200MB ballast on node 22.
   }, 180000);
 
   test('the custom environment releases the context by clearing the pending interval at teardown', async () => {
-    await expect(environmentRetainedAfterTeardown(PrismaCleanupEnvironment, LEAKY_SANDBOX_CODE)).resolves.toBe(false);
+    await expect(environmentRetainedAfterTeardown(PrismaCleanupEnvironment, leakySandboxCode)).resolves.toBe(false);
   }, 180000);
 
   test('tracking clears only what is still pending and leaves ordinary timer semantics intact', async () => {

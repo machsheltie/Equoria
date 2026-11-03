@@ -67,9 +67,9 @@ import { withAdvisoryLock, jobNameToLockKey } from '../utils/cronLock.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const TAG = `iot0h-${randomBytes(4).toString('hex')}`;
-const JOB_RACE = `${TAG}-race`;
-const JOB_SOLO = `${TAG}-solo`;
-const JOB_HEALTH = `${TAG}-health`;
+const jobRace = `${TAG}-race`;
+const jobSolo = `${TAG}-solo`;
+const jobHealth = `${TAG}-health`;
 
 describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => {
   // Equoria-iwpcj: snapshot the shared CronJobService singleton BEFORE seeding
@@ -82,9 +82,9 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
   beforeAll(async () => {
     cronSnapshot = snapshotCronSingleton();
     // Seed the in-memory jobs map so getHealth/recordHeartbeat surfaces these.
-    cronJobService.jobs.set(JOB_RACE, { running: false, scheduled: false });
-    cronJobService.jobs.set(JOB_SOLO, { running: false, scheduled: false });
-    cronJobService.jobs.set(JOB_HEALTH, { running: false, scheduled: false });
+    cronJobService.jobs.set(jobRace, { running: false, scheduled: false });
+    cronJobService.jobs.set(jobSolo, { running: false, scheduled: false });
+    cronJobService.jobs.set(jobHealth, { running: false, scheduled: false });
   });
 
   beforeEach(() => {
@@ -118,7 +118,7 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
     // (wrong key, no try-lock) lets B acquire → sideEffectCount hits 2 and the
     // test fails loudly — the sentinel-positive guarantee.
     let sideEffectCount = 0;
-    const key = jobNameToLockKey(JOB_RACE);
+    const key = jobNameToLockKey(jobRace);
 
     // Dedicated holder connection (the "first replica"). Its own Postgres
     // session means B genuinely contends cross-session, the multi-replica
@@ -140,7 +140,7 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
 
       // Session B (second replica) runs the REAL production path while A holds
       // the lock cross-session.
-      const b = await withAdvisoryLock(JOB_RACE, async () => {
+      const b = await withAdvisoryLock(jobRace, async () => {
         sideEffectCount++;
         return { totalProcessed: 1 };
       });
@@ -167,8 +167,8 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
     };
 
     // Serial — second call must acquire because the first released.
-    const a = await withAdvisoryLock(JOB_SOLO, handler);
-    const b = await withAdvisoryLock(JOB_SOLO, handler);
+    const a = await withAdvisoryLock(jobSolo, handler);
+    const b = await withAdvisoryLock(jobSolo, handler);
 
     expect(count).toBe(2);
     expect(a.acquired).toBe(true);
@@ -180,7 +180,7 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
       throw new Error('iot0h-synthetic-failure');
     };
 
-    await expect(withAdvisoryLock(JOB_SOLO, handler)).rejects.toThrow('iot0h-synthetic-failure');
+    await expect(withAdvisoryLock(jobSolo, handler)).rejects.toThrow('iot0h-synthetic-failure');
 
     // Lock must be released after the throw — a fresh acquire must succeed.
     let postCount = 0;
@@ -188,7 +188,7 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
       postCount++;
       return { ok: true };
     };
-    const recovery = await withAdvisoryLock(JOB_SOLO, recoveryHandler);
+    const recovery = await withAdvisoryLock(jobSolo, recoveryHandler);
     expect(recovery.acquired).toBe(true);
     expect(postCount).toBe(1);
   });
@@ -208,12 +208,12 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
       return { totalProcessed: 1 };
     };
 
-    await cronJobService.runWithHeartbeat(JOB_HEALTH, handler, { applyLock: true });
+    await cronJobService.runWithHeartbeat(jobHealth, handler, { applyLock: true });
     expect(sideEffectCount).toBe(1);
 
     // CronRunLog row should be persisted with status 'success'.
     const rows = await prisma.cronRunLog.findMany({
-      where: { jobName: JOB_HEALTH },
+      where: { jobName: jobHealth },
       orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
     });
     expect(rows.length).toBeGreaterThanOrEqual(1);
@@ -221,12 +221,12 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
   });
 
   it('getHealth surfaces lockHeld:false after the run completes (AC #3)', async () => {
-    await cronJobService.runWithHeartbeat(JOB_HEALTH, async () => ({ totalProcessed: 1 }), {
+    await cronJobService.runWithHeartbeat(jobHealth, async () => ({ totalProcessed: 1 }), {
       applyLock: true,
     });
 
     const health = cronJobService.getHealth();
-    const block = health.jobs[JOB_HEALTH];
+    const block = health.jobs[jobHealth];
     expect(block).toBeDefined();
     // After completion, lock is released → lockHeld false.
     expect(block.lockHeld).toBe(false);

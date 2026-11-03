@@ -27,7 +27,7 @@ import { dirname, join } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const integrationDir = join(__dirname, '..', 'tests', 'integration');
 
-const TARGET_FILES = [
+const targetFiles = [
   'groomHandlerSystem.test.mjs',
   'groomAssignmentSystem.test.mjs',
   'enhancedGroomInteractions.test.mjs',
@@ -37,16 +37,16 @@ const TARGET_FILES = [
 // any non-template-literal, non-interpolated string. The valid form must use
 // a template literal (backtick) with ${...} interpolation so the test gets a
 // per-run unique value.
-const STATIC_USERNAME_RE = /\busername:\s*['"][^'"]+['"]/g;
-const STATIC_EMAIL_RE = /\bemail:\s*['"][^'"]+@[^'"]+['"]/g;
+const staticUsernameRe = /\busername:\s*['"][^'"]+['"]/g;
+const staticEmailRe = /\bemail:\s*['"][^'"]+@[^'"]+['"]/g;
 
 describe('Static username/email sentinel for 3 groom integration suites (Equoria-jjzem)', () => {
-  for (const filename of TARGET_FILES) {
+  for (const filename of targetFiles) {
     describe(filename, () => {
       const src = readFileSync(join(integrationDir, filename), 'utf8');
 
       it('contains no static `username:` literal (must use template-literal with randomBytes)', () => {
-        const matches = src.match(STATIC_USERNAME_RE) ?? [];
+        const matches = src.match(staticUsernameRe) ?? [];
         // Allow comments that mention the old literal for context: filter out
         // lines inside `where: { username: '...' }` if they are pre-cleanup
         // probes — they would also need to be randomized, so we do NOT exempt.
@@ -61,7 +61,7 @@ describe('Static username/email sentinel for 3 groom integration suites (Equoria
       });
 
       it('contains no static `email:` literal (must use template-literal with randomBytes)', () => {
-        const matches = src.match(STATIC_EMAIL_RE) ?? [];
+        const matches = src.match(staticEmailRe) ?? [];
         if (matches.length > 0) {
           throw new Error(
             `Found ${matches.length} static email literal(s) in ${filename}:\n${matches

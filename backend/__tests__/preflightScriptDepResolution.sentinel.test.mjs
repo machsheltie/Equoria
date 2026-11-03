@@ -48,16 +48,16 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(__dirname, '../..');
+const repoRoot = resolve(__dirname, '../..');
 
 const SCRIPTS = ['scripts/preflight/db-probe.mjs', 'scripts/preflight/db-health.mjs'];
 
 // The two deps that must NOT be bare-imported (they live only in
 // backend/node_modules, not repo-root node_modules in CI).
-const GUARDED_DEPS = ['dotenv', 'pg'];
+const guardedDeps = ['dotenv', 'pg'];
 
 function read(relPath) {
-  return readFileSync(resolve(REPO_ROOT, relPath), 'utf8');
+  return readFileSync(resolve(repoRoot, relPath), 'utf8');
 }
 
 /**
@@ -81,7 +81,7 @@ describe('preflight scripts resolve deps from backend, not bare ESM (Equoria-fef
     describe(script, () => {
       const src = read(script);
 
-      for (const dep of GUARDED_DEPS) {
+      for (const dep of guardedDeps) {
         it(`does NOT bare-import '${dep}' (would ERR_MODULE_NOT_FOUND in CI)`, () => {
           expect(hasBareImport(src, dep)).toBe(false);
         });
@@ -103,7 +103,7 @@ describe('preflight scripts resolve deps from backend, not bare ESM (Equoria-fef
       it('acquires both guarded deps through the backend-anchored require', () => {
         // e.g. `const dotenv = backendRequire('dotenv');`
         //      `const { Client } = backendRequire('pg');`
-        for (const dep of GUARDED_DEPS) {
+        for (const dep of guardedDeps) {
           expect(src).toMatch(new RegExp(`Require\\(['"]${dep}['"]\\)`));
         }
       });

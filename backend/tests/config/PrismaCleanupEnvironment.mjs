@@ -43,12 +43,12 @@ import { cleanupPrismaInstances } from '../../../packages/database/prismaTestLif
 // worker — gets it through the one module they all load.
 v8.setFlagsFromString('--no-compilation-cache');
 
-const TIMER_GLOBALS = [
+const timerGlobals = [
   ['setTimeout', 'clearTimeout'],
   ['setInterval', 'clearInterval'],
   ['setImmediate', 'clearImmediate'],
 ];
-const PRUNE_THRESHOLD = 4096;
+const pruneThreshold = 4096;
 
 // Equoria-qe0b0: the shared-client methods a test must never leave replaced.
 const guardedPrismaMethods = ['$queryRaw', '$executeRaw', '$transaction'];
@@ -96,7 +96,7 @@ export function trackSandboxTimers(sandboxGlobal) {
   const pending = new Map(); // WeakRef<handle> -> clear function
 
   const prune = () => {
-    if (pending.size < PRUNE_THRESHOLD) {
+    if (pending.size < pruneThreshold) {
       return;
     }
     for (const ref of pending.keys()) {
@@ -106,7 +106,7 @@ export function trackSandboxTimers(sandboxGlobal) {
     }
   };
 
-  for (const [setName, clearName] of TIMER_GLOBALS) {
+  for (const [setName, clearName] of timerGlobals) {
     const realSet = sandboxGlobal[setName];
     const realClear = sandboxGlobal[clearName];
     if (typeof realSet !== 'function' || typeof realClear !== 'function') {

@@ -6,13 +6,13 @@
  * verifyJsonBody) AND assertNoPollutingKeys (post-parse, called via
  * rejectPollutedRequestBody). The original test fixtures only exercised
  * depth=64 (well above cap) and depth=16 (well below cap). There was
- * zero coverage at the boundary depth=MAX_DEPTH-1 / MAX_DEPTH /
- * MAX_DEPTH+1. Off-by-one regressions in either function would not be
+ * zero coverage at the boundary depth=maxDepth-1 / maxDepth /
+ * maxDepth+1. Off-by-one regressions in either function would not be
  * caught.
  *
  * The story description further hypothesised that the two functions
  * counted depth asymmetrically — same JSON input would yield different
- * `depth` values in the two functions, so they cap at MAX_DEPTH but
+ * `depth` values in the two functions, so they cap at maxDepth but
  * reject DIFFERENT payloads. This file proves empirically that the
  * semantics ARE symmetric for non-empty-leaf payloads — both functions
  * reach depth=N for an N-level nested input ending in a primitive.
@@ -27,8 +27,8 @@
  *     recurses on EVERY child including primitives (depth+1) and the
  *     check fires before the typeof-object guard returns. Scanner
  *     similarly reaches scanValue(N) for the leaf at level N.
- *   - The depth check is `depth > MAX_DEPTH`, so depth=MAX_DEPTH passes
- *     and depth=MAX_DEPTH+1 fails.
+ *   - The depth check is `depth > maxDepth`, so depth=maxDepth passes
+ *     and depth=maxDepth+1 fails.
  *
  * Empty-leaf inputs (e.g. `[[[]]]`) are off by one — the empty array's
  * forEach has no children to recurse into, and the scanner's scanArray
@@ -43,7 +43,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { defaultMaxDepth, verifyJsonBody, rejectPollutedRequestBody } from '../middleware/requestBodySecurity.mjs';
 
-const MAX_DEPTH = defaultMaxDepth; // env var unset in this suite → resolves to default
+const maxDepth = defaultMaxDepth; // env var unset in this suite → resolves to default
 
 // Build a JSON array buffer of N nested arrays with `null` as the
 // innermost leaf. For N=3 the source is `[[[null]]]`. The scanner's
@@ -143,39 +143,39 @@ function runRejectPolluted(body) {
 }
 
 describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
-  // Sanity: env-resolved MAX_DEPTH is the doctrine default.
-  it('test setup: MAX_DEPTH resolves to defaultMaxDepth (32)', () => {
-    expect(MAX_DEPTH).toBe(32);
+  // Sanity: env-resolved maxDepth is the doctrine default.
+  it('test setup: maxDepth resolves to defaultMaxDepth (32)', () => {
+    expect(maxDepth).toBe(32);
   });
 
   describe('JsonScanner via verifyJsonBody', () => {
     describe('array buffer (non-empty leaf)', () => {
-      it(`accepts depth = MAX_DEPTH-1 (=${MAX_DEPTH - 1})`, () => {
-        expect(() => verifyJsonBody(makeReq(), {}, buildArrayBufferNonEmptyLeaf(MAX_DEPTH - 1))).not.toThrow();
+      it(`accepts depth = maxDepth-1 (=${maxDepth - 1})`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildArrayBufferNonEmptyLeaf(maxDepth - 1))).not.toThrow();
       });
 
-      it(`accepts depth = MAX_DEPTH (=${MAX_DEPTH}) — boundary`, () => {
-        expect(() => verifyJsonBody(makeReq(), {}, buildArrayBufferNonEmptyLeaf(MAX_DEPTH))).not.toThrow();
+      it(`accepts depth = maxDepth (=${maxDepth}) — boundary`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildArrayBufferNonEmptyLeaf(maxDepth))).not.toThrow();
       });
 
-      it(`rejects depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — boundary`, () => {
-        expect(() => verifyJsonBody(makeReq(), {}, buildArrayBufferNonEmptyLeaf(MAX_DEPTH + 1))).toThrow(
+      it(`rejects depth = maxDepth+1 (=${maxDepth + 1}) — boundary`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildArrayBufferNonEmptyLeaf(maxDepth + 1))).toThrow(
           /nesting too deep/i,
         );
       });
     });
 
     describe('object buffer (non-empty leaf)', () => {
-      it(`accepts depth = MAX_DEPTH-1 (=${MAX_DEPTH - 1})`, () => {
-        expect(() => verifyJsonBody(makeReq(), {}, buildObjectBufferNonEmptyLeaf(MAX_DEPTH - 1))).not.toThrow();
+      it(`accepts depth = maxDepth-1 (=${maxDepth - 1})`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildObjectBufferNonEmptyLeaf(maxDepth - 1))).not.toThrow();
       });
 
-      it(`accepts depth = MAX_DEPTH (=${MAX_DEPTH}) — boundary`, () => {
-        expect(() => verifyJsonBody(makeReq(), {}, buildObjectBufferNonEmptyLeaf(MAX_DEPTH))).not.toThrow();
+      it(`accepts depth = maxDepth (=${maxDepth}) — boundary`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildObjectBufferNonEmptyLeaf(maxDepth))).not.toThrow();
       });
 
-      it(`rejects depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — boundary`, () => {
-        expect(() => verifyJsonBody(makeReq(), {}, buildObjectBufferNonEmptyLeaf(MAX_DEPTH + 1))).toThrow(
+      it(`rejects depth = maxDepth+1 (=${maxDepth + 1}) — boundary`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildObjectBufferNonEmptyLeaf(maxDepth + 1))).toThrow(
           /nesting too deep/i,
         );
       });
@@ -184,16 +184,16 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
 
   describe('assertNoPollutingKeys via rejectPollutedRequestBody', () => {
     describe('parsed array (non-empty leaf)', () => {
-      it(`accepts depth = MAX_DEPTH-1 (=${MAX_DEPTH - 1})`, () => {
-        expect(runRejectPolluted(buildParsedArrayNonEmptyLeaf(MAX_DEPTH - 1))).toBeNull();
+      it(`accepts depth = maxDepth-1 (=${maxDepth - 1})`, () => {
+        expect(runRejectPolluted(buildParsedArrayNonEmptyLeaf(maxDepth - 1))).toBeNull();
       });
 
-      it(`accepts depth = MAX_DEPTH (=${MAX_DEPTH}) — boundary`, () => {
-        expect(runRejectPolluted(buildParsedArrayNonEmptyLeaf(MAX_DEPTH))).toBeNull();
+      it(`accepts depth = maxDepth (=${maxDepth}) — boundary`, () => {
+        expect(runRejectPolluted(buildParsedArrayNonEmptyLeaf(maxDepth))).toBeNull();
       });
 
-      it(`rejects depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — boundary`, () => {
-        const err = runRejectPolluted(buildParsedArrayNonEmptyLeaf(MAX_DEPTH + 1));
+      it(`rejects depth = maxDepth+1 (=${maxDepth + 1}) — boundary`, () => {
+        const err = runRejectPolluted(buildParsedArrayNonEmptyLeaf(maxDepth + 1));
         expect(err).not.toBeNull();
         expect(err?.message).toMatch(/nesting too deep/i);
         expect(err?.statusCode ?? err?.status).toBe(400);
@@ -201,16 +201,16 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
     });
 
     describe('parsed object (non-empty leaf)', () => {
-      it(`accepts depth = MAX_DEPTH-1 (=${MAX_DEPTH - 1})`, () => {
-        expect(runRejectPolluted(buildParsedObjectNonEmptyLeaf(MAX_DEPTH - 1))).toBeNull();
+      it(`accepts depth = maxDepth-1 (=${maxDepth - 1})`, () => {
+        expect(runRejectPolluted(buildParsedObjectNonEmptyLeaf(maxDepth - 1))).toBeNull();
       });
 
-      it(`accepts depth = MAX_DEPTH (=${MAX_DEPTH}) — boundary`, () => {
-        expect(runRejectPolluted(buildParsedObjectNonEmptyLeaf(MAX_DEPTH))).toBeNull();
+      it(`accepts depth = maxDepth (=${maxDepth}) — boundary`, () => {
+        expect(runRejectPolluted(buildParsedObjectNonEmptyLeaf(maxDepth))).toBeNull();
       });
 
-      it(`rejects depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — boundary`, () => {
-        const err = runRejectPolluted(buildParsedObjectNonEmptyLeaf(MAX_DEPTH + 1));
+      it(`rejects depth = maxDepth+1 (=${maxDepth + 1}) — boundary`, () => {
+        const err = runRejectPolluted(buildParsedObjectNonEmptyLeaf(maxDepth + 1));
         expect(err).not.toBeNull();
         expect(err?.message).toMatch(/nesting too deep/i);
         expect(err?.statusCode ?? err?.status).toBe(400);
@@ -220,7 +220,7 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
 
   describe('empty-leaf array boundary (Equoria-21kz: scanArray depth-check uniformity)', () => {
     // Before the fix, scanArray's early `]` short-circuit meant an empty array
-    // at depth MAX_DEPTH+1 was allowed because scanValue was never called there.
+    // at depth maxDepth+1 was allowed because scanValue was never called there.
     // After the fix, scanArray checks depth before the early-return, so
     // empty-leaf arrays and non-empty-leaf arrays reject at the same depth.
 
@@ -228,39 +228,39 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
       return Buffer.from('['.repeat(depth) + ']'.repeat(depth), 'utf8');
     }
 
-    it(`accepts empty-leaf array at depth = MAX_DEPTH (=${MAX_DEPTH})`, () => {
-      expect(() => verifyJsonBody(makeReq(), {}, buildEmptyArray(MAX_DEPTH))).not.toThrow();
+    it(`accepts empty-leaf array at depth = maxDepth (=${maxDepth})`, () => {
+      expect(() => verifyJsonBody(makeReq(), {}, buildEmptyArray(maxDepth))).not.toThrow();
     });
 
-    it(`rejects empty-leaf array at depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — sentinel for Equoria-21kz`, () => {
-      expect(() => verifyJsonBody(makeReq(), {}, buildEmptyArray(MAX_DEPTH + 1))).toThrow(/nesting too deep/i);
+    it(`rejects empty-leaf array at depth = maxDepth+1 (=${maxDepth + 1}) — sentinel for Equoria-21kz`, () => {
+      expect(() => verifyJsonBody(makeReq(), {}, buildEmptyArray(maxDepth + 1))).toThrow(/nesting too deep/i);
     });
   });
 
-  describe(`depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2}) is also rejected (Equoria-7tm8)`, () => {
+  describe(`depth = maxDepth+2 (=${maxDepth + 2}) is also rejected (Equoria-7tm8)`, () => {
     // The AC asks for explicit depth=34 tests (not just depth=33) so the
     // boundary contract is pinned at two points above the cap.
-    it(`scanner rejects array buffer at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
-      expect(() => verifyJsonBody(makeReq(), {}, buildArrayBufferNonEmptyLeaf(MAX_DEPTH + 2))).toThrow(
+    it(`scanner rejects array buffer at depth = maxDepth+2 (=${maxDepth + 2})`, () => {
+      expect(() => verifyJsonBody(makeReq(), {}, buildArrayBufferNonEmptyLeaf(maxDepth + 2))).toThrow(
         /nesting too deep/i,
       );
     });
 
-    it(`scanner rejects object buffer at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
-      expect(() => verifyJsonBody(makeReq(), {}, buildObjectBufferNonEmptyLeaf(MAX_DEPTH + 2))).toThrow(
+    it(`scanner rejects object buffer at depth = maxDepth+2 (=${maxDepth + 2})`, () => {
+      expect(() => verifyJsonBody(makeReq(), {}, buildObjectBufferNonEmptyLeaf(maxDepth + 2))).toThrow(
         /nesting too deep/i,
       );
     });
 
-    it(`assertNoPollutingKeys rejects parsed array at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
-      const err = runRejectPolluted(buildParsedArrayNonEmptyLeaf(MAX_DEPTH + 2));
+    it(`assertNoPollutingKeys rejects parsed array at depth = maxDepth+2 (=${maxDepth + 2})`, () => {
+      const err = runRejectPolluted(buildParsedArrayNonEmptyLeaf(maxDepth + 2));
       expect(err).not.toBeNull();
       expect(err?.message).toMatch(/nesting too deep/i);
       expect(err?.statusCode ?? err?.status).toBe(400);
     });
 
-    it(`assertNoPollutingKeys rejects parsed object at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
-      const err = runRejectPolluted(buildParsedObjectNonEmptyLeaf(MAX_DEPTH + 2));
+    it(`assertNoPollutingKeys rejects parsed object at depth = maxDepth+2 (=${maxDepth + 2})`, () => {
+      const err = runRejectPolluted(buildParsedObjectNonEmptyLeaf(maxDepth + 2));
       expect(err).not.toBeNull();
       expect(err?.message).toMatch(/nesting too deep/i);
       expect(err?.statusCode ?? err?.status).toBe(400);
@@ -273,37 +273,37 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
     // increment) would leave homogeneous tests green while mixed tests fail.
 
     describe('JsonScanner via verifyJsonBody', () => {
-      it(`accepts mixed nesting at depth = MAX_DEPTH (=${MAX_DEPTH})`, () => {
-        expect(() => verifyJsonBody(makeReq(), {}, buildMixedBufferNonEmptyLeaf(MAX_DEPTH))).not.toThrow();
+      it(`accepts mixed nesting at depth = maxDepth (=${maxDepth})`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildMixedBufferNonEmptyLeaf(maxDepth))).not.toThrow();
       });
 
-      it(`rejects mixed nesting at depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — boundary`, () => {
-        expect(() => verifyJsonBody(makeReq(), {}, buildMixedBufferNonEmptyLeaf(MAX_DEPTH + 1))).toThrow(
+      it(`rejects mixed nesting at depth = maxDepth+1 (=${maxDepth + 1}) — boundary`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildMixedBufferNonEmptyLeaf(maxDepth + 1))).toThrow(
           /nesting too deep/i,
         );
       });
 
-      it(`rejects mixed nesting at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
-        expect(() => verifyJsonBody(makeReq(), {}, buildMixedBufferNonEmptyLeaf(MAX_DEPTH + 2))).toThrow(
+      it(`rejects mixed nesting at depth = maxDepth+2 (=${maxDepth + 2})`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildMixedBufferNonEmptyLeaf(maxDepth + 2))).toThrow(
           /nesting too deep/i,
         );
       });
     });
 
     describe('assertNoPollutingKeys via rejectPollutedRequestBody', () => {
-      it(`accepts mixed nesting at depth = MAX_DEPTH (=${MAX_DEPTH})`, () => {
-        expect(runRejectPolluted(buildParsedMixedNonEmptyLeaf(MAX_DEPTH))).toBeNull();
+      it(`accepts mixed nesting at depth = maxDepth (=${maxDepth})`, () => {
+        expect(runRejectPolluted(buildParsedMixedNonEmptyLeaf(maxDepth))).toBeNull();
       });
 
-      it(`rejects mixed nesting at depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — boundary`, () => {
-        const err = runRejectPolluted(buildParsedMixedNonEmptyLeaf(MAX_DEPTH + 1));
+      it(`rejects mixed nesting at depth = maxDepth+1 (=${maxDepth + 1}) — boundary`, () => {
+        const err = runRejectPolluted(buildParsedMixedNonEmptyLeaf(maxDepth + 1));
         expect(err).not.toBeNull();
         expect(err?.message).toMatch(/nesting too deep/i);
         expect(err?.statusCode ?? err?.status).toBe(400);
       });
 
-      it(`rejects mixed nesting at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
-        const err = runRejectPolluted(buildParsedMixedNonEmptyLeaf(MAX_DEPTH + 2));
+      it(`rejects mixed nesting at depth = maxDepth+2 (=${maxDepth + 2})`, () => {
+        const err = runRejectPolluted(buildParsedMixedNonEmptyLeaf(maxDepth + 2));
         expect(err).not.toBeNull();
         expect(err?.message).toMatch(/nesting too deep/i);
         expect(err?.statusCode ?? err?.status).toBe(400);
@@ -316,7 +316,7 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
     // assertNoPollutingKeys must produce identical accept/reject
     // outcomes. If the two functions ever desync, exactly one
     // assertion in this block will break — pinning the contract.
-    for (const n of [MAX_DEPTH - 1, MAX_DEPTH, MAX_DEPTH + 1, MAX_DEPTH + 2]) {
+    for (const n of [maxDepth - 1, maxDepth, maxDepth + 1, maxDepth + 2]) {
       it(`array N=${n}: scanner and assertNoPollutingKeys agree`, () => {
         let scannerThrew = false;
         try {

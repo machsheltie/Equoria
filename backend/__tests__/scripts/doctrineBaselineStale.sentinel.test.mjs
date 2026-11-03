@@ -36,25 +36,25 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const CHECK_DIR = path.join(REPO_ROOT, 'scripts', 'doctrine-checks');
+const repoRoot = path.resolve(HERE, '..', '..', '..');
+const checkDir = path.join(repoRoot, 'scripts', 'doctrine-checks');
 
-const SILENT_CATCH_CHECK = path.join(CHECK_DIR, 'check-no-new-silent-cleanup-catch.mjs');
-const RETHROW_CHECK = path.join(CHECK_DIR, 'check-no-new-rethrow-after-log.mjs');
-const VI_MOCK_CHECK = path.join(CHECK_DIR, 'check-no-new-api-client-vi-mock.mjs');
+const silentCatchCheck = path.join(checkDir, 'check-no-new-silent-cleanup-catch.mjs');
+const rethrowCheck = path.join(checkDir, 'check-no-new-rethrow-after-log.mjs');
+const viMockCheck = path.join(checkDir, 'check-no-new-api-client-vi-mock.mjs');
 
-const SILENT_CATCH_BASELINE = path.join(CHECK_DIR, 'silent-cleanup-catch-baseline.json');
-const RETHROW_BASELINE = path.join(CHECK_DIR, 'rethrow-after-log-baseline.json');
+const silentCatchBaseline = path.join(checkDir, 'silent-cleanup-catch-baseline.json');
+const rethrowBaseline = path.join(checkDir, 'rethrow-after-log-baseline.json');
 
 // A repo-relative path that must never exist. Marker-named per convention.
-const STALE_ENTRY = 'backend/__tests__/__fefh2_stale_baseline_entry_PLANTED_DOES_NOT_EXIST__.test.mjs';
+const staleEntry = 'backend/__tests__/__fefh2_stale_baseline_entry_PLANTED_DOES_NOT_EXIST__.test.mjs';
 
 let scratchDir;
 
 beforeAll(() => {
   // Hard precondition: the planted stale path must not actually exist,
   // otherwise the positive proofs below would be vacuous.
-  expect(fs.existsSync(path.join(REPO_ROOT, ...STALE_ENTRY.split('/')))).toBe(false);
+  expect(fs.existsSync(path.join(repoRoot, ...staleEntry.split('/')))).toBe(false);
 });
 
 afterEach(() => {
@@ -70,7 +70,7 @@ function makeScratch() {
 }
 
 function runCheck(checkPath, args = []) {
-  return spawnSync('node', [checkPath, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [checkPath, ...args], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 /**
@@ -79,27 +79,27 @@ function runCheck(checkPath, args = []) {
  * 'frontend/...' string literals in that file.
  */
 function readViMockCanonicalBaseline() {
-  const src = fs.readFileSync(VI_MOCK_CHECK, 'utf8');
+  const src = fs.readFileSync(viMockCheck, 'utf8');
   const entries = [...src.matchAll(/'(frontend\/[^']+)'/g)].map(m => m[1]);
   expect(entries.length).toBeGreaterThan(0);
   return entries;
 }
 
 describe.each([
-  ['silent-cleanup-catch', SILENT_CATCH_CHECK, SILENT_CATCH_BASELINE],
-  ['rethrow-after-log', RETHROW_CHECK, RETHROW_BASELINE],
+  ['silent-cleanup-catch', silentCatchCheck, silentCatchBaseline],
+  ['rethrow-after-log', rethrowCheck, rethrowBaseline],
 ])('%s — stale baseline-entry detection (Equoria-fefh2.11)', (label, checkPath, baselinePath) => {
   it('SENTINEL-POSITIVE: FIRES (exit 1) on a planted stale entry, naming it + the shrink-only rule', () => {
     const dir = makeScratch();
     const canonical = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
-    const planted = { ...canonical, [STALE_ENTRY]: 1 };
+    const planted = { ...canonical, [staleEntry]: 1 };
     const plantedPath = path.join(dir, `${label}-PLANTED-baseline.json`);
     fs.writeFileSync(plantedPath, JSON.stringify(planted), 'utf8');
 
     const res = runCheck(checkPath, [plantedPath]);
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('stale baseline entries');
-    expect(res.stderr).toContain(STALE_ENTRY);
+    expect(res.stderr).toContain(staleEntry);
     expect(res.stderr).toContain('may only SHRINK');
   });
 
@@ -124,12 +124,12 @@ describe('api-client-vi-mock — stale baseline-entry detection (Equoria-fefh2.1
   it('SENTINEL-POSITIVE: FIRES (exit 1) on a planted stale entry, naming it + the shrink-only rule', () => {
     const dir = makeScratch();
     const staleFrontendEntry = 'frontend/src/pages/__tests__/__fefh2_stale_PLANTED_DOES_NOT_EXIST__.test.tsx';
-    expect(fs.existsSync(path.join(REPO_ROOT, ...staleFrontendEntry.split('/')))).toBe(false);
+    expect(fs.existsSync(path.join(repoRoot, ...staleFrontendEntry.split('/')))).toBe(false);
     const planted = [...readViMockCanonicalBaseline(), staleFrontendEntry];
     const plantedPath = path.join(dir, 'api-client-vi-mock-PLANTED-baseline.json');
     fs.writeFileSync(plantedPath, JSON.stringify(planted), 'utf8');
 
-    const res = runCheck(VI_MOCK_CHECK, [plantedPath]);
+    const res = runCheck(viMockCheck, [plantedPath]);
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('stale baseline entries');
     expect(res.stderr).toContain(staleFrontendEntry);
@@ -141,13 +141,13 @@ describe('api-client-vi-mock — stale baseline-entry detection (Equoria-fefh2.1
     const copyPath = path.join(dir, 'api-client-vi-mock-PLANTED-canonical-copy.json');
     fs.writeFileSync(copyPath, JSON.stringify(readViMockCanonicalBaseline()), 'utf8');
 
-    const res = runCheck(VI_MOCK_CHECK, [copyPath]);
+    const res = runCheck(viMockCheck, [copyPath]);
     expect(res.status).toBe(0);
     expect(res.stderr).not.toContain('stale baseline entries');
   });
 
   it('clean tree: canonical inline baseline (no override) exits 0 — every entry exists on disk', () => {
-    const res = runCheck(VI_MOCK_CHECK);
+    const res = runCheck(viMockCheck);
     expect(res.status).toBe(0);
   });
 
@@ -156,7 +156,7 @@ describe('api-client-vi-mock — stale baseline-entry detection (Equoria-fefh2.1
     const badPath = path.join(dir, 'api-client-vi-mock-PLANTED-malformed.json');
     fs.writeFileSync(badPath, JSON.stringify({ not: 'an array' }), 'utf8');
 
-    const res = runCheck(VI_MOCK_CHECK, [badPath]);
+    const res = runCheck(viMockCheck, [badPath]);
     expect(res.status).toBe(2);
     expect(res.stderr).toContain('must be a JSON array of repo-relative path strings');
   });

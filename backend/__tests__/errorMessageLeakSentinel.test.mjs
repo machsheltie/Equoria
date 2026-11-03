@@ -42,7 +42,7 @@ import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = resolve(__dirname, '..');
+const backendRoot = resolve(__dirname, '..');
 
 /**
  * Recursively collect every .mjs / .js file under `dir`, skipping
@@ -82,10 +82,10 @@ function collectSourceFiles(dir) {
 // Matches the canonical leak form; does NOT match the safe `=== 'development'`
 // form, nor `NODE_ENV !== 'production'` used for non-error gating (e.g.,
 // suppressing real email sends).
-const LEAK_PATTERN = /NODE_ENV\s*!==\s*['"]production['"]\s*\?\s*[\w.]*error\.message/;
+const leakPattern = /NODE_ENV\s*!==\s*['"]production['"]\s*\?\s*[\w.]*error\.message/;
 
 describe('Error-message leak sentinel (Equoria-rv3fd)', () => {
-  const files = collectSourceFiles(BACKEND_ROOT);
+  const files = collectSourceFiles(backendRoot);
 
   it('finds at least one backend source file (sanity)', () => {
     expect(files.length).toBeGreaterThan(50);
@@ -110,7 +110,7 @@ describe('Error-message leak sentinel (Equoria-rv3fd)', () => {
         if (trimmed.startsWith('//') || trimmed.startsWith('*')) {
           return;
         }
-        if (LEAK_PATTERN.test(line)) {
+        if (leakPattern.test(line)) {
           offenders.push(`${file}:${idx + 1}: ${trimmed}`);
         }
       });
@@ -120,33 +120,33 @@ describe('Error-message leak sentinel (Equoria-rv3fd)', () => {
 
   // Sentinel-positive: prove the regex fires on the canonical leak form,
   // so a future refactor that breaks the regex (e.g., a stray whitespace
-  // change to LEAK_PATTERN) cannot silently turn this sentinel into a
+  // change to leakPattern) cannot silently turn this sentinel into a
   // no-op. Per OPTIMAL_FIX_DISCIPLINE.md §2 — "a check without a positive
   // test is a placebo".
-  describe('LEAK_PATTERN positive proofs', () => {
+  describe('leakPattern positive proofs', () => {
     it('fires on the single-quoted canonical form', () => {
       const sample = "error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',";
-      expect(LEAK_PATTERN.test(sample)).toBe(true);
+      expect(leakPattern.test(sample)).toBe(true);
     });
 
     it('fires on the double-quoted canonical form', () => {
       const sample = 'error: process.env.NODE_ENV !== "production" ? error.message : "Something went wrong",';
-      expect(LEAK_PATTERN.test(sample)).toBe(true);
+      expect(leakPattern.test(sample)).toBe(true);
     });
 
     it('fires on the err.message variant (shorthand)', () => {
       const sample = "msg: process.env.NODE_ENV !== 'production' ? err.error.message : 'fallback'";
-      expect(LEAK_PATTERN.test(sample)).toBe(true);
+      expect(leakPattern.test(sample)).toBe(true);
     });
 
     it('does NOT fire on the safe === development form', () => {
       const sample = "error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',";
-      expect(LEAK_PATTERN.test(sample)).toBe(false);
+      expect(leakPattern.test(sample)).toBe(false);
     });
 
     it('does NOT fire on non-error gating (e.g., emailService dev guards)', () => {
       const sample = "if (process.env.NODE_ENV !== 'production') { return mockSendMail(); }";
-      expect(LEAK_PATTERN.test(sample)).toBe(false);
+      expect(leakPattern.test(sample)).toBe(false);
     });
   });
 });

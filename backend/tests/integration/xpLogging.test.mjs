@@ -199,10 +199,10 @@ describe('XP Logging — Placement-Based XP Rules', () => {
   it('XP constants: 1st place awards more than 2nd, 2nd more than 3rd', () => {
     // These constants are encoded in the competition controller.
     // If someone changes them, this test fails and forces a conscious decision.
-    const PLACEMENT_XP = { '1st': 20, '2nd': 15, '3rd': 10 };
+    const placementXp = { '1st': 20, '2nd': 15, '3rd': 10 };
 
-    expect(PLACEMENT_XP['1st']).toBeGreaterThan(PLACEMENT_XP['2nd']);
-    expect(PLACEMENT_XP['2nd']).toBeGreaterThan(PLACEMENT_XP['3rd']);
-    expect(PLACEMENT_XP['3rd']).toBeGreaterThan(0);
+    expect(placementXp['1st']).toBeGreaterThan(placementXp['2nd']);
+    expect(placementXp['2nd']).toBeGreaterThan(placementXp['3rd']);
+    expect(placementXp['3rd']).toBeGreaterThan(0);
   });
 });

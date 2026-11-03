@@ -38,7 +38,7 @@ import { createShow, enterShow } from '../modules/competition/shows/showControll
 import { executeClosedShows } from '../modules/competition/index.mjs';
 import { testHorseData } from './helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-si69u-conserv';
+const fixturePrefix = 'TestFixture-si69u-conserv';
 const cleanup = createCleanupTracker();
 
 let creator;
@@ -92,8 +92,8 @@ async function makeUser(money, suffix) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
+      username: `${fixturePrefix}-${suffix}-${tag}`,
+      email: `${fixturePrefix}-${suffix}-${tag}@example.com`,
       password: pw,
       firstName: 'Cons',
       lastName: suffix,
@@ -108,7 +108,7 @@ async function makeHorse(ownerId) {
   const h = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
+      name: `${fixturePrefix}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: competitionDateOfBirth(),
       age: 7,
@@ -194,7 +194,7 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
     const createReq = {
       user: { id: creator.id },
       body: {
-        name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+        name: `${fixturePrefix}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
         entryFee: 100, // the prize derives to 1000 (10x, owner ruling 2026-10-23)
         level: 1,
@@ -243,8 +243,8 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
   it('SENTINEL: creator deleted mid-show — money STILL conserved + accumulated fees burned with audit', async () => {
     const userIds = [creator.id, ...entrants.map(e => e.id)];
     const FEE = 100;
-    const ENTRANT_COUNT = entrants.length;
-    const EXPECTED_BURNED_FEES = FEE * ENTRANT_COUNT; // 300
+    const entrantCount = entrants.length;
+    const expectedBurnedFees = FEE * entrantCount; // 300
     // Equoria-3n2g4: suite-scoped conservation. With the creator FK nulled at
     // execute time the accumulated fees go to the SHARED burn account (no
     // creator wallet to receive them). We prove conservation via SUITE-OWNED
@@ -260,7 +260,7 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
     const createReq = {
       user: { id: creator.id },
       body: {
-        name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+        name: `${fixturePrefix}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
         entryFee: 100, // the prize derives to 1000 (10x, owner ruling 2026-10-23)
         level: 1,
@@ -298,7 +298,7 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
     // and the 3 entry fees are the only money that left the suite — routed to
     // the shared burn account because the FK was null at execute time.
     const moneyAfter = await snapMoney(userIds);
-    expect(moneyBefore - moneyAfter).toBe(EXPECTED_BURNED_FEES);
+    expect(moneyBefore - moneyAfter).toBe(expectedBurnedFees);
 
     // Per-show escrow columns drained — all prize paid, all fees burned. These
     // columns belong exclusively to THIS show row (concurrency-proof).
@@ -311,6 +311,6 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
     // assert the lower bound rather than an exact equality (Equoria-3n2g4).
     // Pre-si69u this case lost 300 from the economy with no audit row.
     const burnAfter = await snapBurn();
-    expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(EXPECTED_BURNED_FEES);
+    expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(expectedBurnedFees);
   });
 });

@@ -38,10 +38,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(__dirname, '../..');
+const repoRoot = resolve(__dirname, '../..');
 
 function read(relPath) {
-  return readFileSync(resolve(REPO_ROOT, relPath), 'utf8');
+  return readFileSync(resolve(repoRoot, relPath), 'utf8');
 }
 
 describe('Auth rate-limit code ↔ docs drift sentinel (Equoria-wfz1)', () => {

@@ -14,11 +14,11 @@ import { testHorseData } from '../helpers/createTestHorse.mjs';
 // identifier. randomBytes gives a unique-per-run suffix; the username stays
 // within the 3-30 char /^[A-Za-z0-9_]+$/ register-validator charset.
 const SUFFIX = randomBytes(6).toString('hex');
-const TEST_USER_ID = `schema-field-test-user-${SUFFIX}`;
-const TEST_USERNAME = `schemafieldtestuser${SUFFIX}`;
-const TEST_EMAIL = `schema-field-test-${SUFFIX}@example.com`;
-const TEST_BREED_NAME = `Schema Field Test Breed ${SUFFIX}`;
-const TEST_HORSE_NAME = `Schema Field Test Horse ${SUFFIX}`;
+const testUserId = `schema-field-test-user-${SUFFIX}`;
+const testUsername = `schemafieldtestuser${SUFFIX}`;
+const testEmail = `schema-field-test-${SUFFIX}@example.com`;
+const testBreedName = `Schema Field Test Breed ${SUFFIX}`;
+const testHorseName = `Schema Field Test Horse ${SUFFIX}`;
 
 describe('Schema Field Test', () => {
   afterAll(async () => {
@@ -28,19 +28,19 @@ describe('Schema Field Test', () => {
   it('should create horse with consecutiveDaysFoalCare field', async () => {
     // Clean up first — scoped to this run's unique names/email.
     await prisma.horse.deleteMany({
-      where: { name: TEST_HORSE_NAME },
+      where: { name: testHorseName },
     });
     await prisma.user.deleteMany({
-      where: { email: TEST_EMAIL },
+      where: { email: testEmail },
     });
     await prisma.breed.deleteMany({
-      where: { name: TEST_BREED_NAME },
+      where: { name: testBreedName },
     });
 
     // Create test breed
     const testBreed = await prisma.breed.create({
       data: {
-        name: TEST_BREED_NAME,
+        name: testBreedName,
         description: 'Test breed for schema field validation',
       },
     });
@@ -49,9 +49,9 @@ describe('Schema Field Test', () => {
     const testUser = await prisma.user.create({
       data: {
         emailVerified: true,
-        id: TEST_USER_ID,
-        username: TEST_USERNAME,
-        email: TEST_EMAIL,
+        id: testUserId,
+        username: testUsername,
+        email: testEmail,
         password: 'TestPassword123!',
         firstName: 'Schema',
         lastName: 'Field',
@@ -63,7 +63,7 @@ describe('Schema Field Test', () => {
     const horse = await prisma.horse.create({
       data: await testHorseData(prisma, {
         ...fixtureColor(),
-        name: TEST_HORSE_NAME,
+        name: testHorseName,
         sex: 'Mare',
         dateOfBirth: new Date('2023-01-01'),
         age: 365,

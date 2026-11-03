@@ -30,7 +30,7 @@ let sendWelcomeEmail;
 let sendPasswordResetEmail;
 let _resetTransporter;
 
-const ORIGINAL_ENV = { ...process.env };
+const originalEnv = { ...process.env };
 
 beforeEach(async () => {
   jest.clearAllMocks();
@@ -39,7 +39,7 @@ beforeEach(async () => {
   // transport factory and sendMail behave for each test body.
   sendMailMock.mockResolvedValue({ messageId: 'smtp-test-msg-id-123' });
   createTransportMock.mockImplementation(() => ({ sendMail: sendMailMock }));
-  process.env = { ...ORIGINAL_ENV };
+  process.env = { ...originalEnv };
   // Force fresh module load so our nodemailer mock is wired up
   jest.resetModules();
   const mod = await import('../utils/emailService.mjs');
@@ -51,7 +51,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
-  process.env = { ...ORIGINAL_ENV };
+  process.env = { ...originalEnv };
 });
 
 describe('Email service — production SMTP wiring', () => {

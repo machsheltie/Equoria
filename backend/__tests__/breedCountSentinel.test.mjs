@@ -32,15 +32,15 @@ import prisma from '../../packages/database/prismaClient.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Canonical breed source directory. Must match `BREED_DATA_DIR` in
+// Canonical breed source directory. Must match `breedDataDir` in
 // backend/seed/populateBreedsFromSql.mjs — if the importer moves, this path
 // moves with it (so the sentinel keeps measuring the right thing).
-const BREED_DATA_DIR = resolve(__dirname, '..', 'data', 'breeds');
+const breedDataDir = resolve(__dirname, '..', 'data', 'breeds');
 
-// Files in BREED_DATA_DIR that are NOT breed inserts. Mirrors the importer's
-// SKIP_FILES so the sentinel never falsely flags a meta file as a missing
+// Files in breedDataDir that are NOT breed inserts. Mirrors the importer's
+// skipFiles so the sentinel never falsely flags a meta file as a missing
 // breed.
-const SKIP_FILES = new Set([
+const skipFiles = new Set([
   'seed.sql',
   'populate_breed_ratings.sql',
   'populate_breed_temperaments.sql',
@@ -52,7 +52,7 @@ const SKIP_FILES = new Set([
 // Lower bound landed by Equoria-26qjf.3. Asserted as `>=` (not `==`) so the
 // roster can grow without breaking the gate; only contraction below 312
 // (i.e. a real regression) trips this assertion.
-const EXPECTED_MIN_BREEDS = 312;
+const expectedMinBreeds = 312;
 
 /**
  * Strip .txt and unescape SQL-doubled apostrophes from a breed filename so
@@ -68,13 +68,13 @@ function breedNameFromFile(filename) {
  * and filtering out non-breed files. Pure I/O — no DB.
  */
 async function expectedBreedNamesFromFiles() {
-  const all = await readdir(BREED_DATA_DIR);
+  const all = await readdir(breedDataDir);
   const names = new Set();
   for (const file of all) {
     if (!file.endsWith('.txt')) {
       continue;
     }
-    if (SKIP_FILES.has(file)) {
+    if (skipFiles.has(file)) {
       continue;
     }
     names.add(breedNameFromFile(file));
@@ -108,12 +108,12 @@ describe('breed-count sentinel (Equoria-oau0u — post-26qjf.3 regression gate)'
     await prisma.$disconnect();
   });
 
-  it(`every breed in ${BREED_DATA_DIR} has a DB row with shadeBias`, async () => {
+  it(`every breed in ${breedDataDir} has a DB row with shadeBias`, async () => {
     const expected = await expectedBreedNamesFromFiles();
 
     // Defense-in-depth: catch a future glob/path regression that would
     // silently produce an empty expected set (and then trivially "pass").
-    expect(expected.size).toBeGreaterThanOrEqual(EXPECTED_MIN_BREEDS);
+    expect(expected.size).toBeGreaterThanOrEqual(expectedMinBreeds);
 
     const rows = await prisma.breed.findMany({
       select: { name: true, breedGeneticProfile: true },
@@ -145,7 +145,7 @@ describe('breed-count sentinel (Equoria-oau0u — post-26qjf.3 regression gate)'
       const preview = missing.slice(0, 20).join(', ');
       const suffix = missing.length > 20 ? ` (... +${missing.length - 20} more)` : '';
       throw new Error(
-        `[breedCountSentinel] ${missing.length} breed(s) present in ${BREED_DATA_DIR} ` +
+        `[breedCountSentinel] ${missing.length} breed(s) present in ${breedDataDir} ` +
           `but missing from DB (or missing shadeBias on their profile): ${preview}${suffix}. ` +
           'Run `npm run seed:breeds` from backend/ to re-import.',
       );

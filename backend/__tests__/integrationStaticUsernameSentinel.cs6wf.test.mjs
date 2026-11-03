@@ -51,7 +51,7 @@ import { dirname, join } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const integrationDir = join(__dirname, '..', 'tests', 'integration');
 
-const TARGET_FILES = [
+const targetFiles = [
   'horseBreedingWorkflow.integration.test.mjs',
   'competitionWorkflow.integration.test.mjs',
   'documentation-system-integration.test.mjs',
@@ -80,25 +80,25 @@ function stripComments(src) {
 // Match `username: 'literal'` where the literal is 3+ chars of typical
 // fixture-name shape. The intentional validation payload `username: 'ab'`
 // (length 2) is excluded by the {3,} quantifier.
-const STATIC_FIXTURE_USERNAME_RE = /\busername:\s*['"][A-Za-z0-9._-]{3,}['"]/g;
+const staticFixtureUsernameRe = /\busername:\s*['"][A-Za-z0-9._-]{3,}['"]/g;
 
 // Match `email: '...@...'` — any string-literal email is a unique-constraint
 // collision risk and must be template-literal randomized.
-const STATIC_EMAIL_RE = /\bemail:\s*['"][^'"]*@[^'"]*['"]/g;
+const staticEmailRe = /\bemail:\s*['"][^'"]*@[^'"]*['"]/g;
 
 // Match a scoped cleanup probe on user.email or user.username using either
 // `contains:` or `startsWith:` (both are valid scoped forms — they catch
 // stale rows from a crashed prior run regardless of suffix).
-const SCOPED_CLEANUP_RE = /(email|username):\s*\{\s*(contains|startsWith):\s*['"][^'"]+['"]/;
+const scopedCleanupRe = /(email|username):\s*\{\s*(contains|startsWith):\s*['"][^'"]+['"]/;
 
 describe('Static fixture-identifier sentinel for 9 integration suites (Equoria-cs6wf)', () => {
-  for (const filename of TARGET_FILES) {
+  for (const filename of targetFiles) {
     describe(filename, () => {
       const rawSrc = readFileSync(join(integrationDir, filename), 'utf8');
       const src = stripComments(rawSrc);
 
       it('contains no static fixture `username:` literal in live code (must use template-literal with randomBytes)', () => {
-        const matches = src.match(STATIC_FIXTURE_USERNAME_RE) ?? [];
+        const matches = src.match(staticFixtureUsernameRe) ?? [];
         if (matches.length > 0) {
           const matchList = matches.map(m => `  ${m}`).join('\n');
           throw new Error(
@@ -113,7 +113,7 @@ describe('Static fixture-identifier sentinel for 9 integration suites (Equoria-c
       });
 
       it('contains no static `email:` literal containing @ in live code (must use template-literal with randomBytes)', () => {
-        const matches = src.match(STATIC_EMAIL_RE) ?? [];
+        const matches = src.match(staticEmailRe) ?? [];
         if (matches.length > 0) {
           const matchList = matches.map(m => `  ${m}`).join('\n');
           throw new Error(
@@ -141,7 +141,7 @@ describe('Static fixture-identifier sentinel for 9 integration suites (Equoria-c
         // Post-fix: either `startsWith: 'TestFixture-cs6wf-'` or
         // `contains: '<suite-slug>'` against user.email or user.username.
         // Both forms recover stale rows from a crashed prior run.
-        const hasScopedCleanup = SCOPED_CLEANUP_RE.test(src);
+        const hasScopedCleanup = scopedCleanupRe.test(src);
         if (!hasScopedCleanup) {
           throw new Error(
             `${filename} contains no scoped user-cleanup probe. ` +

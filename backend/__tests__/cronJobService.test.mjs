@@ -55,17 +55,17 @@ import legacyCronJobs from '../services/cronJobs.mjs';
 // followed. A unique, non-prefix-overlapping namespace ('cronsvc-') makes the
 // startsWith match exact to THIS suite's rows. Do not shorten it back to a
 // value that is a prefix of another suite's namespace.
-const SUITE_PREFIX = 'cronsvc-';
+const suitePrefix = 'cronsvc-';
 
 async function cleanupSuite() {
   // The cron service touches refresh_tokens for ALL users. Tests in
   // this file create their own users via createTestUser and tokens via
   // createTestRefreshToken. We clean those (and only those) by user-id
-  // prefix here. The SUITE_PREFIX namespace ('cronsvc-') is unique to this
+  // prefix here. The suitePrefix namespace ('cronsvc-') is unique to this
   // file and does not overlap any sibling cron suite's prefix (Equoria-bv8iq),
   // so this startsWith cannot match another suite's in-flight fixtures.
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {
@@ -76,14 +76,14 @@ async function cleanupSuite() {
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }
 
-// Override createTestUser to use SUITE_PREFIX so cleanupSuite catches them.
+// Override createTestUser to use suitePrefix so cleanupSuite catches them.
 async function makeUser(overrides = {}) {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}${uid}`,
-      username: overrides.username ?? `${SUITE_PREFIX}${uid}`,
-      email: overrides.email ?? `${SUITE_PREFIX}${uid}@example.com`,
+      id: `${suitePrefix}${uid}`,
+      username: overrides.username ?? `${suitePrefix}${uid}`,
+      email: overrides.email ?? `${suitePrefix}${uid}@example.com`,
       firstName: 'Cron',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -117,7 +117,7 @@ describe('Cron Job Service (real node-cron + real DB)', () => {
       // the one whose silent failure has no external symptom. It is asserted by
       // __tests__/cronJobRegistry.structure.test.mjs instead, so this list is
       // back to four (the rank-snapshot job was removed with the owner's 2026-10-26 q86 ruling).
-      const CANONICAL_CRON_JOBS = ['weeklySalaries', 'tokenCleanup', 'foaling', 'riderTrainerRetirement'];
+      const canonicalCronJobs = ['weeklySalaries', 'tokenCleanup', 'foaling', 'riderTrainerRetirement'];
 
       initializeCronJobs();
 
@@ -125,14 +125,14 @@ describe('Cron Job Service (real node-cron + real DB)', () => {
       const actualJobNames = Object.keys(status.jobs).sort();
 
       // Every canonical job is present (none silently dropped).
-      for (const jobName of CANONICAL_CRON_JOBS) {
+      for (const jobName of canonicalCronJobs) {
         expect(status.jobs).toHaveProperty(jobName);
       }
       // No unexpected jobs registered (none silently added without
-      // updating CANONICAL_CRON_JOBS).
-      expect(actualJobNames).toEqual([...CANONICAL_CRON_JOBS].sort());
+      // updating canonicalCronJobs).
+      expect(actualJobNames).toEqual([...canonicalCronJobs].sort());
       // totalJobs stays consistent with the registered set.
-      expect(status.totalJobs).toBe(CANONICAL_CRON_JOBS.length);
+      expect(status.totalJobs).toBe(canonicalCronJobs.length);
     });
 
     // Owner ruling 2026-10-09 (repeated — it had drifted to UTC): every

@@ -18,7 +18,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { updateUserSettingsPaths } from '../utils/userSettingsPaths.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-settingsPaths';
+const fixturePrefix = 'TestFixture-settingsPaths';
 const MARKER = '2026-09-06T00:00:00.000Z';
 
 describe('updateUserSettingsPaths', () => {
@@ -32,8 +32,8 @@ describe('updateUserSettingsPaths', () => {
     const user = await prisma.user.create({
       data: {
         emailVerified: true,
-        email: `${FIXTURE_PREFIX}-${tag}@example.com`,
-        username: `${FIXTURE_PREFIX}-${tag}`,
+        email: `${fixturePrefix}-${tag}@example.com`,
+        username: `${fixturePrefix}-${tag}`,
         password: 'irrelevant-hash',
         firstName: 'Settings',
         lastName: 'Paths',

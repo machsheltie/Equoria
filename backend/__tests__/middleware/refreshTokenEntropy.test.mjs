@@ -21,7 +21,7 @@
  */
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
-const TEST_JWT_SECRET = process.env.JWT_SECRET;
+const testJwtSecret = process.env.JWT_SECRET;
 
 import { describe, it, expect } from '@jest/globals';
 import jwt from 'jsonwebtoken';
@@ -30,7 +30,7 @@ import { generateRefreshToken } from '../../middleware/auth.mjs';
 describe('generateRefreshToken — entropy padding (Equoria-hmp59)', () => {
   it('emits a fixed-length 32-character lowercase hex `random` field', () => {
     const token = generateRefreshToken({ userId: 'abc' });
-    const decoded = jwt.verify(token, TEST_JWT_SECRET, { algorithms: ['HS256'] });
+    const decoded = jwt.verify(token, testJwtSecret, { algorithms: ['HS256'] });
     expect(typeof decoded.random).toBe('string');
     // 16 bytes → 32 hex chars. Math.random().toString(36).substring(2) is
     // typically length 11 and uses [0-9a-z].
@@ -41,7 +41,7 @@ describe('generateRefreshToken — entropy padding (Equoria-hmp59)', () => {
     const seen = new Set();
     for (let i = 0; i < 10_000; i++) {
       const token = generateRefreshToken({ userId: 'abc' });
-      const decoded = jwt.verify(token, TEST_JWT_SECRET, { algorithms: ['HS256'] });
+      const decoded = jwt.verify(token, testJwtSecret, { algorithms: ['HS256'] });
       seen.add(decoded.random);
     }
     expect(seen.size).toBe(10_000);
@@ -57,7 +57,7 @@ describe('generateRefreshToken — entropy padding (Equoria-hmp59)', () => {
     const counts = new Array(256).fill(0);
     for (let i = 0; i < N; i++) {
       const token = generateRefreshToken({ userId: 'abc' });
-      const decoded = jwt.verify(token, TEST_JWT_SECRET, { algorithms: ['HS256'] });
+      const decoded = jwt.verify(token, testJwtSecret, { algorithms: ['HS256'] });
       const firstByte = parseInt(decoded.random.slice(0, 2), 16);
       counts[firstByte] += 1;
     }

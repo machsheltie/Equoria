@@ -19,19 +19,19 @@
  */
 import { describe, it, expect, afterEach, jest } from '@jest/globals';
 
-const ORIGINAL_SECURE = process.env.COOKIE_SECURE;
-const ORIGINAL_SAMESITE = process.env.COOKIE_SAMESITE;
+const originalSecure = process.env.COOKIE_SECURE;
+const originalSamesite = process.env.COOKIE_SAMESITE;
 
 afterEach(() => {
-  if (ORIGINAL_SECURE === undefined) {
+  if (originalSecure === undefined) {
     delete process.env.COOKIE_SECURE;
   } else {
-    process.env.COOKIE_SECURE = ORIGINAL_SECURE;
+    process.env.COOKIE_SECURE = originalSecure;
   }
-  if (ORIGINAL_SAMESITE === undefined) {
+  if (originalSamesite === undefined) {
     delete process.env.COOKIE_SAMESITE;
   } else {
-    process.env.COOKIE_SAMESITE = ORIGINAL_SAMESITE;
+    process.env.COOKIE_SAMESITE = originalSamesite;
   }
   jest.resetModules();
 });

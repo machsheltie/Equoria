@@ -51,8 +51,8 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
   // beforeEach.
   let extraUserIds = [];
 
-  const NONEXISTENT_MESSAGE_ID = 999999999;
-  const NONEXISTENT_SHOW_ID = 999999999;
+  const nonexistentMessageId = 999999999;
+  const nonexistentShowId = 999999999;
 
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
@@ -169,7 +169,7 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
 
       // Not-exists case: user A reading a non-existent message ID
       const resMissing = await request(app)
-        .get(`/api/v1/messages/${NONEXISTENT_MESSAGE_ID}`)
+        .get(`/api/v1/messages/${nonexistentMessageId}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000');
 
@@ -234,7 +234,7 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
 
       // Not-exists case
       const resMissing = await request(app)
-        .patch(`/api/v1/messages/${NONEXISTENT_MESSAGE_ID}/read`)
+        .patch(`/api/v1/messages/${nonexistentMessageId}/read`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrfA__.cookieHeader)
@@ -297,7 +297,7 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrfA__.cookieHeader)
         .set('X-CSRF-Token', __csrfA__.csrfToken)
-        .send({ showId: NONEXISTENT_SHOW_ID });
+        .send({ showId: nonexistentShowId });
 
       expect(resMissing.status).toBe(410);
       // Byte-identical sentinel — the 410 must not leak whether the show

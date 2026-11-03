@@ -30,9 +30,9 @@ import { CronJobMonitor, staleAlertThresholdMs } from '../services/jobs/cronJobM
 import prisma from '../../packages/database/prismaClient.mjs';
 
 const TAG = `urqic35-${randomBytes(4).toString('hex')}`;
-const JOB_SUCCESS = `${TAG}-success`;
-const JOB_ERROR = `${TAG}-error`;
-const JOB_HEALTH = `${TAG}-health`;
+const jobSuccess = `${TAG}-success`;
+const jobError = `${TAG}-error`;
+const jobHealth = `${TAG}-health`;
 
 /**
  * Realm-safe "is this a valid Date" assertion (mirrors the cronRunLog suite).
@@ -47,7 +47,7 @@ function expectValidDate(value) {
 describe('Equoria-urqic.3.5: CronJobMonitor (isolated collaborator)', () => {
   beforeAll(async () => {
     // Sanity: confirm the table is reachable before the suite begins.
-    await prisma.cronRunLog.findMany({ where: { jobName: JOB_SUCCESS }, take: 1 });
+    await prisma.cronRunLog.findMany({ where: { jobName: jobSuccess }, take: 1 });
   });
 
   afterAll(async () => {
@@ -58,14 +58,14 @@ describe('Equoria-urqic.3.5: CronJobMonitor (isolated collaborator)', () => {
   describe('heartbeat liveness (runWithHeartbeat)', () => {
     it('records startedAt + finishedAt + status=success on a successful run', async () => {
       const monitor = new CronJobMonitor();
-      const result = await monitor.runWithHeartbeat(JOB_SUCCESS, async () => ({
+      const result = await monitor.runWithHeartbeat(jobSuccess, async () => ({
         totalProcessed: 5,
         birthdaysFound: 2,
         errors: 0,
       }));
 
       expect(result.totalProcessed).toBe(5);
-      const hb = monitor.heartbeats.get(JOB_SUCCESS);
+      const hb = monitor.heartbeats.get(jobSuccess);
       expect(hb).toBeDefined();
       expect(hb.status).toBe('success');
       expectValidDate(hb.startedAt);
@@ -77,12 +77,12 @@ describe('Equoria-urqic.3.5: CronJobMonitor (isolated collaborator)', () => {
     it('records status=error + message on a failed run, and re-throws', async () => {
       const monitor = new CronJobMonitor();
       await expect(
-        monitor.runWithHeartbeat(JOB_ERROR, async () => {
+        monitor.runWithHeartbeat(jobError, async () => {
           throw new Error('urqic35-synthetic-failure');
         }),
       ).rejects.toThrow('urqic35-synthetic-failure');
 
-      const hb = monitor.heartbeats.get(JOB_ERROR);
+      const hb = monitor.heartbeats.get(jobError);
       expect(hb.status).toBe('error');
       expect(hb.error).toBe('urqic35-synthetic-failure');
       expectValidDate(hb.finishedAt);
@@ -90,8 +90,8 @@ describe('Equoria-urqic.3.5: CronJobMonitor (isolated collaborator)', () => {
 
     it('summarizes a non-object result to null without crashing', async () => {
       const monitor = new CronJobMonitor();
-      await monitor.runWithHeartbeat(JOB_SUCCESS, async () => undefined);
-      const hb = monitor.heartbeats.get(JOB_SUCCESS);
+      await monitor.runWithHeartbeat(jobSuccess, async () => undefined);
+      const hb = monitor.heartbeats.get(jobSuccess);
       expect(hb.status).toBe('success');
       expect(hb.summary).toBeNull();
     });
@@ -144,10 +144,10 @@ describe('Equoria-urqic.3.5: CronJobMonitor (isolated collaborator)', () => {
   describe('getHealth shape + staleness', () => {
     it('flags a never-run job as STALE and reports serviceRunning', () => {
       const monitor = new CronJobMonitor();
-      const health = monitor.getHealth([JOB_HEALTH], { serviceRunning: true });
+      const health = monitor.getHealth([jobHealth], { serviceRunning: true });
       expect(health.serviceRunning).toBe(true);
       expect(health.anyStale).toBe(true);
-      const block = health.jobs[JOB_HEALTH];
+      const block = health.jobs[jobHealth];
       expect(block.stale).toBe(true);
       expect(block.lastFinishedAt).toBeNull();
       expect(block.status).toBe('never-run');
@@ -155,9 +155,9 @@ describe('Equoria-urqic.3.5: CronJobMonitor (isolated collaborator)', () => {
 
     it('clears STALE after a fresh successful run', async () => {
       const monitor = new CronJobMonitor();
-      await monitor.runWithHeartbeat(JOB_HEALTH, async () => ({ totalProcessed: 1 }));
-      const health = monitor.getHealth([JOB_HEALTH], { serviceRunning: true });
-      const block = health.jobs[JOB_HEALTH];
+      await monitor.runWithHeartbeat(jobHealth, async () => ({ totalProcessed: 1 }));
+      const health = monitor.getHealth([jobHealth], { serviceRunning: true });
+      const block = health.jobs[jobHealth];
       expect(block.stale).toBe(false);
       expect(block.status).toBe('success');
       expect(block.lastFinishedAt).not.toBeNull();
@@ -167,14 +167,14 @@ describe('Equoria-urqic.3.5: CronJobMonitor (isolated collaborator)', () => {
       const monitor = new CronJobMonitor();
       // 48h ago — daily-job default threshold is 30h.
       const longAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-      monitor.recordHeartbeat(JOB_HEALTH, {
+      monitor.recordHeartbeat(jobHealth, {
         startedAt: longAgo,
         finishedAt: longAgo,
         status: 'success',
       });
-      const health = monitor.getHealth([JOB_HEALTH], { serviceRunning: false });
+      const health = monitor.getHealth([jobHealth], { serviceRunning: false });
       expect(health.serviceRunning).toBe(false);
-      expect(health.jobs[JOB_HEALTH].stale).toBe(true);
+      expect(health.jobs[jobHealth].stale).toBe(true);
       expect(health.anyStale).toBe(true);
     });
 

@@ -34,7 +34,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
   let testUser;
   let validToken;
-  let JWT_SECRET;
+  let jwtSecret;
   const createdUserIds = [];
 
   const expectSuccessFlag = (res, expected) => {
@@ -56,7 +56,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     });
     createdUserIds.push(testUser.id);
 
-    JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
+    jwtSecret = process.env.JWT_SECRET || 'test-secret-key';
     validToken = createMockToken(testUser.id);
   });
 
@@ -151,7 +151,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     it('should reject token signed with different algorithm', async () => {
       const forgedToken = jwt.sign(
         { userId: testUser.id },
-        JWT_SECRET,
+        jwtSecret,
         { algorithm: 'HS512' }, // Different from expected HS256
       );
 
@@ -237,7 +237,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
           userId: testUser.id,
           iat: Math.floor(Date.now() / 1000) - 8 * 24 * 60 * 60,
         },
-        JWT_SECRET,
+        jwtSecret,
         { expiresIn: '30d' },
       );
 
@@ -261,7 +261,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
           userId: testUser.id,
           iat: Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60,
         },
-        JWT_SECRET,
+        jwtSecret,
         { expiresIn: '30d' },
       );
 
@@ -505,7 +505,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     });
 
     it('should reject token with SQL injection in payload', async () => {
-      const sqlInjectionToken = jwt.sign({ userId: "1' OR '1'='1" }, JWT_SECRET);
+      const sqlInjectionToken = jwt.sign({ userId: "1' OR '1'='1" }, jwtSecret);
 
       const response = await request(app)
         .get('/api/v1/auth/profile')
@@ -520,7 +520,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     it('should handle token with missing userId gracefully', async () => {
       const invalidToken = jwt.sign(
         { email: 'test@example.com' }, // Missing userId
-        JWT_SECRET,
+        jwtSecret,
       );
 
       const response = await request(app)
@@ -533,7 +533,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     });
 
     it('should reject token with non-numeric userId', async () => {
-      const invalidToken = jwt.sign({ userId: 'not-a-number' }, JWT_SECRET);
+      const invalidToken = jwt.sign({ userId: 'not-a-number' }, jwtSecret);
 
       const response = await request(app)
         .get('/api/v1/users/profile')

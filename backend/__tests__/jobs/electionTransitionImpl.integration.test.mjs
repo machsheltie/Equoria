@@ -9,7 +9,7 @@
  * function directly.
  *
  * Scoped cleanup only (CLAUDE.md §2): every fixture user/club/election uses the
- * CRON_PREFIX and is deleted in FK order, scoped to the ids this suite created.
+ * cronPrefix and is deleted in FK order, scoped to the ids this suite created.
  */
 
 import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
@@ -17,15 +17,15 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { transitionElectionStatuses } from '../../services/jobs/impl/electionTransition.mjs';
 
-const CRON_PREFIX = 'cron-elec-impl';
+const cronPrefix = 'cron-elec-impl';
 
 async function createUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${CRON_PREFIX}-${uid}`,
-      username: `${CRON_PREFIX}_${uid}`,
-      email: `${CRON_PREFIX}-${uid}@example.com`,
+      id: `${cronPrefix}-${uid}`,
+      username: `${cronPrefix}_${uid}`,
+      email: `${cronPrefix}-${uid}@example.com`,
       firstName: 'Cron',
       lastName: 'ElecImpl',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -38,7 +38,7 @@ async function createClub(leaderId) {
   const uid = randomBytes(4).toString('hex');
   return prisma.club.create({
     data: {
-      name: `${CRON_PREFIX}-${uid}`,
+      name: `${cronPrefix}-${uid}`,
       type: 'discipline',
       category: 'racing',
       description: 'Cron impl test club',
@@ -50,7 +50,7 @@ async function createClub(leaderId) {
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: CRON_PREFIX } },
+    where: { id: { startsWith: cronPrefix } },
     select: { id: true },
   });
   if (users.length === 0) {

@@ -29,7 +29,7 @@ import {
 
 // Non-existent user UUID — never in the users table; count/findFirst queries
 // return 0/null safely; create() hits FK constraint and throws.
-const GHOST_UUID = '00000000-0000-0000-0000-ffffffffffff';
+const ghostUuid = '00000000-0000-0000-0000-ffffffffffff';
 
 // ── generateVerificationToken ─────────────────────────────────────────────────
 
@@ -125,7 +125,7 @@ describe('createVerificationToken() — safe DB paths (lines 63-133)', () => {
     // then create() throws a FK constraint error which the catch re-throws.
     let thrown = false;
     try {
-      await createVerificationToken(GHOST_UUID, 'ghost@example.com');
+      await createVerificationToken(ghostUuid, 'ghost@example.com');
     } catch {
       thrown = true;
     }
@@ -150,7 +150,7 @@ describe('resendVerificationEmail() — user not found (lines 303-317, 345-348)'
   it('rejects when userId does not exist (findUnique→null→AppError→catch+rethrow)', async () => {
     let thrown = false;
     try {
-      await resendVerificationEmail(GHOST_UUID);
+      await resendVerificationEmail(ghostUuid);
     } catch {
       thrown = true;
     }

@@ -22,7 +22,7 @@
  * measure() calls must not overlap.
  */
 
-const BARRIER_TIMEOUT_MS = 10000;
+const barrierTimeoutMs = 10000;
 let barrierSequence = 0;
 
 /**
@@ -56,11 +56,11 @@ export function createQueryEventRecorder(client) {
           () =>
             reject(
               new Error(
-                `queryEventRecorder: no query event for "${sql}" within ${BARRIER_TIMEOUT_MS} ms; ` +
+                `queryEventRecorder: no query event for "${sql}" within ${barrierTimeoutMs} ms; ` +
                   "was the client created with log: [{ emit: 'event', level: 'query' }]?",
               ),
             ),
-          BARRIER_TIMEOUT_MS,
+          barrierTimeoutMs,
         );
       });
       return await Promise.race([arrival, missing]);

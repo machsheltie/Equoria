@@ -29,7 +29,7 @@ import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { realDateOrReason } from '../helpers/expectRealDate.mjs';
 
 const randHex = () => randomBytes(6).toString('hex');
-const DAYS_PER_GAME_YEAR = 7;
+const daysPerGameYear = 7;
 
 /** A thin `service` handle whose logAgingSummary forwards back into the impl,
  * mirroring how the CronJobService delegators forward `this`. */
@@ -71,7 +71,7 @@ describe('INTEGRATION: horseAging impl module (Equoria-urqic.3.1) — real DB', 
    * date `gameYears * 7` game days back (Equoria-1lk00): a date-only value has
    * no time of day, so no sub-day buffer is needed. */
   async function makeStaleHorse(gameYears, storedAge) {
-    const dob = gameCalendarDate(new Date(), -gameYears * DAYS_PER_GAME_YEAR);
+    const dob = gameCalendarDate(new Date(), -gameYears * daysPerGameYear);
     return createTestHorse(
       prisma,
       {

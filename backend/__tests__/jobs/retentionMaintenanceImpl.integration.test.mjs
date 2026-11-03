@@ -34,7 +34,7 @@ import { createEscrowedShowRow } from '../../modules/competition/__tests__/helpe
 import { recordDocCoverageSnapshot, executeOvernightShows } from '../../services/jobs/impl/retentionMaintenance.mjs';
 import { testHorseData } from '../helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-RetMaintImpl';
+const fixturePrefix = 'TestFixture-RetMaintImpl';
 
 describe('INTEGRATION: retentionMaintenance impl (Equoria-urqic.3.3) — real DB', () => {
   describe('recordDocCoverageSnapshot()', () => {
@@ -116,15 +116,15 @@ describe('INTEGRATION: retentionMaintenance impl (Equoria-urqic.3.3) — real DB
       cleanup.add(() => prisma.horse.delete({ where: { id: execHorse.id } }), 'horse');
       cleanup.add(() => prisma.user.delete({ where: { id: execUser.id } }), 'user');
       cleanup.add(
-        () => prisma.user.deleteMany({ where: { username: { startsWith: FIXTURE_PREFIX } } }),
+        () => prisma.user.deleteMany({ where: { username: { startsWith: fixturePrefix } } }),
         'defensive-user-sweep',
       );
 
       execUser = await prisma.user.create({
         data: {
           emailVerified: true,
-          email: `${FIXTURE_PREFIX}-${uid}@test.com`,
-          username: `${FIXTURE_PREFIX}-${uid}`,
+          email: `${fixturePrefix}-${uid}@test.com`,
+          username: `${fixturePrefix}-${uid}`,
           password: 'irrelevant-hash',
           firstName: 'Cron',
           lastName: 'RetMaintImpl',
@@ -137,7 +137,7 @@ describe('INTEGRATION: retentionMaintenance impl (Equoria-urqic.3.3) — real DB
       execHorse = await prisma.horse.create({
         data: await testHorseData(prisma, {
           ...fixtureColor(),
-          name: `${FIXTURE_PREFIX}-Horse-${uid}`,
+          name: `${fixturePrefix}-Horse-${uid}`,
           sex: 'Mare',
           dateOfBirth: new Date('2018-01-01'),
           age: 7,
@@ -157,7 +157,7 @@ describe('INTEGRATION: retentionMaintenance impl (Equoria-urqic.3.3) — real DB
       // Equoria-law5w (owner ruling q52): a show pays prizes only from escrow, so the
       // fixture escrows its prize the way createShow does (old fixture: unescrowed row).
       const pastShow = await createEscrowedShowRow(prisma, {
-        name: `${FIXTURE_PREFIX}-Show-${uid}`,
+        name: `${fixturePrefix}-Show-${uid}`,
         discipline: 'Dressage',
         entryFee: 0,
         levelMin: 1,

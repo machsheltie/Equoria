@@ -28,7 +28,7 @@ import logger from '../utils/logger.mjs';
 
 // A public endpoint that express.json() parses — we want to reach the gate
 // without auth complications. /api/v1/auth/login is POST + JSON.
-const JSON_ENDPOINT = '/api/v1/auth/login';
+const jsonEndpoint = '/api/v1/auth/login';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Equoria-gbcm: Content-Type case-sensitivity bypass in verifyJsonBody
@@ -36,7 +36,7 @@ const JSON_ENDPOINT = '/api/v1/auth/login';
 describe('Equoria-gbcm: Content-Type case-insensitive matching in verifyJsonBody', () => {
   it('rejects duplicate-key body when Content-Type is Application/JSON (uppercase A, uppercase JSON)', async () => {
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'Application/JSON')
       .set('Origin', 'http://localhost:3000')
       .send('{"email":"a@b.com","email":"hacked@evil.com"}');
@@ -52,7 +52,7 @@ describe('Equoria-gbcm: Content-Type case-insensitive matching in verifyJsonBody
     const close = Array.from({ length: 64 }, () => ']').join('');
     const nested = `${open}1${close}`;
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/JSON')
       .set('Origin', 'http://localhost:3000')
       .send(nested);
@@ -62,7 +62,7 @@ describe('Equoria-gbcm: Content-Type case-insensitive matching in verifyJsonBody
 
   it('still rejects duplicate-key body when Content-Type is lowercase application/json', async () => {
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/json')
       .set('Origin', 'http://localhost:3000')
       .send('{"email":"a@b.com","email":"hacked@evil.com"}');
@@ -75,7 +75,7 @@ describe('Equoria-gbcm: Content-Type case-insensitive matching in verifyJsonBody
     const close = Array.from({ length: 33 }, () => ']').join('');
     const nested = `${open}1${close}`;
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/json')
       .set('Origin', 'http://localhost:3000')
       .send(nested);
@@ -190,7 +190,7 @@ describe('Equoria-qj3f: Unicode-escape dup-key bypass in JsonScanner', () => {
     // With JSON.parse decode in scanString: scanner sees two "a" → 400.
     const body = '{"a":"x","\\u0061":"y"}';
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/json')
       .set('Origin', 'http://localhost:3000')
       .send(body);
@@ -205,7 +205,7 @@ describe('Equoria-qj3f: Unicode-escape dup-key bypass in JsonScanner', () => {
     // V8 JSON.parse treats "__proto__" as an own enumerable property on the
     // resulting object — assertNoPollutingKeys catches it and returns 400.
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/json')
       .set('Origin', 'http://localhost:3000')
       .send('{"__proto__": {"isAdmin": true}}');
@@ -236,7 +236,7 @@ describe('Equoria-qj3f: Unicode-escape dup-key bypass in JsonScanner', () => {
   it('rejects raw Unicode-escape __proto__ payload {"\\u005f\\u005fproto\\u005f\\u005f":...}', async () => {
     const body = '{"\\u005f\\u005fproto\\u005f\\u005f":{"isAdmin":true}}';
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/json')
       .set('Origin', 'http://localhost:3000')
       .send(body);
@@ -267,7 +267,7 @@ describe('Equoria-qj3f: Unicode-escape dup-key bypass in JsonScanner', () => {
     // Only the `p` is escaped — decodes to `__proto__`.
     const body = '{"__\\u0070roto__":{"isAdmin":true}}';
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/json')
       .set('Origin', 'http://localhost:3000')
       .send(body);
@@ -279,7 +279,7 @@ describe('Equoria-qj3f: Unicode-escape dup-key bypass in JsonScanner', () => {
     // Every letter of "proto" escaped individually — decodes to `__proto__`.
     const body = '{"__\\u0070\\u0072\\u006f\\u0074\\u006f__":{"isAdmin":true}}';
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/json')
       .set('Origin', 'http://localhost:3000')
       .send(body);
@@ -291,7 +291,7 @@ describe('Equoria-qj3f: Unicode-escape dup-key bypass in JsonScanner', () => {
     // Uppercase hex digits — JSON spec accepts both cases.
     const body = '{"\\u005F\\u005Fproto\\u005F\\u005F":{"isAdmin":true}}';
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/json')
       .set('Origin', 'http://localhost:3000')
       .send(body);
@@ -308,7 +308,7 @@ describe('Equoria-ifxg: scanString() throws on truncated JSON payload', () => {
     expect.assertions(2);
     const truncatedPayload = '{"name":"unclo'; // no closing quote or brace
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/json')
       .set('Origin', 'http://localhost:3000')
       .send(truncatedPayload);
@@ -320,7 +320,7 @@ describe('Equoria-ifxg: scanString() throws on truncated JSON payload', () => {
   it('returns 400 with malformed JSON message when body is only an open quote', async () => {
     expect.assertions(2);
     const res = await request(app)
-      .post(JSON_ENDPOINT)
+      .post(jsonEndpoint)
       .set('Content-Type', 'application/json')
       .set('Origin', 'http://localhost:3000')
       .send('"unclosed');

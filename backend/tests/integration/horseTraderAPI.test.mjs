@@ -23,7 +23,7 @@ import { createTestUser } from '../helpers/testAuth.mjs';
 import app from '../../app.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
-const STORE_PRICE = 1000;
+const storePrice = 1000;
 
 describe('🐴 INTEGRATION: Horse Trader Store API', () => {
   let __csrf__;
@@ -96,8 +96,8 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.pricePaid).toBe(STORE_PRICE);
-    expect(res.body.data.newBalance).toBe(balanceBefore - STORE_PRICE);
+    expect(res.body.data.pricePaid).toBe(storePrice);
+    expect(res.body.data.newBalance).toBe(balanceBefore - storePrice);
     expect(res.body.data.horse).toBeDefined();
     // Sex is canonicalized to Title Case at the Prisma client layer (Equoria-duz2).
     // Lowercase input is accepted for back-compat, but stored and returned as 'Mare'.

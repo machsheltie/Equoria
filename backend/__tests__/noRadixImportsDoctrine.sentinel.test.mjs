@@ -15,20 +15,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-no-radix-imports.mjs');
-const PLANT_DIR = path.join(REPO_ROOT, 'frontend/src/_no_radix_imports_doctrine_sentinel');
+const repoRoot = path.resolve(HERE, '..', '..');
+const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-radix-imports.mjs');
+const plantDir = path.join(repoRoot, 'frontend/src/_no_radix_imports_doctrine_sentinel');
 
 afterEach(() => {
   try {
-    fs.rmSync(PLANT_DIR, { recursive: true, force: true });
+    fs.rmSync(plantDir, { recursive: true, force: true });
   } catch {
     // best-effort cleanup
   }
 });
 
 function runCheck() {
-  return spawnSync('node', [CHECK], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [CHECK], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 describe('check-no-radix-imports.mjs (Equoria-rkgq9)', () => {
@@ -39,8 +39,8 @@ describe('check-no-radix-imports.mjs (Equoria-rkgq9)', () => {
   });
 
   it('SENTINEL: fails when a NEW @radix-ui import is planted', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const planted = path.join(PLANT_DIR, 'planted.tsx');
+    fs.mkdirSync(plantDir, { recursive: true });
+    const planted = path.join(plantDir, 'planted.tsx');
     // Build the specifier from concat so an accidental scan of this sentinel's
     // own location can never match — the planted FILE is what must trip the gate.
     const SCOPE = '@radix-ui';

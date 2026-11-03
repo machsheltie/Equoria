@@ -27,7 +27,7 @@ import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 // Hyphen-free: the register username validator is /^[a-zA-Z0-9_]+$/.
 const TAG = `jw10w${randomBytes(5).toString('hex')}`;
-const DEFAULT_ORIGIN = 'http://localhost:3000';
+const defaultOrigin = 'http://localhost:3000';
 
 const createdUserIds = new Set();
 
@@ -105,10 +105,15 @@ describe('Equoria-jw10w: DB-backed audit trail', () => {
     const password = 'TestPassword123!';
 
     const before = new Date();
-    const csrf = await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
-    const res = await attachCsrf(supertest(app).post('/api/v1/auth/register').set('Origin', DEFAULT_ORIGIN), csrf).send(
-      { email, username, password, firstName: 'Audit', lastName: 'Trail', dateOfBirth: '1990-01-01' },
-    );
+    const csrf = await fetchCsrf(app, { origin: defaultOrigin });
+    const res = await attachCsrf(supertest(app).post('/api/v1/auth/register').set('Origin', defaultOrigin), csrf).send({
+      email,
+      username,
+      password,
+      firstName: 'Audit',
+      lastName: 'Trail',
+      dateOfBirth: '1990-01-01',
+    });
 
     // Registration should succeed (201) — but the audit assertion does not
     // depend on the exact status; it depends on a row being written.
@@ -155,7 +160,7 @@ describe('Equoria-jw10w: DB-backed audit trail', () => {
     const before = new Date();
     // fetchCsrf performs GET /api/v1/auth/csrf-token (a read on the sensitive
     // `auth` prefix). It must NOT be audited — the trail is mutation-scoped.
-    await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
+    await fetchCsrf(app, { origin: defaultOrigin });
     await new Promise(r => setTimeout(r, 200));
 
     const reads = await prisma.auditLog.findMany({
@@ -198,7 +203,7 @@ describe('Equoria-jw10w: DB-backed audit trail', () => {
     // fetchCsrf throws if the csrf endpoint is not a clean 200. The audit
     // subsystem is never on the critical path, so a normal request resolves
     // successfully regardless of audit-write outcome.
-    const csrf = await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
+    const csrf = await fetchCsrf(app, { origin: defaultOrigin });
     expect(typeof csrf.csrfToken).toBe('string');
     expect(csrf.csrfToken.length).toBeGreaterThan(0);
   });

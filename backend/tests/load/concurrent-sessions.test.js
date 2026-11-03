@@ -47,7 +47,7 @@ export const options = {
   },
 };
 
-const API_URL = __ENV.API_URL || 'http://localhost:3000';
+const apiUrl = __ENV.API_URL || 'http://localhost:3000';
 
 /**
  * Test Setup - Create test users with multiple sessions
@@ -62,7 +62,7 @@ export function setup() {
 
     // Register user
     const registerRes = http.post(
-      `${API_URL}/api/v1/auth/register`,
+      `${apiUrl}/api/v1/auth/register`,
       JSON.stringify({
         email,
         username: `concurrent_${Date.now()}_${i}`,
@@ -87,7 +87,7 @@ export function setup() {
     // jar. refreshToken IS still returned in the login body and is consumed by
     // the in-VU /auth/refresh POST (body param, not a Bearer header).
     const loginRes = http.post(
-      `${API_URL}/api/v1/auth/login`,
+      `${apiUrl}/api/v1/auth/login`,
       JSON.stringify({
         email,
         password,
@@ -128,7 +128,7 @@ export default function (data) {
     // Test 1: Create new session (login from "new device")
     group('New Session Creation', () => {
       const loginRes = http.post(
-        `${API_URL}/api/v1/auth/login`,
+        `${apiUrl}/api/v1/auth/login`,
         JSON.stringify({
           email: user.email,
           password: user.password,
@@ -150,7 +150,7 @@ export default function (data) {
 
         // Verify new session works. The accessToken cookie just set in `jar`
         // authenticates this GET.
-        const profileRes = http.get(`${API_URL}/api/v1/auth/profile`, {
+        const profileRes = http.get(`${apiUrl}/api/v1/auth/profile`, {
           jar,
         });
 
@@ -164,7 +164,7 @@ export default function (data) {
     // new-session login above (the old per-user accessToken from setup() could
     // not cross k6 isolates and isn't returned in the body anyway).
     group('Existing Session Usage', () => {
-      const profileRes = http.get(`${API_URL}/api/v1/auth/profile`, {
+      const profileRes = http.get(`${apiUrl}/api/v1/auth/profile`, {
         jar,
       });
 
@@ -179,7 +179,7 @@ export default function (data) {
       const startTime = new Date();
 
       const refreshRes = http.post(
-        `${API_URL}/api/v1/auth/refresh`,
+        `${apiUrl}/api/v1/auth/refresh`,
         JSON.stringify({
           refreshToken: user.refreshToken,
         }),
@@ -218,7 +218,7 @@ export default function (data) {
       let exceededLimit = false;
       for (let i = 0; i < 6; i++) {
         const loginRes = http.post(
-          `${API_URL}/api/v1/auth/login`,
+          `${apiUrl}/api/v1/auth/login`,
           JSON.stringify({
             email: user.email,
             password: user.password,
@@ -253,7 +253,7 @@ export default function (data) {
     // accessToken cookie from the new-session login); the server clears that
     // cookie, so the follow-up profile GET on the same jar must 401.
     group('Session Cleanup', () => {
-      const logoutRes = http.post(`${API_URL}/api/v1/auth/logout`, null, {
+      const logoutRes = http.post(`${apiUrl}/api/v1/auth/logout`, null, {
         jar,
       });
 
@@ -265,7 +265,7 @@ export default function (data) {
         sessionCleanups.add(1);
 
         // Verify session invalidated — same jar, now-cleared accessToken cookie.
-        const verifyRes = http.get(`${API_URL}/api/v1/auth/profile`, {
+        const verifyRes = http.get(`${apiUrl}/api/v1/auth/profile`, {
           jar,
         });
 

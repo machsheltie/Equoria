@@ -54,11 +54,11 @@ import {
   CHECK,
   ALLOWLIST,
   MODULES,
-  RUN_ID,
-  PLANT_TOKEN,
-  PLANT_MODULE,
-  PLANT_MODULE_B,
-  TEST_LABEL,
+  runId,
+  plantToken,
+  plantModule,
+  plantModuleB,
+  testLabel,
   esc,
   relPosix,
   PM,
@@ -71,12 +71,12 @@ import {
   runWithExtraAllowlistEntry,
 } from '../helpers/moduleDependencyGraphDoctrinePlants.mjs';
 
-const WRITER_NOTE = '// sentinel plant; removed by afterEach\n';
+const writerNote = '// sentinel plant; removed by afterEach\n';
 const CTRL = `${PM}/controllers/epigeneticFlagController.mjs`;
-const CTRL_RE = esc(CTRL);
+const ctrlRe = esc(CTRL);
 const PROXY = `${PM}/services/proxy.mjs`;
-const PROXY_RE = esc(PROXY);
-const CTRL_IMPORT = "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\n";
+const proxyRe = esc(PROXY);
+const ctrlImport = "import { evaluateFlags } from '../controllers/epigeneticFlagController.mjs';\n";
 
 beforeAll(() => {
   expect(fs.existsSync(CHECK)).toBe(true);
@@ -119,7 +119,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R1: FAILS on a planted cross-module cycle and prints it with the plant file:line', () => {
-    const plant = plantFile(`economy/${PLANT_TOKEN}cycle_${RUN_ID}.mjs`, "import '../bank/index.mjs';\n");
+    const plant = plantFile(`economy/${plantToken}cycle_${runId}.mjs`, "import '../bank/index.mjs';\n");
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(/R1 cycle: bank -> economy -> bank/);
@@ -129,7 +129,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R1 (M3): an import preceded by a same-line block comment is still seen', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}comment_${RUN_ID}.mjs`,
+      `economy/${plantToken}comment_${runId}.mjs`,
       "/* Equoria sentinel plant */ import '../bank/index.mjs';\n",
     );
     const res = runCheck();
@@ -140,7 +140,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R1 (M3 control): comment-only lines and block-comment bodies never create an edge', () => {
     plantFile(
-      `economy/${PLANT_TOKEN}commentonly_${RUN_ID}.mjs`,
+      `economy/${plantToken}commentonly_${runId}.mjs`,
       "// import '../bank/index.mjs';\n/*\nimport '../bank/index.mjs';\n*/\nexport const sentinelPlant = 1;\n",
     );
     const res = runCheck();
@@ -149,7 +149,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R2: FAILS on an unmarked cross-module deep import with file:line', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}deep_${RUN_ID}.mjs`,
+      `economy/${plantToken}deep_${runId}.mjs`,
       "import { getTransactionHistory } from '../bank/controllers/bankController.mjs';\n",
     );
     const res = runCheck();
@@ -163,7 +163,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R2 (minor 6): a deep import that does not start its line (after `;`) is still seen', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}midline_${RUN_ID}.mjs`,
+      `economy/${plantToken}midline_${runId}.mjs`,
       "export const z = 1; import { getTransactionHistory } from '../bank/controllers/bankController.mjs';\n",
     );
     const res = runCheck();
@@ -177,7 +177,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R2 (S6, strict): an Equoria-hk739-marked deep import now FAILS as a plain deep import — no marker is honoured (old contract: marked + pinned passed)', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}marked_${RUN_ID}.mjs`,
+      `economy/${plantToken}marked_${runId}.mjs`,
       "// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: sentinel plant\nimport { getTransactionHistory } from '../bank/controllers/bankController.mjs';\n",
     );
     const res = runCheck();
@@ -193,7 +193,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     // auth -> horses is an existing barrel edge, so the plant adds no cycle and no deep import:
     // the only thing wrong with it is the marker line.
     const plant = plantFile(
-      `auth/services/${PLANT_TOKEN}marker_${RUN_ID}.mjs`,
+      `auth/services/${plantToken}marker_${runId}.mjs`,
       "// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: sentinel plant\nimport { generateGenotype } from '../../horses/index.mjs';\nexport const planted = generateGenotype;\n",
     );
     const res = runCheck();
@@ -205,7 +205,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R2 (S6): the retired deepImports allow-list section must stay empty — any entry FAILS as stale', () => {
-    const key = `backend/modules/economy/${PLANT_TOKEN}gone_${RUN_ID}.mjs -> backend/modules/bank/index.mjs`;
+    const key = `backend/modules/economy/${plantToken}gone_${runId}.mjs -> backend/modules/bank/index.mjs`;
     const res = runWithExtraAllowlistEntry('deepImports', key);
     expect(res.status).toBe(1);
     expect(res.out).toContain(`R2-allowlist stale entry "${key}"`);
@@ -213,7 +213,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R2 (I1): FAILS on a dynamic import() whose specifier is a template literal with an expression', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}tpl_${RUN_ID}.mjs`,
+      `economy/${plantToken}tpl_${runId}.mjs`,
       'export async function load(m) {\n  return import(`../${m}/index.mjs`);\n}\n',
     );
     const res = runCheck();
@@ -227,7 +227,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R2 (I1): FAILS on a dynamic import() with a plain backtick literal', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}tick_${RUN_ID}.mjs`,
+      `economy/${plantToken}tick_${runId}.mjs`,
       'export const load = () => import(`../bank/index.mjs`);\n',
     );
     const res = runCheck();
@@ -239,7 +239,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R2 (I1): FAILS on a dynamic import() built with join(__dirname, …)', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}join_${RUN_ID}.mjs`,
+      `economy/${plantToken}join_${runId}.mjs`,
       "import { join } from 'node:path';\nexport const load = () => import(join(__dirname, '../bank/index.mjs'));\n",
     );
     const res = runCheck();
@@ -250,14 +250,14 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R2 (I1 control): a dynamic import() with a plain quoted same-module specifier is not flagged', () => {
-    plantFile(`economy/${PLANT_TOKEN}literal_${RUN_ID}.mjs`, "export const load = () => import('./index.mjs');\n");
+    plantFile(`economy/${plantToken}literal_${runId}.mjs`, "export const load = () => import('./index.mjs');\n");
     const res = runCheck();
     expect(res.status).toBe(0);
   });
 
   it('R2 (minor 9): a non-literal import() hidden behind a regex literal after an `if (…)` header is still seen', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}regexif_${RUN_ID}.mjs`,
+      `economy/${plantToken}regexif_${runId}.mjs`,
       'export function f(s, p) {\n  if (s) /`/.test(s); import(p);\n}\n',
     );
     const res = runCheck();
@@ -268,7 +268,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R2 (minor 9 fail-safe): an unterminated template literal fails closed', () => {
-    const plant = plantFile(`economy/${PLANT_TOKEN}unterminated_${RUN_ID}.mjs`, 'export const t = `abc\n');
+    const plant = plantFile(`economy/${plantToken}unterminated_${runId}.mjs`, 'export const t = `abc\n');
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(plant))}:1 lexer fail-safe: unterminated template literal`));
@@ -276,7 +276,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R2 (round 3 fail-safe): a template literal that CONTAINS statement-shaped import text fails closed', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}tplimport_${RUN_ID}.mjs`,
+      `economy/${plantToken}tplimport_${runId}.mjs`,
       'export const t = `\nimport { hidden } from "../bank/index.mjs";\n`;\n',
     );
     const res = runCheck();
@@ -291,7 +291,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
       '\n',
     );
     plantFile(
-      `economy/${PLANT_TOKEN}html_${RUN_ID}.mjs`,
+      `economy/${plantToken}html_${runId}.mjs`,
       `export const page = (items) => \`<!doctype html>\n<table>\n${rows}\n</table>\n\`;\n`,
     );
     const res = runCheck();
@@ -303,7 +303,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     // read as a real `createRequire(import.meta.url)` by the Equoria-6gcvi no-CommonJS
     // sentinel's text scan of every backend *.mjs; the graph gate flags any createRequire(.
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}cjs_${RUN_ID}.mjs`,
+      `economy/${plantToken}cjs_${runId}.mjs`,
       "import { createRequire } from 'node:module';\nconst require = createRequire(import.meta.filename);\nconst bank = require('../bank/index.mjs');\n",
     );
     const res = runCheck();
@@ -317,10 +317,10 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     // scan of every backend *.mjs does not read this STRING as a real `module.exports =`;
     // the planted bridge.cjs itself is plain CommonJS.
     const bridge = plantFile(
-      `${PLANT_MODULE}/bridge.cjs`,
+      `${plantModule}/bridge.cjs`,
       `${'module'}.exports = require('./controllers/aController.mjs');\n`,
     );
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './bridge.cjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export { a } from './bridge.cjs';\n");
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
@@ -334,15 +334,15 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R2 (round 4, M2): a non-literal dynamic import() and a require() in SHARED-LAYER files that a module closure walks are flagged', () => {
-    const helper1 = plantFile(`../utils/${PLANT_TOKEN}helper1_${RUN_ID}.mjs`, 'export const h1 = (p) => import(p);\n');
+    const helper1 = plantFile(`../utils/${plantToken}helper1_${runId}.mjs`, 'export const h1 = (p) => import(p);\n');
     const helper2 = plantFile(
-      `../utils/${PLANT_TOKEN}helper2_${RUN_ID}.mjs`,
+      `../utils/${plantToken}helper2_${runId}.mjs`,
       "export const h2 = () => require('node:fs');\n",
     );
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { s } from './services/s.mjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export { s } from './services/s.mjs';\n");
     plantFile(
-      `${PLANT_MODULE}/services/s.mjs`,
-      `import { h1 } from '../../../utils/${PLANT_TOKEN}helper1_${RUN_ID}.mjs';\nimport { h2 } from '../../../utils/${PLANT_TOKEN}helper2_${RUN_ID}.mjs';\nexport const s = () => [h1, h2];\n`,
+      `${plantModule}/services/s.mjs`,
+      `import { h1 } from '../../../utils/${plantToken}helper1_${runId}.mjs';\nimport { h2 } from '../../../utils/${plantToken}helper2_${runId}.mjs';\nexport const s = () => [h1, h2];\n`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -355,14 +355,14 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R2 (M4): FAILS on an import specifier containing a backslash', () => {
-    const plant = plantFile(`economy/${PLANT_TOKEN}bslash_${RUN_ID}.mjs`, "import '..\\\\bank\\\\index.mjs';\n");
+    const plant = plantFile(`economy/${plantToken}bslash_${runId}.mjs`, "import '..\\\\bank\\\\index.mjs';\n");
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(new RegExp(`R2 ${esc(relPosix(plant))}:1 import specifier contains a backslash`));
   });
 
   it('R3: FAILS on `export *` in a barrel', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export * from './x.mjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export * from './x.mjs';\n");
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(new RegExp(`R3 ${esc(PM)}/index\\.mjs:1 \`export \\*\` in a barrel`));
@@ -370,8 +370,8 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R4: FAILS on a route module re-export in a barrel (any block, even the test block)', () => {
     plantFile(
-      `${PLANT_MODULE}/index.mjs`,
-      `${TEST_LABEL}export { default as plantRoutes } from './routes/plantRoutes.mjs';\n`,
+      `${plantModule}/index.mjs`,
+      `${testLabel}export { default as plantRoutes } from './routes/plantRoutes.mjs';\n`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -380,7 +380,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R4: FAILS on controller re-exports in the production block — /controllers/ directory AND bare *Controller.mjs name', () => {
     plantFile(
-      `${PLANT_MODULE}/index.mjs`,
+      `${plantModule}/index.mjs`,
       "export { a } from './controllers/aController.mjs';\nexport { b } from './bController.mjs';\nexport { c } from './services/cService.mjs';\n",
     );
     const res = runCheck();
@@ -397,7 +397,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R4 (minor 6): a barrel re-export that does not start its line is still classified', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export const z = 1; export { a } from './controllers/aController.mjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export const z = 1; export { a } from './controllers/aController.mjs';\n");
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
@@ -408,7 +408,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R4: a barrel that merely IMPORTS a controller or route file is flagged (no two-step evasion)', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "import { a } from './controllers/aController.mjs';\nexport { a };\n");
+    plantFile(`${plantModule}/index.mjs`, "import { a } from './controllers/aController.mjs';\nexport { a };\n");
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(new RegExp(`R4 ${esc(PM)}/index\\.mjs:1 barrel imports a controller file`));
@@ -416,7 +416,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it("R4 (round 4, I): a dynamic import() of a controller inside an exported function of the barrel is closure-checked and blamed on the barrel's own line", () => {
     plantFile(
-      `${PLANT_MODULE}/index.mjs`,
+      `${plantModule}/index.mjs`,
       "export const zzr3revLazy = () => import('./controllers/leaderboardController.mjs');\n",
     );
     const res = runCheck();
@@ -429,11 +429,11 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R4 (round 4, I): a cascade names the ORIGIN barrel line first and the cascading barrel cites it', () => {
-    plantFile(`${PLANT_MODULE_B}/index.mjs`, "export { b } from './controllers/bController.mjs';\n");
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './services/a.mjs';\n");
+    plantFile(`${plantModuleB}/index.mjs`, "export { b } from './controllers/bController.mjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export { a } from './services/a.mjs';\n");
     plantFile(
-      `${PLANT_MODULE}/services/a.mjs`,
-      `import { b } from '../../${PLANT_MODULE_B}/index.mjs';\nexport const a = () => b();\n`,
+      `${plantModule}/services/a.mjs`,
+      `import { b } from '../../${plantModuleB}/index.mjs';\nexport const a = () => b();\n`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -453,23 +453,23 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R4 (M2): a controller reached THROUGH a re-export-only proxy file is caught, with the chain named', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './services/proxy.mjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export { a } from './services/proxy.mjs';\n");
     plantFile(
-      `${PLANT_MODULE}/services/proxy.mjs`,
-      `${WRITER_NOTE}export { a } from '../controllers/aController.mjs';\n`,
+      `${plantModule}/services/proxy.mjs`,
+      `${writerNote}export { a } from '../controllers/aController.mjs';\n`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via ${PROXY_RE} -> ${esc(PM)}/controllers/aController\\.mjs`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via ${proxyRe} -> ${esc(PM)}/controllers/aController\\.mjs`,
       ),
     );
   });
 
   it('R4 (M2): a proxy that star-exports a controller is caught too', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './services/proxy.mjs';\n");
-    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${WRITER_NOTE}export * from '../controllers/aController.mjs';\n`);
+    plantFile(`${plantModule}/index.mjs`, "export { a } from './services/proxy.mjs';\n");
+    plantFile(`${plantModule}/services/proxy.mjs`, `${writerNote}export * from '../controllers/aController.mjs';\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
@@ -480,161 +480,161 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R4 (minor 6): a proxy whose re-export does not start its line is still followed', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { a } from './services/proxy.mjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export { a } from './services/proxy.mjs';\n");
     plantFile(
-      `${PLANT_MODULE}/services/proxy.mjs`,
+      `${plantModule}/services/proxy.mjs`,
       "export const z = 1; export { a } from '../controllers/aController.mjs';\n",
     );
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via ${PROXY_RE} -> .*aController\\.mjs`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) a via ${proxyRe} -> .*aController\\.mjs`,
       ),
     );
   });
 
   it('R4 (evasion 7): a proxy that IMPORTS a controller and re-exports the binding in a second statement is caught (production block)', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { zzrvEval3 } from './services/proxy.mjs';\n");
-    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export { evaluateFlags as zzrvEval3 };\n`);
+    plantFile(`${plantModule}/index.mjs`, "export { zzrvEval3 } from './services/proxy.mjs';\n");
+    plantFile(`${plantModule}/services/proxy.mjs`, `${ctrlImport}export { evaluateFlags as zzrvEval3 };\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) zzrvEval3 via ${PROXY_RE} -> ${CTRL_RE}`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) zzrvEval3 via ${proxyRe} -> ${ctrlRe}`,
       ),
     );
   });
 
   it('R4 (evasion 7 + S5-pre): the same two-statement proxy under the test label fails R4 outright (no test-block exemption for controllers)', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, `${TEST_LABEL}export { zzrvEval3 } from './services/proxy.mjs';\n`);
-    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export { evaluateFlags as zzrvEval3 };\n`);
+    plantFile(`${plantModule}/index.mjs`, `${testLabel}export { zzrvEval3 } from './services/proxy.mjs';\n`);
+    plantFile(`${plantModule}/services/proxy.mjs`, `${ctrlImport}export { evaluateFlags as zzrvEval3 };\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:3 barrel re-exports controller name\\(s\\) zzrvEval3 via ${PROXY_RE} -> ${CTRL_RE}`,
+        `R4 ${esc(PM)}/index\\.mjs:3 barrel re-exports controller name\\(s\\) zzrvEval3 via ${proxyRe} -> ${ctrlRe}`,
       ),
     );
   });
 
   it('R4 (evasion 7): `export default` of an imported controller binding in a proxy is followed', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { default as flags } from './services/proxy.mjs';\n");
-    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export default evaluateFlags;\n`);
+    plantFile(`${plantModule}/index.mjs`, "export { default as flags } from './services/proxy.mjs';\n");
+    plantFile(`${plantModule}/services/proxy.mjs`, `${ctrlImport}export default evaluateFlags;\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) flags via ${PROXY_RE} -> ${CTRL_RE}`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) flags via ${proxyRe} -> ${ctrlRe}`,
       ),
     );
   });
 
   it('R4 (round 3): a semicolon-less `export default` of an imported controller binding is followed (precise diagnostic)', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { default as flags } from './services/proxy.mjs';\n");
-    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export default evaluateFlags\n`);
+    plantFile(`${plantModule}/index.mjs`, "export { default as flags } from './services/proxy.mjs';\n");
+    plantFile(`${plantModule}/services/proxy.mjs`, `${ctrlImport}export default evaluateFlags\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) flags via ${PROXY_RE} -> ${CTRL_RE}`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) flags via ${proxyRe} -> ${ctrlRe}`,
       ),
     );
   });
 
   it('R4 (evasion 7): a namespace import of a controller re-exported by a proxy is followed', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { flagsNs } from './services/proxy.mjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export { flagsNs } from './services/proxy.mjs';\n");
     plantFile(
-      `${PLANT_MODULE}/services/proxy.mjs`,
+      `${plantModule}/services/proxy.mjs`,
       "import * as flagsController from '../controllers/epigeneticFlagController.mjs';\nexport { flagsController as flagsNs };\n",
     );
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) flagsNs via ${PROXY_RE} -> ${CTRL_RE}`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) flagsNs via ${proxyRe} -> ${ctrlRe}`,
       ),
     );
   });
 
   it('R4 (round 3): `export const X = <imported binding>` in a proxy is caught, with the chain named', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { zzEval } from './services/proxy.mjs';\n");
-    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export const zzEval = evaluateFlags;\n`);
+    plantFile(`${plantModule}/index.mjs`, "export { zzEval } from './services/proxy.mjs';\n");
+    plantFile(`${plantModule}/services/proxy.mjs`, `${ctrlImport}export const zzEval = evaluateFlags;\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) zzEval via ${PROXY_RE} -> ${CTRL_RE}`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) zzEval via ${proxyRe} -> ${ctrlRe}`,
       ),
     );
   });
 
   it('R4 (round 3): `export const X = ns.member` of a namespace-imported controller is caught', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { zzEval2 } from './services/proxy.mjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export { zzEval2 } from './services/proxy.mjs';\n");
     plantFile(
-      `${PLANT_MODULE}/services/proxy.mjs`,
+      `${plantModule}/services/proxy.mjs`,
       "import * as c from '../controllers/epigeneticFlagController.mjs';\nexport const zzEval2 = c.evaluateFlags;\n",
     );
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) zzEval2 via ${PROXY_RE} -> ${CTRL_RE}`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports controller name\\(s\\) zzEval2 via ${proxyRe} -> ${ctrlRe}`,
       ),
     );
   });
 
   it('R4 (round 3): the barrel importing such a name and exporting it in a second statement is caught', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "import { zzEval } from './services/proxy.mjs';\nexport { zzEval };\n");
-    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export const zzEval = evaluateFlags;\n`);
+    plantFile(`${plantModule}/index.mjs`, "import { zzEval } from './services/proxy.mjs';\nexport { zzEval };\n");
+    plantFile(`${plantModule}/services/proxy.mjs`, `${ctrlImport}export const zzEval = evaluateFlags;\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
-      new RegExp(`R4 ${esc(PM)}/index\\.mjs:1 barrel imports a controller file via ${PROXY_RE} -> ${CTRL_RE}`),
+      new RegExp(`R4 ${esc(PM)}/index\\.mjs:1 barrel imports a controller file via ${proxyRe} -> ${ctrlRe}`),
     );
   });
 
   it('R4 (round 3, closure): a production name whose target merely IMPORTS a controller deeper in its closure fails, with the path', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { svc } from './services/svc.mjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export { svc } from './services/svc.mjs';\n");
     plantFile(
-      `${PLANT_MODULE}/services/svc.mjs`,
+      `${plantModule}/services/svc.mjs`,
       "import { util } from './util.mjs';\nexport const svc = () => util();\n",
     );
-    plantFile(`${PLANT_MODULE}/services/util.mjs`, `${CTRL_IMPORT}export const util = () => evaluateFlags();\n`);
+    plantFile(`${plantModule}/services/util.mjs`, `${ctrlImport}export const util = () => evaluateFlags();\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports svc from \\./services/svc\\.mjs: the import closure of ${esc(PM)}/services/svc\\.mjs reaches controller ${CTRL_RE} \\(${esc(PM)}/services/svc\\.mjs -> ${esc(PM)}/services/util\\.mjs -> ${CTRL_RE}\\)`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports svc from \\./services/svc\\.mjs: the import closure of ${esc(PM)}/services/svc\\.mjs reaches controller ${ctrlRe} \\(${esc(PM)}/services/svc\\.mjs -> ${esc(PM)}/services/util\\.mjs -> ${ctrlRe}\\)`,
       ),
     );
   });
 
   it('R4 (round 3 control): a production service whose closure contains no route module or controller passes', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { own } from './services/own.mjs';\n");
+    plantFile(`${plantModule}/index.mjs`, "export { own } from './services/own.mjs';\n");
     plantFile(
-      `${PLANT_MODULE}/services/own.mjs`,
+      `${plantModule}/services/own.mjs`,
       "import { helper } from './helper.mjs';\nexport const own = () => helper();\n",
     );
-    plantFile(`${PLANT_MODULE}/services/helper.mjs`, 'export const helper = () => 1;\n');
+    plantFile(`${plantModule}/services/helper.mjs`, 'export const helper = () => 1;\n');
     const res = runCheck();
     expect(res.status).toBe(0);
   });
 
   it('R4 (evasion 7 control): a proxy that imports a controller but re-exports only its own service binding is still flagged by the closure rule', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, "export { own } from './services/proxy.mjs';\n");
-    plantFile(`${PLANT_MODULE}/services/proxy.mjs`, `${CTRL_IMPORT}export const own = () => evaluateFlags;\n`);
+    plantFile(`${plantModule}/index.mjs`, "export { own } from './services/proxy.mjs';\n");
+    plantFile(`${plantModule}/services/proxy.mjs`, `${ctrlImport}export const own = () => evaluateFlags;\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
       new RegExp(
-        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports own from \\./services/proxy\\.mjs: the import closure of ${PROXY_RE} reaches controller ${CTRL_RE}`,
+        `R4 ${esc(PM)}/index\\.mjs:1 barrel re-exports own from \\./services/proxy\\.mjs: the import closure of ${proxyRe} reaches controller ${ctrlRe}`,
       ),
     );
   });
 
   it('R4 (S5-pre): a controller under the Equoria-7t1tn label fails R4 outright — old contract: classified test-block and governed by the pinned list; new ruling: no controller in any barrel block', () => {
-    plantFile(`${PLANT_MODULE}/index.mjs`, `${TEST_LABEL}export { d } from './controllers/dController.mjs';\n`);
+    plantFile(`${plantModule}/index.mjs`, `${testLabel}export { d } from './controllers/dController.mjs';\n`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toMatch(
@@ -646,7 +646,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R4 (M1): a stale testBlockControllers allow-list entry FAILS (the list only shrinks)', () => {
-    const key = `${PLANT_MODULE}.gone`;
+    const key = `${plantModule}.gone`;
     const res = runWithExtraAllowlistEntry('testBlockControllers', key);
     expect(res.status).toBe(1);
     expect(res.out).toContain(`R4-allowlist stale entry "${key}"`);
@@ -654,8 +654,8 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   it('R4 sentinel block: a `// Sentinel-asserted` label after the test label returns to production rules (no exemption)', () => {
     plantFile(
-      `${PLANT_MODULE}/index.mjs`,
-      `${TEST_LABEL}export { s } from './services/sService.mjs';\n// Sentinel-asserted (plant)\nexport { e } from './controllers/eController.mjs';\n`,
+      `${plantModule}/index.mjs`,
+      `${testLabel}export { s } from './services/sService.mjs';\n// Sentinel-asserted (plant)\nexport { e } from './controllers/eController.mjs';\n`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -663,7 +663,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('R5: FAILS when a module file imports the application layer', () => {
-    const plant = plantFile(`economy/${PLANT_TOKEN}up_${RUN_ID}.mjs`, "import '../../app/routers.mjs';\n");
+    const plant = plantFile(`economy/${plantToken}up_${runId}.mjs`, "import '../../app/routers.mjs';\n");
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toContain(`R5 ${relPosix(plant)}:1 module file imports the application layer`);
@@ -694,7 +694,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it('plant hygiene (M7): a two-level nested plant leaves neither directory behind after cleanup', () => {
-    const deep = plantFile(`${PLANT_MODULE}/sub/deep_${RUN_ID}.mjs`, WRITER_NOTE);
+    const deep = plantFile(`${plantModule}/sub/deep_${runId}.mjs`, writerNote);
     const sub = path.dirname(deep);
     const top = path.dirname(sub);
     expect(fs.existsSync(deep)).toBe(true);
@@ -719,9 +719,9 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   // plants being live in the other lane. Counts are asserted as "at least mine" because a sibling
   // suite's transient may be on disk at the same instant.
   it('rfv9j F1: a listed entry that vanishes before the read (dangling symlink) is a WARN and the gate stays OK — not a crash', () => {
-    const link = path.join(MODULES, 'economy', `${PLANT_TOKEN}vanish_${RUN_ID}.mjs`);
+    const link = path.join(MODULES, 'economy', `${plantToken}vanish_${runId}.mjs`);
     try {
-      fs.symlinkSync(`./${PLANT_TOKEN}vanished_target_${RUN_ID}.mjs`, link, 'file');
+      fs.symlinkSync(`./${plantToken}vanished_target_${runId}.mjs`, link, 'file');
     } catch (err) {
       if (err && (err.code === 'EPERM' || err.code === 'EACCES')) {
         // No symlink privilege on this machine (Windows without Developer Mode): the wiring arm in
@@ -742,15 +742,15 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
   });
 
   it("rfv9j F3: the reserved-name skip is for FOREIGN plants only — this suite's own plants stay visible to its gate (no arm goes vacuous) while other scanners skip them", () => {
-    const own = `${PLANT_TOKEN}x_${RUN_ID}.mjs`;
+    const own = `${plantToken}x_${runId}.mjs`;
     expect(isReservedScratchPlantPathSegment(own)).toBe(true); // noCommonJsInMjs / noDeprecatedDbIndexImport skip my plants
-    expect(isReservedScratchPlantPathSegment(own, [PLANT_TOKEN])).toBe(false); // my gate names its own token
-    expect(isReservedScratchPlantPathSegment('_v8l96_sentinel_cross_deep.mjs', [PLANT_TOKEN])).toBe(true);
-    expect(isReservedScratchPlantPathSegment('horseService.mjs', [PLANT_TOKEN])).toBe(false);
+    expect(isReservedScratchPlantPathSegment(own, [plantToken])).toBe(false); // my gate names its own token
+    expect(isReservedScratchPlantPathSegment('_v8l96_sentinel_cross_deep.mjs', [plantToken])).toBe(true);
+    expect(isReservedScratchPlantPathSegment('horseService.mjs', [plantToken])).toBe(false);
     expect(fs.readFileSync(CHECK, 'utf8')).toMatch(/ownPlantTokens = \[\s*'_ws4graphplant_'/);
     // End to end: an own plant IS still seen by the gate (the R2 arm above would be vacuous otherwise).
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}seen_${RUN_ID}.mjs`,
+      `economy/${plantToken}seen_${runId}.mjs`,
       "import { getTransactionHistory } from '../bank/controllers/bankController.mjs';\n",
     );
     const res = runCheck();

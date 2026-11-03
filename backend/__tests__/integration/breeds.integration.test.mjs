@@ -36,7 +36,7 @@ import { checkedInDeviceCookie } from '../../tests/helpers/staffDeviceFixture.mj
 
 const ORIGIN = 'http://localhost:3000';
 const UNIQUE = randomBytes(6).toString('hex');
-const BREED_NAME = `TestFixture-breed-${UNIQUE}`;
+const breedName = `TestFixture-breed-${UNIQUE}`;
 const createdBreedIds = [];
 
 let adminUser;
@@ -99,19 +99,19 @@ afterAll(async () => {
 
 describe('POST /api/v1/breeds — createBreed (real DB, admin-gated)', () => {
   it('creates a new breed with 201 and persists exactly one row', async () => {
-    const res = await adminCreateBreed({ name: BREED_NAME, description: 'jv7ur fixture breed' });
+    const res = await adminCreateBreed({ name: breedName, description: 'jv7ur fixture breed' });
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data).toMatchObject({ name: BREED_NAME });
+    expect(res.body.data).toMatchObject({ name: breedName });
     createdBreedIds.push(res.body.data.id);
 
-    const rows = await prisma.breed.findMany({ where: { name: BREED_NAME } });
+    const rows = await prisma.breed.findMany({ where: { name: breedName } });
     expect(rows).toHaveLength(1);
   });
 
   it('returns a 4xx (NOT 500) on duplicate breed name', async () => {
-    const res = await adminCreateBreed({ name: BREED_NAME, description: 'duplicate attempt' });
+    const res = await adminCreateBreed({ name: breedName, description: 'duplicate attempt' });
 
     // SENTINEL (Equoria-jv7ur): the bug was a 500. A duplicate name is a client
     // validation error and must be reported as 4xx — specifically 400 from the
@@ -125,13 +125,13 @@ describe('POST /api/v1/breeds — createBreed (real DB, admin-gated)', () => {
 
   it('does NOT create a second row on duplicate (single-row invariant)', async () => {
     // After the duplicate attempt above, the breed must still exist exactly once.
-    const rows = await prisma.breed.findMany({ where: { name: BREED_NAME } });
+    const rows = await prisma.breed.findMany({ where: { name: breedName } });
     expect(rows).toHaveLength(1);
   });
 
   it('rejects a case-insensitive duplicate with 400 (no second row)', async () => {
     const res = await adminCreateBreed({
-      name: BREED_NAME.toUpperCase(),
+      name: breedName.toUpperCase(),
       description: 'case-insensitive duplicate',
     });
 
@@ -139,7 +139,7 @@ describe('POST /api/v1/breeds — createBreed (real DB, admin-gated)', () => {
     expect(res.body.success).toBe(false);
 
     const rows = await prisma.breed.findMany({
-      where: { name: { equals: BREED_NAME, mode: 'insensitive' } },
+      where: { name: { equals: breedName, mode: 'insensitive' } },
     });
     expect(rows).toHaveLength(1);
   });

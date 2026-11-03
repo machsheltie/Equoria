@@ -42,10 +42,10 @@ describe('Memory Management Routes', () => {
   // Randomized fixture identity so re-runs / parallel shards cannot collide on
   // the unique email/username. Prefix-swept on crash via the username sweep
   // below. Replaces the former fixed `memory@test.com` / `memoryTestUser`.
-  const FIXTURE_PREFIX = 'memrt';
+  const fixturePrefix = 'memrt';
   const fixtureTag = randomBytes(6).toString('hex');
-  const fixtureEmail = `${FIXTURE_PREFIX}-${fixtureTag}@test.com`;
-  const fixtureUsername = `${FIXTURE_PREFIX}_${fixtureTag}`;
+  const fixtureEmail = `${fixturePrefix}-${fixtureTag}@test.com`;
+  const fixtureUsername = `${fixturePrefix}_${fixtureTag}`;
 
   beforeAll(async () => {
     originalNodeEnv = process.env.NODE_ENV;
@@ -57,7 +57,7 @@ describe('Memory Management Routes', () => {
     // username prefix so a crashed prior run (random email we can't predict) is
     // still swept. No starter horse is created here (direct prisma.user.create,
     // not register), so a user-only delete is FK-safe.
-    await prisma.user.deleteMany({ where: { username: { startsWith: `${FIXTURE_PREFIX}_` } } });
+    await prisma.user.deleteMany({ where: { username: { startsWith: `${fixturePrefix}_` } } });
 
     // Create test user with admin role (21S-8: destructive memory routes
     // now require the admin role).

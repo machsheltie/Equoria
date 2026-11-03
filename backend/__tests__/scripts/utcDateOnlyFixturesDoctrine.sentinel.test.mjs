@@ -27,15 +27,15 @@ import { isReservedScratchPlantPathSegment } from '../../../scripts/lib/doctrine
 import { isPlantedTestPath } from '../../scripts/tree-lane-plan.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts', 'doctrine-checks', 'check-no-utc-date-only-fixtures.mjs');
-const PLANT_DIR = path.join(REPO_ROOT, 'backend', '__tests__');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..', '..');
+const CHECK = path.join(repoRoot, 'scripts', 'doctrine-checks', 'check-no-utc-date-only-fixtures.mjs');
+const plantDir = path.join(repoRoot, 'backend', '__tests__');
 const TOKEN = '__1lk00_utcdob_plant_';
 
 function runCheck() {
   try {
     const stdout = execFileSync(process.execPath, [CHECK], {
-      cwd: REPO_ROOT,
+      cwd: repoRoot,
       stdio: ['ignore', 'pipe', 'pipe'],
       encoding: 'utf-8',
     });
@@ -52,7 +52,7 @@ const VETTED = 'lastVettedDate';
 
 const planted = [];
 function plant(name, body) {
-  const file = path.join(PLANT_DIR, `${TOKEN}${name}__.mjs`);
+  const file = path.join(plantDir, `${TOKEN}${name}__.mjs`);
   fs.writeFileSync(file, body, 'utf-8');
   planted.push(file);
   return path.basename(file);

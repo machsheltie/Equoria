@@ -66,25 +66,25 @@ import {
 } from '../../scripts/doctrine-checks/check-no-retirement-schedule-leak.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-no-retirement-schedule-leak.mjs');
-const PLANT_DIR = path.join(REPO_ROOT, 'backend/modules/_sg79g_sentinel_plant/services');
+const repoRoot = path.resolve(HERE, '..', '..');
+const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-retirement-schedule-leak.mjs');
+const plantDir = path.join(repoRoot, 'backend/modules/_sg79g_sentinel_plant/services');
 // Uppercase PLANTED marker: excluded from every shared-walk consumer by default
 // (isPlantArtifactBasename), still visible to the check's own local walk.
-const PLANT_BASENAME = 'PLANTED_groomRead.mjs';
-const PLANT_FILE = path.join(PLANT_DIR, PLANT_BASENAME);
-const PLANT_BASENAME_RX = new RegExp(PLANT_BASENAME.replace(/\./g, '\\.'));
+const plantBasename = 'PLANTED_groomRead.mjs';
+const plantFile = path.join(plantDir, plantBasename);
+const plantBasenameRx = new RegExp(plantBasename.replace(/\./g, '\\.'));
 
 afterEach(() => {
   try {
-    fs.rmSync(path.dirname(PLANT_DIR), { recursive: true, force: true });
+    fs.rmSync(path.dirname(plantDir), { recursive: true, force: true });
   } catch {
     // intentional: cleanup is best-effort
   }
 });
 
 function runCheck() {
-  return spawnSync('node', [CHECK], { cwd: REPO_ROOT, encoding: 'utf8' });
+  return spawnSync('node', [CHECK], { cwd: repoRoot, encoding: 'utf8' });
 }
 
 /**
@@ -105,7 +105,7 @@ function expectCleanForPlant(res, plantRx) {
 // check's own walk always skips, so the literal never has a chance to
 // self-trip the "baseline clean" assertion above.
 function writePlantedService(includeKeyFragment) {
-  fs.mkdirSync(PLANT_DIR, { recursive: true });
+  fs.mkdirSync(plantDir, { recursive: true });
   const plantedSource =
     "import prisma from '../../../../packages/database/prismaClient.mjs';\n" +
     'export async function plantedGetGroomForPlayer(groomId) {\n' +
@@ -114,7 +114,7 @@ function writePlantedService(includeKeyFragment) {
     `    include: { ${includeKeyFragment} true },\n` +
     '  });\n' +
     '}\n';
-  fs.writeFileSync(PLANT_FILE, plantedSource);
+  fs.writeFileSync(plantFile, plantedSource);
 }
 
 /**
@@ -124,7 +124,7 @@ function writePlantedService(includeKeyFragment) {
  * not see. `statement` is the offending line.
  */
 function writePlantedScheduleApiUse(statement) {
-  fs.mkdirSync(PLANT_DIR, { recursive: true });
+  fs.mkdirSync(plantDir, { recursive: true });
   const plantedSource =
     "import prisma from '../../../../packages/database/prismaClient.mjs';\n" +
     "import { ensureRetirementSchedule } from '../../grooms/index.mjs';\n" +
@@ -132,12 +132,12 @@ function writePlantedScheduleApiUse(statement) {
     `  ${statement}\n` +
     '  return groomId;\n' +
     '}\n';
-  fs.writeFileSync(PLANT_FILE, plantedSource);
+  fs.writeFileSync(plantFile, plantedSource);
 }
 
 describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
   it('passes against the current tree (no plant of this suite is named in its output)', () => {
-    expectCleanForPlant(runCheck(), PLANT_BASENAME_RX);
+    expectCleanForPlant(runCheck(), plantBasenameRx);
   });
 
   it('SENTINEL: fails when a bare retirementSchedule key is planted outside the owner files', () => {
@@ -146,7 +146,7 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.stderr).toMatch(/no-retirement-schedule-leak.*FAIL/);
-    expect(res.stderr).toMatch(PLANT_BASENAME_RX);
+    expect(res.stderr).toMatch(plantBasenameRx);
     expect(res.stderr).toMatch(/\[include-key\]/);
   });
 
@@ -156,7 +156,7 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.stderr).toMatch(/no-retirement-schedule-leak.*FAIL/);
-    expect(res.stderr).toMatch(PLANT_BASENAME_RX);
+    expect(res.stderr).toMatch(plantBasenameRx);
   });
 
   it('SENTINEL: fails when a double-quoted retirementSchedule key is planted', () => {
@@ -165,7 +165,7 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.stderr).toMatch(/no-retirement-schedule-leak.*FAIL/);
-    expect(res.stderr).toMatch(PLANT_BASENAME_RX);
+    expect(res.stderr).toMatch(plantBasenameRx);
   });
 
   // ── Pattern 2: the schedule-module function names (Equoria-m9lz1 round 3) ──
@@ -176,12 +176,12 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.stderr).toMatch(/no-retirement-schedule-leak.*FAIL/);
-    expect(res.stderr).toMatch(PLANT_BASENAME_RX);
+    expect(res.stderr).toMatch(plantBasenameRx);
     // The reason must be the FUNCTION reference, not an include key — this plant
     // contains no `retirementSchedule:` key anywhere, which is precisely the
     // blind spot pattern 2 was added to close.
     expect(res.stderr).toMatch(/\[schedule-api\]/);
-    expect(res.stderr).not.toMatch(new RegExp(`\\[include-key\\].*${PLANT_BASENAME.replace(/\./g, '\\.')}`));
+    expect(res.stderr).not.toMatch(new RegExp(`\\[include-key\\].*${plantBasename.replace(/\./g, '\\.')}`));
   });
 
   it('SENTINEL: fails on readRetirementAge outside the owner files', () => {
@@ -189,7 +189,7 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
 
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.stderr).toMatch(PLANT_BASENAME_RX);
+    expect(res.stderr).toMatch(plantBasenameRx);
     expect(res.stderr).toMatch(/\[schedule-api\]/);
   });
 
@@ -198,7 +198,7 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
 
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.stderr).toMatch(PLANT_BASENAME_RX);
+    expect(res.stderr).toMatch(plantBasenameRx);
     expect(res.stderr).toMatch(/\[schedule-api\]/);
   });
 
@@ -211,7 +211,7 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
 
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.stderr).toMatch(PLANT_BASENAME_RX);
+    expect(res.stderr).toMatch(plantBasenameRx);
     expect(res.stderr).toMatch(/\[schedule-api\]/);
   });
 
@@ -278,25 +278,25 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
   // is the arm that names the publishing line.
   describe('re-publication of the schedule API', () => {
     it('SENTINEL: fails on a planted `export { … } from` of a schedule function', () => {
-      fs.mkdirSync(PLANT_DIR, { recursive: true });
+      fs.mkdirSync(plantDir, { recursive: true });
       fs.writeFileSync(
-        PLANT_FILE,
+        plantFile,
         "export { ensureRetirementSchedule } from '../../grooms/services/groomRetirementScheduleService.mjs';\n",
       );
 
       const res = runCheck();
       expect(res.status).toBe(1);
-      expect(res.stderr).toMatch(PLANT_BASENAME_RX);
+      expect(res.stderr).toMatch(plantBasenameRx);
       expect(res.stderr).toMatch(/\[re-export\]/);
     });
 
     it('SENTINEL: fails on a planted star re-export of the schedule module', () => {
-      fs.mkdirSync(PLANT_DIR, { recursive: true });
-      fs.writeFileSync(PLANT_FILE, "export * from '../../grooms/services/groomRetirementScheduleService.mjs';\n");
+      fs.mkdirSync(plantDir, { recursive: true });
+      fs.writeFileSync(plantFile, "export * from '../../grooms/services/groomRetirementScheduleService.mjs';\n");
 
       const res = runCheck();
       expect(res.status).toBe(1);
-      expect(res.stderr).toMatch(PLANT_BASENAME_RX);
+      expect(res.stderr).toMatch(plantBasenameRx);
       expect(res.stderr).toMatch(/\[re-export\]/);
     });
 
@@ -419,14 +419,14 @@ describe('check-no-retirement-schedule-leak.mjs (Equoria-sg79g)', () => {
   });
 
   it('returns to green once the planted violation is removed', () => {
-    fs.mkdirSync(PLANT_DIR, { recursive: true });
-    fs.writeFileSync(PLANT_FILE, 'export async function plantedGetGroomForPlayer() {\n  return null;\n}\n');
+    fs.mkdirSync(plantDir, { recursive: true });
+    fs.writeFileSync(plantFile, 'export async function plantedGetGroomForPlayer() {\n  return null;\n}\n');
     // Confirm the un-violating plant is itself green — and that the green is
     // about THIS plant's path, not just a zero exit — before removing it. That
     // isolates "check returns to 0" from "file no longer exists".
-    expectCleanForPlant(runCheck(), PLANT_BASENAME_RX);
+    expectCleanForPlant(runCheck(), plantBasenameRx);
 
-    fs.rmSync(path.dirname(PLANT_DIR), { recursive: true, force: true });
-    expectCleanForPlant(runCheck(), PLANT_BASENAME_RX);
+    fs.rmSync(path.dirname(plantDir), { recursive: true, force: true });
+    expectCleanForPlant(runCheck(), plantBasenameRx);
   });
 });

@@ -34,9 +34,9 @@ import {
 } from '../../../scripts/lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
-const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..', '..');
-const LIBRARY = path.join(REPO_ROOT, 'scripts', 'lib', 'beta-readiness-scans.sh');
-const CHECK_DIR = path.join(REPO_ROOT, 'scripts', 'doctrine-checks');
+const repoRoot = path.resolve(path.dirname(__filename), '..', '..', '..');
+const LIBRARY = path.join(repoRoot, 'scripts', 'lib', 'beta-readiness-scans.sh');
+const checkDir = path.join(repoRoot, 'scripts', 'doctrine-checks');
 
 const libraryText = fs.readFileSync(LIBRARY, 'utf-8');
 
@@ -60,11 +60,11 @@ function extractBashAlternation(varName) {
  * the shared scan tree happens to hold (see the Equoria-d2wbw note below).
  */
 function runCheck(scriptBasename, baseEnv = process.env) {
-  const full = path.join(CHECK_DIR, scriptBasename);
+  const full = path.join(checkDir, scriptBasename);
   const isShell = scriptBasename.endsWith('.sh');
   try {
     const stdout = execFileSync(isShell ? 'bash' : process.execPath, [full], {
-      cwd: REPO_ROOT,
+      cwd: repoRoot,
       // Equoria-8kkuf: never hand the check a GIT_* variable. Under `git push`
       // the pre-push hook exports GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE, which
       // would point the check's `git ls-files` at another tree (or at nothing),
@@ -147,7 +147,7 @@ function outputNamesPath(output, relPath) {
 function missingAncestorDirs(abs) {
   const created = [];
   let probe = path.dirname(abs);
-  while (probe.startsWith(REPO_ROOT) && probe !== REPO_ROOT && !fs.existsSync(probe)) {
+  while (probe.startsWith(repoRoot) && probe !== repoRoot && !fs.existsSync(probe)) {
     created.push(probe);
     probe = path.dirname(probe);
   }
@@ -186,9 +186,9 @@ function filesUnder(dir) {
 // backend/modules/__ml7jj_inscope_70pb9__). Plants whose token is only in the
 // file name have none.
 function tokenDirOf(abs) {
-  const segments = path.relative(REPO_ROOT, abs).split(path.sep);
+  const segments = path.relative(repoRoot, abs).split(path.sep);
   const at = segments.slice(0, -1).findIndex(segment => segment.includes('__ml7jj_'));
-  return at === -1 ? null : path.join(REPO_ROOT, ...segments.slice(0, at + 1));
+  return at === -1 ? null : path.join(repoRoot, ...segments.slice(0, at + 1));
 }
 
 // Equoria-ctmat follow-up: a checkout that ran this sentinel before 6c2943b6b
@@ -211,7 +211,7 @@ function clearStaleTokenDir(tokenDir) {
 // file and assert the check no longer reports *our plant* — robust to
 // concurrent foreign fixtures in the shared scan tree (Equoria-d2wbw).
 function expectFiresThenClean(relPath, contents, scriptBasename, baseEnv = process.env) {
-  const abs = path.join(REPO_ROOT, relPath);
+  const abs = path.join(repoRoot, relPath);
   clearStaleTokenDir(tokenDirOf(abs));
   const createdDirs = missingAncestorDirs(abs);
   fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -240,7 +240,7 @@ function expectFiresThenClean(relPath, contents, scriptBasename, baseEnv = proce
 // plant being (wrongly) detected. Cleans up the planted file (and any
 // directories it had to create) afterward.
 function expectIgnoredOutOfScope(relPath, contents, scriptBasename) {
-  const abs = path.join(REPO_ROOT, relPath);
+  const abs = path.join(repoRoot, relPath);
   // Record which ancestor directories did not exist so we can remove the ones
   // we create, leaving the real tree untouched.
   clearStaleTokenDir(tokenDirOf(abs));
@@ -392,13 +392,13 @@ describe('doctrine checks fire on planted violations after the shared-module ref
 // also scans forbiddenStateRewindPathPatterns. These cases plant the ORIGINAL
 // registration shape (multi-line router.post under a real module routes dir) and
 // prove the real check fires on it, then stops naming it once removed.
-const REWIND_ROUTE = "router.post(\n  '/:id/reset-last-fed',\n  (req, res) => res.end(),\n);\n";
+const rewindRoute = "router.post(\n  '/:id/reset-last-fed',\n  (req, res) => res.end(),\n);\n";
 
 describe('check-no-cleanup-routes.mjs forbids server-clock rewind routes (Equoria-mwjst)', () => {
   test('fires on the original multi-line POST /:id/reset-last-fed registration in a module router', () => {
     expectFiresThenClean(
       'backend/modules/horses/routes/__mwjst_rewind_plant_70pb9__.mjs',
-      REWIND_ROUTE,
+      rewindRoute,
       'check-no-cleanup-routes.mjs',
     );
   });
@@ -444,7 +444,7 @@ describe('check-no-cleanup-routes.mjs forbids server-clock rewind routes (Equori
   test('a rewind route inside an __tests__ dir is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope(
       'backend/modules/horses/__tests__/__mwjst_rewind_oos_70pb9__.mjs',
-      REWIND_ROUTE,
+      rewindRoute,
       'check-no-cleanup-routes.mjs',
     );
   });
@@ -490,35 +490,35 @@ describe('check-no-cleanup-routes.mjs forbids server-clock rewind routes (Equori
 // OUT-OF-SCOPE planted violation (in a dir/file the check is supposed to skip)
 // is still IGNORED. This is the EDGE_CASE_FIX_DISCIPLINE no-scope-change /
 // OPTIMAL_FIX_DISCIPLINE §2 sentinel guarantee that the share changed no verdict.
-const CLEANUP_ROUTE = "router.delete('/test/cleanup', (req, res) => res.end());\n";
-const DB_MOCK = "vi.mock('../packages/database/prismaClient.mjs');\n"; // doctrine-allow: prisma-mock — fixture data planted into a temp file, not a real mock in this suite
-const FRONTEND_MOCK = 'export const v = mockApi;\n';
+const cleanupRoute = "router.delete('/test/cleanup', (req, res) => res.end());\n";
+const dbMock = "vi.mock('../packages/database/prismaClient.mjs');\n"; // doctrine-allow: prisma-mock — fixture data planted into a temp file, not a real mock in this suite
+const frontendMock = 'export const v = mockApi;\n';
 
 describe('shared walkFiles preserves each check scope (Equoria-ml7jj)', () => {
   // ---- check-no-cleanup-routes.mjs (roots: backend/routes, backend/modules) ----
   test('cleanup-routes: in-scope route under backend/routes is caught', () => {
-    expectFiresThenClean('backend/routes/__ml7jj_inscope_70pb9__.mjs', CLEANUP_ROUTE, 'check-no-cleanup-routes.mjs');
+    expectFiresThenClean('backend/routes/__ml7jj_inscope_70pb9__.mjs', cleanupRoute, 'check-no-cleanup-routes.mjs');
   });
   test('cleanup-routes: in-scope route under backend/modules is caught', () => {
     expectFiresThenClean(
       'backend/modules/__ml7jj_inscope_70pb9__/routes/r.mjs',
-      CLEANUP_ROUTE,
+      cleanupRoute,
       'check-no-cleanup-routes.mjs',
     );
     // Equoria-ctmat: the plant's directories go with it — an empty
     // backend/modules/__ml7jj_inscope_70pb9__/ left behind reads as a module
     // without a barrel to the module-graph gate.
-    expect(fs.existsSync(path.join(REPO_ROOT, 'backend/modules/__ml7jj_inscope_70pb9__'))).toBe(false);
+    expect(fs.existsSync(path.join(repoRoot, 'backend/modules/__ml7jj_inscope_70pb9__'))).toBe(false);
   });
   test('cleanup-routes: an EMPTY stale token dir left by a pre-ctmat run is cleared, then removed with the plant', () => {
     // Equoria-ctmat follow-up: checkouts that ran the sentinel before 6c2943b6b
     // still hold an empty backend/modules/__ml7jj_inscope_70pb9__/routes/. The
     // plant must not adopt it as pre-existing tree and leave it behind.
-    const stale = path.join(REPO_ROOT, 'backend/modules/__ml7jj_inscope_70pb9__');
+    const stale = path.join(repoRoot, 'backend/modules/__ml7jj_inscope_70pb9__');
     fs.mkdirSync(path.join(stale, 'routes'), { recursive: true });
     expectFiresThenClean(
       'backend/modules/__ml7jj_inscope_70pb9__/routes/r.mjs',
-      CLEANUP_ROUTE,
+      cleanupRoute,
       'check-no-cleanup-routes.mjs',
     );
     expect(fs.existsSync(stale)).toBe(false);
@@ -538,58 +538,54 @@ describe('shared walkFiles preserves each check scope (Equoria-ml7jj)', () => {
   test('cleanup-routes: route inside an __tests__ dir is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope(
       'backend/routes/__tests__/__ml7jj_oos_70pb9__.mjs',
-      CLEANUP_ROUTE,
+      cleanupRoute,
       'check-no-cleanup-routes.mjs',
     );
   });
   test('cleanup-routes: route inside a tests dir is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope(
       'backend/routes/tests/__ml7jj_oos_70pb9__.mjs',
-      CLEANUP_ROUTE,
+      cleanupRoute,
       'check-no-cleanup-routes.mjs',
     );
   });
   test('cleanup-routes: route in a .test file is IGNORED (out of scope)', () => {
-    expectIgnoredOutOfScope(
-      'backend/routes/__ml7jj_oos_70pb9__.test.mjs',
-      CLEANUP_ROUTE,
-      'check-no-cleanup-routes.mjs',
-    );
+    expectIgnoredOutOfScope('backend/routes/__ml7jj_oos_70pb9__.test.mjs', cleanupRoute, 'check-no-cleanup-routes.mjs');
   });
 
   // ---- check-no-db-mocks.mjs (root: backend; ONLY .test/.spec files) ----
   test('db-mocks: in-scope prisma mock in a backend .test file is caught', () => {
-    expectFiresThenClean('backend/__tests__/__ml7jj_inscope_70pb9__.test.mjs', DB_MOCK, 'check-no-db-mocks.mjs');
+    expectFiresThenClean('backend/__tests__/__ml7jj_inscope_70pb9__.test.mjs', dbMock, 'check-no-db-mocks.mjs');
   });
   test('db-mocks: prisma mock in a NON-test backend file is IGNORED (out of scope)', () => {
-    expectIgnoredOutOfScope('backend/__ml7jj_oos_70pb9__.mjs', DB_MOCK, 'check-no-db-mocks.mjs');
+    expectIgnoredOutOfScope('backend/__ml7jj_oos_70pb9__.mjs', dbMock, 'check-no-db-mocks.mjs');
   });
   test('db-mocks: prisma mock under backend/node_modules is IGNORED (out of scope)', () => {
-    expectIgnoredOutOfScope('backend/node_modules/__ml7jj_oos_70pb9__.test.mjs', DB_MOCK, 'check-no-db-mocks.mjs');
+    expectIgnoredOutOfScope('backend/node_modules/__ml7jj_oos_70pb9__.test.mjs', dbMock, 'check-no-db-mocks.mjs');
   });
 
   // ---- check-no-frontend-mocks.mjs (root: frontend/src) ----
   test('frontend-mocks: in-scope mockApi in frontend/src is caught', () => {
-    expectFiresThenClean('frontend/src/__ml7jj_inscope_70pb9__.ts', FRONTEND_MOCK, 'check-no-frontend-mocks.mjs');
+    expectFiresThenClean('frontend/src/__ml7jj_inscope_70pb9__.ts', frontendMock, 'check-no-frontend-mocks.mjs');
   });
   test('frontend-mocks: mockApi inside an __tests__ dir is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope(
       'frontend/src/__tests__/__ml7jj_oos_70pb9__.ts',
-      FRONTEND_MOCK,
+      frontendMock,
       'check-no-frontend-mocks.mjs',
     );
   });
   test('frontend-mocks: mockApi inside a tests dir is IGNORED (out of scope)', () => {
-    expectIgnoredOutOfScope('frontend/src/tests/__ml7jj_oos_70pb9__.ts', FRONTEND_MOCK, 'check-no-frontend-mocks.mjs');
+    expectIgnoredOutOfScope('frontend/src/tests/__ml7jj_oos_70pb9__.ts', frontendMock, 'check-no-frontend-mocks.mjs');
   });
   test('frontend-mocks: mockApi in a .stories file is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope(
       'frontend/src/__ml7jj_oos_70pb9__.stories.tsx',
-      FRONTEND_MOCK,
+      frontendMock,
       'check-no-frontend-mocks.mjs',
     );
   });
   test('frontend-mocks: mockApi in a .test file is IGNORED (out of scope)', () => {
-    expectIgnoredOutOfScope('frontend/src/__ml7jj_oos_70pb9__.test.ts', FRONTEND_MOCK, 'check-no-frontend-mocks.mjs');
+    expectIgnoredOutOfScope('frontend/src/__ml7jj_oos_70pb9__.test.ts', frontendMock, 'check-no-frontend-mocks.mjs');
   });
 });

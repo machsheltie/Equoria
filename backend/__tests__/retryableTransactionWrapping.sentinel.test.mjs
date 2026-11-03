@@ -30,10 +30,10 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = resolve(__dirname, '..');
+const backendRoot = resolve(__dirname, '..');
 
 function read(relPath) {
-  return readFileSync(resolve(BACKEND_ROOT, relPath), 'utf8');
+  return readFileSync(resolve(backendRoot, relPath), 'utf8');
 }
 
 // Files migrated under Equoria-7x9po. Each entry pins TWO counts:
@@ -42,7 +42,7 @@ function read(relPath) {
 //            intentionally-unwrapped, e.g. array-form reads / executor paths).
 // Pinning totalTx means adding a NEW unwrapped $transaction to one of these
 // files trips the sentinel (totalTx grows but wrapped doesn't), forcing a
-// conscious decision: wrap it or move it to KNOWN_UNWRAPPED + bump totalTx.
+// conscious decision: wrap it or move it to knownUnwrapped + bump totalTx.
 // The horseFeedService proof-of-pattern (Equoria-55m83) is included so a
 // regression there is caught too.
 const MIGRATED = [
@@ -94,13 +94,13 @@ const MIGRATED = [
   ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   // createShow wrapped → wrapped 1 / totalTx 1. executeClosedShows' 1 remaining
   // executor-path $transaction (per-entry prize payout) is intentionally unwrapped
-  // (KNOWN_UNWRAPPED) and moved with the executor to showExecutionService.mjs
+  // (knownUnwrapped) and moved with the executor to showExecutionService.mjs
   // (Equoria-q4uem.4, WS4 S4). enterShow's entry tx was extracted to
   // showEscrowTx.mjs (Equoria-8pb6w) — pinned on the next row.
   ['modules/competition/shows/showController.mjs', { wrapped: 1, totalTx: 1 }],
   // Equoria-8pb6w extracted the enterShow entry tx here: enterShowAtomicTx is
   // withRetryableTxMapping-wrapped → wrapped 1 / totalTx 1. settleShowFeeEscrow
-  // uses an injectable `client.$transaction` (cron fee-settlement, out of TX_RE
+  // uses an injectable `client.$transaction` (cron fee-settlement, out of txRe
   // scope by design — same intentional-unwrapped posture as the executor path)
   // so it is not counted here.
   ['modules/competition/shows/showEscrowTx.mjs', { wrapped: 1, totalTx: 1 }],
@@ -200,19 +200,19 @@ const MIGRATED = [
 
 // marketplaceController is asserted separately: it has 2 wrapped sites
 // (buyHorse + buyStoreHorse) PLUS a deliberately-unwrapped best-effort refund
-// $transaction inside the buyStoreHorse catch (KNOWN_UNWRAPPED), so it pins
+// $transaction inside the buyStoreHorse catch (knownUnwrapped), so it pins
 // wrapped>=2 and totalTx=3.
-const MIGRATED_PARTIAL = [['modules/marketplace/controllers/marketplaceController.mjs', { wrapped: 2, totalTx: 2 }]];
+const migratedPartial = [['modules/marketplace/controllers/marketplaceController.mjs', { wrapped: 2, totalTx: 2 }]];
 
-const WRAP_RE = /\b(withRetryableTxMapping|runRetryableTransaction)\s*\(/g;
-const TX_RE = /\bprisma\.\$transaction\s*\(/g;
+const wrapRe = /\b(withRetryableTxMapping|runRetryableTransaction)\s*\(/g;
+const txRe = /\bprisma\.\$transaction\s*\(/g;
 // Matches both the cross-dir form (`…/utils/retryableTransaction.mjs`) used by
 // module controllers/services AND the sibling-relative form
 // (`./retryableTransaction.mjs`) used by files that live INSIDE backend/utils/
 // (tokenRotationService, emailVerificationService — Equoria-2ksil). The earlier
 // `[^'"]*utils/` form silently failed to match the sibling-relative import, so
 // a util-dir migration would have looked unwrapped to this sentinel.
-const IMPORT_RE = /from\s+['"](?:[^'"]*utils\/|\.\/)retryableTransaction\.mjs['"]/;
+const importRe = /from\s+['"](?:[^'"]*utils\/|\.\/)retryableTransaction\.mjs['"]/;
 
 function count(re, src) {
   return (src.match(re) || []).length;
@@ -222,9 +222,9 @@ describe('Equoria-7x9po — migrated $transaction sites stay wrapped', () => {
   for (const [relPath, { wrapped, totalTx }] of MIGRATED) {
     it(`${relPath}: imports the util, wraps ${wrapped} site(s), has ${totalTx} total $transaction site(s)`, () => {
       const src = read(relPath);
-      expect(IMPORT_RE.test(src)).toBe(true);
-      const txCount = count(TX_RE, src);
-      const wrapCount = count(WRAP_RE, src);
+      expect(importRe.test(src)).toBe(true);
+      const txCount = count(txRe, src);
+      const wrapCount = count(wrapRe, src);
       // totalTx pinned: a NEW unwrapped $transaction grows txCount past totalTx
       // and trips the sentinel. wrapped pinned: removing a wrap drops wrapCount.
       expect(txCount).toBe(totalTx);
@@ -232,12 +232,12 @@ describe('Equoria-7x9po — migrated $transaction sites stay wrapped', () => {
     });
   }
 
-  for (const [relPath, { wrapped, totalTx }] of MIGRATED_PARTIAL) {
+  for (const [relPath, { wrapped, totalTx }] of migratedPartial) {
     it(`${relPath}: imports the util, wraps >= ${wrapped} site(s), has ${totalTx} total $transaction site(s)`, () => {
       const src = read(relPath);
-      expect(IMPORT_RE.test(src)).toBe(true);
-      expect(count(WRAP_RE, src)).toBeGreaterThanOrEqual(wrapped);
-      expect(count(TX_RE, src)).toBe(totalTx);
+      expect(importRe.test(src)).toBe(true);
+      expect(count(wrapRe, src)).toBeGreaterThanOrEqual(wrapped);
+      expect(count(txRe, src)).toBe(totalTx);
     });
   }
 
@@ -249,9 +249,9 @@ describe('Equoria-7x9po — migrated $transaction sites stay wrapped', () => {
       const r = await prisma.$transaction(async tx => { return tx.user.findMany(); });
     `;
     // No util import, and a bare $transaction → both checks must FAIL for this.
-    expect(IMPORT_RE.test(planted)).toBe(false);
-    expect(count(TX_RE, planted)).toBe(1);
-    expect(count(WRAP_RE, planted)).toBe(0);
+    expect(importRe.test(planted)).toBe(false);
+    expect(count(txRe, planted)).toBe(1);
+    expect(count(wrapRe, planted)).toBe(0);
   });
 
   it('detector PASSES on a synthetic wrapped $transaction (sentinel-negative)', () => {
@@ -259,9 +259,9 @@ describe('Equoria-7x9po — migrated $transaction sites stay wrapped', () => {
       import { withRetryableTxMapping } from '../utils/retryableTransaction.mjs';
       const r = await withRetryableTxMapping(prisma.$transaction(async tx => tx.user.findMany()), { message: 'x' });
     `;
-    expect(IMPORT_RE.test(planted)).toBe(true);
-    expect(count(TX_RE, planted)).toBe(1);
-    expect(count(WRAP_RE, planted)).toBe(1);
+    expect(importRe.test(planted)).toBe(true);
+    expect(count(txRe, planted)).toBe(1);
+    expect(count(wrapRe, planted)).toBe(1);
   });
 });
 
@@ -271,7 +271,7 @@ describe('Equoria-7x9po — migrated $transaction sites stay wrapped', () => {
  * intentionally NOT wrapped — surfacing a 503 to a client is not meaningful for
  * them. If you migrate one later, move it into MIGRATED and update the count.
  */
-const KNOWN_UNWRAPPED = [
+const knownUnwrapped = [
   // Read-only paginated $transaction([findMany, count]) — not a mutation; a
   // 503-vs-500 on a read query is low value and the array form is not the
   // interactive-timeout target.
@@ -294,9 +294,9 @@ const KNOWN_UNWRAPPED = [
 ];
 
 describe('Equoria-7x9po — known-unwrapped sites are documented', () => {
-  it('the KNOWN_UNWRAPPED list is non-empty and self-documenting', () => {
-    expect(KNOWN_UNWRAPPED.length).toBeGreaterThan(0);
-    for (const entry of KNOWN_UNWRAPPED) {
+  it('the knownUnwrapped list is non-empty and self-documenting', () => {
+    expect(knownUnwrapped.length).toBeGreaterThan(0);
+    for (const entry of knownUnwrapped) {
       expect(typeof entry).toBe('string');
       expect(entry.length).toBeGreaterThan(0);
     }

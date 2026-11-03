@@ -27,12 +27,12 @@ import { fileURLToPath } from 'node:url';
 import { readdirSyncTolerant } from '../../../scripts/lib/doctrine-scan-patterns.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const CHECK = path.join(REPO_ROOT, 'scripts/doctrine-checks/check-horse-name-gated.mjs');
-const MODULES = path.join(REPO_ROOT, 'backend/modules');
-const RUN_ID = `${process.pid}-${randomBytes(4).toString('hex')}`;
-const PLANT_TOKEN = '_ws4hnplant_';
-const relPosix = abs => path.relative(REPO_ROOT, abs).split(path.sep).join('/');
+const repoRoot = path.resolve(HERE, '..', '..', '..');
+const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-horse-name-gated.mjs');
+const MODULES = path.join(repoRoot, 'backend/modules');
+const runId = `${process.pid}-${randomBytes(4).toString('hex')}`;
+const plantToken = '_ws4hnplant_';
+const relPosix = abs => path.relative(repoRoot, abs).split(path.sep).join('/');
 
 const planted = [];
 
@@ -74,7 +74,7 @@ function strayPlants() {
   const scan = (dir, depth) => {
     for (const name of readdirSyncTolerant(dir, undefined, 'horse-name-gated-sentinel')) {
       const abs = path.join(dir, name);
-      if (name.includes(PLANT_TOKEN)) {
+      if (name.includes(plantToken)) {
         found.push(relPosix(abs));
       }
       if (depth > 0 && name !== 'node_modules' && fs.statSync(abs, { throwIfNoEntry: false })?.isDirectory()) {
@@ -87,15 +87,15 @@ function strayPlants() {
 }
 
 function runCheck() {
-  const res = spawnSync('node', [CHECK], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const res = spawnSync('node', [CHECK], { cwd: repoRoot, encoding: 'utf8' });
   return { status: res.status, out: `${res.stdout}\n${res.stderr}` };
 }
 
 // A request-reachable writer of horses.name (signal A: prisma.horse.update with a `name` key).
 const WRITER =
   'export async function renamePlant(req, res) {\n  await prisma.horse.update({ where: { id: 1 }, data: { name: req.body.name } });\n  res.json({ ok: true });\n}\n';
-const PRISMA_FROM_ECONOMY = "import prisma from '../../../packages/database/prismaClient.mjs';\n";
-const PRISMA_FROM_HORSE_ROUTES = "import prisma from '../../../../packages/database/prismaClient.mjs';\n";
+const prismaFromEconomy = "import prisma from '../../../packages/database/prismaClient.mjs';\n";
+const prismaFromHorseRoutes = "import prisma from '../../../../packages/database/prismaClient.mjs';\n";
 
 beforeAll(() => {
   expect(fs.existsSync(CHECK)).toBe(true);
@@ -120,7 +120,7 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
   });
 
   it('FAILS on a planted ungated writer, naming the file and line', () => {
-    const plant = plantFile(`economy/${PLANT_TOKEN}ungated_${RUN_ID}.mjs`, `${PRISMA_FROM_ECONOMY}${WRITER}`);
+    const plant = plantFile(`economy/${plantToken}ungated_${runId}.mjs`, `${prismaFromEconomy}${WRITER}`);
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.out).toContain(relPosix(plant));
@@ -129,8 +129,8 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
 
   it('M5: a policy name that appears only in a COMMENT inside the import braces does not gate (barrel path)', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}commentbarrel_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_ECONOMY}import { getHorseById /* horseNameRejectionReason */ } from '../horses/index.mjs';\n${WRITER}`,
+      `economy/${plantToken}commentbarrel_${runId}.mjs`,
+      `${prismaFromEconomy}import { getHorseById /* horseNameRejectionReason */ } from '../horses/index.mjs';\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -139,8 +139,8 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
 
   it('minor 10: an import statement that exists only inside a STRING literal does not gate', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}stringimport_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_ECONOMY}const doc = \`\n import { horseNameRejectionReason } from '../horses/index.mjs';\n\`;\nexport const note = "import { horseNameRejectionReason } from '../horses/index.mjs';";\n${WRITER}`,
+      `economy/${plantToken}stringimport_${runId}.mjs`,
+      `${prismaFromEconomy}const doc = \`\n import { horseNameRejectionReason } from '../horses/index.mjs';\n\`;\nexport const note = "import { horseNameRejectionReason } from '../horses/index.mjs';";\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -149,8 +149,8 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
 
   it('M5: importing an unrelated horses export from the barrel does not gate', () => {
     const plant = plantFile(
-      `economy/${PLANT_TOKEN}unrelated_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_ECONOMY}import { getHorseById } from '../horses/index.mjs';\n${WRITER}`,
+      `economy/${plantToken}unrelated_${runId}.mjs`,
+      `${prismaFromEconomy}import { getHorseById } from '../horses/index.mjs';\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -159,8 +159,8 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
 
   it('M5: importing an exact policy name from the horses barrel gates the writer', () => {
     plantFile(
-      `economy/${PLANT_TOKEN}gatedbarrel_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_ECONOMY}import { horseNameRejectionReason } from '../horses/index.mjs';\n${WRITER}`,
+      `economy/${plantToken}gatedbarrel_${runId}.mjs`,
+      `${prismaFromEconomy}import { horseNameRejectionReason } from '../horses/index.mjs';\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(0);
@@ -168,8 +168,8 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
 
   it('M5: an ALIASED exact policy name from the horses barrel gates the writer (the original name counts)', () => {
     plantFile(
-      `economy/${PLANT_TOKEN}alias_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_ECONOMY}import {\n  getHorseById, // unrelated\n  firstHorseNameRejectionMessage as firstMessage,\n} from '../horses/index.mjs';\n${WRITER}`,
+      `economy/${plantToken}alias_${runId}.mjs`,
+      `${prismaFromEconomy}import {\n  getHorseById, // unrelated\n  firstHorseNameRejectionMessage as firstMessage,\n} from '../horses/index.mjs';\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(0);
@@ -177,8 +177,8 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
 
   it('M5: a comment-only mention on the _validators path does not gate (horses-internal route file)', () => {
     const plant = plantFile(
-      `horses/routes/${PLANT_TOKEN}commentvalidators_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_HORSE_ROUTES}import { validateHorseId /* horseNameBodyRule */ } from './_validators.mjs';\n${WRITER}`,
+      `horses/routes/${plantToken}commentvalidators_${runId}.mjs`,
+      `${prismaFromHorseRoutes}import { validateHorseId /* horseNameBodyRule */ } from './_validators.mjs';\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(1);
@@ -187,8 +187,8 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
 
   it('M5: the exact validator-chain name from _validators gates a horses route file', () => {
     plantFile(
-      `horses/routes/${PLANT_TOKEN}gatedvalidators_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_HORSE_ROUTES}import { horseNameBodyRule } from './_validators.mjs';\n${WRITER}`,
+      `horses/routes/${plantToken}gatedvalidators_${runId}.mjs`,
+      `${prismaFromHorseRoutes}import { horseNameBodyRule } from './_validators.mjs';\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(0);
@@ -196,8 +196,8 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
 
   it('importing the policy module directly still gates (unchanged contract)', () => {
     plantFile(
-      `horses/routes/${PLANT_TOKEN}direct_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_HORSE_ROUTES}import { unnamedHorseName } from '../services/horseNamePolicy.mjs';\n${WRITER}`,
+      `horses/routes/${plantToken}direct_${runId}.mjs`,
+      `${prismaFromHorseRoutes}import { unnamedHorseName } from '../services/horseNamePolicy.mjs';\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(0);

@@ -48,7 +48,7 @@ describe('CWE-639 wave-6 sweep (Equoria-9ov8 post-wave-5 audit)', () => {
   let openElection;
   const cleanup = createCleanupTracker();
 
-  const NONEXISTENT_ELECTION_ID = 999999999;
+  const nonexistentElectionId = 999999999;
 
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
@@ -155,7 +155,7 @@ describe('CWE-639 wave-6 sweep (Equoria-9ov8 post-wave-5 audit)', () => {
 
       // Not-exists case
       const resMissing = await request(app)
-        .post(`/api/v1/clubs/elections/${NONEXISTENT_ELECTION_ID}/nominate`)
+        .post(`/api/v1/clubs/elections/${nonexistentElectionId}/nominate`)
         .set('Authorization', `Bearer ${strangerToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -201,7 +201,7 @@ describe('CWE-639 wave-6 sweep (Equoria-9ov8 post-wave-5 audit)', () => {
 
       // Not-exists case
       const resMissing = await request(app)
-        .post(`/api/v1/clubs/elections/${NONEXISTENT_ELECTION_ID}/vote`)
+        .post(`/api/v1/clubs/elections/${nonexistentElectionId}/vote`)
         .set('Authorization', `Bearer ${strangerToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)

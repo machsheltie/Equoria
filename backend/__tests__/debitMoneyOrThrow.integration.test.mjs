@@ -20,7 +20,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { debitMoneyOrThrow, InsufficientFundsError, systemAccountBurn } from '../modules/economy/index.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-hjzwt';
+const fixturePrefix = 'TestFixture-hjzwt';
 
 // Equoria-kl16c: debitMoneyOrThrow now requires a systemAccount + category
 // (it pairs a SystemAccount credit internally so the debit conserves money).
@@ -36,8 +36,8 @@ async function makeUser(money) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      email: `${FIXTURE_PREFIX}-${tag}@test.com`,
-      username: `${FIXTURE_PREFIX}-${tag}`.slice(0, 30),
+      email: `${fixturePrefix}-${tag}@test.com`,
+      username: `${fixturePrefix}-${tag}`.slice(0, 30),
       password: 'irrelevant',
       firstName: 'Debit',
       lastName: 'Race',

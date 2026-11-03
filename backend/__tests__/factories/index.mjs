@@ -29,8 +29,8 @@ const randInt = (max = 10000) => Number.parseInt(randomBytes(4).toString('hex'),
 /**
  * Default test configuration
  */
-const TEST_CONFIG = {
-  JWT_SECRET: process.env.JWT_SECRET || 'test-secret-key',
+const testConfig = {
+  jwtSecret: process.env.JWT_SECRET || 'test-secret-key',
 };
 
 /**
@@ -147,7 +147,7 @@ export function createMockToken(userId, options = {}) {
   };
 
   // SECURITY: Explicitly specify HS256 to match auth.mjs verification requirements
-  return jwt.sign(tokenPayload, TEST_CONFIG.JWT_SECRET, {
+  return jwt.sign(tokenPayload, testConfig.jwtSecret, {
     algorithm: 'HS256',
     expiresIn: expired ? '1ms' : expiresIn,
   });

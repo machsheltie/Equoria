@@ -19,8 +19,8 @@
 import { describe, test, expect } from '@jest/globals';
 import { findBlockers } from '../../../scripts/audit-with-allowlist.mjs';
 
-const BRACES_GHSA = 'GHSA-vfj7-8cjw-p6xm';
-const OTHER_GHSA = 'GHSA-aaaa-bbbb-cccc';
+const bracesGhsa = 'GHSA-vfj7-8cjw-p6xm';
+const otherGhsa = 'GHSA-aaaa-bbbb-cccc';
 
 const advisory = (ghsa, name) => ({
   source: 1,
@@ -33,7 +33,7 @@ const advisory = (ghsa, name) => ({
 
 const tailwindChainAudit = () => ({
   vulnerabilities: {
-    braces: { name: 'braces', severity: 'high', via: [advisory(BRACES_GHSA, 'braces')] },
+    braces: { name: 'braces', severity: 'high', via: [advisory(bracesGhsa, 'braces')] },
     micromatch: { name: 'micromatch', severity: 'high', via: ['braces'] },
     'fast-glob': { name: 'fast-glob', severity: 'high', via: ['micromatch'] },
     chokidar: { name: 'chokidar', severity: 'high', via: ['braces'] },
@@ -52,7 +52,7 @@ const byPkg = blockers => [...blockers].sort((x, y) => x.pkg.localeCompare(y.pkg
 
 describe('audit-with-allowlist — transitive findings inherit their root advisory', () => {
   test('an allowlisted root advisory clears every package on its chain', () => {
-    expect(findBlockers(tailwindChainAudit(), 'high', allow(BRACES_GHSA))).toEqual([]);
+    expect(findBlockers(tailwindChainAudit(), 'high', allow(bracesGhsa))).toEqual([]);
   });
 
   test('without the allowlist entry, every link blocks and names the root advisory', () => {
@@ -62,7 +62,7 @@ describe('audit-with-allowlist — transitive findings inherit their root adviso
       ['braces', 'chokidar', 'fast-glob', 'micromatch', 'tailwindcss'].sort(),
     );
     for (const b of blockers) {
-      expect(b.ghsas).toEqual([BRACES_GHSA]);
+      expect(b.ghsas).toEqual([bracesGhsa]);
     }
   });
 
@@ -71,15 +71,15 @@ describe('audit-with-allowlist — transitive findings inherit their root adviso
     audit.vulnerabilities['postcss-nested'] = {
       name: 'postcss-nested',
       severity: 'high',
-      via: [advisory(OTHER_GHSA, 'postcss-nested')],
+      via: [advisory(otherGhsa, 'postcss-nested')],
     };
     audit.vulnerabilities.tailwindcss.via.push('postcss-nested');
 
-    const blockers = findBlockers(audit, 'high', allow(BRACES_GHSA));
+    const blockers = findBlockers(audit, 'high', allow(bracesGhsa));
 
     expect(byPkg(blockers)).toEqual([
-      { pkg: 'postcss-nested', severity: 'high', ghsas: [OTHER_GHSA] },
-      { pkg: 'tailwindcss', severity: 'high', ghsas: [OTHER_GHSA] },
+      { pkg: 'postcss-nested', severity: 'high', ghsas: [otherGhsa] },
+      { pkg: 'tailwindcss', severity: 'high', ghsas: [otherGhsa] },
     ]);
   });
 
@@ -90,14 +90,14 @@ describe('audit-with-allowlist — transitive findings inherit their root adviso
     audit.vulnerabilities['postcss-selector-parser'] = {
       name: 'postcss-selector-parser',
       severity: 'moderate',
-      via: [{ ...advisory(OTHER_GHSA, 'postcss-selector-parser'), severity: 'moderate' }],
+      via: [{ ...advisory(otherGhsa, 'postcss-selector-parser'), severity: 'moderate' }],
     };
     audit.vulnerabilities.tailwindcss.via.push('postcss-selector-parser');
 
-    expect(findBlockers(audit, 'high', allow(BRACES_GHSA))).toEqual([]);
-    expect(byPkg(findBlockers(audit, 'moderate', allow(BRACES_GHSA)))).toEqual([
-      { pkg: 'postcss-selector-parser', severity: 'moderate', ghsas: [OTHER_GHSA] },
-      { pkg: 'tailwindcss', severity: 'high', ghsas: [OTHER_GHSA] },
+    expect(findBlockers(audit, 'high', allow(bracesGhsa))).toEqual([]);
+    expect(byPkg(findBlockers(audit, 'moderate', allow(bracesGhsa)))).toEqual([
+      { pkg: 'postcss-selector-parser', severity: 'moderate', ghsas: [otherGhsa] },
+      { pkg: 'tailwindcss', severity: 'high', ghsas: [otherGhsa] },
     ]);
   });
 
@@ -108,7 +108,7 @@ describe('audit-with-allowlist — transitive findings inherit their root adviso
       },
     };
 
-    expect(findBlockers(audit, 'high', allow(BRACES_GHSA))).toEqual([
+    expect(findBlockers(audit, 'high', allow(bracesGhsa))).toEqual([
       { pkg: 'orphan', severity: 'high', ghsas: ['(unidentified)'] },
     ]);
   });

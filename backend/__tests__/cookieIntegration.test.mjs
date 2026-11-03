@@ -27,9 +27,9 @@ describe('Cookie Integration Tests', () => {
   });
 
   // Per-suite prefix prevents cross-suite collisions when shards run in
-  // parallel. Cleanup uses startsWith(SUITE_PREFIX) for resilience against
+  // parallel. Cleanup uses startsWith(suitePrefix) for resilience against
   // crashed prior runs (Phase 3b).
-  const SUITE_PREFIX = 'cintg';
+  const suitePrefix = 'cintg';
   let testUser;
   // Test-bypass headers were purged from production middleware in commits
   // 5a158681 / 3590916e. Empty object preserves `.set(rateLimitBypassHeader)`
@@ -39,7 +39,7 @@ describe('Cookie Integration Tests', () => {
 
   const cleanSuite = async () => {
     const stale = await prisma.user.findMany({
-      where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
+      where: { OR: [{ email: { startsWith: `${suitePrefix}-` } }, { username: { startsWith: `${suitePrefix}_` } }] },
       select: { id: true },
     });
     if (stale.length > 0) {
@@ -89,8 +89,8 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          username: `${SUITE_PREFIX}_r1user`,
-          email: `${SUITE_PREFIX}-r1@test.com`,
+          username: `${suitePrefix}_r1user`,
+          email: `${suitePrefix}-r1@test.com`,
           password: 'TestPass123!',
           firstName: 'Cookie',
           lastName: 'Test',
@@ -123,7 +123,7 @@ describe('Cookie Integration Tests', () => {
 
       // Clean up
       testUser = await prisma.user.findUnique({
-        where: { email: `${SUITE_PREFIX}-r1@test.com` },
+        where: { email: `${suitePrefix}-r1@test.com` },
       });
     });
 
@@ -132,8 +132,8 @@ describe('Cookie Integration Tests', () => {
         .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send({
-          username: `${SUITE_PREFIX}_r2user`,
-          email: `${SUITE_PREFIX}-r2@test.com`,
+          username: `${suitePrefix}_r2user`,
+          email: `${suitePrefix}-r2@test.com`,
           password: 'TestPass123!',
           firstName: 'Cookie',
           lastName: 'Test',
@@ -164,7 +164,7 @@ describe('Cookie Integration Tests', () => {
 
       // Clean up
       testUser = await prisma.user.findUnique({
-        where: { email: `${SUITE_PREFIX}-r2@test.com` },
+        where: { email: `${suitePrefix}-r2@test.com` },
       });
     });
 
@@ -173,8 +173,8 @@ describe('Cookie Integration Tests', () => {
         .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send({
-          username: `${SUITE_PREFIX}_r3user`,
-          email: `${SUITE_PREFIX}-r3@test.com`,
+          username: `${suitePrefix}_r3user`,
+          email: `${suitePrefix}-r3@test.com`,
           password: 'TestPass123!',
           firstName: 'Cookie',
           lastName: 'Test',
@@ -206,7 +206,7 @@ describe('Cookie Integration Tests', () => {
 
       // Clean up
       testUser = await prisma.user.findUnique({
-        where: { email: `${SUITE_PREFIX}-r3@test.com` },
+        where: { email: `${suitePrefix}-r3@test.com` },
       });
     });
   });
@@ -219,8 +219,8 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          username: `${SUITE_PREFIX}_luser`,
-          email: `${SUITE_PREFIX}-l@test.com`,
+          username: `${suitePrefix}_luser`,
+          email: `${suitePrefix}-l@test.com`,
           password: 'TestPass123!',
           firstName: 'Login',
           lastName: 'Test',
@@ -229,7 +229,7 @@ describe('Cookie Integration Tests', () => {
         });
 
       testUser = await prisma.user.findUnique({
-        where: { email: `${SUITE_PREFIX}-l@test.com` },
+        where: { email: `${suitePrefix}-l@test.com` },
       });
     });
 
@@ -239,7 +239,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: `${SUITE_PREFIX}-l@test.com`,
+          email: `${suitePrefix}-l@test.com`,
           password: 'TestPass123!',
         });
 
@@ -271,7 +271,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: `${SUITE_PREFIX}-l@test.com`,
+          email: `${suitePrefix}-l@test.com`,
           password: 'TestPass123!',
         });
 
@@ -291,7 +291,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: `${SUITE_PREFIX}-l@test.com`,
+          email: `${suitePrefix}-l@test.com`,
           password: 'TestPass123!',
         });
 
@@ -316,8 +316,8 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          username: `${SUITE_PREFIX}_rfuser`,
-          email: `${SUITE_PREFIX}-rf@test.com`,
+          username: `${suitePrefix}_rfuser`,
+          email: `${suitePrefix}-rf@test.com`,
           password: 'TestPass123!',
           firstName: 'Refresh',
           lastName: 'Test',
@@ -326,7 +326,7 @@ describe('Cookie Integration Tests', () => {
         });
 
       testUser = await prisma.user.findUnique({
-        where: { email: `${SUITE_PREFIX}-rf@test.com` },
+        where: { email: `${suitePrefix}-rf@test.com` },
       });
 
       loginResponse = await request(app)
@@ -334,7 +334,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: `${SUITE_PREFIX}-rf@test.com`,
+          email: `${suitePrefix}-rf@test.com`,
           password: 'TestPass123!',
         });
     });
@@ -412,8 +412,8 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          username: `${SUITE_PREFIX}_louser`,
-          email: `${SUITE_PREFIX}-lo@test.com`,
+          username: `${suitePrefix}_louser`,
+          email: `${suitePrefix}-lo@test.com`,
           password: 'TestPass123!',
           firstName: 'Logout',
           lastName: 'Test',
@@ -422,7 +422,7 @@ describe('Cookie Integration Tests', () => {
         });
 
       testUser = await prisma.user.findUnique({
-        where: { email: `${SUITE_PREFIX}-lo@test.com` },
+        where: { email: `${suitePrefix}-lo@test.com` },
       });
 
       loginResponse = await request(app)
@@ -430,7 +430,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: `${SUITE_PREFIX}-lo@test.com`,
+          email: `${suitePrefix}-lo@test.com`,
           password: 'TestPass123!',
         });
     });
@@ -514,13 +514,13 @@ describe('Cookie Integration Tests', () => {
 
   describe('Cookie Security Attributes', () => {
     test('should use consistent security attributes across all endpoints', async () => {
-      // Randomized + SUITE_PREFIX-aligned credentials so this fixture cannot
+      // Randomized + suitePrefix-aligned credentials so this fixture cannot
       // collide on re-run / parallel shards, and is swept by cleanSuite()
-      // (startsWith `${SUITE_PREFIX}-`/`${SUITE_PREFIX}_`) if a prior run crashed
+      // (startsWith `${suitePrefix}-`/`${suitePrefix}_`) if a prior run crashed
       // before afterEach. Replaces the former fixed `securitytest1@test.com`.
       const tag = randomBytes(6).toString('hex');
-      const secEmail = `${SUITE_PREFIX}-sec-${tag}@test.com`;
-      const secUsername = `${SUITE_PREFIX}_sec_${tag}`;
+      const secEmail = `${suitePrefix}-sec-${tag}@test.com`;
+      const secUsername = `${suitePrefix}_sec_${tag}`;
 
       // Register
       const registerResponse = await request(app)

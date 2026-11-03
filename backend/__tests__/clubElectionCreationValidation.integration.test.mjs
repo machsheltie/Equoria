@@ -18,7 +18,7 @@ import { fetchCsrf, attachCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const TAG = `bvddn25${randomBytes(5).toString('hex')}`;
-const DEFAULT_ORIGIN = 'http://localhost:3000';
+const defaultOrigin = 'http://localhost:3000';
 
 const cleanup = createCleanupTracker();
 
@@ -84,11 +84,11 @@ describe('Equoria-bvddn.25: Election date validation', () => {
     const startsAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // tomorrow
     const endsAt = new Date(now.getTime() + 12 * 60 * 60 * 1000); // today (before startsAt)
 
-    const csrf = await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
+    const csrf = await fetchCsrf(app, { origin: defaultOrigin });
     const res = await attachCsrf(
       request(app)
         .post(`/api/v1/clubs/${testClub.id}/elections`)
-        .set('Origin', DEFAULT_ORIGIN)
+        .set('Origin', defaultOrigin)
         .set('Authorization', `Bearer ${validToken}`),
       csrf,
     ).send({
@@ -106,11 +106,11 @@ describe('Equoria-bvddn.25: Election date validation', () => {
     const now = new Date();
     const sameTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    const csrf = await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
+    const csrf = await fetchCsrf(app, { origin: defaultOrigin });
     const res = await attachCsrf(
       request(app)
         .post(`/api/v1/clubs/${testClub.id}/elections`)
-        .set('Origin', DEFAULT_ORIGIN)
+        .set('Origin', defaultOrigin)
         .set('Authorization', `Bearer ${validToken}`),
       csrf,
     ).send({
@@ -128,11 +128,11 @@ describe('Equoria-bvddn.25: Election date validation', () => {
     const startsAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // tomorrow
     const endsAt = new Date(now.getTime() + 48 * 60 * 60 * 1000); // day after tomorrow
 
-    const csrf = await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
+    const csrf = await fetchCsrf(app, { origin: defaultOrigin });
     const res = await attachCsrf(
       request(app)
         .post(`/api/v1/clubs/${testClub.id}/elections`)
-        .set('Origin', DEFAULT_ORIGIN)
+        .set('Origin', defaultOrigin)
         .set('Authorization', `Bearer ${validToken}`),
       csrf,
     ).send({
