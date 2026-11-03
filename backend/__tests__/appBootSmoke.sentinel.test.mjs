@@ -12,7 +12,8 @@
  *   - cronJobService.mjs         -> './groomSalaryService.mjs' (+2 more)
  *   - cronJobs.mjs               -> './traitHistoryService.mjs' (+4 more)
  *   - dynamicCompatibilityScoring.mjs, legacyScoreCalculator.mjs,
- *     environmentalTriggerSystem.mjs (intra-graph siblings)
+ *     environmentalTriggerSystem.mjs (intra-graph siblings; the last since
+ *     removed, Equoria-a7f1p)
  *
  * Because these are STATIC ESM imports, the first unresolved one threw
  * ERR_MODULE_NOT_FOUND at import time and `app.mjs` failed to load entirely.

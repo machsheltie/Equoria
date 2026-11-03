@@ -1,8 +1,12 @@
 /**
- * advancedEpigeneticRoutes integration tests (Equoria-rr7 coverage sprint).
+ * The horse-specific advanced epigenetic routes are gone (Equoria-rr7 coverage
+ * sprint file, now a removal pin).
  *
- * Covers the horse-specific epigenetic analysis endpoints that remain.
- * Routes are mounted at '/' in authRouter so paths are /api/v1/horses/:id/<endpoint>.
+ * GET /horses/:id/environmental-analysis, the last of them, was removed with
+ * environmentalTriggerSystem (Equoria-a7f1p): owner rulings 2026-10-16 (no
+ * environment effects), 2026-10-27 (the 20-trait roster replaced the traits it
+ * named) and 2026-10-28 (q152, no trait reports for players). Its 404 is pinned
+ * in __tests__/integration/retiredTraitAdviceRoutes.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -57,37 +61,6 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);
-
-// Shared auth/ownership guards — test once, apply to representative endpoints
-
-describe('Auth and ownership guards (representative)', () => {
-  it('returns 401 without auth on GET /environmental-analysis', async () => {
-    const res = await request(app).get(`/api/v1/horses/${horse.id}/environmental-analysis`).set('Origin', ORIGIN);
-    expect(res.status).toBe(401);
-  });
-
-  it('returns 404 for non-owned horse on GET /environmental-analysis', async () => {
-    const res = await request(app)
-      .get('/api/v1/horses/999999999/environmental-analysis')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(404);
-  });
-});
-
-// ─── GET endpoints ────────────────────────────────────────────────────────────
-
-describe('GET /api/v1/horses/:id/environmental-analysis', () => {
-  it('returns 200 for owned horse', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${horse.id}/environmental-analysis`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toBeDefined();
-  });
-});
 
 // GET /horses/:id/trait-interactions analyzed only the old epigeneticFlags store
 // and went with it (owner ruling 2026-10-29, q300, Equoria-efs4j);

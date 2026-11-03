@@ -6,6 +6,9 @@
  * - No weather, seasons or environment effects (2026-10-16):
  *     GET  /horses/:id/environmental-triggers
  *     GET  /horses/:id/trigger-thresholds
+ *     GET  /horses/:id/environmental-analysis (kept as a neighbour until
+ *          Equoria-a7f1p 2026-11-03: it reported trigger "affected traits" from the
+ *          superseded roster, a trait report q152 removed)
  * - New 20-trait roster, effects not yet ruled; traits reveal only through the
  *   daily grooming-day ladder (2026-10-27); interaction matrices, stability
  *   scores, the on-demand milestone evaluator and the old discovery-conditions
@@ -195,6 +198,7 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
   const horseRoutes = [
     ['get', id => `/api/v1/horses/${id}/environmental-triggers`],
     ['get', id => `/api/v1/horses/${id}/trigger-thresholds`],
+    ['get', id => `/api/v1/horses/${id}/environmental-analysis`],
     ['get', id => `/api/v1/horses/${id}/trait-matrix`],
     ['get', id => `/api/v1/horses/${id}/trait-stability`],
     ['get', id => `/api/v1/horses/${id}/epigenetic-insights`],
@@ -244,7 +248,6 @@ describe('retired trait and advice routes (Equoria-a7f1p)', () => {
 
   // Neighbours that stay: each still reaches its handler for the owner.
   const kept = [
-    ['GET /horses/:id/environmental-analysis', id => `/api/v1/horses/${id}/environmental-analysis`],
     // GET /epigenetic-traits/history/:horseId was kept here until owner ruling
     // 2026-10-28 (q152) removed the trait reports; removedTraitReportRoutes pins it.
     ['GET /traits/discovery-status/:horseId', id => `/api/v1/traits/discovery-status/${id}`],

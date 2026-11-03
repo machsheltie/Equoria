@@ -57,7 +57,6 @@ import foalRoutes from '../modules/breeding/routes/foalRoutes.mjs';
 import studBookingRoutes from '../modules/breeding/routes/studBookingRoutes.mjs';
 import traitRoutes from '../modules/traits/routes/traitRoutes.mjs';
 import epigeneticFlagRoutes from '../modules/traits/routes/epigeneticFlagRoutes.mjs';
-import advancedEpigeneticRoutes from '../modules/traits/routes/advancedEpigeneticRoutes.mjs';
 import groomRoutes from '../modules/grooms/routes/groomRoutes.mjs';
 import groomCareRoutes from '../modules/grooms/routes/groomCareRoutes.mjs';
 import groomMarketplaceRoutes from '../modules/grooms/routes/groomMarketplaceRoutes.mjs';
@@ -259,8 +258,9 @@ export function buildRouters() {
   authRouter.use('/flags', epigeneticFlagRoutes);
   authRouter.use('/leaderboards', leaderboardRoutes);
 
-  // Advanced epigenetic and genetics features
-  authRouter.use('/', advancedEpigeneticRoutes); // Mounts horse-specific routes at /horses/:id/...
+  // Equoria-a7f1p: GET /horses/:id/environmental-analysis, the last advanced
+  // epigenetic route, was removed (owner rulings 2026-10-16 no environment effects,
+  // 2026-10-27 new trait roster, 2026-10-28 q152 no trait reports for players).
   // Equoria-a7f1p: /epigenetic-traits/* and the enhanced trait reports
   // (trait history, timeline, stable report, comparison, export) were removed
   // (owner ruling 2026-10-28, q152: no trait reports for players).

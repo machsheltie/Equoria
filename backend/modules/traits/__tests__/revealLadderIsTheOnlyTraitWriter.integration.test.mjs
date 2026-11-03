@@ -25,7 +25,6 @@ import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/c
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import cronJobRegistry from '../../../services/jobs/index.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
-import * as environmentalTriggerSystem from '../services/environmentalTriggerSystem.mjs';
 import * as traitsApi from '../index.mjs';
 import { evaluateEnhancedMilestone } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 import { checkDiscoveryConditions } from '../../../utils/traitDiscovery.mjs';
@@ -65,7 +64,8 @@ describe('temporary flags are gone (Equoria-kqdde)', () => {
     expect(cronJobRegistry.map(j => j.jobName)).not.toContain('temporaryFlagExpiry');
     expect(cronJobService.sweepExpiredTemporaryFlags).toBeUndefined();
     expect(traitsApi).not.toHaveProperty('sweepExpiredTemporaryFlags');
-    expect(environmentalTriggerSystem).not.toHaveProperty('applyEnvironmentalEventFlag');
+    // environmentalTriggerSystem (which once held applyEnvironmentalEventFlag) is gone (Equoria-a7f1p).
+    expect(moduleGone('../services/environmentalTriggerSystem.mjs')).toBe(true);
     expect(moduleGone('../services/temporaryFlagSystem.mjs')).toBe(true);
     expect(moduleGone('../../../services/jobs/temporaryFlagExpiryJob.mjs')).toBe(true);
   });
