@@ -18,6 +18,7 @@ import { generateTestToken } from '../../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
 import { whenTicketEmailKicksFinish } from '../../services/ticketEmailOutbox.mjs';
+import { staffDeviceCookie } from '../../services/staffCheckinService.mjs';
 import { testHorseData } from '../../../../__tests__/helpers/createTestHorse.mjs';
 
 export const ORIGIN = 'http://localhost:3000';
@@ -129,7 +130,9 @@ export function createTargetFactory(prefix) {
 }
 
 export const cookiesFor = (user, device) =>
-  device ? [`accessToken=${user.token}`, `staff_device=${device}`] : [`accessToken=${user.token}`];
+  device
+    ? [`accessToken=${user.token}`, `${staffDeviceCookie}=${device}`]
+    : [`accessToken=${user.token}`];
 
 export const get = (url, user, device) =>
   request(app).get(url).set('Origin', ORIGIN).set('Cookie', cookiesFor(user, device));
@@ -235,7 +238,7 @@ export function latestCode(email) {
 export const wrongCodeFor = code => String((Number(code) + 1) % 1_000_000).padStart(6, '0');
 
 export function deviceCookieFrom(res) {
-  const raw = (res.headers['set-cookie'] || []).find(c => c.startsWith('staff_device='));
+  const raw = (res.headers['set-cookie'] || []).find(c => c.startsWith(`${staffDeviceCookie}=`));
   return raw ?? null;
 }
 
@@ -246,7 +249,7 @@ export async function checkIn(user) {
   expect(res.status).toBe(200);
   const cookie = deviceCookieFrom(res);
   expect(cookie).not.toBeNull();
-  return cookie.split(';')[0].slice('staff_device='.length);
+  return cookie.split(';')[0].slice(`${staffDeviceCookie}=`.length);
 }
 
 /**

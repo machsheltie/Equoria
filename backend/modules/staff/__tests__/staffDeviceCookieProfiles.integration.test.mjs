@@ -1,5 +1,5 @@
 /**
- * staff_device cookie attributes in every environment profile (verification
+ * staffDevice cookie attributes in every environment profile (verification
  * gap 5).
  *
  * staffDeviceCookieOptions (controllers/staffCheckinController.mjs) is
@@ -94,7 +94,7 @@ async function loadUnder(env) {
   }
 }
 
-describe('staff_device cookie options follow the auth cookie in every profile (verification gap 5)', () => {
+describe('staffDevice cookie options follow the auth cookie in every profile (verification gap 5)', () => {
   afterEach(() => jest.resetModules());
 
   it.each(PROFILES)('$name', async profile => {
@@ -115,7 +115,7 @@ describe('staff_device cookie options follow the auth cookie in every profile (v
   });
 });
 
-describe('staff_device Set-Cookie over real HTTP in the test profile (verification gap 5)', () => {
+describe('staffDevice Set-Cookie over real HTTP in the test profile (verification gap 5)', () => {
   const cleanup = createCleanupTracker();
   const { makeUser, createdUserIds } = createUserFactory('stdevcookie');
 

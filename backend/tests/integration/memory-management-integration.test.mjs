@@ -61,7 +61,7 @@ import { checkedInDeviceCookie } from '../helpers/staffDeviceFixture.mjs';
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
-  // As app.mjs mounts it, so the staff check-in guard can read the staff_device cookie.
+  // As app.mjs mounts it, so the staff check-in guard can read the staffDevice cookie.
   app.use(cookieParser());
 
   // Auth routes for testing

@@ -38,7 +38,32 @@ export const checkinMaxAttempts = 5;
 export const checkinRequestLimit = 3;
 export const checkinRequestWindowMs = 15 * 60 * 1000;
 export const trustedDeviceTtlMs = 30 * 24 * 60 * 60 * 1000;
-export const staffDeviceCookie = 'staff_device';
+/** The check-in cookie (camelCase since Equoria-pjvp8.7). */
+export const staffDeviceCookie = 'staffDevice';
+
+/**
+ * The cookie's name before Equoria-pjvp8.7. Orchestrator ruling 2026-10-29: read
+ * both names for a while, then retire this one, so no steward has to check in
+ * again. A check-in sets only the new name and clears this one. A trusted
+ * device lasts trustedDeviceTtlMs (30 days) from its check-in, so once a build
+ * that sets the new name has been live for 30 days no valid device can be held
+ * under this name, and reading it can stop.
+ */
+export const legacyStaffDeviceCookie = 'staff_device';
+
+/**
+ * The raw device token a request carries: the current cookie, else the
+ * pre-Equoria-pjvp8.7 one.
+ * @param {Record<string, unknown> | undefined} cookies - req.cookies
+ * @returns {unknown}
+ */
+export function staffDeviceTokenFrom(cookies) {
+  const current = cookies?.[staffDeviceCookie];
+  if (typeof current === 'string' && current.length > 0) {
+    return current;
+  }
+  return cookies?.[legacyStaffDeviceCookie];
+}
 
 // bcrypt cost for a 10-minute, 5-guess code: the attempt cap is the real
 // brute-force limit, so the hash only has to keep a leaked row from being

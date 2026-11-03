@@ -11,8 +11,10 @@ import { capabilitiesFor } from '../capabilities.mjs';
 import {
   StaffCheckinError,
   isTrustedDevice,
+  legacyStaffDeviceCookie,
   requestCheckinCode,
   staffDeviceCookie,
+  staffDeviceTokenFrom,
   trustedDeviceTtlMs,
   verifyCheckinCode,
 } from '../services/staffCheckinService.mjs';
@@ -26,7 +28,7 @@ const deviceCookieAttributes = Object.freeze({
 });
 
 /**
- * staff_device cookie: secure/sameSite/domain from the same policy as the
+ * staffDevice cookie: secure/sameSite/domain from the same policy as the
  * auth cookies (cookieConfig.mjs), 30 days. Scoped to the whole API since
  * Equoria-n256i (owner ruling q289): the admin routes (/api/v1/admin and the
  * per-route admin gates) ask for the same check-in, so the browser must send
@@ -38,11 +40,8 @@ export const staffDeviceCookieOptions = Object.freeze({
   path: '/api/v1',
 });
 
-/** Where the cookie lived before Equoria-n256i; cleared on check-in so it cannot shadow the new one. */
-const legacyDeviceCookieOptions = Object.freeze({
-  ...deviceCookieAttributes,
-  path: '/api/v1/staff',
-});
+/** The two paths the old-name cookie lived on (/api/v1/staff before Equoria-n256i), for clearing it. */
+const legacyDeviceCookiePaths = Object.freeze(['/api/v1', '/api/v1/staff']);
 
 const REFUSALS = {
   emailUnverified: {
@@ -81,14 +80,16 @@ export async function requestCheckin(req, res, next) {
   }
 }
 
-/** POST /api/v1/staff/checkin/verify { code } → 200, sets staff_device */
+/** POST /api/v1/staff/checkin/verify { code } → 200, sets staffDevice */
 export async function verifyCheckin(req, res, next) {
   try {
     const { rawToken } = await verifyCheckinCode(req.staffAccount, req.body?.code);
     res.cookie(staffDeviceCookie, rawToken, staffDeviceCookieOptions);
-    // A browser checked in before the path widened still holds the old cookie;
-    // sent first on staff paths (longer path), a stale one would shadow this one.
-    res.clearCookie(staffDeviceCookie, legacyDeviceCookieOptions);
+    // This browser now holds the new name, so its old-name cookie goes, from
+    // both paths it ever lived on (/api/v1/staff before Equoria-n256i).
+    for (const path of legacyDeviceCookiePaths) {
+      res.clearCookie(legacyStaffDeviceCookie, { ...deviceCookieAttributes, path });
+    }
     return res.status(200).json({ trusted: true });
   } catch (error) {
     return handleError(res, next, error);
@@ -99,7 +100,7 @@ export async function verifyCheckin(req, res, next) {
 export async function getStaffMe(req, res, next) {
   try {
     const account = req.staffAccount;
-    const device = await isTrustedDevice(account, req.cookies?.[staffDeviceCookie]);
+    const device = await isTrustedDevice(account, staffDeviceTokenFrom(req.cookies));
     return res.status(200).json({
       role: account.role,
       capabilities: [...capabilitiesFor(account.role)],

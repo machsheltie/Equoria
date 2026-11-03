@@ -22,6 +22,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { legacyStaffDeviceCookie, staffDeviceCookie } from '../services/staffCheckinService.mjs';
 import {
   ORIGIN,
   capturedFor,
@@ -47,7 +48,7 @@ const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('staffmfa');
 
 const cookiesFor = (user, device) =>
-  device ? [`accessToken=${user.token}`, `staff_device=${device}`] : [`accessToken=${user.token}`];
+  device ? [`accessToken=${user.token}`, `${staffDeviceCookie}=${device}`] : [`accessToken=${user.token}`];
 
 beforeAll(() => {
   const scope = () => ({ in: createdUserIds });
@@ -127,13 +128,16 @@ describe('Staff check-in and capability guard (Equoria-puj1e.1)', () => {
     const cookie = deviceCookieFrom(verified);
     expect(cookie).toMatch(/HttpOnly/i);
     // Equoria-n256i (owner ruling q289): scoped to the whole API so admin routes
-    // receive it too; the old /api/v1/staff cookie is cleared so it cannot shadow it.
+    // receive it too; the old /api/v1/staff cookie is cleared so it cannot shadow it
+    // (since Equoria-pjvp8.7 that old cookie carries the pre-camelCase name).
     expect(cookie).toMatch(/Path=\/api\/v1(;|$)/);
     expect(verified.headers['set-cookie']).toEqual(
-      expect.arrayContaining([expect.stringMatching(/^staff_device=;.*Path=\/api\/v1\/staff(;|$)/)]),
+      expect.arrayContaining([
+        expect.stringMatching(new RegExp(`^${legacyStaffDeviceCookie}=;.*Path=/api/v1/staff(;|$)`)),
+      ]),
     );
     expect(cookie).toMatch(/Max-Age=2592000/);
-    const rawToken = cookie.split(';')[0].slice('staff_device='.length);
+    const rawToken = cookie.split(';')[0].slice(`${staffDeviceCookie}=`.length);
     expect(Buffer.from(rawToken, 'base64url')).toHaveLength(32);
 
     const devices = await prisma.staffTrustedDevice.findMany({ where: { userId: mod.id } });

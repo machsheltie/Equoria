@@ -3,7 +3,7 @@
  *
  * Shapes mirror backend/modules/staff/controllers/*.mjs. Every request goes
  * through apiClient, which sends credentials (so the httpOnly, path-scoped
- * `staff_device` cookie travels with each call) and the CSRF token on writes.
+ * `staffDevice` cookie travels with each call) and the CSRF token on writes.
  *
  *   GET  /api/v1/staff/me                 → { role, capabilities, trusted }   (404 for non-staff)
  *   POST /api/v1/staff/checkin/request    → 202 { sent: true }

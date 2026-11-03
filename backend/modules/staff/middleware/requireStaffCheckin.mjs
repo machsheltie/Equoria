@@ -24,7 +24,7 @@ import { satisfiesRole } from '../capabilities.mjs';
 import {
   isTrustedDevice,
   loadStaffAccount,
-  staffDeviceCookie,
+  staffDeviceTokenFrom,
 } from '../services/staffCheckinService.mjs';
 
 /** Marks the guard so the admin-route sentinel can recognise it. */
@@ -46,7 +46,7 @@ async function staffCheckinState(req, requiredRole) {
   if (account.emailVerified !== true) {
     return { state: 'emailUnverified', account };
   }
-  const trusted = await isTrustedDevice(account, req.cookies?.[staffDeviceCookie]);
+  const trusted = await isTrustedDevice(account, staffDeviceTokenFrom(req.cookies));
   return { state: trusted ? 'checkedIn' : 'checkinRequired', account };
 }
 

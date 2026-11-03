@@ -21,7 +21,7 @@ import { hasCapability, isStaffRole } from '../capabilities.mjs';
 import {
   isTrustedDevice,
   loadStaffAccount,
-  staffDeviceCookie,
+  staffDeviceTokenFrom,
 } from '../services/staffCheckinService.mjs';
 
 // Same handler app.mjs mounts as its catch-all; staff paths are under /api so
@@ -73,7 +73,7 @@ function buildCapabilityGuard(capabilities) {
           message: 'Staff tools need a verified email address.',
         });
       }
-      const trusted = await isTrustedDevice(account, req.cookies?.[staffDeviceCookie]);
+      const trusted = await isTrustedDevice(account, staffDeviceTokenFrom(req.cookies));
       if (!trusted) {
         return res.status(403).json({
           success: false,

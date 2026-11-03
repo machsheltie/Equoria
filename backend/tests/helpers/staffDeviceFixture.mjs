@@ -22,7 +22,7 @@ import {
 
 /**
  * Create a trusted device for `userId` and return its Cookie header pair
- * (`staff_device=<raw>`).
+ * (`staffDevice=<raw>`).
  * @param {string} userId
  * @returns {Promise<string>}
  */

@@ -85,7 +85,7 @@ describe('Memory Management Routes', () => {
     adminDevice = await checkedInDeviceCookie(testUser.id);
 
     // Create test Express app (cookie-parser, as app.mjs mounts it, so the check-in
-    // guard can read the staff_device cookie)
+    // guard can read the staffDevice cookie)
     testApp = express();
     testApp.use(express.json());
     testApp.use(cookieParser());
