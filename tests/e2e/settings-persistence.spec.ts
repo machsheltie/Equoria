@@ -123,10 +123,29 @@ test.describe('Settings preferences persistence (21S-5)', () => {
     // `/onboarding`) is irrelevant — we drive to /onboarding explicitly next.
     await page.waitForURL((url) => !url.href.includes('/login'), { timeout: 30000 });
 
+    // Every test signs in as this suite's one player, so only the first finds
+    // her un-onboarded. A starter horse is chosen once (Equoria-kuqq9: the wizard
+    // answers 409 "Your starter horse has already been chosen" to a second
+    // choice), so the wizard runs only while the server says she has not chosen.
+    // Old contract: the wizard was driven again for every test, and the second
+    // test failed on that 409 until a retry started over with a new player.
+    const profileRes = await page.request.get(FRONTEND + '/api/v1/auth/profile');
+    expect(profileRes.status(), 'GET /api/v1/auth/profile after login').toBe(200);
+    const profileUser = (
+      (await profileRes.json()) as {
+        data?: { user?: { completedOnboarding?: boolean; onboardingStep?: number } };
+      }
+    ).data?.user;
+    expect(typeof profileUser?.completedOnboarding, 'profile must report completedOnboarding').toBe(
+      'boolean'
+    );
+    const starterHorseChosen =
+      profileUser?.completedOnboarding === true || (profileUser?.onboardingStep ?? 0) > 0;
+
     // Deterministically complete onboarding. Navigating straight to
     // /onboarding sidesteps the OnboardingGuard async-redirect race entirely.
-    await page.goto(FRONTEND + '/onboarding', { waitUntil: 'load', timeout: 30000 });
-    {
+    if (!starterHorseChosen) {
+      await page.goto(FRONTEND + '/onboarding', { waitUntil: 'load', timeout: 30000 });
       // Step 1 (Welcome) → click Continue
       await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
       await page.locator('[data-testid="onboarding-next"]').click();

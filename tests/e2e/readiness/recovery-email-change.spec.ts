@@ -172,7 +172,19 @@ test.describe('Recovery address — Settings to a moved identity', () => {
       await mailbox.context.close();
     }
 
-    // Back in the original session: the identity really moved, and nothing waits.
+    // Owner ruling 2026-09-22 (Equoria-8p6e6, Equoria-6p398.11): confirming the
+    // move ends every session that existed before it, so the original session
+    // is signed out. Old contract: it stayed signed in and read the moved
+    // identity straight away.
+    const endedSession = await page.request.get('/api/v1/auth/profile');
+    expect(
+      endedSession.status(),
+      'confirming the move must end the session that existed before it'
+    ).toBe(401);
+
+    // The recovery identity is what it claims to be: it signs in, the identity
+    // really moved, and nothing waits.
+    await loginViaUi(page, { email: replacement, password: player.password });
     expect(await liveAccountEmail(page)).toBe(replacement);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('[data-testid="settings-nav-account"]').click();
@@ -211,12 +223,6 @@ test.describe('Recovery address — Settings to a moved identity', () => {
       countCapturedEmails('password-reset', player.email),
       'the OLD address is still silent after the sink has demonstrably caught up'
     ).toBe(oldBefore);
-
-    // The recovery identity is what it claims to be: it signs in.
-    const logout = await csrfRequest(page, 'POST', '/api/v1/auth/logout');
-    expect(logout.status()).toBe(200);
-    await loginViaUi(page, { email: replacement, password: player.password });
-    expect(await liveAccountEmail(page)).toBe(replacement);
 
     guard.assertClean();
   });
@@ -298,7 +304,11 @@ test.describe('Recovery address — Settings to a moved identity', () => {
       await second.context.close();
     }
 
-    // The account is exactly where the FIRST confirmation left it.
+    // The account is exactly where the FIRST confirmation left it. That
+    // confirmation ended this session (owner ruling 2026-09-22, Equoria-8p6e6;
+    // old contract: it stayed signed in), so read it signed in afresh.
+    expect((await page.request.get('/api/v1/auth/profile')).status()).toBe(401);
+    await loginViaUi(page, { email: replacement, password: player.password });
     expect(await liveAccountEmail(page)).toBe(replacement);
 
     guard.assertClean();
