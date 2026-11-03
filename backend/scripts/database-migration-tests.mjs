@@ -19,7 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Migration testing configuration
-const MIGRATION_CONFIG = {
+const migrationConfig = {
   testDatabaseUrl: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
   migrationTimeout: 60000, // 60 seconds
   performanceThresholds: {
@@ -38,11 +38,11 @@ function executeCommand(command, options = {}) {
   try {
     const result = execSync(command, {
       encoding: 'utf8',
-      timeout: options.timeout || MIGRATION_CONFIG.migrationTimeout,
-      cwd: options.cwd || path.resolve(__dirname, MIGRATION_CONFIG.prismaPath),
+      timeout: options.timeout || migrationConfig.migrationTimeout,
+      cwd: options.cwd || path.resolve(__dirname, migrationConfig.prismaPath),
       env: {
         ...process.env,
-        DATABASE_URL: MIGRATION_CONFIG.testDatabaseUrl,
+        DATABASE_URL: migrationConfig.testDatabaseUrl,
         ...options.env,
       },
     });
@@ -73,7 +73,7 @@ async function getDatabaseSchema() {
 
   // Get table information
   const tablesResult = executeCommand(
-    `psql "${MIGRATION_CONFIG.testDatabaseUrl}" -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';" -t`,
+    `psql "${migrationConfig.testDatabaseUrl}" -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';" -t`,
   );
 
   const tables = tablesResult.success
@@ -103,7 +103,7 @@ async function createDatabaseBackup() {
   const backupFile = path.join(backupDir, `backup-${timestamp}.sql`);
 
   const backupResult = executeCommand(
-    `pg_dump "${MIGRATION_CONFIG.testDatabaseUrl}" > "${backupFile}"`,
+    `pg_dump "${migrationConfig.testDatabaseUrl}" > "${backupFile}"`,
   );
 
   if (!backupResult.success) {
@@ -146,8 +146,8 @@ async function cleanupOldBackups(backupDir) {
       .sort((a, b) => b.stat.mtime - a.stat.mtime);
 
     // Remove old backups beyond retention limit
-    if (validBackups.length > MIGRATION_CONFIG.backupRetention) {
-      const filesToDelete = validBackups.slice(MIGRATION_CONFIG.backupRetention);
+    if (validBackups.length > migrationConfig.backupRetention) {
+      const filesToDelete = validBackups.slice(migrationConfig.backupRetention);
 
       for (const file of filesToDelete) {
         await fs.unlink(file.path);
@@ -190,13 +190,13 @@ async function testMigrationExecution() {
   }
 
   // Check if migration time exceeds threshold
-  const performanceIssue = migrationTime > MIGRATION_CONFIG.performanceThresholds.migrationTime;
+  const performanceIssue = migrationTime > migrationConfig.performanceThresholds.migrationTime;
 
   console.log(`✅ Migration completed in ${migrationTime.toFixed(2)}ms`);
 
   if (performanceIssue) {
     console.warn(
-      `⚠️ Migration time (${migrationTime.toFixed(2)}ms) exceeds threshold (${MIGRATION_CONFIG.performanceThresholds.migrationTime}ms)`,
+      `⚠️ Migration time (${migrationTime.toFixed(2)}ms) exceeds threshold (${migrationConfig.performanceThresholds.migrationTime}ms)`,
     );
   }
 
@@ -219,7 +219,7 @@ async function testDataIntegrity() {
 
   // Check foreign key constraints
   const fkCheckResult = executeCommand(
-    `psql "${MIGRATION_CONFIG.testDatabaseUrl}" -c "SELECT conname, conrelid::regclass, confrelid::regclass FROM pg_constraint WHERE contype = 'f';" -t`,
+    `psql "${migrationConfig.testDatabaseUrl}" -c "SELECT conname, conrelid::regclass, confrelid::regclass FROM pg_constraint WHERE contype = 'f';" -t`,
   );
 
   if (fkCheckResult.success) {
@@ -245,7 +245,7 @@ async function testDataIntegrity() {
 
   for (const query of orphanCheckQueries) {
     const checkResult = executeCommand(
-      `psql "${MIGRATION_CONFIG.testDatabaseUrl}" -c "${query}" -t`,
+      `psql "${migrationConfig.testDatabaseUrl}" -c "${query}" -t`,
     );
 
     if (checkResult.success) {
@@ -273,7 +273,7 @@ async function testDataIntegrity() {
 
   for (const table of expectedTables) {
     const tableCheckResult = executeCommand(
-      `psql "${MIGRATION_CONFIG.testDatabaseUrl}" -c "SELECT to_regclass('public.${table}');" -t`,
+      `psql "${migrationConfig.testDatabaseUrl}" -c "SELECT to_regclass('public.${table}');" -t`,
     );
 
     const tableExists =
@@ -321,7 +321,7 @@ async function testMigrationRollback(backupFile) {
 
   // Restore from backup
   const restoreResult = executeCommand(
-    `psql "${MIGRATION_CONFIG.testDatabaseUrl}" < "${backupFile}"`,
+    `psql "${migrationConfig.testDatabaseUrl}" < "${backupFile}"`,
   );
 
   const endTime = performance.now();
@@ -339,13 +339,13 @@ async function testMigrationRollback(backupFile) {
   // Verify rollback by checking schema
   const schemaAfterRollback = await getDatabaseSchema();
 
-  const performanceIssue = rollbackTime > MIGRATION_CONFIG.performanceThresholds.rollbackTime;
+  const performanceIssue = rollbackTime > migrationConfig.performanceThresholds.rollbackTime;
 
   console.log(`✅ Rollback completed in ${rollbackTime.toFixed(2)}ms`);
 
   if (performanceIssue) {
     console.warn(
-      `⚠️ Rollback time (${rollbackTime.toFixed(2)}ms) exceeds threshold (${MIGRATION_CONFIG.performanceThresholds.rollbackTime}ms)`,
+      `⚠️ Rollback time (${rollbackTime.toFixed(2)}ms) exceeds threshold (${migrationConfig.performanceThresholds.rollbackTime}ms)`,
     );
   }
 
@@ -369,7 +369,7 @@ async function generateMigrationReport(results) {
 
   const report = {
     timestamp: new Date().toISOString(),
-    testDatabaseUrl: MIGRATION_CONFIG.testDatabaseUrl.replace(/\/\/.*@/, '//***:***@'), // Hide credentials
+    testDatabaseUrl: migrationConfig.testDatabaseUrl.replace(/\/\/.*@/, '//***:***@'), // Hide credentials
     results,
     summary: {
       overallSuccess:
@@ -415,7 +415,7 @@ async function runDatabaseMigrationTests() {
     console.log('🗄️ Starting Database Migration Tests');
     console.log('====================================');
 
-    if (!MIGRATION_CONFIG.testDatabaseUrl) {
+    if (!migrationConfig.testDatabaseUrl) {
       throw new Error('TEST_DATABASE_URL or DATABASE_URL environment variable is required');
     }
 

@@ -10,7 +10,7 @@
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fileURLToPath } from 'node:url';
 
-const STAT_KEYS = [
+const statKeys = [
   'speed',
   'stamina',
   'agility',
@@ -48,7 +48,7 @@ function sampleStat({ mean, stdDev }) {
 
 function generateFromProfile(starterStats) {
   const raw = Object.fromEntries(
-    STAT_KEYS.map(k => {
+    statKeys.map(k => {
       const p = starterStats[k];
       return [k, p ? sampleStat(p) : 12 + Math.floor(Math.random() * 5)];
     }),
@@ -102,13 +102,13 @@ async function main() {
       newStats = generateFromProfile(starterStats);
     } else {
       // No breed profile: generate safe neutral stats
-      newStats = Object.fromEntries(STAT_KEYS.map(k => [k, 12 + Math.floor(Math.random() * 5)]));
+      newStats = Object.fromEntries(statKeys.map(k => [k, 12 + Math.floor(Math.random() * 5)]));
     }
 
     await prisma.horse.update({ where: { id: horse.id }, data: newStats });
 
     const total = Object.values(newStats).reduce((s, v) => s + v, 0);
-    const statLine = STAT_KEYS.map(k => `${k.slice(0, 3).toUpperCase()}=${newStats[k]}`).join(' ');
+    const statLine = statKeys.map(k => `${k.slice(0, 3).toUpperCase()}=${newStats[k]}`).join(' ');
     const profileSrc = starterStats ? horse.breed_name : 'neutral fallback';
     console.log(
       `  ✓ ${horse.name} (ID ${horse.id}, ${horse.breed_name}) — total ${total} [${profileSrc}]`,

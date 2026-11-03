@@ -86,7 +86,7 @@ export async function backfillCraftingMaterials(opts = {}) {
   let failed = 0;
 
   const baseWhere = userIds ? { id: { in: userIds } } : {};
-  const BATCH_SIZE = 500;
+  const batchSize = 500;
   let lastId = '';
   let hasMore = true;
 
@@ -95,7 +95,7 @@ export async function backfillCraftingMaterials(opts = {}) {
       where: { ...baseWhere, id: { ...(baseWhere.id ?? {}), gt: lastId } },
       select: { id: true, username: true, settings: true },
       orderBy: { id: 'asc' },
-      take: BATCH_SIZE,
+      take: batchSize,
     });
     if (batch.length === 0) {
       break;
@@ -137,7 +137,7 @@ export async function backfillCraftingMaterials(opts = {}) {
     }
 
     lastId = batch[batch.length - 1].id;
-    if (batch.length < BATCH_SIZE) {
+    if (batch.length < batchSize) {
       hasMore = false;
     }
   }

@@ -37,8 +37,8 @@
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fileURLToPath } from 'node:url';
 
-const DAYS_PER_GAME_YEAR = 7;
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const daysPerGameYear = 7;
+const msPerDay = 1000 * 60 * 60 * 24;
 
 function parseArgs(argv) {
   const args = { dryRun: false, limit: null, quiet: false };
@@ -64,8 +64,8 @@ function ageInGameYears(dob, now = new Date()) {
   if (diffMs < 0) {
     return 0;
   }
-  const days = Math.floor(diffMs / MS_PER_DAY);
-  return Math.floor(days / DAYS_PER_GAME_YEAR);
+  const days = Math.floor(diffMs / msPerDay);
+  return Math.floor(days / daysPerGameYear);
 }
 
 async function main() {
@@ -112,14 +112,14 @@ async function main() {
   let unchanged = 0;
   let failed = 0;
   let lastId = 0;
-  const BATCH_SIZE = 500;
+  const batchSize = 500;
 
   while (true) {
     const batch = await prisma.horse.findMany({
       where: { id: { gt: lastId } },
       select: { id: true, name: true, dateOfBirth: true, age: true },
       orderBy: { id: 'asc' },
-      take: BATCH_SIZE,
+      take: batchSize,
     });
     if (batch.length === 0) {
       break;

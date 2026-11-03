@@ -42,10 +42,10 @@ import path from 'node:path';
 import { isReservedScratchPlantPathSegment } from '../../scripts/lib/doctrine-scan-patterns.mjs';
 
 /** Backend-relative directories whose suites are tree-touching (whole subtree). */
-export const TREE_SUITE_DIRS = Object.freeze(['__tests__', 'modules/docs/__tests__']);
+export const treeSuiteDirs = Object.freeze(['__tests__', 'modules/docs/__tests__']);
 
 /** Backend-relative single suites outside those directories that walk the real tree. */
-export const TREE_SUITE_FILES = Object.freeze([
+export const treeSuiteFiles = Object.freeze([
   'modules/grooms/__tests__/groomSalaryPassScoped.sentinel.test.mjs',
   'modules/traits/__tests__/flagEngineSingleSource.sentinel.test.mjs',
   // Equoria-or2ua: walks modules/ to prove no rider payload exposes the retirement age.
@@ -72,7 +72,7 @@ export const quietTimingSuites = Object.freeze([
  * backend-relative paths (~60 chars each), far below the Windows
  * 32767-character command-line limit.
  */
-export const TREE_BATCH_MAX_FILES = 110;
+export const treeBatchMaxFiles = 110;
 
 /**
  * Per-batch budget for the Jest arguments the planner controls. Windows caps a
@@ -80,7 +80,7 @@ export const TREE_BATCH_MAX_FILES = 110;
  * --experimental-vm-modules, jest.js, --json, --outputFile=<tmp>) is well under
  * 1,500, so 30,000 leaves headroom.
  */
-export const MAX_BATCH_ARGV_CHARS = 30000;
+export const maxBatchArgvChars = 30000;
 
 /** Characters these args occupy on a command line (one separator each, quotes ignored). */
 export function argvChars(args) {
@@ -94,7 +94,7 @@ export function toBackendRelative(backendDir, file) {
 
 /** True when a backend-relative suite path belongs to the TREE set. */
 export function isTreeSuite(rel) {
-  return TREE_SUITE_DIRS.some(dir => rel.startsWith(`${dir}/`)) || TREE_SUITE_FILES.includes(rel);
+  return treeSuiteDirs.some(dir => rel.startsWith(`${dir}/`)) || treeSuiteFiles.includes(rel);
 }
 
 /**
@@ -138,12 +138,7 @@ function hashOrder(rel) {
  *
  * @returns {{ label: string, jestArgs: string[], files: string[] }[]} (no index)
  */
-export function argvBoundedBatches({
-  label,
-  files,
-  backendDir,
-  maxArgvChars = MAX_BATCH_ARGV_CHARS,
-}) {
+export function argvBoundedBatches({ label, files, backendDir, maxArgvChars = maxBatchArgvChars }) {
   const rel = file => toBackendRelative(backendDir, file);
   const make = (lbl, part) => ({
     label: lbl,
@@ -226,8 +221,8 @@ export function planLanes({
   isCanonical,
   shards,
   lanes,
-  maxTreeBatchFiles = TREE_BATCH_MAX_FILES,
-  maxArgvChars = MAX_BATCH_ARGV_CHARS,
+  maxTreeBatchFiles = treeBatchMaxFiles,
+  maxArgvChars = maxBatchArgvChars,
 }) {
   if (!Number.isInteger(shards) || shards < 1) {
     throw new Error(`planLanes: shards must be a positive integer (got ${shards})`);

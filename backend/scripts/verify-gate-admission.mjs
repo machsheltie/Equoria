@@ -16,7 +16,7 @@
  * lock; it does not isolate machine resources.
  *
  * RESOURCE COORDINATION, explicit: this harness first acquires the MACHINE
- * gate lock (DEFAULT_LOCK_PATH, bounded wait) and holds it for its whole run.
+ * gate lock (defaultLockPath, bounded wait) and holds it for its whole run.
  * No cooperating gate can therefore start beside it, and the nested runner it
  * spawns is the only Jest process it owns. The nested runner's own lock lives
  * under an isolated TEMP so it never collides with the one this harness holds.
@@ -34,11 +34,11 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { acquireGateLock, DEFAULT_LOCK_PATH } from './gate-lock.mjs';
+import { acquireGateLock, defaultLockPath } from './gate-lock.mjs';
 
 const BACKEND = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RUNNER = path.join(BACKEND, 'scripts', 'run-suite-sharded.mjs');
-const CHILD_DEADLINE_MS = 5 * 60 * 1000;
+const childDeadlineMs = 5 * 60 * 1000;
 const PATTERN = 'gateLockOwnership';
 
 function spawnBounded(args, env, owned) {
@@ -47,7 +47,7 @@ function spawnBounded(args, env, owned) {
     env: { ...process.env, ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
-    timeout: CHILD_DEADLINE_MS,
+    timeout: childDeadlineMs,
     killSignal: 'SIGKILL',
   });
   let out = '';
@@ -156,7 +156,7 @@ export async function main() {
 
   // Explicit resource coordination: hold the MACHINE gate for the whole run so
   // the nested runner is the only Jest process this harness ever owns.
-  console.log(`[verify-gate-admission] acquiring the machine gate lock at ${DEFAULT_LOCK_PATH}`);
+  console.log(`[verify-gate-admission] acquiring the machine gate lock at ${defaultLockPath}`);
   const machineGate = await acquireGateLock({
     waitMs: 5 * 60 * 1000,
     runId: 'verify-gate-admission',

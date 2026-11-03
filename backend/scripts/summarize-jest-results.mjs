@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const [, , input = 'test-results/jest-results.json', output = 'test-results/jest-summary.txt'] =
   process.argv;
-const ANSI_PATTERN = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
+const ansiPattern = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
 
 function firstFailure(result) {
   const messages = [
@@ -12,7 +12,7 @@ function firstFailure(result) {
     ...(result.assertionResults ?? []).flatMap(assertion => assertion.failureMessages ?? []),
   ]
     .join('\n')
-    .replace(ANSI_PATTERN, '')
+    .replace(ansiPattern, '')
     .trim();
   return messages.split(/\r?\n/).find(Boolean)?.slice(0, 500) ?? 'No failure message recorded';
 }

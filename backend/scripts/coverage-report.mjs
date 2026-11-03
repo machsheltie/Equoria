@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Coverage configuration
-const COVERAGE_CONFIG = {
+const coverageConfig = {
   thresholds: {
     global: {
       branches: 80,
@@ -150,7 +150,7 @@ function checkCoverageThresholds(overall, byDirectory) {
   };
 
   // Check global thresholds
-  Object.entries(COVERAGE_CONFIG.thresholds.global).forEach(([metric, threshold]) => {
+  Object.entries(coverageConfig.thresholds.global).forEach(([metric, threshold]) => {
     if (overall[metric] < threshold) {
       results.global.passed = false;
       results.global.failures.push({
@@ -165,11 +165,11 @@ function checkCoverageThresholds(overall, byDirectory) {
   // Check directory-specific thresholds
   Object.entries(byDirectory).forEach(([dir, coverage]) => {
     const dirName = path.basename(dir);
-    let thresholds = COVERAGE_CONFIG.thresholds.global;
+    let thresholds = coverageConfig.thresholds.global;
 
     // Use specific thresholds if available
-    if (COVERAGE_CONFIG.thresholds[dirName]) {
-      thresholds = COVERAGE_CONFIG.thresholds[dirName];
+    if (coverageConfig.thresholds[dirName]) {
+      thresholds = coverageConfig.thresholds[dirName];
     }
 
     results.directories[dir] = { passed: true, failures: [] };

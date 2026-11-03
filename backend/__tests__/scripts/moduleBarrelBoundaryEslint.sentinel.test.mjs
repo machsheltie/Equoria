@@ -173,7 +173,7 @@ maybe('module public-API barrel boundary ESLint rule (Equoria-v8l96.4)', () => {
     const configText = fs.readFileSync(path.join(BACKEND, 'eslint.config.mjs'), 'utf8');
     expect(configText).toContain('crossModuleBarrelBoundaryConfigs');
     expect(configText).toContain('crossModulePatternsFor');
-    expect(configText).toContain('BARREL_MODULES');
+    expect(configText).toContain('barrelModules');
     // The `**/<other>/*/**` glob primitive is what discriminates a deep import
     // (has a sub-dir segment) from the barrel (index.mjs, no sub-dir). Guard it.
     expect(configText).toContain('`**/${other}/*/**`');

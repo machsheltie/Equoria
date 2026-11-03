@@ -42,8 +42,8 @@
  * conformation/gaits/temperament exactly as it sits on disk.
  *
  * ── Canonical lists ────────────────────────────────────────────────────────
- * Imported from breedProfileValidator.mjs (EXPECTED_GAITS,
- * EXPECTED_TEMPERAMENT_WEIGHT_KEYS, EXPECTED_TEMPERAMENT_WEIGHT_SUM) so the
+ * Imported from breedProfileValidator.mjs (expectedGaits,
+ * expectedTemperamentWeightKeys, expectedTemperamentWeightSum) so the
  * sentinel and the runtime validator share ONE source of truth. If a 5th core
  * gait or a 12th temperament category is added later, both update together —
  * the test does not hardcode a private copy of the strings (that copy would
@@ -60,9 +60,9 @@ import { readdir, readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import {
-  EXPECTED_GAITS,
-  EXPECTED_TEMPERAMENT_WEIGHT_KEYS,
-  EXPECTED_TEMPERAMENT_WEIGHT_SUM,
+  expectedGaits,
+  expectedTemperamentWeightKeys,
+  expectedTemperamentWeightSum,
 } from '../../../seed/breedProfileValidator.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -121,7 +121,7 @@ function findGaitErrors(profile) {
     return errors;
   }
 
-  for (const gait of EXPECTED_GAITS) {
+  for (const gait of expectedGaits) {
     const g = gaits[gait];
     if (g === null || g === undefined || typeof g !== 'object') {
       errors.push(`missing gait: ${gait}`);
@@ -175,7 +175,7 @@ function findTemperamentErrors(profile) {
   }
 
   // Every canonical key present and an integer.
-  for (const key of EXPECTED_TEMPERAMENT_WEIGHT_KEYS) {
+  for (const key of expectedTemperamentWeightKeys) {
     if (!(key in tw)) {
       errors.push(`missing temperament weight: ${key}`);
       continue;
@@ -188,7 +188,7 @@ function findTemperamentErrors(profile) {
   // No EXTRA keys beyond the canonical 11 (a stray key would shift the
   // distribution and is exactly the kind of stale-template drift this guards).
   for (const key of Object.keys(tw)) {
-    if (!EXPECTED_TEMPERAMENT_WEIGHT_KEYS.includes(key)) {
+    if (!expectedTemperamentWeightKeys.includes(key)) {
       errors.push(`unexpected temperament weight key: ${key}`);
     }
   }
@@ -202,8 +202,8 @@ function findTemperamentErrors(profile) {
       sum += v;
     }
   }
-  if (sum !== EXPECTED_TEMPERAMENT_WEIGHT_SUM) {
-    errors.push(`temperament weights sum to ${sum}, expected ${EXPECTED_TEMPERAMENT_WEIGHT_SUM}`);
+  if (sum !== expectedTemperamentWeightSum) {
+    errors.push(`temperament weights sum to ${sum}, expected ${expectedTemperamentWeightSum}`);
   }
 
   return errors;
@@ -257,15 +257,15 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
   });
 
   it('the canonical gait list under test is exactly the 4 core gaits', () => {
-    // Guards the assumption this sentinel rests on. If EXPECTED_GAITS is
+    // Guards the assumption this sentinel rests on. If expectedGaits is
     // widened/narrowed, this fails and forces a deliberate update rather than
     // silent drift. `gaiting` is intentionally excluded (optional 5th key).
-    expect([...EXPECTED_GAITS].sort()).toEqual(['canter', 'gallop', 'trot', 'walk'].sort());
+    expect([...expectedGaits].sort()).toEqual(['canter', 'gallop', 'trot', 'walk'].sort());
   });
 
   // Old contract: 11 keys including Playful. Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments).
   it('the canonical temperament-weight key list under test is exactly the 12 expected keys', () => {
-    expect([...EXPECTED_TEMPERAMENT_WEIGHT_KEYS].sort()).toEqual(
+    expect([...expectedTemperamentWeightKeys].sort()).toEqual(
       [
         'Aggressive',
         'Bold',
@@ -281,7 +281,7 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
         'Willing',
       ].sort(),
     );
-    expect(EXPECTED_TEMPERAMENT_WEIGHT_SUM).toBe(100);
+    expect(expectedTemperamentWeightSum).toBe(100);
   });
 
   // ── Sentinel-POSITIVE proof ───────────────────────────────────────────────
@@ -293,16 +293,16 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
     /** Build a complete, valid non-gaited profile (4 gaits + null gaiting + 11 TW). */
     function fullNonGaitedProfile() {
       const gaits = { gaiting: null };
-      for (const gait of EXPECTED_GAITS) {
+      for (const gait of expectedGaits) {
         gaits[gait] = { mean: 70, stdDev: 8 };
       }
       const temperamentWeights = {};
       // 11 keys: give the first key the remainder so the total is exactly 100.
-      const per = Math.floor(EXPECTED_TEMPERAMENT_WEIGHT_SUM / EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length);
+      const per = Math.floor(expectedTemperamentWeightSum / expectedTemperamentWeightKeys.length);
       let assigned = 0;
-      EXPECTED_TEMPERAMENT_WEIGHT_KEYS.forEach((k, i) => {
-        const isLast = i === EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length - 1;
-        const v = isLast ? EXPECTED_TEMPERAMENT_WEIGHT_SUM - assigned : per;
+      expectedTemperamentWeightKeys.forEach((k, i) => {
+        const isLast = i === expectedTemperamentWeightKeys.length - 1;
+        const v = isLast ? expectedTemperamentWeightSum - assigned : per;
         temperamentWeights[k] = v;
         assigned += v;
       });

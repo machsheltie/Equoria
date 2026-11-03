@@ -15,7 +15,7 @@
  *
  * Safety rails (all fail closed):
  *   - the base DATABASE_URL must point at localhost; remote hosts are refused;
- *   - every lane name starts with LANE_DB_PREFIX and is validated before any
+ *   - every lane name starts with laneDbPrefix and is validated before any
  *     CREATE/DROP; canonical names (equoria) are refused explicitly;
  *   - `destroy`/`reclaim` list pg_database and only touch prefixed names;
  *   - the connection URL is never printed — the CLI emits the lane NAME on
@@ -41,17 +41,17 @@ import pg from 'pg';
 const { Client } = pg;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND = path.resolve(HERE, '..');
-const REPO_ROOT = path.resolve(BACKEND, '..');
-const DB_PACKAGE = path.join(REPO_ROOT, 'packages', 'database');
-const SCHEMA_PATH = path.join(DB_PACKAGE, 'prisma', 'schema.prisma');
-const PRISMA_CLI = path.join(DB_PACKAGE, 'node_modules', 'prisma', 'build', 'index.js');
-const SEED_SCRIPT = path.join(BACKEND, 'seed', 'seedDatabase.mjs');
-const BREEDS_SCRIPT = path.join(BACKEND, 'seed', 'populateBreedsFromSql.mjs');
+const repoRoot = path.resolve(BACKEND, '..');
+const dbPackage = path.join(repoRoot, 'packages', 'database');
+const schemaPath = path.join(dbPackage, 'prisma', 'schema.prisma');
+const prismaCli = path.join(dbPackage, 'node_modules', 'prisma', 'build', 'index.js');
+const seedScript = path.join(BACKEND, 'seed', 'seedDatabase.mjs');
+const breedsScript = path.join(BACKEND, 'seed', 'populateBreedsFromSql.mjs');
 
-export const LANE_DB_PREFIX = 'equoria_lane_';
+export const laneDbPrefix = 'equoria_lane_';
 const LOCALHOST = new Set(['localhost', '127.0.0.1', '::1']);
-const CANONICAL_DB_NAMES = new Set(['equoria', 'postgres', 'template0', 'template1']);
-const NAME_PATTERN = /^equoria_lane_[a-z0-9]{6,32}_[0-9]{1,2}$/;
+const canonicalDbNames = new Set(['equoria', 'postgres', 'template0', 'template1']);
+const namePattern = /^equoria_lane_[a-z0-9]{6,32}_[0-9]{1,2}$/;
 
 /**
  * Parse an env file if it is there. backend/.env.test is gitignored and only
@@ -80,7 +80,7 @@ export function parseEnvFile(file) {
   }
 }
 
-export const DEFAULT_ENV_FILE = path.join(BACKEND, '.env.test');
+export const defaultEnvFile = path.join(BACKEND, '.env.test');
 
 /**
  * Resolve the base DATABASE_URL the suite itself would use: process env first
@@ -89,7 +89,7 @@ export const DEFAULT_ENV_FILE = path.join(BACKEND, '.env.test');
  * consulted only when the environment did not already answer, so a runner that
  * has no such file never reads it at all. `envFile` exists for the sentinel.
  */
-export function baseDatabaseUrl(env = process.env, envFile = DEFAULT_ENV_FILE) {
+export function baseDatabaseUrl(env = process.env, envFile = defaultEnvFile) {
   if (env.EQUORIA_LANE_BASE_URL) {
     return env.EQUORIA_LANE_BASE_URL;
   }
@@ -111,14 +111,14 @@ function assertLocal(url) {
 }
 
 export function assertLaneName(name) {
-  if (typeof name !== 'string' || !NAME_PATTERN.test(name)) {
+  if (typeof name !== 'string' || !namePattern.test(name)) {
     throw new Error(`not a lane database name: ${JSON.stringify(name)}`);
   }
-  if (CANONICAL_DB_NAMES.has(name.toLowerCase())) {
+  if (canonicalDbNames.has(name.toLowerCase())) {
     throw new Error(`refusing to touch canonical database ${name}`);
   }
-  if (!name.startsWith(LANE_DB_PREFIX)) {
-    throw new Error(`lane database names must start with ${LANE_DB_PREFIX}`);
+  if (!name.startsWith(laneDbPrefix)) {
+    throw new Error(`lane database names must start with ${laneDbPrefix}`);
   }
   return name;
 }
@@ -131,7 +131,7 @@ export function laneName(runId, lane) {
   if (!Number.isInteger(index) || index < 1 || index > 99) {
     throw new Error('lane index must be an integer between 1 and 99');
   }
-  return assertLaneName(`${LANE_DB_PREFIX}${runId}_${index}`);
+  return assertLaneName(`${laneDbPrefix}${runId}_${index}`);
 }
 
 export function newRunId() {
@@ -175,10 +175,10 @@ export const activeProvisioningChildren = new Set();
 
 /** Hard ceiling for any single provisioning step. A migration or seed that
  *  exceeds it is killed and provisioning fails loudly. Measured: ~1 s per lane. */
-export const PROVISIONING_STEP_TIMEOUT_MS = 10 * 60 * 1000;
+export const provisioningStepTimeoutMs = 10 * 60 * 1000;
 
 /** Keep only the tail of a stream, so a chatty child cannot grow memory. */
-const OUTPUT_TAIL_BYTES = 64 * 1024;
+const outputTailBytes = 64 * 1024;
 
 /**
  * Cancellation propagated INTO provisioning (Codex round 3, P2). The runner's
@@ -190,13 +190,13 @@ const OUTPUT_TAIL_BYTES = 64 * 1024;
  * killed through spawn()'s own `signal` option. No registry polling, no
  * larger timeouts.
  */
-export const PROVISIONING_CANCELLED = 'PROVISIONING_CANCELLED';
+export const provisioningCancelled = 'PROVISIONING_CANCELLED';
 
 function cancellationError(where, signal) {
   const why =
     signal?.reason instanceof Error ? signal.reason.message : String(signal?.reason ?? 'cancelled');
   const error = new Error(`[lane] provisioning cancelled ${where} (${why})`);
-  error.code = PROVISIONING_CANCELLED;
+  error.code = provisioningCancelled;
   return error;
 }
 
@@ -216,7 +216,7 @@ export function runSupervisedStep({
   cwd,
   env,
   label,
-  timeoutMs = PROVISIONING_STEP_TIMEOUT_MS,
+  timeoutMs = provisioningStepTimeoutMs,
   signal,
 }) {
   return new Promise((resolve, reject) => {
@@ -240,10 +240,10 @@ export function runSupervisedStep({
     let out = '';
     let err = '';
     child.stdout.on('data', chunk => {
-      out = (out + chunk.toString()).slice(-OUTPUT_TAIL_BYTES);
+      out = (out + chunk.toString()).slice(-outputTailBytes);
     });
     child.stderr.on('data', chunk => {
-      err = (err + chunk.toString()).slice(-OUTPUT_TAIL_BYTES);
+      err = (err + chunk.toString()).slice(-outputTailBytes);
     });
 
     // Settle exactly once, on the child's REAL exit. Deliberately NOT the
@@ -292,8 +292,8 @@ export function runSupervisedStep({
 
 function runPrisma(args, databaseUrl, signal) {
   return runSupervisedStep({
-    args: [PRISMA_CLI, ...args, `--schema=${SCHEMA_PATH}`],
-    cwd: DB_PACKAGE,
+    args: [prismaCli, ...args, `--schema=${schemaPath}`],
+    cwd: dbPackage,
     env: { ...process.env, DATABASE_URL: databaseUrl },
     label: `prisma ${args.join(' ')}`,
     signal,
@@ -318,9 +318,9 @@ function runSeedScript(script, databaseUrl, signal) {
  */
 async function runSeed(databaseUrl, signal) {
   throwIfCancelled(signal, 'before the canonical seed');
-  await runSeedScript(SEED_SCRIPT, databaseUrl, signal);
+  await runSeedScript(seedScript, databaseUrl, signal);
   throwIfCancelled(signal, 'before the breeds seed');
-  await runSeedScript(BREEDS_SCRIPT, databaseUrl, signal);
+  await runSeedScript(breedsScript, databaseUrl, signal);
 }
 
 /**
@@ -354,13 +354,13 @@ async function resyncSequences(databaseUrl) {
 export async function listLaneDatabases(env = process.env, runId = null) {
   const rows = await withAdmin(env, client =>
     client.query('SELECT datname FROM pg_database WHERE datname LIKE $1 ORDER BY datname', [
-      `${LANE_DB_PREFIX}%`,
+      `${laneDbPrefix}%`,
     ]),
   );
   return rows.rows
     .map(row => row.datname)
-    .filter(name => NAME_PATTERN.test(name))
-    .filter(name => (runId ? name.startsWith(`${LANE_DB_PREFIX}${runId}_`) : true));
+    .filter(name => namePattern.test(name))
+    .filter(name => (runId ? name.startsWith(`${laneDbPrefix}${runId}_`) : true));
 }
 
 /**
@@ -421,7 +421,7 @@ export async function createLaneDatabase({
     return { name, migrations };
   } catch (error) {
     log(
-      error?.code === PROVISIONING_CANCELLED
+      error?.code === provisioningCancelled
         ? `[lane] ${name}: provisioning cancelled, dropping`
         : `[lane] ${name}: provisioning failed, dropping`,
     );

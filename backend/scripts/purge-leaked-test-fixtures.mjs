@@ -27,7 +27,7 @@
  *    unscoped `deleteMany()` anywhere in this file. EVERY delete is scoped
  *    either to a TEST-ONLY identifier pattern, or to ids already proven to
  *    belong to a matched test user.
- *  - Leaked rows are identified by TEST patterns ONLY (see TEST_USER_WHERE):
+ *  - Leaked rows are identified by TEST patterns ONLY (see testUserWhere):
  *      • email ends in `@test.com` or `@example.com`
  *      • email or username starts with `TestFixture-` / `testfixture-`
  *    These domains/prefixes are reserved for fixtures + seed data across the
@@ -65,7 +65,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
  * leaked fixture. Scoped to reserved test email domains + fixture name
  * prefixes — never a broad match. A real player account cannot match this.
  */
-const TEST_USER_WHERE = {
+const testUserWhere = {
   OR: [
     // Reserved fixture/seed domains used across the backend suite.
     { email: { endsWith: '@test.com' } },
@@ -116,7 +116,7 @@ function describeScope() {
  */
 async function collectDryRunCounts() {
   const users = await prisma.user.findMany({
-    where: TEST_USER_WHERE,
+    where: testUserWhere,
     select: { id: true, email: true, username: true },
   });
   const userIds = users.map(u => u.id);
@@ -398,4 +398,4 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     });
 }
 
-export { TEST_USER_WHERE, collectDryRunCounts, executeScopedPurge, main };
+export { testUserWhere, collectDryRunCounts, executeScopedPurge, main };

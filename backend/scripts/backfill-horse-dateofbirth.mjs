@@ -40,8 +40,8 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { fileURLToPath } from 'node:url';
 import { getHorseAgeYears } from '../utils/horseAge.mjs';
 
-const DAYS_PER_GAME_YEAR = 7;
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const daysPerGameYear = 7;
+const msPerDay = 1000 * 60 * 60 * 24;
 
 function startOfUtcDay(d) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -54,7 +54,7 @@ function startOfUtcDay(d) {
  * @returns {Date}
  */
 function dobForAge(age, now = new Date()) {
-  return new Date(startOfUtcDay(now).getTime() - age * DAYS_PER_GAME_YEAR * MS_PER_DAY);
+  return new Date(startOfUtcDay(now).getTime() - age * daysPerGameYear * msPerDay);
 }
 
 function parseArgs(argv) {
@@ -89,7 +89,7 @@ async function main() {
   let unchanged = 0;
   let failed = 0;
   let lastId = 0;
-  const BATCH_SIZE = 500;
+  const batchSize = 500;
   const sampleShown = [];
 
   while (true) {
@@ -97,7 +97,7 @@ async function main() {
       where: { id: { gt: lastId } },
       select: { id: true, name: true, dateOfBirth: true, age: true },
       orderBy: { id: 'asc' },
-      take: BATCH_SIZE,
+      take: batchSize,
     });
     if (batch.length === 0) {
       break;

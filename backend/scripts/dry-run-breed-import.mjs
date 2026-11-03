@@ -18,12 +18,12 @@ import prisma from '../../packages/database/prismaClient.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Equoria-26qjf.3 (2026-05-28): canonical location is backend/data/breeds/.
-const SAMPLES_DIR = join(__dirname, '..', 'data', 'breeds');
+const samplesDir = join(__dirname, '..', 'data', 'breeds');
 // Same skip list as the real importer (defence in depth — keeps the dry-run
 // honest if a meta/registry file ever gets dropped into the data dir).
-const SKIP_FILES = new Set(['generichorse.txt', '_breed-list.txt', '_gait-registry.txt']);
+const skipFiles = new Set(['generichorse.txt', '_breed-list.txt', '_gait-registry.txt']);
 
-const REQUIRED_TOP_LEVEL = [
+const requiredTopLevel = [
   'allowedAlleles',
   'alleleWeights',
   'markingBias',
@@ -33,7 +33,7 @@ const REQUIRED_TOP_LEVEL = [
 ];
 
 // Loci the genotype/phenotype services expect — must appear in alleleWeights.
-const REQUIRED_LOCI = [
+const requiredLoci = [
   'E_Extension',
   'A_Agouti',
   'Cr_Cream',
@@ -76,13 +76,13 @@ function extractProfile(sql) {
 
 function validateProfileShape(profile) {
   const warnings = [];
-  for (const key of REQUIRED_TOP_LEVEL) {
+  for (const key of requiredTopLevel) {
     if (!(key in profile)) {
       warnings.push(`missing top-level "${key}"`);
     }
   }
   if (profile.alleleWeights && typeof profile.alleleWeights === 'object') {
-    for (const locus of REQUIRED_LOCI) {
+    for (const locus of requiredLoci) {
       if (!(locus in profile.alleleWeights)) {
         warnings.push(`alleleWeights missing locus "${locus}"`);
       }
@@ -92,8 +92,8 @@ function validateProfileShape(profile) {
 }
 
 async function main() {
-  const files = (await readdir(SAMPLES_DIR))
-    .filter(f => f.endsWith('.txt') && !SKIP_FILES.has(f))
+  const files = (await readdir(samplesDir))
+    .filter(f => f.endsWith('.txt') && !skipFiles.has(f))
     .sort();
 
   const existing = await prisma.breed.findMany({ select: { id: true, name: true } });
@@ -101,7 +101,7 @@ async function main() {
 
   const stats = {
     totalFiles: files.length,
-    skipFiles: [...SKIP_FILES],
+    skipFiles: [...skipFiles],
     parsedOk: 0,
     parseErrors: [],
     missingName: [],
@@ -116,7 +116,7 @@ async function main() {
   const seenNames = new Set();
 
   for (const file of files) {
-    const sql = await readFile(join(SAMPLES_DIR, file), 'utf8');
+    const sql = await readFile(join(samplesDir, file), 'utf8');
     const name = extractName(sql);
     if (!name) {
       stats.missingName.push(file);
@@ -163,7 +163,7 @@ async function main() {
   }
 
   console.log('=== Breed SQL Dry-Run (Equoria-mxhpi) ===\n');
-  console.log(`Source: ${SAMPLES_DIR}`);
+  console.log(`Source: ${samplesDir}`);
   console.log(`Total .txt files inspected (excl. skipped): ${stats.totalFiles}`);
   console.log(`Skipped: ${stats.skipFiles.join(', ')}`);
   console.log(`Parsed OK: ${stats.parsedOk}`);

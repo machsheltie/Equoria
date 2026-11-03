@@ -12,9 +12,9 @@
  * migration's allow-list) imports from here.
  */
 
-export const CANONICAL_HORSE_SEX_VALUES = Object.freeze(['Stallion', 'Mare', 'Colt', 'Filly']);
+export const canonicalHorseSexValues = Object.freeze(['Stallion', 'Mare', 'Colt', 'Filly']);
 
-const LOWER_TO_CANONICAL = new Map(CANONICAL_HORSE_SEX_VALUES.map((v) => [v.toLowerCase(), v]));
+const lowerToCanonical = new Map(canonicalHorseSexValues.map((v) => [v.toLowerCase(), v]));
 
 /**
  * Canonicalize a sex string to its Title Case canonical form.
@@ -32,10 +32,10 @@ export function canonicalizeHorseSex(input) {
     throw new TypeError(`canonicalizeHorseSex: expected string, got ${typeof input}`);
   }
   const normalized = input.trim().replace(/\s+/g, ' ').toLowerCase();
-  const canonical = LOWER_TO_CANONICAL.get(normalized);
+  const canonical = lowerToCanonical.get(normalized);
   if (!canonical) {
     throw new RangeError(
-      `canonicalizeHorseSex: ${JSON.stringify(input)} is not a recognized horse sex (expected one of ${CANONICAL_HORSE_SEX_VALUES.join(', ')})`
+      `canonicalizeHorseSex: ${JSON.stringify(input)} is not a recognized horse sex (expected one of ${canonicalHorseSexValues.join(', ')})`
     );
   }
   return canonical;
@@ -64,7 +64,7 @@ export function canonicalizeHorseSexOrNull(input) {
  *
  * Any canonical value not listed here groups to itself.
  */
-const SEX_FILTER_GROUPS = Object.freeze({
+const sexFilterGroups = Object.freeze({
   Mare: Object.freeze(['Mare', 'Filly']),
   Stallion: Object.freeze(['Stallion', 'Colt']),
 });
@@ -79,5 +79,5 @@ const SEX_FILTER_GROUPS = Object.freeze({
  */
 export function horseSexFilterValues(input) {
   const canonical = canonicalizeHorseSex(input);
-  return [...(SEX_FILTER_GROUPS[canonical] ?? [canonical])];
+  return [...(sexFilterGroups[canonical] ?? [canonical])];
 }

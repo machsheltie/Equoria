@@ -27,7 +27,7 @@ import {
   extractBreedNamesFromSqlDir,
   generateDefaultStarterStats,
   syncBreedStarterStatsJson,
-  DEFAULT_STARTER_STAT_KEYS,
+  defaultStarterStatKeys,
 } from '../../../seed/populateBreedsFromSql.mjs';
 
 describe('Equoria-i8vt8 — breed-starter-stats sync helpers', () => {
@@ -53,7 +53,7 @@ describe('Equoria-i8vt8 — breed-starter-stats sync helpers', () => {
     it('returns a profile with all 12 canonical stat keys', () => {
       const profile = generateDefaultStarterStats();
       const keys = Object.keys(profile).sort();
-      expect(keys).toEqual([...DEFAULT_STARTER_STAT_KEYS].sort());
+      expect(keys).toEqual([...defaultStarterStatKeys].sort());
       expect(keys).toHaveLength(12);
     });
 
@@ -152,7 +152,7 @@ describe('Equoria-i8vt8 — breed-starter-stats sync helpers', () => {
       const after = JSON.parse(readFileSync(jsonPath, 'utf8'));
       expect(Object.keys(after).sort()).toEqual(['Arabian', 'Bashkir', 'NewBreed']);
       // Default profile shape preserved on the appended entry.
-      expect(Object.keys(after.NewBreed).sort()).toEqual([...DEFAULT_STARTER_STAT_KEYS].sort());
+      expect(Object.keys(after.NewBreed).sort()).toEqual([...defaultStarterStatKeys].sort());
     });
 
     it('no-ops cleanly when the JSON already covers every breed (no spurious writes)', async () => {

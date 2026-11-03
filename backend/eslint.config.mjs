@@ -67,7 +67,7 @@ import { equoriaForwardReferencesPlugin } from './eslint-plugins/no-forward-refe
 // SAME-module import and stays allowed (tackShop is not a top-level module,
 // hence never on any other module's forbidden list).
 // ---------------------------------------------------------------------------
-const BARREL_MODULES = [
+const barrelModules = [
   'admin',
   'auth',
   'bank',
@@ -100,7 +100,7 @@ const BARREL_MODULES = [
 // merge) the whole rule value per file, so a per-module block that set ONLY
 // the cross-module patterns would silently drop these shared bans for module
 // files. Keeping them in one const is the single source of truth.
-const SHARED_RESTRICTED_IMPORT_PATTERNS = [
+const sharedRestrictedImportPatterns = [
   {
     group: ['**/requestBodySecurity*', '**/middleware/requestBodySecurity.mjs'],
     importNames: ['__TESTING_ONLY_JsonScanner'],
@@ -132,7 +132,7 @@ const SHARED_RESTRICTED_IMPORT_PATTERNS = [
 // import the Prisma client directly. Defined here so the per-module ROUTE
 // blocks can carry it alongside the cross-module patterns (same flat-config
 // replace-not-merge reason as above).
-const ROUTES_PRISMA_RESTRICTED_PATTERN = {
+const routesPrismaRestrictedPattern = {
   group: ['**/packages/database/prismaClient.mjs', '**/prismaClient.mjs', '**/db/index.mjs'],
   message:
     'Routes layer must not import the Prisma client. Move the data access into a service (modules/<x>/services/<y>.mjs) and call it from the route. See Equoria-becrm for context.',
@@ -143,14 +143,16 @@ const ROUTES_PRISMA_RESTRICTED_PATTERN = {
 // while leaving `self`'s own internals and every module's `index.mjs` barrel
 // reachable. See the header block above for the `**/<other>/*/**` rationale.
 function crossModulePatternsFor(self) {
-  return BARREL_MODULES.filter(other => other !== self).map(other => ({
-    group: [`**/${other}/*/**`],
-    message:
-      `Cross-module deep import: reach module '${other}' through its barrel ` +
-      `('../../${other}/index.mjs'), not its internals. The barrel is the public API ` +
-      '(Equoria-v8l96 / CONTRIBUTING.md § "Module public API boundaries"). ' +
-      'Same-module deep imports remain allowed.',
-  }));
+  return barrelModules
+    .filter(other => other !== self)
+    .map(other => ({
+      group: [`**/${other}/*/**`],
+      message:
+        `Cross-module deep import: reach module '${other}' through its barrel ` +
+        `('../../${other}/index.mjs'), not its internals. The barrel is the public API ` +
+        '(Equoria-v8l96 / CONTRIBUTING.md § "Module public API boundaries"). ' +
+        'Same-module deep imports remain allowed.',
+    }));
 }
 
 // Per-module flat-config blocks enforcing the barrel boundary. For each module
@@ -170,13 +172,13 @@ function crossModulePatternsFor(self) {
 //      (the routes-layer block historically scoped to just the Prisma ban);
 //      they DO get the Prisma ban plus cross-module enforcement. Emitted AFTER
 //      the general block for the same module so it wins for route files.
-const crossModuleBarrelBoundaryConfigs = BARREL_MODULES.flatMap(self => [
+const crossModuleBarrelBoundaryConfigs = barrelModules.flatMap(self => [
   {
     files: [`modules/${self}/**/*.mjs`, `modules/${self}/**/*.js`],
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [...SHARED_RESTRICTED_IMPORT_PATTERNS, ...crossModulePatternsFor(self)] },
+        { patterns: [...sharedRestrictedImportPatterns, ...crossModulePatternsFor(self)] },
       ],
     },
   },
@@ -185,7 +187,7 @@ const crossModuleBarrelBoundaryConfigs = BARREL_MODULES.flatMap(self => [
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [ROUTES_PRISMA_RESTRICTED_PATTERN, ...crossModulePatternsFor(self)] },
+        { patterns: [routesPrismaRestrictedPattern, ...crossModulePatternsFor(self)] },
       ],
     },
   },
@@ -250,7 +252,7 @@ export default [
       // bypassing the public API (`verifyJsonBody` / `rejectPollutedRequestBody`
       // / `requestBodySecurityErrorHandler`). The test-files override block
       // below disables this rule for paths under __tests__/ and tests/.
-      // The shared bans live in SHARED_RESTRICTED_IMPORT_PATTERNS (top of file):
+      // The shared bans live in sharedRestrictedImportPatterns (top of file):
       // the test-only `__TESTING_ONLY_JsonScanner` export (21R-SEC-3-FOLLOW-1 /
       // Equoria-ixqg), deep-relative `@prisma/client` node_modules imports
       // (Equoria-4qjo), the removed `db/index.mjs` shim (Equoria-4wl0r), and the
@@ -270,7 +272,7 @@ export default [
       // `modules/`) — was removed. The per-module blocks scope by the IMPORTER's
       // location and thus can distinguish a cross-module reach from a same-module
       // deep import.
-      'no-restricted-imports': ['error', { patterns: SHARED_RESTRICTED_IMPORT_PATTERNS }],
+      'no-restricted-imports': ['error', { patterns: sharedRestrictedImportPatterns }],
 
       // Equoria-4qjo: forbid `.js` extension in import paths anywhere in
       // backend/. ES Modules doctrine requires `.mjs` for ESM source files;
@@ -512,12 +514,12 @@ export default [
     // `backend/routes/**` route files. For module route files
     // (`modules/<M>/routes/**`) the per-module barrel-boundary routes block
     // (crossModuleBarrelBoundaryConfigs, appended after this block) overrides
-    // `no-restricted-imports` to carry this SAME ROUTES_PRISMA_RESTRICTED_PATTERN
+    // `no-restricted-imports` to carry this SAME routesPrismaRestrictedPattern
     // PLUS the cross-module deep-import ban — so module routes keep the Prisma
     // ban and additionally cannot deep-import another module's internals.
     files: ['modules/**/routes/**/*.mjs', 'routes/**/*.mjs'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [ROUTES_PRISMA_RESTRICTED_PATTERN] }],
+      'no-restricted-imports': ['error', { patterns: [routesPrismaRestrictedPattern] }],
       // Equoria-y8u2j: routes-layer god-file sentinel. Any single route file
       // > 800 lines is forbidden — split it into sub-routers by sub-domain
       // (e.g. horseFeedRoutes / horseBreedingRoutes / horseHistoryRoutes) or

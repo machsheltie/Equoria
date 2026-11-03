@@ -19,7 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Performance regression configuration
-const REGRESSION_CONFIG = {
+const regressionConfig = {
   baselineFile: '../performance-results/baseline-performance.json',
   thresholds: {
     responseTime: {
@@ -57,7 +57,7 @@ const REGRESSION_CONFIG = {
  */
 async function loadBaseline() {
   try {
-    const baselinePath = path.resolve(__dirname, REGRESSION_CONFIG.baselineFile);
+    const baselinePath = path.resolve(__dirname, regressionConfig.baselineFile);
     const baselineData = await fs.readFile(baselinePath, 'utf8');
     return JSON.parse(baselineData);
   } catch (_error) {
@@ -194,28 +194,28 @@ async function runPerformanceBenchmark() {
   try {
     // Warmup phase
     console.log('🔥 Warming up...');
-    const warmupEnd = Date.now() + REGRESSION_CONFIG.warmupDuration;
+    const warmupEnd = Date.now() + regressionConfig.warmupDuration;
     while (Date.now() < warmupEnd) {
-      const endpoint = REGRESSION_CONFIG.endpoints[0]; // Use simple endpoint for warmup
+      const endpoint = regressionConfig.endpoints[0]; // Use simple endpoint for warmup
       await performRequest(endpoint);
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     // Main test phase
     console.log('📊 Running main performance test...');
-    const testEnd = Date.now() + REGRESSION_CONFIG.testDuration;
+    const testEnd = Date.now() + regressionConfig.testDuration;
     const promises = [];
 
     while (Date.now() < testEnd) {
-      for (let i = 0; i < REGRESSION_CONFIG.concurrentUsers; i++) {
+      for (let i = 0; i < regressionConfig.concurrentUsers; i++) {
         // Select endpoint based on weight
-        const totalWeight = REGRESSION_CONFIG.endpoints.reduce((sum, ep) => sum + ep.weight, 0);
+        const totalWeight = regressionConfig.endpoints.reduce((sum, ep) => sum + ep.weight, 0);
         const random = Math.random() * totalWeight;
         let currentWeight = 0;
 
-        let selectedEndpoint = REGRESSION_CONFIG.endpoints[0];
+        let selectedEndpoint = regressionConfig.endpoints[0];
 
-        for (const endpoint of REGRESSION_CONFIG.endpoints) {
+        for (const endpoint of regressionConfig.endpoints) {
           currentWeight += endpoint.weight;
           if (random <= currentWeight) {
             selectedEndpoint = endpoint;
@@ -288,7 +288,7 @@ function calculatePerformanceSummary(results) {
 
   // Per-endpoint statistics
   const endpointStats = {};
-  REGRESSION_CONFIG.endpoints.forEach(endpoint => {
+  regressionConfig.endpoints.forEach(endpoint => {
     const endpointRequests = requests.filter(r => r.endpoint === endpoint.path);
     if (endpointRequests.length > 0) {
       const endpointTimes = endpointRequests.map(r => r.responseTime);
@@ -347,7 +347,7 @@ function compareWithBaseline(currentResults, baseline) {
 
   // Response time comparison
   const responseTimeRatio = current.responseTime.average / base.responseTime.average;
-  if (responseTimeRatio > REGRESSION_CONFIG.thresholds.responseTime.critical) {
+  if (responseTimeRatio > regressionConfig.thresholds.responseTime.critical) {
     comparison.regressions.push({
       metric: 'responseTime',
       severity: 'critical',
@@ -357,7 +357,7 @@ function compareWithBaseline(currentResults, baseline) {
       message: `Response time is ${((responseTimeRatio - 1) * 100).toFixed(1)}% slower than baseline`,
     });
     comparison.status = 'failed';
-  } else if (responseTimeRatio > REGRESSION_CONFIG.thresholds.responseTime.warning) {
+  } else if (responseTimeRatio > regressionConfig.thresholds.responseTime.warning) {
     comparison.regressions.push({
       metric: 'responseTime',
       severity: 'warning',
@@ -381,7 +381,7 @@ function compareWithBaseline(currentResults, baseline) {
 
   // Memory comparison
   const memoryRatio = current.memory.max / base.memory.max;
-  if (memoryRatio > REGRESSION_CONFIG.thresholds.memory.critical) {
+  if (memoryRatio > regressionConfig.thresholds.memory.critical) {
     comparison.regressions.push({
       metric: 'memory',
       severity: 'critical',
@@ -391,7 +391,7 @@ function compareWithBaseline(currentResults, baseline) {
       message: `Memory usage is ${((memoryRatio - 1) * 100).toFixed(1)}% higher than baseline`,
     });
     comparison.status = 'failed';
-  } else if (memoryRatio > REGRESSION_CONFIG.thresholds.memory.warning) {
+  } else if (memoryRatio > regressionConfig.thresholds.memory.warning) {
     comparison.regressions.push({
       metric: 'memory',
       severity: 'warning',
@@ -407,7 +407,7 @@ function compareWithBaseline(currentResults, baseline) {
 
   // Throughput comparison
   const throughputRatio = current.throughput / base.throughput;
-  if (throughputRatio < REGRESSION_CONFIG.thresholds.throughput.critical) {
+  if (throughputRatio < regressionConfig.thresholds.throughput.critical) {
     comparison.regressions.push({
       metric: 'throughput',
       severity: 'critical',
@@ -417,7 +417,7 @@ function compareWithBaseline(currentResults, baseline) {
       message: `Throughput decreased by ${((1 - throughputRatio) * 100).toFixed(1)}%`,
     });
     comparison.status = 'failed';
-  } else if (throughputRatio < REGRESSION_CONFIG.thresholds.throughput.warning) {
+  } else if (throughputRatio < regressionConfig.thresholds.throughput.warning) {
     comparison.regressions.push({
       metric: 'throughput',
       severity: 'warning',
@@ -474,7 +474,7 @@ async function savePerformanceResults(results, comparison) {
         {
           timestamp: new Date().toISOString(),
           summary: results.summary,
-          config: REGRESSION_CONFIG,
+          config: regressionConfig,
         },
         null,
         2,

@@ -63,11 +63,11 @@ import { dirname, resolve, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const BREEDS_DIR = resolve(__dirname, '../data/breeds');
-const PROFILES_JSON = resolve(__dirname, '../data/breedProfiles.json');
+const breedsDir = resolve(__dirname, '../data/breeds');
+const profilesJson = resolve(__dirname, '../data/breedProfiles.json');
 
 // The 7 conformation regions that already exist in the source .txt files.
-const EXISTING_REGIONS = ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves'];
+const existingRegions = ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves'];
 
 /**
  * Extract the breed name from a breed .txt SQL INSERT.
@@ -128,7 +128,7 @@ export function deriveTopline(breedName, profile, jsonProfiles) {
   }
   const means = [];
   const stdDevs = [];
-  for (const region of EXISTING_REGIONS) {
+  for (const region of existingRegions) {
     const r = conformation[region];
     if (!r || !Number.isFinite(r.mean) || !Number.isFinite(r.stdDev)) {
       throw new Error(
@@ -173,8 +173,8 @@ export function insertToplineLine(txt, topline) {
 }
 
 function main() {
-  const jsonProfiles = JSON.parse(readFileSync(PROFILES_JSON, 'utf8'));
-  const files = readdirSync(BREEDS_DIR)
+  const jsonProfiles = JSON.parse(readFileSync(profilesJson, 'utf8'));
+  const files = readdirSync(breedsDir)
     .filter(f => f.endsWith('.txt'))
     .sort();
 
@@ -184,7 +184,7 @@ function main() {
   const fallbackBreeds = [];
 
   for (const file of files) {
-    const filePath = join(BREEDS_DIR, file);
+    const filePath = join(breedsDir, file);
     const original = readFileSync(filePath, 'utf8');
 
     const breedName = extractBreedName(original);

@@ -7,7 +7,7 @@
  * Equoria-26qjf.3 (2026-05-28): files were moved from samples/Breeds/ →
  * backend/data/breeds/ so the importer reads its actual data location. The
  * 3 meta/reference files (_breed-list.txt, _gait-registry.txt, generichorse.txt)
- * stay in samples/Breeds/ and are belt-and-braces filtered by SKIP_FILES below.
+ * stay in samples/Breeds/ and are belt-and-braces filtered by skipFiles below.
  *
  * Each .txt file is an idempotent INSERT ... ON CONFLICT (name) DO UPDATE
  * statement containing the full breed genetic profile (JSONB).
@@ -35,10 +35,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Resolve path relative to backend/ (one level up from backend/seed/).
 // Equoria-26qjf.3 (2026-05-28): operational seed data lives in backend/data/breeds/
 // (next to backend/data/breedProfiles.json) — not docs/, not samples/.
-const BREED_DATA_DIR = join(__dirname, '..', 'data', 'breeds');
+const breedDataDir = join(__dirname, '..', 'data', 'breeds');
 
 // Non-breed SQL files to skip
-const SKIP_FILES = new Set([
+const skipFiles = new Set([
   'seed.sql',
   'populate_breed_ratings.sql',
   'populate_breed_temperaments.sql',
@@ -48,7 +48,7 @@ const SKIP_FILES = new Set([
   // Equoria-iswx5: defense-in-depth — _breed-list.txt and _gait-registry.txt are
   // meta/registry files in samples/Breeds, NOT idempotent INSERT statements.
   // 26qjf.3 already excluded all _*-prefixed files during the original import
-  // (i.e. they are NOT in BREED_DATA_DIR today), but we list them here so any
+  // (i.e. they are NOT in breedDataDir today), but we list them here so any
   // future re-copy / re-mirror that forgets to filter `_*` cannot silently feed a
   // non-breed meta file into prisma.$executeRawUnsafe. The meta files live in
   // samples/Breeds (the editable source-of-truth + auditor home) and never need
@@ -98,14 +98,14 @@ function normalizeLocusAlleleCase(profileJson, locusKey, tokenMap) {
   });
 }
 
-const PEARL_TOKEN_MAP = {
+const pearlTokenMap = {
   'N/N': 'n/n',
   'N/Prl': 'prl/n',
   'Prl/Prl': 'prl/prl',
   'Cr/Prl': 'Cr/prl',
 };
 
-const BRINDLE_TOKEN_MAP = {
+const brindleTokenMap = {
   'N/N': 'n/n',
   'N/BR1': 'br1/n',
   'BR1/BR1': 'br1/br1',
@@ -132,8 +132,8 @@ export function sanitizeSql(sql) {
 
   // Equoria-26qjf.3: normalize Pearl/Brindle allele case to the engine's
   // canonical lowercase (scoped to those two loci only — see comment above).
-  out = normalizeLocusAlleleCase(out, 'Prl_Pearl', PEARL_TOKEN_MAP);
-  out = normalizeLocusAlleleCase(out, 'BR1_Brindle1', BRINDLE_TOKEN_MAP);
+  out = normalizeLocusAlleleCase(out, 'Prl_Pearl', pearlTokenMap);
+  out = normalizeLocusAlleleCase(out, 'BR1_Brindle1', brindleTokenMap);
 
   return out;
 }
@@ -156,7 +156,7 @@ export function sanitizeSql(sql) {
  * Mirrors the keys used in backend/services/horseStarterStats.mjs and the
  * shape every existing breedStarterStats.json entry already has.
  */
-export const DEFAULT_STARTER_STAT_KEYS = Object.freeze([
+export const defaultStarterStatKeys = Object.freeze([
   'speed',
   'stamina',
   'agility',
@@ -171,14 +171,14 @@ export const DEFAULT_STARTER_STAT_KEYS = Object.freeze([
   'strength',
 ]);
 
-const DEFAULT_STARTER_STAT_MEAN_RANGE = Object.freeze([14, 18]);
-const DEFAULT_STARTER_STAT_STD = 3;
+const defaultStarterStatMeanRange = Object.freeze([14, 18]);
+const defaultStarterStatStd = 3;
 
 // Deterministic per-stat default means in [14, 18], cycling through the range
 // so the generated profile matches the visual shape of an existing curated
 // entry (mixed means across the 5-wide window, not flat 16/16/16). Pin to a
 // fixed sequence so repeat imports never produce drift on the same input.
-const DEFAULT_STARTER_STAT_MEANS = Object.freeze({
+const defaultStarterStatMeans = Object.freeze({
   speed: 14,
   stamina: 18,
   agility: 16,
@@ -207,21 +207,21 @@ const DEFAULT_STARTER_STAT_MEANS = Object.freeze({
  */
 export function generateDefaultStarterStats() {
   const profile = {};
-  for (const stat of DEFAULT_STARTER_STAT_KEYS) {
-    const mean = DEFAULT_STARTER_STAT_MEANS[stat];
+  for (const stat of defaultStarterStatKeys) {
+    const mean = defaultStarterStatMeans[stat];
     // Defensive — would only ever trip if the canonical key list and the
     // mean lookup drift in this file. Fail loud so the next contributor
     // doesn't silently ship an undefined mean.
     if (
       !Number.isInteger(mean) ||
-      mean < DEFAULT_STARTER_STAT_MEAN_RANGE[0] ||
-      mean > DEFAULT_STARTER_STAT_MEAN_RANGE[1]
+      mean < defaultStarterStatMeanRange[0] ||
+      mean > defaultStarterStatMeanRange[1]
     ) {
       throw new Error(
         `generateDefaultStarterStats: missing or out-of-range mean for stat '${stat}'`,
       );
     }
-    profile[stat] = { mean, std: DEFAULT_STARTER_STAT_STD };
+    profile[stat] = { mean, std: defaultStarterStatStd };
   }
   return profile;
 }
@@ -252,7 +252,7 @@ function parseBreedNameFromSql(sql) {
 /**
  * Walk a directory of breed SQL .txt files and return the breed names found
  * inside, sorted lexicographically. Skips the same meta/reference files the
- * importer skips (SKIP_FILES).
+ * importer skips (skipFiles).
  *
  * Fail-loud: a .txt file whose body does NOT contain a parseable INSERT
  * throws. We do not silently drop the file — that would re-introduce the
@@ -267,7 +267,7 @@ export async function extractBreedNamesFromSqlDir(dataDir) {
 
   const names = [];
   for (const file of txtFiles) {
-    if (SKIP_FILES.has(file)) {
+    if (skipFiles.has(file)) {
       continue;
     }
     const body = await readFile(join(dataDir, file), 'utf8');
@@ -365,17 +365,17 @@ export async function populateBreedsFromSql(prismaClient) {
   let skipped = 0;
 
   try {
-    const allFiles = await readdir(BREED_DATA_DIR);
+    const allFiles = await readdir(breedDataDir);
 
     const breedFiles = allFiles.filter(f => f.endsWith('.txt')).sort();
 
     for (const file of breedFiles) {
-      if (SKIP_FILES.has(file)) {
+      if (skipFiles.has(file)) {
         skipped++;
         continue;
       }
 
-      const filePath = join(BREED_DATA_DIR, file);
+      const filePath = join(breedDataDir, file);
 
       try {
         const rawSql = await readFile(filePath, 'utf8');
@@ -398,7 +398,7 @@ export async function populateBreedsFromSql(prismaClient) {
     if (errors.length === 0) {
       try {
         starterStatsSync = await syncBreedStarterStatsJson({
-          dataDir: BREED_DATA_DIR,
+          dataDir: breedDataDir,
           jsonPath: join(__dirname, '..', 'data', 'breedStarterStats.json'),
         });
       } catch (syncErr) {

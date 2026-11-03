@@ -43,8 +43,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  MAX_BATCH_ARGV_CHARS,
-  TREE_BATCH_MAX_FILES,
+  maxBatchArgvChars,
+  treeBatchMaxFiles,
   argvChars,
   batchModeBatches,
   canonicalPassBatches,
@@ -339,7 +339,7 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
       const { treeFiles, lanes } = plan2();
       const treeBatches = lanes[0].filter(batch => batch.label.includes('tree'));
       for (const batch of treeBatches) {
-        expect(batch.files.length).toBeLessThanOrEqual(TREE_BATCH_MAX_FILES);
+        expect(batch.files.length).toBeLessThanOrEqual(treeBatchMaxFiles);
       }
       const perShard = (files.length - 1 - treeFiles.length) / 8;
       const lane1Suites = lanes[0].flatMap(batch => batch.files).length;
@@ -358,12 +358,12 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
       );
       const input = { discovered: synthetic, backendDir: BACKEND, isCanonical: () => false, shards: 1, lanes: 1 };
       const unsplit = argvChars(['--runTestsByPath', ...synthetic.map(f => toBackendRelative(BACKEND, f))]);
-      expect(unsplit).toBeGreaterThan(MAX_BATCH_ARGV_CHARS);
+      expect(unsplit).toBeGreaterThan(maxBatchArgvChars);
       const { lanes } = planLanes(input);
       const all = lanes.flat();
       expect(all.length).toBeGreaterThan(1);
       for (const batch of all) {
-        expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(MAX_BATCH_ARGV_CHARS);
+        expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(maxBatchArgvChars);
       }
       expect(all.map(batch => batch.label)).toEqual(all.map((_, i) => `lane 1 shard 1/1 part ${i + 1}/${all.length}`));
       expect(all.flatMap(batch => batch.files).sort()).toEqual([...synthetic].sort());
@@ -382,7 +382,7 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
         const scheduled = lanes.flat().flatMap(batch => batch.files);
         expect(scheduled).toHaveLength(files.length);
         for (const batch of lanes.flat()) {
-          expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(MAX_BATCH_ARGV_CHARS);
+          expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(maxBatchArgvChars);
         }
       }
     });
@@ -398,7 +398,7 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
         ),
       );
       const unsplit = argvChars(['--runTestsByPath', ...synthetic.map(f => toBackendRelative(BACKEND, f))]);
-      expect(unsplit).toBeGreaterThan(MAX_BATCH_ARGV_CHARS);
+      expect(unsplit).toBeGreaterThan(maxBatchArgvChars);
       const input = {
         discovered: [...synthetic, files[0]],
         backendDir: BACKEND,
@@ -408,7 +408,7 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
       const pass = canonicalPassBatches(input);
       expect(pass.length).toBeGreaterThan(1);
       for (const batch of pass) {
-        expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(MAX_BATCH_ARGV_CHARS);
+        expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(maxBatchArgvChars);
         expect(batch.label).toMatch(/^canonical-db pass \(600 suite\(s\)\) part \d+\/\d+$/);
       }
       expect(pass.flatMap(batch => batch.files).sort()).toEqual([...synthetic].sort());
@@ -434,7 +434,7 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
       const all = batchModeBatches({ discovered: synthetic, backendDir: BACKEND, batchSize: 900 });
       expect(all.length).toBeGreaterThan(1);
       for (const batch of all) {
-        expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(MAX_BATCH_ARGV_CHARS);
+        expect(argvChars(batch.jestArgs)).toBeLessThanOrEqual(maxBatchArgvChars);
       }
       expect(all.flatMap(batch => batch.files)).toEqual(synthetic);
       expect(all.map(batch => batch.index)).toEqual(all.map((_, i) => i));

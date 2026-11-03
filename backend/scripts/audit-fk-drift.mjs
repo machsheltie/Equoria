@@ -23,14 +23,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SCHEMA_PATH = path.resolve(__dirname, '../../packages/database/prisma/schema.prisma');
+const schemaPath = path.resolve(__dirname, '../../packages/database/prisma/schema.prisma');
 
 // The isolated worktree has no node_modules. Allow an env override pointing at
 // a checkout that DOES (the canonical checkout) so @prisma/client resolves and
 // DATABASE_URL can be read. Defaults to this worktree (works once deps exist).
 // EQUORIA_DEP_BASE should be a checkout ROOT (contains backend/.env + a
 // node_modules tree that has @prisma/client).
-const DEP_BASE = process.env.EQUORIA_DEP_BASE
+const depBase = process.env.EQUORIA_DEP_BASE
   ? path.resolve(process.env.EQUORIA_DEP_BASE)
   : path.resolve(__dirname, '../../');
 
@@ -43,7 +43,7 @@ const DEP_BASE = process.env.EQUORIA_DEP_BASE
  *     NO ACTION; normalized as a "block" in the diff — see normalizeDelete()).
  */
 function parseSchema() {
-  const src = fs.readFileSync(SCHEMA_PATH, 'utf8');
+  const src = fs.readFileSync(schemaPath, 'utf8');
   const lines = src.split(/\r?\n/);
 
   // First pass: map model name -> table name (respect @@map; else model name as-is).
@@ -159,13 +159,13 @@ async function main() {
   // The generated client lives under packages/database/node_modules in this
   // repo, so anchor the require there.
   const requireFromBase = createRequire(
-    pathToFileURL(path.join(DEP_BASE, 'packages', 'database', 'package.json')).href,
+    pathToFileURL(path.join(depBase, 'packages', 'database', 'package.json')).href,
   );
   const { PrismaClient } = requireFromBase('@prisma/client');
 
   // Read DATABASE_URL from the dep base's backend/.env if not already set.
   if (!process.env.DATABASE_URL) {
-    const envPath = path.join(DEP_BASE, 'backend', '.env');
+    const envPath = path.join(depBase, 'backend', '.env');
     if (fs.existsSync(envPath)) {
       for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
         const m = line.match(/^\s*DATABASE_URL\s*=\s*"?([^"\r\n]+)"?\s*$/);
@@ -177,7 +177,7 @@ async function main() {
     }
   }
   if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL not set and not found in <DEP_BASE>/backend/.env');
+    throw new Error('DATABASE_URL not set and not found in <depBase>/backend/.env');
   }
 
   const prisma = new PrismaClient({

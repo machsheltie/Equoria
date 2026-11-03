@@ -14,9 +14,9 @@ const __dirname = path.dirname(__filename);
 function main() {
   dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-  const { DATABASE_URL } = process.env;
+  const { DATABASE_URL: databaseUrl } = process.env;
 
-  if (!DATABASE_URL) {
+  if (!databaseUrl) {
     console.error('❌ DATABASE_URL environment variable is required');
     process.exit(1);
   }

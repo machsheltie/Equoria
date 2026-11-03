@@ -34,8 +34,8 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { fileURLToPath } from 'node:url';
 import { getHorseAgeYears } from '../utils/horseAge.mjs';
 
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
-const DAYS_PER_GAME_YEAR = 7;
+const msPerDay = 1000 * 60 * 60 * 24;
+const daysPerGameYear = 7;
 
 function startOfUtcDay(d) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -58,9 +58,7 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv);
   const now = new Date();
-  const newDob = new Date(
-    startOfUtcDay(now).getTime() - args.age * DAYS_PER_GAME_YEAR * MS_PER_DAY,
-  );
+  const newDob = new Date(startOfUtcDay(now).getTime() - args.age * daysPerGameYear * msPerDay);
 
   console.log('═══════════════════════════════════════════════════════════');
   console.log('  fix-implausible-horse-age');

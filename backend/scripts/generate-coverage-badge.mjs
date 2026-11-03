@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Badge configuration
-const BADGE_CONFIG = {
+const badgeConfig = {
   colors: {
     excellent: '#4c1', // 90%+ coverage
     good: '#97ca00', // 80-89% coverage
@@ -83,16 +83,16 @@ function calculateOverallCoverage(coverageData) {
  * Get color based on coverage percentage
  */
 function getCoverageColor(percentage) {
-  if (percentage >= BADGE_CONFIG.thresholds.excellent) {
-    return BADGE_CONFIG.colors.excellent;
-  } else if (percentage >= BADGE_CONFIG.thresholds.good) {
-    return BADGE_CONFIG.colors.good;
-  } else if (percentage >= BADGE_CONFIG.thresholds.fair) {
-    return BADGE_CONFIG.colors.fair;
-  } else if (percentage >= BADGE_CONFIG.thresholds.poor) {
-    return BADGE_CONFIG.colors.poor;
+  if (percentage >= badgeConfig.thresholds.excellent) {
+    return badgeConfig.colors.excellent;
+  } else if (percentage >= badgeConfig.thresholds.good) {
+    return badgeConfig.colors.good;
+  } else if (percentage >= badgeConfig.thresholds.fair) {
+    return badgeConfig.colors.fair;
+  } else if (percentage >= badgeConfig.thresholds.poor) {
+    return badgeConfig.colors.poor;
   } else {
-    return BADGE_CONFIG.colors.critical;
+    return badgeConfig.colors.critical;
   }
 }
 
@@ -100,9 +100,9 @@ function getCoverageColor(percentage) {
  * Generate SVG badge
  */
 function generateSvgBadge(label, message, color) {
-  const labelWidth = BADGE_CONFIG.width.label;
-  const messageWidth = BADGE_CONFIG.width.message;
-  const totalWidth = BADGE_CONFIG.width.total;
+  const labelWidth = badgeConfig.width.label;
+  const messageWidth = badgeConfig.width.message;
+  const totalWidth = badgeConfig.width.total;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="20" role="img" aria-label="${label}: ${message}">
   <title>${label}: ${message}</title>

@@ -16,7 +16,7 @@ import { genericDefaults } from '../modules/horses/services/genotypeGenerationSe
 
 // The 17-locus all-Bay signature a legacy "First Horse" carries (pre-color-system
 // mint: fixed genericDefaults, missing the .1 Prl/BR1 loci).
-const LEGACY_ALL_BAY = {
+const legacyAllBay = {
   E_Extension: 'E/e',
   A_Agouti: 'A/a',
   Cr_Cream: 'n/n',
@@ -38,7 +38,7 @@ const LEGACY_ALL_BAY = {
 
 describe('recolor-starter-horses isDefaultSignature (Equoria-wvdya)', () => {
   it('matches the legacy 17-locus all-Bay starter signature (will be recolored)', () => {
-    expect(isDefaultSignature(LEGACY_ALL_BAY)).toBe(true);
+    expect(isDefaultSignature(legacyAllBay)).toBe(true);
   });
 
   it('matches a full current 19-locus default signature', () => {
@@ -46,14 +46,14 @@ describe('recolor-starter-horses isDefaultSignature (Equoria-wvdya)', () => {
   });
 
   it('SENTINEL: a starter with real color is NOT recolored (customization preserved)', () => {
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, E_Extension: 'e/e' })).toBe(false); // chestnut
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, Cr_Cream: 'Cr/n' })).toBe(false); // buckskin
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, G_Gray: 'G/g' })).toBe(false); // gray
+    expect(isDefaultSignature({ ...legacyAllBay, E_Extension: 'e/e' })).toBe(false); // chestnut
+    expect(isDefaultSignature({ ...legacyAllBay, Cr_Cream: 'Cr/n' })).toBe(false); // buckskin
+    expect(isDefaultSignature({ ...legacyAllBay, G_Gray: 'G/g' })).toBe(false); // gray
   });
 
   it('SENTINEL: a non-default value on a newly-added locus disqualifies', () => {
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, Prl_Pearl: 'prl/prl' })).toBe(false);
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, BR1_Brindle1: 'br1/n' })).toBe(false);
+    expect(isDefaultSignature({ ...legacyAllBay, Prl_Pearl: 'prl/prl' })).toBe(false);
+    expect(isDefaultSignature({ ...legacyAllBay, BR1_Brindle1: 'br1/n' })).toBe(false);
   });
 
   it('returns false for null / non-object / array genotypes', () => {

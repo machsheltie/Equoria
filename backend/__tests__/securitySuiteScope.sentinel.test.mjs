@@ -52,10 +52,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import securityConfig, {
-  MODULE_CONTROL_TOKENS,
-  SCOPE_PATTERNS,
-  CONVENTION_PATTERNS,
-  EXPLICIT_MODULE_CONTROL_TESTS,
+  moduleControlTokens,
+  scopePatterns,
+  conventionPatterns,
+  explicitModuleControlTests,
   securityGlobRoot,
   rootAtGlobRoot,
 } from '../jest.config.security.mjs';
@@ -80,7 +80,7 @@ const REQUIRED_SCOPE_PATTERNS = [
  * of the config.
  *
  * The convention check below derives its expectation from
- * MODULE_CONTROL_TOKENS, so it is self-referential: deleting a token removes
+ * moduleControlTokens, so it is self-referential: deleting a token removes
  * the file from both sides of the comparison and the case still passes. This
  * list is the answer to that — it names the files, so dropping 'Idor' from the
  * convention, or renaming a pattern so it stops matching, fails here.
@@ -174,18 +174,18 @@ function moduleTestFilesOnDisk() {
 function conventionMatchesOnDisk() {
   return moduleTestFilesOnDisk().filter(file => {
     const base = path.basename(file);
-    return MODULE_CONTROL_TOKENS.some(token => base.includes(token)) || base.includes('-rate-limiting');
+    return moduleControlTokens.some(token => base.includes(token)) || base.includes('-rate-limiting');
   });
 }
 
-const explicitListAsPaths = () => EXPLICIT_MODULE_CONTROL_TESTS.map(pattern => pattern.replace('<rootDir>/', ''));
+const explicitListAsPaths = () => explicitModuleControlTests.map(pattern => pattern.replace('<rootDir>/', ''));
 
 describe('security suite scope sentinel (Equoria-ugxuc)', () => {
   test(
     'the selection is non-empty and is exactly the three declared layers',
     () => {
       expect(securityConfig.testMatch).toEqual(
-        [...SCOPE_PATTERNS, ...CONVENTION_PATTERNS, ...EXPLICIT_MODULE_CONTROL_TESTS].map(rootAtGlobRoot),
+        [...scopePatterns, ...conventionPatterns, ...explicitModuleControlTests].map(rootAtGlobRoot),
       );
       // An empty selection would exit 1 anyway (passWithNoTests is unset), but a
       // gate that proves nothing must fail HERE, with a readable reason.
@@ -221,7 +221,7 @@ describe('security suite scope sentinel (Equoria-ugxuc)', () => {
       // Deleting these silently drops the whole auth control surface from the
       // gate while every other case still passes. That is the unsafe direction.
       for (const required of REQUIRED_SCOPE_PATTERNS) {
-        expect(SCOPE_PATTERNS).toContain(required);
+        expect(scopePatterns).toContain(required);
       }
 
       const authSelected = selectedTests().filter(file => file.startsWith('modules/auth/__tests__/'));
@@ -263,7 +263,7 @@ describe('security suite scope sentinel (Equoria-ugxuc)', () => {
   test(
     'every explicitly listed control suite is actually selected',
     () => {
-      expect(EXPLICIT_MODULE_CONTROL_TESTS.length).toBeGreaterThan(0);
+      expect(explicitModuleControlTests.length).toBeGreaterThan(0);
 
       const selected = new Set(selectedTests());
       const missed = explicitListAsPaths().filter(file => !selected.has(file));

@@ -39,7 +39,7 @@ validateEnvironment();
 
 // Get port from environment
 const PORT = parseInt(process.env.PORT || '3000', 10);
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const nodeEnv = process.env.NODE_ENV || 'development';
 
 // Equoria-wpfvl (2026-05-28): preload the per-breed profile cache from
 // breeds.breedGeneticProfile BEFORE binding the listener. Hot paths in
@@ -63,12 +63,12 @@ try {
 
 // Start HTTP server
 const server = app.listen(PORT, () => {
-  logger.info(`🚀 Server running in ${NODE_ENV} mode on port ${PORT}`);
+  logger.info(`🚀 Server running in ${nodeEnv} mode on port ${PORT}`);
   logger.info(`📝 API documentation available at http://localhost:${PORT}/api-docs`);
   logger.info(`🏥 Health check available at http://localhost:${PORT}/health`);
 
   // Initialize cron jobs in production
-  if (NODE_ENV === 'production') {
+  if (nodeEnv === 'production') {
     logger.info('⏰ Initializing cron jobs...');
     initializeCronJobs();
   }
@@ -93,7 +93,7 @@ const shutdown = async signal => {
 
     try {
       // Stop cron jobs (production only)
-      if (NODE_ENV === 'production') {
+      if (nodeEnv === 'production') {
         logger.info('Stopping cron jobs...');
         stopCronJobs();
       }

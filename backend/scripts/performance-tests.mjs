@@ -19,7 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Performance test configuration
-const PERFORMANCE_CONFIG = {
+const performanceConfig = {
   responseTimeThreshold: 1000, // 1 second
   memoryThreshold: 100 * 1024 * 1024, // 100MB
   concurrentUsers: 10,
@@ -153,14 +153,12 @@ async function runLoadTest() {
   const memoryMonitor = setInterval(monitorMemoryUsage, 1000);
 
   // Run concurrent requests for specified duration
-  const endTime = startTime + PERFORMANCE_CONFIG.testDuration;
+  const endTime = startTime + performanceConfig.testDuration;
 
   while (Date.now() < endTime) {
-    for (let i = 0; i < PERFORMANCE_CONFIG.concurrentUsers; i++) {
+    for (let i = 0; i < performanceConfig.concurrentUsers; i++) {
       const endpoint =
-        PERFORMANCE_CONFIG.endpoints[
-          Math.floor(Math.random() * PERFORMANCE_CONFIG.endpoints.length)
-        ];
+        performanceConfig.endpoints[Math.floor(Math.random() * performanceConfig.endpoints.length)];
 
       const promise = testEndpointPerformance(endpoint).then(result => {
         totalRequests++;
@@ -186,7 +184,7 @@ async function runLoadTest() {
 
   // Calculate metrics
   performanceMetrics.errorRate = ((totalRequests - successfulRequests) / totalRequests) * 100;
-  performanceMetrics.throughput = totalRequests / (PERFORMANCE_CONFIG.testDuration / 1000);
+  performanceMetrics.throughput = totalRequests / (performanceConfig.testDuration / 1000);
 
   console.log(
     `✅ Load test completed: ${totalRequests} requests, ${successfulRequests} successful`,
@@ -245,13 +243,13 @@ function analyzePerformanceResults() {
 async function generatePerformanceReport(results) {
   const report = {
     timestamp: new Date().toISOString(),
-    testDuration: PERFORMANCE_CONFIG.testDuration,
-    concurrentUsers: PERFORMANCE_CONFIG.concurrentUsers,
+    testDuration: performanceConfig.testDuration,
+    concurrentUsers: performanceConfig.concurrentUsers,
     results,
-    thresholds: PERFORMANCE_CONFIG,
+    thresholds: performanceConfig,
     passed: {
-      responseTime: results.responseTime.average <= PERFORMANCE_CONFIG.responseTimeThreshold,
-      memory: results.memory.max <= PERFORMANCE_CONFIG.memoryThreshold,
+      responseTime: results.responseTime.average <= performanceConfig.responseTimeThreshold,
+      memory: results.memory.max <= performanceConfig.memoryThreshold,
       errorRate: results.errorRate <= 5, // 5% error rate threshold
     },
   };

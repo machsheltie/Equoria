@@ -37,7 +37,7 @@
  * un-normalized conformation exactly as it sits on disk.
  *
  * ── Canonical region list ──────────────────────────────────────────────────
- * Imported from breedProfileValidator.mjs (EXPECTED_CONFORMATION_REGIONS) so
+ * Imported from breedProfileValidator.mjs (expectedConformationRegions) so
  * the sentinel and the runtime validator share ONE source of truth. If a 9th
  * region is added later, both update together — the test does not hardcode a
  * private copy of the eight strings (that copy would itself be a drift hazard).
@@ -52,7 +52,7 @@ import { describe, it, expect, beforeAll } from '@jest/globals';
 import { readdir, readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { EXPECTED_CONFORMATION_REGIONS } from '../../../seed/breedProfileValidator.mjs';
+import { expectedConformationRegions } from '../../../seed/breedProfileValidator.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -103,7 +103,7 @@ function findConformationRegionErrors(profile) {
     errors.push('ratingProfiles.conformation is missing or not an object');
     return errors;
   }
-  for (const region of EXPECTED_CONFORMATION_REGIONS) {
+  for (const region of expectedConformationRegions) {
     const reg = conformation[region];
     if (reg === null || reg === undefined || typeof reg !== 'object') {
       errors.push(`missing conformation region: ${region}`);
@@ -162,7 +162,7 @@ describe('breed source files — conformation completeness sentinel (Equoria-9cp
     // Guards the assumption this whole sentinel rests on: that we are checking
     // 8 regions including topline. If the shared constant is widened/narrowed,
     // this fails and forces a deliberate update rather than silent drift.
-    expect([...EXPECTED_CONFORMATION_REGIONS].sort()).toEqual(
+    expect([...expectedConformationRegions].sort()).toEqual(
       ['back', 'head', 'hindquarters', 'hooves', 'legs', 'neck', 'shoulders', 'topline'].sort(),
     );
   });
@@ -176,7 +176,7 @@ describe('breed source files — conformation completeness sentinel (Equoria-9cp
     /** Build a complete, valid conformation block (all 8 regions). */
     function fullConformationProfile() {
       const conformation = {};
-      for (const region of EXPECTED_CONFORMATION_REGIONS) {
+      for (const region of expectedConformationRegions) {
         conformation[region] = { mean: 80, stdDev: 7 };
       }
       return { ratingProfiles: { conformation } };

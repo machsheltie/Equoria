@@ -57,7 +57,7 @@ const { Client } = pg;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND = path.resolve(HERE, '..');
-const DIAG_DIR = path.join(BACKEND, 'diagnostics');
+const diagDir = path.join(BACKEND, 'diagnostics');
 
 function parseArgs(argv) {
   const args = { workers: null };
@@ -169,13 +169,13 @@ function sampleProcs() {
 async function main() {
   const { workers } = parseArgs(process.argv.slice(2));
   const label = labelFor(workers);
-  mkdirSync(DIAG_DIR, { recursive: true });
+  mkdirSync(diagDir, { recursive: true });
 
-  const jsonOut = path.join(DIAG_DIR, `full-run-${label}.json`);
-  const pgStatsOut = path.join(DIAG_DIR, `full-run-${label}.pgstats.jsonl`);
-  const procOut = path.join(DIAG_DIR, `full-run-${label}.proc.jsonl`);
-  const summaryOut = path.join(DIAG_DIR, `full-run-${label}.summary.json`);
-  const stderrOut = path.join(DIAG_DIR, `full-run-${label}.stderr.log`);
+  const jsonOut = path.join(diagDir, `full-run-${label}.json`);
+  const pgStatsOut = path.join(diagDir, `full-run-${label}.pgstats.jsonl`);
+  const procOut = path.join(diagDir, `full-run-${label}.proc.jsonl`);
+  const summaryOut = path.join(diagDir, `full-run-${label}.summary.json`);
+  const stderrOut = path.join(diagDir, `full-run-${label}.stderr.log`);
   writeFileSync(pgStatsOut, '');
   writeFileSync(procOut, '');
   writeFileSync(stderrOut, '');

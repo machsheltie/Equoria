@@ -12,7 +12,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { fileURLToPath } from 'node:url';
 import logger from '../utils/logger.mjs';
 
-const STAT_KEYS_TO_FIX = ['stamina', 'balance', 'boldness', 'flexibility', 'obedience', 'focus'];
+const statKeysToFix = ['stamina', 'balance', 'boldness', 'flexibility', 'obedience', 'focus'];
 
 async function main() {
   // Find horses where all 6 affected stats are 0 — strong signal of the bug
@@ -41,7 +41,7 @@ async function main() {
     const starterStats = profile?.starterStats ?? null;
 
     const updates = {};
-    for (const stat of STAT_KEYS_TO_FIX) {
+    for (const stat of statKeysToFix) {
       if (starterStats?.[stat]) {
         const { mean, stdDev } = starterStats[stat];
         // True Box-Muller (matches sampleStat in backend/services/horseStarterStats.mjs).

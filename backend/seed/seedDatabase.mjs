@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
-const MINIMUM_BREEDS = [
+const minimumBreeds = [
   { name: 'Thoroughbred', description: 'Athletic and versatile racing breed' },
   { name: 'Arabian', description: 'Ancient breed prized for endurance and refinement' },
   { name: 'American Quarter Horse', description: 'Compact, muscular sprint breed' },
@@ -25,7 +25,7 @@ const MINIMUM_BREEDS = [
 async function seedBreeds() {
   let created = 0;
   let skipped = 0;
-  for (const breed of MINIMUM_BREEDS) {
+  for (const breed of minimumBreeds) {
     const existing = await prisma.breed.findUnique({ where: { name: breed.name } });
     if (existing) {
       skipped += 1;
@@ -48,7 +48,7 @@ async function main() {
 
   const { created, skipped } = await seedBreeds();
   logger.info(
-    `[seedDatabase] Breeds seeded: ${created} created, ${skipped} already present (${MINIMUM_BREEDS.length} canonical)`,
+    `[seedDatabase] Breeds seeded: ${created} created, ${skipped} already present (${minimumBreeds.length} canonical)`,
   );
   logger.info('[seedDatabase] Seed complete');
 }

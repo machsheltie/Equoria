@@ -21,7 +21,7 @@ import { genericDefaults } from '../modules/horses/services/genotypeGenerationSe
 
 // The original 17-locus genericDefaults set, BEFORE Prl_Pearl/BR1_Brindle1 were
 // added in 26qjf.1. A legacy starter horse's stored genotype looks like this.
-const LEGACY_17_DEFAULT = {
+const legacy17Default = {
   E_Extension: 'E/e',
   A_Agouti: 'A/a',
   Cr_Cream: 'n/n',
@@ -49,25 +49,25 @@ describe('isDefaultSignature (Equoria-26qjf.5)', () => {
   it('CRITICAL: recognizes a legacy 17-locus default genotype missing Prl_Pearl/BR1_Brindle1', () => {
     // This is the population 26qjf.5 must re-roll. The .1 genericDefaults growth
     // must NOT cause these to read as non-default.
-    expect(LEGACY_17_DEFAULT.Prl_Pearl).toBeUndefined();
-    expect(LEGACY_17_DEFAULT.BR1_Brindle1).toBeUndefined();
-    expect(isDefaultSignature(LEGACY_17_DEFAULT)).toBe(true);
+    expect(legacy17Default.Prl_Pearl).toBeUndefined();
+    expect(legacy17Default.BR1_Brindle1).toBeUndefined();
+    expect(isDefaultSignature(legacy17Default)).toBe(true);
   });
 
   it('recognizes a legacy genotype that explicitly has wild-type Prl/BR1', () => {
-    expect(isDefaultSignature({ ...LEGACY_17_DEFAULT, Prl_Pearl: 'n/n', BR1_Brindle1: 'n/n' })).toBe(true);
+    expect(isDefaultSignature({ ...legacy17Default, Prl_Pearl: 'n/n', BR1_Brindle1: 'n/n' })).toBe(true);
   });
 
   it('SENTINEL: a non-default value at any locus disqualifies (customization preserved)', () => {
     // A horse with a real, non-default color must NOT be re-rolled.
     expect(isDefaultSignature({ ...genericDefaults, E_Extension: 'e/e' })).toBe(false);
-    expect(isDefaultSignature({ ...LEGACY_17_DEFAULT, Cr_Cream: 'Cr/n' })).toBe(false);
+    expect(isDefaultSignature({ ...legacy17Default, Cr_Cream: 'Cr/n' })).toBe(false);
   });
 
   it('SENTINEL: a non-default value on a newly-added locus disqualifies', () => {
     // A Pearl carrier is real color data, not a backfill default.
-    expect(isDefaultSignature({ ...LEGACY_17_DEFAULT, Prl_Pearl: 'prl/prl' })).toBe(false);
-    expect(isDefaultSignature({ ...LEGACY_17_DEFAULT, BR1_Brindle1: 'br1/n' })).toBe(false);
+    expect(isDefaultSignature({ ...legacy17Default, Prl_Pearl: 'prl/prl' })).toBe(false);
+    expect(isDefaultSignature({ ...legacy17Default, BR1_Brindle1: 'br1/n' })).toBe(false);
   });
 
   it('returns false for null / non-object / array genotypes', () => {
@@ -78,7 +78,7 @@ describe('isDefaultSignature (Equoria-26qjf.5)', () => {
   });
 
   it('returns false when a NON-optional locus is missing (incomplete genotype is not default)', () => {
-    const missingCore = { ...LEGACY_17_DEFAULT };
+    const missingCore = { ...legacy17Default };
     delete missingCore.E_Extension;
     expect(isDefaultSignature(missingCore)).toBe(false);
   });

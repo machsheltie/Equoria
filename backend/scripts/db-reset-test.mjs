@@ -79,8 +79,8 @@ async function main() {
   // ---------------------------------------------------------------------------
   // Safety guard #1: must be localhost
   // ---------------------------------------------------------------------------
-  const LOCALHOST_PATTERNS = ['localhost', '127.0.0.1', '::1'];
-  if (!LOCALHOST_PATTERNS.includes(host)) {
+  const localhostPatterns = ['localhost', '127.0.0.1', '::1'];
+  if (!localhostPatterns.includes(host)) {
     console.error(
       `ERROR: db:reset:test refuses to run against a remote host (${host}).\n` +
         'This script is only for local development databases.\n' +
@@ -99,8 +99,8 @@ async function main() {
   // If you genuinely need to reset, rename the canonical DB or point
   // DATABASE_URL at a SEPARATE test DB first.
   // ---------------------------------------------------------------------------
-  const CANONICAL_DB_NAMES = ['equoria'];
-  if (CANONICAL_DB_NAMES.includes(dbName.toLowerCase())) {
+  const canonicalDbNames = ['equoria'];
+  if (canonicalDbNames.includes(dbName.toLowerCase())) {
     console.error(
       'ERROR: db:reset:test refuses to drop the canonical Equoria database ' +
         `("${dbName}").\n` +

@@ -35,7 +35,7 @@ const repoBackend = join(__dirname, '..');
 
 // Breed names used across the fixed seed scripts (seedDevData.mjs HORSES +
 // seedPerformanceData.mjs canonical pool + userSeed/createTestData defaults).
-const SEED_BREED_NAMES = [
+const seedBreedNames = [
   'Thoroughbred',
   'Arabian',
   'American Saddlebred',
@@ -52,7 +52,7 @@ const SEED_BREED_NAMES = [
 
 describe('SEED: horses receive a permanent breed-weighted temperament (Equoria-o7pnn)', () => {
   describe('canonical generator returns a valid temperament for every seeded breed', () => {
-    it.each(SEED_BREED_NAMES)('generateTemperamentWithDefault(%s) returns a canonical temperament type', breedName => {
+    it.each(seedBreedNames)('generateTemperamentWithDefault(%s) returns a canonical temperament type', breedName => {
       const temperament = generateTemperamentWithDefault(breedName);
       expect(typeof temperament).toBe('string');
       expect(temperamentTypes).toContain(temperament);

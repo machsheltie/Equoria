@@ -55,7 +55,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const args = new Set(process.argv.slice(2));
-const DRY_RUN = args.has('--dry-run');
+const dryRun = args.has('--dry-run');
 
 // Equoria-kfgep: isDefaultSignature lives in the shared helper module
 // backend/utils/defaultGenotypeSignature.mjs (with SIGNATURE_OPTIONAL_LOCI for
@@ -82,7 +82,7 @@ async function run() {
   const startedAt = new Date();
   console.log('\n=== recolor-starter-horses.mjs (Equoria-wvdya) ===');
   console.log(`  Started: ${startedAt.toISOString()}`);
-  console.log(`  Mode: ${DRY_RUN ? 'DRY RUN (no writes)' : 'WRITE'}`);
+  console.log(`  Mode: ${dryRun ? 'DRY RUN (no writes)' : 'WRITE'}`);
 
   const before = await countStarterColors();
   const beforeTotal = before.reduce((s, r) => s + r.cnt, 0);
@@ -122,7 +122,7 @@ async function run() {
       const markings = generateMarkings(null, baseColor.colorName, Math.random, colorGenotype);
       const phenotype = { ...baseColor, ...markings };
 
-      if (!DRY_RUN) {
+      if (!dryRun) {
         // id-scoped single-row update — never bulk/unscoped.
         await prisma.$executeRaw`
           UPDATE horses
@@ -141,7 +141,7 @@ async function run() {
     }
   }
 
-  console.log(`\n  Recolored: ${recolored}${DRY_RUN ? ' (would recolor — dry run)' : ''}`);
+  console.log(`\n  Recolored: ${recolored}${dryRun ? ' (would recolor — dry run)' : ''}`);
   console.log(
     `  Skipped (genotype already non-default — customization preserved): ${skippedNonDefault}`,
   );
@@ -160,7 +160,7 @@ async function run() {
     startedAt: startedAt.toISOString(),
     finishedAt: finishedAt.toISOString(),
     durationMs: finishedAt - startedAt,
-    dryRun: DRY_RUN,
+    dryRun,
     candidatesScanned: candidates.length,
     recolored,
     skippedNonDefault,

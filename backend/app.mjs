@@ -70,7 +70,7 @@ import {
 import { createRateLimiter, mutationRateLimitMaxByEnv } from './middleware/rateLimiting.mjs';
 // resolveE2eRateLimitMax / applyE2eRateLimitOverride (Equoria-jz9v2): honor an
 // EXPLICIT E2E-only ceiling override in non-prod envs without touching
-// RATE_LIMIT_MAX_BY_ENV. createRateLimiter applies the override to EVERY limiter
+// rateLimitMaxByEnv. createRateLimiter applies the override to EVERY limiter
 // (see getEffectiveMax); the apiLimiter also resolves it at this call site.
 import {
   resolveE2eRateLimitMax,
@@ -144,7 +144,7 @@ app.use(cors(corsOptionsDelegate));
 // reaching the end of a single flow. Treating beta-readiness like test for
 // this limit keeps production parity where it matters (auth, CSRF, ownership,
 // email delivery) without turning the gate into a rate-limiter test.
-const RATE_LIMIT_MAX_BY_ENV = {
+const rateLimitMaxByEnv = {
   // Test suite runs several hundred requests across many files in one
   // --runInBand session. 1000 was the old cap when bypass headers reset
   // the counter between suites; with bypasses removed in WS4 the counter
@@ -177,7 +177,7 @@ const RATE_LIMIT_MAX_BY_ENV = {
 // so it cannot silently drift or collapse into a bypass.
 //
 //   Limiter            Source                              Window  beta  beta-readiness  production
-//   apiLimiter         app.mjs RATE_LIMIT_MAX_BY_ENV        15min  10000 1000            10000
+//   apiLimiter         app.mjs rateLimitMaxByEnv        15min  10000 1000            10000
 //   mutationRateLimiter rateLimiting.mjs                     1min  600   (none → 600)    600
 //   authRateLimiter    rateLimiting.mjs                     15min  200f  200f            200f
 //
@@ -208,12 +208,12 @@ const RATE_LIMIT_MAX_BY_ENV = {
 // circuits limiting via TEST_RATE_LIMIT_*. beta / beta-readiness get a
 // HIGHER CAP, never a BYPASS — enforced by the sentinel above.
 // ────────────────────────────────────────────────────────────────────────────
-// Equoria-jz9v2: the resolved cap is the RATE_LIMIT_MAX_BY_ENV default UNLESS
+// Equoria-jz9v2: the resolved cap is the rateLimitMaxByEnv default UNLESS
 // an EXPLICIT E2E-only override (E2E_RATE_LIMIT_MAX) is set in a non-prod env
 // (beta / test / beta-readiness — NEVER production). This lets the ~27-min
 // Playwright E2E CI job (single CI IP, NODE_ENV=beta, real limiter + Redis)
 // raise the ceiling above the beta:3000/15min default WITHOUT changing the
-// RATE_LIMIT_MAX_BY_ENV map (pinned by betaReadinessEnvSentinel). Every real
+// rateLimitMaxByEnv map (pinned by betaReadinessEnvSentinel). Every real
 // deploy leaves E2E_RATE_LIMIT_MAX unset ⇒ identical behavior to today (beta
 // 3000, prod 100). It is a scoped calibration, not a bypass — the limiter
 // still fires at the (high, finite) overridden ceiling.
@@ -222,7 +222,7 @@ const apiLimiter = createRateLimiter({
   max: resolveE2eRateLimitMax({
     nodeEnv: process.env.NODE_ENV,
     envValue: process.env.E2E_RATE_LIMIT_MAX,
-    configuredMax: RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 10000,
+    configuredMax: rateLimitMaxByEnv[process.env.NODE_ENV] ?? 10000,
   }),
   keyPrefix: 'rl:global',
   useEnvOverride: false, // Don't let tests override the global limit
@@ -240,7 +240,7 @@ logger.info('[rateLimit] effective ceilings at boot', {
   e2eRateLimitMax: process.env.E2E_RATE_LIMIT_MAX ?? '(unset)',
   overrideActive: applyE2eRateLimitOverride(1) !== 1 && process.env.NODE_ENV !== 'production',
   effectiveMax: {
-    'rl:global': applyE2eRateLimitOverride(RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 10000),
+    'rl:global': applyE2eRateLimitOverride(rateLimitMaxByEnv[process.env.NODE_ENV] ?? 10000),
     'rl:auth': applyE2eRateLimitOverride(200), // authRateLimiter base (rateLimiting.mjs)
     'rl:mutation': applyE2eRateLimitOverride(mutationRateLimitMaxByEnv[process.env.NODE_ENV] ?? 30),
     'rl:query': applyE2eRateLimitOverride(100), // queryRateLimiter base

@@ -39,13 +39,13 @@ import { staffLevels } from '../constants/staffLevels.mjs';
 // generateStoreStats correctly throws. The perf seed must skip those rather
 // than crashing.
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const STARTER_STATS_PATH = resolve(__dirname, '..', 'data', 'breedStarterStats.json');
-const BREED_NAMES_WITH_PROFILES = new Set(
-  Object.keys(JSON.parse(readFileSync(STARTER_STATS_PATH, 'utf8'))),
+const starterStatsPath = resolve(__dirname, '..', 'data', 'breedStarterStats.json');
+const breedNamesWithProfiles = new Set(
+  Object.keys(JSON.parse(readFileSync(starterStatsPath, 'utf8'))),
 );
 
 // Performance test data configuration
-const PERFORMANCE_DATA_CONFIG = {
+const performanceDataConfig = {
   users: 100,
   horsesPerUser: 20,
   showsPerUser: 10,
@@ -65,7 +65,7 @@ async function seedPerformanceUsers() {
   const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
   const hashedPassword = await bcrypt.hash('testpassword123', saltRounds);
 
-  for (let i = 1; i <= PERFORMANCE_DATA_CONFIG.users; i++) {
+  for (let i = 1; i <= performanceDataConfig.users; i++) {
     users.push({
       email: `perftest${i}@equoria.com`,
       username: `perfuser${i}`,
@@ -109,7 +109,7 @@ async function seedPerformanceHorses() {
   // breedStarterStats.json. Skips test-leftover breeds (e.g. "OWASP Test
   // Breed") that would cause generateStoreStats to throw.
   const allBreeds = await prisma.breed.findMany();
-  const breeds = allBreeds.filter(b => BREED_NAMES_WITH_PROFILES.has(b.name));
+  const breeds = allBreeds.filter(b => breedNamesWithProfiles.has(b.name));
   if (breeds.length === 0) {
     throw new Error(
       'seedPerformanceHorses: no breeds in DB have a starter-stats profile. ' +
@@ -123,7 +123,7 @@ async function seedPerformanceHorses() {
   const horses = [];
 
   for (const user of users) {
-    for (let i = 1; i <= PERFORMANCE_DATA_CONFIG.horsesPerUser; i++) {
+    for (let i = 1; i <= performanceDataConfig.horsesPerUser; i++) {
       const breed = breeds[Math.floor(Math.random() * breeds.length)];
       const age = Math.floor(Math.random() * 20) + 1;
 
@@ -212,7 +212,7 @@ async function seedPerformanceShows() {
   const shows = [];
 
   for (const user of users) {
-    for (let i = 1; i <= PERFORMANCE_DATA_CONFIG.showsPerUser; i++) {
+    for (let i = 1; i <= performanceDataConfig.showsPerUser; i++) {
       const discipline = disciplines[Math.floor(Math.random() * disciplines.length)];
       const showDate = new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000);
 
@@ -283,7 +283,7 @@ async function seedPerformanceCompetitionResults() {
   const results = [];
 
   for (const horse of horses) {
-    const numResults = Math.min(PERFORMANCE_DATA_CONFIG.competitionResultsPerHorse, shows.length);
+    const numResults = Math.min(performanceDataConfig.competitionResultsPerHorse, shows.length);
 
     const selectedShows = shows.sort(() => 0.5 - Math.random()).slice(0, numResults);
 
@@ -342,7 +342,7 @@ async function seedPerformanceGrooms() {
   const grooms = [];
 
   for (const user of users) {
-    for (let i = 1; i <= PERFORMANCE_DATA_CONFIG.groomsPerUser; i++) {
+    for (let i = 1; i <= performanceDataConfig.groomsPerUser; i++) {
       const personality = personalities[Math.floor(Math.random() * personalities.length)];
       const specialty = specialties[Math.floor(Math.random() * specialties.length)];
 
@@ -394,7 +394,7 @@ async function seedPerformanceTrainingSessions() {
   const sessions = [];
 
   for (const horse of horses) {
-    for (let i = 1; i <= PERFORMANCE_DATA_CONFIG.trainingSessionsPerHorse; i++) {
+    for (let i = 1; i <= performanceDataConfig.trainingSessionsPerHorse; i++) {
       const discipline = disciplines[Math.floor(Math.random() * disciplines.length)];
       const sessionDate = new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000);
 

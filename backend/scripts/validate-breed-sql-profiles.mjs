@@ -34,16 +34,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import prisma from '../../packages/database/prismaClient.mjs';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
-const SAMPLES_DIR = path.join(REPO_ROOT, 'samples', 'Breeds');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
+const samplesDir = path.join(repoRoot, 'samples', 'Breeds');
 
-const REQUIRED_TOP_LEVEL_KEYS = ['allowedAlleles', 'alleleWeights', 'shadeBias', 'markingBias'];
+const requiredTopLevelKeys = ['allowedAlleles', 'alleleWeights', 'shadeBias', 'markingBias'];
 
 // Match INSERT INTO breeds (...) VALUES ('name', 'trait', $json$ … $json$::TYPE)
 // The trait value can be a quoted literal; the JSONB body is wrapped in $json$
 // dollar-quoting and may be followed by a ::JSONB cast before the closing paren.
-const INSERT_RE =
+const insertRe =
   /INSERT\s+INTO\s+breeds\s*\([^)]+\)\s*VALUES\s*\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*\$json\$([\s\S]+?)\$json\$(?:::\w+)?\s*\)/i;
 
 function findSqlFiles(dir, acc = []) {
@@ -67,7 +67,7 @@ function findSqlFiles(dir, acc = []) {
 
 function parseFile(filePath) {
   const src = fs.readFileSync(filePath, 'utf8');
-  const m = src.match(INSERT_RE);
+  const m = src.match(insertRe);
   if (!m) {
     return { kind: 'no_insert', filePath };
   }
@@ -84,7 +84,7 @@ function parseFile(filePath) {
 function validateProfile(profile) {
   const errors = [];
 
-  for (const key of REQUIRED_TOP_LEVEL_KEYS) {
+  for (const key of requiredTopLevelKeys) {
     if (!(key in profile)) {
       errors.push(`missing required key: ${key}`);
     }
@@ -129,9 +129,9 @@ function validateProfile(profile) {
 }
 
 async function main() {
-  const sqlFiles = findSqlFiles(SAMPLES_DIR);
+  const sqlFiles = findSqlFiles(samplesDir);
   if (sqlFiles.length === 0) {
-    console.error(`[mxhpi] no SQL profile files found under ${SAMPLES_DIR}`);
+    console.error(`[mxhpi] no SQL profile files found under ${samplesDir}`);
     process.exit(2);
   }
 
@@ -154,7 +154,7 @@ async function main() {
   };
 
   for (const file of sqlFiles) {
-    const rel = path.relative(REPO_ROOT, file);
+    const rel = path.relative(repoRoot, file);
     const parsed = parseFile(file);
 
     if (parsed.kind === 'no_insert') {

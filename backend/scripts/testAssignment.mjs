@@ -4,13 +4,13 @@
 
 import fetch from 'node-fetch';
 
-const BASE_URL = 'http://localhost:3000';
+const baseUrl = 'http://localhost:3000';
 
 async function testAssignment() {
   try {
     console.log('🧪 Testing assignment endpoint...');
 
-    const response = await fetch(`${BASE_URL}/api/v1/grooms/assign`, {
+    const response = await fetch(`${baseUrl}/api/v1/grooms/assign`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

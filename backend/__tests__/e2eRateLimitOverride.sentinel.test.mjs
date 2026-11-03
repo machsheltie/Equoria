@@ -133,12 +133,12 @@ describe('apiLimiter override wiring — app.mjs source pin (Equoria-jz9v2)', ()
   it('the apiLimiter max is resolved through resolveE2eRateLimitMax with E2E_RATE_LIMIT_MAX', () => {
     expect(appSrc).toMatch(/max:\s*resolveE2eRateLimitMax\(/);
     expect(appSrc).toContain('envValue: process.env.E2E_RATE_LIMIT_MAX');
-    // The fallback default MUST remain the RATE_LIMIT_MAX_BY_ENV lookup — not a
+    // The fallback default MUST remain the rateLimitMaxByEnv lookup — not a
     // hardcoded high number (that would be a bypass, not a scoped override).
-    expect(appSrc).toMatch(/configuredMax:\s*RATE_LIMIT_MAX_BY_ENV\[process\.env\.NODE_ENV\]\s*\?\?\s*100/);
+    expect(appSrc).toMatch(/configuredMax:\s*rateLimitMaxByEnv\[process\.env\.NODE_ENV\]\s*\?\?\s*100/);
   });
 
-  it('does NOT change the pinned RATE_LIMIT_MAX_BY_ENV defaults (beta 3000 / prod fallback 100)', () => {
+  it('does NOT change the pinned rateLimitMaxByEnv defaults (beta 3000 / prod fallback 100)', () => {
     expect(appSrc).toMatch(/beta:\s*3000/);
     expect(appSrc).toMatch(/'beta-readiness':\s*1000/);
     // The override lives at the apiLimiter call site, not inside the map.

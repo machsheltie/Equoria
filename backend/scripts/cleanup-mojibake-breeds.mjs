@@ -26,7 +26,7 @@ const __dirname = path.dirname(__filename);
 // The 11 corrupted (id → expected proper-counterpart name) pairs.
 // IDs sourced from Equoria-wm987 description (queried 2026-05-28, confirmed
 // 2026-05-29 to still be present with U+FFFD chars and zero horse FKs).
-const MOJIBAKE_PAIRS = Object.freeze([
+const mojibakePairs = Object.freeze([
   { corruptedId: 31, properName: 'Asturcón' },
   { corruptedId: 114, properName: 'Foutanké' },
   { corruptedId: 132, properName: 'Hispano-Bretón' },
@@ -41,8 +41,8 @@ const MOJIBAKE_PAIRS = Object.freeze([
 ]);
 
 export async function cleanupMojibakeBreeds(prisma, { dryRun = false } = {}) {
-  const corruptedIds = MOJIBAKE_PAIRS.map(p => p.corruptedId);
-  const properNames = MOJIBAKE_PAIRS.map(p => p.properName);
+  const corruptedIds = mojibakePairs.map(p => p.corruptedId);
+  const properNames = mojibakePairs.map(p => p.properName);
 
   // Precondition 1: every corrupted row still exists AND its name still
   // contains U+FFFD. This guards against the script being run twice or

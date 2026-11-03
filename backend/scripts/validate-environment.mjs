@@ -22,7 +22,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Environment validation configuration
-const ENV_CONFIG = {
+const envConfig = {
   requiredVars: ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'NODE_ENV'],
   optionalVars: ['PORT', 'REDIS_URL', 'LOG_LEVEL', 'CORS_ORIGIN'],
   nodeVersionMin: '18.0.0',
@@ -36,7 +36,7 @@ function validateNodeVersion() {
   console.log('🔍 Validating Node.js version...');
 
   const currentVersion = process.version;
-  const requiredVersion = ENV_CONFIG.nodeVersionMin;
+  const requiredVersion = envConfig.nodeVersionMin;
 
   // Simple version comparison (assumes semantic versioning)
   const current = currentVersion.slice(1).split('.').map(Number);
@@ -90,7 +90,7 @@ function validateEnvironmentVariables() {
   };
 
   // Check required variables
-  for (const varName of ENV_CONFIG.requiredVars) {
+  for (const varName of envConfig.requiredVars) {
     const value = process.env[varName];
     if (value) {
       results.required[varName] = {
@@ -110,7 +110,7 @@ function validateEnvironmentVariables() {
   }
 
   // Check optional variables
-  for (const varName of ENV_CONFIG.optionalVars) {
+  for (const varName of envConfig.optionalVars) {
     const value = process.env[varName];
     if (value) {
       results.optional[varName] = {
@@ -164,14 +164,14 @@ function validateJwtSecrets() {
     const hasSpecialChars = /[^A-Za-z0-9]/.test(secret);
 
     const isStrong =
-      length >= ENV_CONFIG.jwtSecretMinLength && hasUppercase && hasLowercase && hasNumbers;
+      length >= envConfig.jwtSecretMinLength && hasUppercase && hasLowercase && hasNumbers;
 
     results.secrets[varName] = {
       present: true,
       length,
       strong: isStrong,
       checks: {
-        minLength: length >= ENV_CONFIG.jwtSecretMinLength,
+        minLength: length >= envConfig.jwtSecretMinLength,
         hasUppercase,
         hasLowercase,
         hasNumbers,
@@ -183,11 +183,11 @@ function validateJwtSecrets() {
       console.log(`✅ ${varName}: Strong (${length} characters)`);
     } else {
       results.errors.push(
-        `${varName} is weak (length: ${length}, min: ${ENV_CONFIG.jwtSecretMinLength})`,
+        `${varName} is weak (length: ${length}, min: ${envConfig.jwtSecretMinLength})`,
       );
       results.valid = false;
       console.error(
-        `❌ ${varName}: Weak (${length} characters, needs ${ENV_CONFIG.jwtSecretMinLength}+)`,
+        `❌ ${varName}: Weak (${length} characters, needs ${envConfig.jwtSecretMinLength}+)`,
       );
     }
 

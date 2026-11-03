@@ -26,7 +26,7 @@ const FILES = [
   '__tests__/unit/email-verification.test.mjs',
 ];
 
-const RANDOM_UUID_LINE = "import { randomUUID } from 'node:crypto';";
+const randomUuidLine = "import { randomUUID } from 'node:crypto';";
 
 /**
  * Side effects (source rewrites) live in main() and run only when this file is
@@ -48,7 +48,7 @@ function main() {
     // without `from`).
     let brokenIdx = -1;
     for (let i = 1; i < lines.length; i++) {
-      if (lines[i].trim() === RANDOM_UUID_LINE) {
+      if (lines[i].trim() === randomUuidLine) {
         const prev = lines[i - 1].trim();
         if (prev.startsWith('import') && prev.endsWith('{') && !prev.includes(' from ')) {
           brokenIdx = i;
@@ -81,7 +81,7 @@ function main() {
     }
 
     // Insert randomUUID line AFTER the close.
-    lines.splice(closeIdx + 1, 0, RANDOM_UUID_LINE);
+    lines.splice(closeIdx + 1, 0, randomUuidLine);
 
     writeFileSync(path, lines.join('\n'), 'utf8');
     console.log(`OK fixed: ${path} (broken at line ${brokenIdx + 1}, close at ${closeIdx + 1})`);

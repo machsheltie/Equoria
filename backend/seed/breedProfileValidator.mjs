@@ -30,7 +30,7 @@
  *
  * @type {readonly string[]}
  */
-export const EXPECTED_CONFORMATION_REGIONS = Object.freeze([
+export const expectedConformationRegions = Object.freeze([
   'head',
   'neck',
   'shoulders',
@@ -52,11 +52,11 @@ export const EXPECTED_CONFORMATION_REGIONS = Object.freeze([
  * backend/data/breeds/*.txt source files against the SAME list this runtime
  * validator uses, rather than duplicating the four strings (which would
  * re-introduce the drift class the sentinel exists to catch). Sibling of
- * EXPECTED_CONFORMATION_REGIONS (Equoria-9cpop).
+ * expectedConformationRegions (Equoria-9cpop).
  *
  * @type {readonly string[]}
  */
-export const EXPECTED_GAITS = Object.freeze(['walk', 'trot', 'canter', 'gallop']);
+export const expectedGaits = Object.freeze(['walk', 'trot', 'canter', 'gallop']);
 
 /**
  * Canonical temperamentWeights keys every breed profile must carry. All 312
@@ -67,12 +67,12 @@ export const EXPECTED_GAITS = Object.freeze(['walk', 'trot', 'canter', 'gallop']
  *
  * Exported (Equoria-4xwj1) so the source-completeness sentinel shares ONE
  * source of truth with the runtime validator's temperament-weights check
- * below. EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length is the canonical replacement
+ * below. expectedTemperamentWeightKeys.length is the canonical replacement
  * for the previously-private EXPECTED_TEMPERAMENT_COUNT magic number.
  *
  * @type {readonly string[]}
  */
-export const EXPECTED_TEMPERAMENT_WEIGHT_KEYS = Object.freeze([
+export const expectedTemperamentWeightKeys = Object.freeze([
   'Spirited',
   'Nervous',
   'Calm',
@@ -94,7 +94,7 @@ export const EXPECTED_TEMPERAMENT_WEIGHT_KEYS = Object.freeze([
  *
  * @type {number}
  */
-export const EXPECTED_TEMPERAMENT_WEIGHT_SUM = 100;
+export const expectedTemperamentWeightSum = 100;
 
 /**
  * Validates a breed genetic profile object at runtime.
@@ -130,19 +130,19 @@ export function validateProfile(_breedId, profile) {
   const rp = profile.ratingProfiles;
 
   // ── Conformation ────────────────────────────────────────────────────────
-  // EXPECTED_CONFORMATION_REGIONS is the module-level exported constant
+  // expectedConformationRegions is the module-level exported constant
   // (Equoria-9cpop) — shared with the source-completeness sentinel so both
   // validate against one canonical list.
   const conformation = rp.conformation ?? {};
   const conformationKeys = Object.keys(conformation);
 
-  if (conformationKeys.length !== EXPECTED_CONFORMATION_REGIONS.length) {
+  if (conformationKeys.length !== expectedConformationRegions.length) {
     errors.push(
-      `conformation has ${conformationKeys.length} regions, expected ${EXPECTED_CONFORMATION_REGIONS.length}`,
+      `conformation has ${conformationKeys.length} regions, expected ${expectedConformationRegions.length}`,
     );
   }
 
-  for (const region of EXPECTED_CONFORMATION_REGIONS) {
+  for (const region of expectedConformationRegions) {
     if (!conformation[region]) {
       errors.push(`missing conformation region: ${region}`);
       continue;
@@ -159,14 +159,14 @@ export function validateProfile(_breedId, profile) {
   }
 
   // ── Gaits ────────────────────────────────────────────────────────────────
-  // EXPECTED_GAITS is the module-level exported constant (Equoria-4xwj1) —
+  // expectedGaits is the module-level exported constant (Equoria-4xwj1) —
   // shared with the source-completeness sentinel so both validate against one
   // canonical list. `gaiting` is intentionally NOT in this set; its
   // presence/nullness is governed by isGaitedBreed just below.
   const gaits = rp.gaits ?? {};
   const isGaited = rp.isGaitedBreed === true;
 
-  for (const gait of EXPECTED_GAITS) {
+  for (const gait of expectedGaits) {
     if (!gaits[gait]) {
       errors.push(`missing gait: ${gait}`);
       continue;
@@ -188,14 +188,14 @@ export function validateProfile(_breedId, profile) {
   }
 
   // ── Temperament weights ──────────────────────────────────────────────────
-  // EXPECTED_TEMPERAMENT_WEIGHT_KEYS / _SUM are the module-level exported
+  // expectedTemperamentWeightKeys / _SUM are the module-level exported
   // constants (Equoria-4xwj1) — shared with the source-completeness sentinel.
   const tw = profile.temperamentWeights ?? {};
   const twKeys = Object.keys(tw);
 
-  if (twKeys.length !== EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length) {
+  if (twKeys.length !== expectedTemperamentWeightKeys.length) {
     errors.push(
-      `temperamentWeights has ${twKeys.length} keys, expected ${EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length}`,
+      `temperamentWeights has ${twKeys.length} keys, expected ${expectedTemperamentWeightKeys.length}`,
     );
   }
 
@@ -207,8 +207,8 @@ export function validateProfile(_breedId, profile) {
     twSum += val;
   }
 
-  if (twSum !== EXPECTED_TEMPERAMENT_WEIGHT_SUM) {
-    errors.push(`temperament weights sum to ${twSum}, expected ${EXPECTED_TEMPERAMENT_WEIGHT_SUM}`);
+  if (twSum !== expectedTemperamentWeightSum) {
+    errors.push(`temperament weights sum to ${twSum}, expected ${expectedTemperamentWeightSum}`);
   }
 
   return errors;

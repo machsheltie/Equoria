@@ -30,10 +30,10 @@ import pg from 'pg';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const PROFILES_PATH = resolve(__dirname, '../data/breedProfiles.json');
+const profilesPath = resolve(__dirname, '../data/breedProfiles.json');
 
 // Representative breeds: a spread of light, gaited and draft breeds.
-const SAMPLE_BREEDS = [
+const sampleBreeds = [
   'Thoroughbred',
   'Arabian',
   'American Saddlebred',
@@ -52,7 +52,7 @@ const SAMPLE_BREEDS = [
   'Abaga',
 ];
 
-const CONFORMATION_REGIONS = [
+const conformationRegions = [
   'head',
   'neck',
   'shoulders',
@@ -62,7 +62,7 @@ const CONFORMATION_REGIONS = [
   'hooves',
   'topline',
 ];
-const GAIT_KEYS_ORDER = ['walk', 'trot', 'canter', 'gallop', 'gaiting'];
+const gaitKeysOrder = ['walk', 'trot', 'canter', 'gallop', 'gaiting'];
 
 function shallowMeanStd(node) {
   // Normalize a {mean, stdDev} leaf into a compact comparable string.
@@ -82,7 +82,7 @@ async function main() {
     process.exit(1);
   }
 
-  const json = JSON.parse(readFileSync(PROFILES_PATH, 'utf8'));
+  const json = JSON.parse(readFileSync(profilesPath, 'utf8'));
   const jsonKeys = Object.keys(json);
 
   const client = new pg.Client({ connectionString: url });
@@ -91,7 +91,7 @@ async function main() {
   // READ-ONLY: select only the two columns for the sample breeds.
   const { rows } = await client.query(
     'SELECT name, "breedGeneticProfile" AS profile FROM breeds WHERE name = ANY($1::text[])',
-    [SAMPLE_BREEDS],
+    [sampleBreeds],
   );
   const dbByName = new Map(rows.map(r => [r.name, r.profile]));
 
@@ -111,7 +111,7 @@ async function main() {
   console.log(`DB breeds w/ ratingProfiles:${ratingRes.rows[0].n}`);
   console.log('');
 
-  for (const name of SAMPLE_BREEDS) {
+  for (const name of sampleBreeds) {
     const j = json[name];
     const d = dbByName.get(name);
     console.log(`\n##### ${name} #####`);
@@ -138,7 +138,7 @@ async function main() {
     console.log(`    KEY-ORDER MATCH: ${orderMatch}`);
     // value diff across the canonical gait order
     const gaitValDiffs = [];
-    for (const k of GAIT_KEYS_ORDER) {
+    for (const k of gaitKeysOrder) {
       const jv = shallowMeanStd(jrp.gaits?.[k]);
       const dv = shallowMeanStd(drp.gaits?.[k]);
       if (jv !== dv) {
@@ -169,7 +169,7 @@ async function main() {
     console.log(`    JSON regions: [${jConfKeys.join(', ')}]`);
     console.log(`    DB   regions: [${dConfKeys.join(', ')}]`);
     const confValDiffs = [];
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       const jv = shallowMeanStd(jConf[r]);
       const dv = shallowMeanStd(dConf[r]);
       if (jv !== dv) {

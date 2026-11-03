@@ -13,7 +13,7 @@ import pg from 'pg';
 import { TestEnvironment as NodeEnvironment } from 'jest-environment-node';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { cleanupPrismaInstances } from '../jest.setup.mjs';
-import { PRISMA_CLEANUP_REGISTRY_KEY, registerPrismaForCleanup } from '../../packages/database/prismaTestLifecycle.mjs';
+import { prismaCleanupRegistryKey, registerPrismaForCleanup } from '../../packages/database/prismaTestLifecycle.mjs';
 import PrismaCleanupEnvironment from '../tests/config/PrismaCleanupEnvironment.mjs';
 
 const { Client } = pg;
@@ -137,7 +137,7 @@ describe('Prisma Jest cleanup lifecycle sentinel', () => {
     }
 
     expect(events).toEqual(['disconnect 1', 'disconnect 2', 'base teardown']);
-    expect(scope[PRISMA_CLEANUP_REGISTRY_KEY]).toHaveLength(0);
+    expect(scope[prismaCleanupRegistryKey]).toHaveLength(0);
   });
 
   test('the registry deduplicates clients and removes them after a successful drain', async () => {
@@ -152,10 +152,10 @@ describe('Prisma Jest cleanup lifecycle sentinel', () => {
     registerPrismaForCleanup(client, scope);
     registerPrismaForCleanup(client, scope);
 
-    expect(scope[PRISMA_CLEANUP_REGISTRY_KEY]).toHaveLength(1);
+    expect(scope[prismaCleanupRegistryKey]).toHaveLength(1);
     await expect(cleanupPrismaInstances(scope)).resolves.toEqual({ disconnected: 1 });
     expect(disconnectCalls).toBe(1);
-    expect(scope[PRISMA_CLEANUP_REGISTRY_KEY]).toHaveLength(0);
+    expect(scope[prismaCleanupRegistryKey]).toHaveLength(0);
   });
 
   test('a rejected disconnect fails loudly and remains registered for diagnosis', async () => {
@@ -175,22 +175,22 @@ describe('Prisma Jest cleanup lifecycle sentinel', () => {
     expect(cleanupError.errors[0].message).toContain(
       'Prisma test client 1 disconnect failed: sentinel disconnect failure',
     );
-    expect(scope[PRISMA_CLEANUP_REGISTRY_KEY]).toEqual([client]);
+    expect(scope[prismaCleanupRegistryKey]).toEqual([client]);
   });
 
   test('NODE_ENV=test without JEST_WORKER_ID imports Prisma without registering cleanup', async () => {
     const prismaClientUrl = pathToFileURL(path.join(repositoryRoot, 'packages/database/prismaClient.mjs')).href;
     const workerId = process.env.JEST_WORKER_ID;
-    const existingRegistry = globalThis[PRISMA_CLEANUP_REGISTRY_KEY];
+    const existingRegistry = globalThis[prismaCleanupRegistryKey];
 
     delete process.env.JEST_WORKER_ID;
-    delete globalThis[PRISMA_CLEANUP_REGISTRY_KEY];
+    delete globalThis[prismaCleanupRegistryKey];
     try {
       await import(`${prismaClientUrl}?standalone-sentinel=${Date.now()}`);
-      expect(globalThis[PRISMA_CLEANUP_REGISTRY_KEY]).toBeUndefined();
+      expect(globalThis[prismaCleanupRegistryKey]).toBeUndefined();
     } finally {
       process.env.JEST_WORKER_ID = workerId;
-      Object.defineProperty(globalThis, PRISMA_CLEANUP_REGISTRY_KEY, {
+      Object.defineProperty(globalThis, prismaCleanupRegistryKey, {
         configurable: true,
         value: existingRegistry,
         writable: false,

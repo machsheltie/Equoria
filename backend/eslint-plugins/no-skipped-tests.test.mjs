@@ -40,7 +40,7 @@ import { describe, it, expect } from '@jest/globals';
 import { Linter } from 'eslint';
 import { equoriaSkippedTestsPlugin } from './no-skipped-tests.mjs';
 
-const RULE_ID = 'equoria/no-skipped-tests';
+const ruleId = 'equoria/no-skipped-tests';
 
 // configType: 'flat' is required so `languageOptions` is honored — the legacy
 // linter API (default in ESLint 8.x) expects `parserOptions` and is the shape
@@ -53,7 +53,7 @@ function lint(source) {
     [
       {
         plugins: { equoria: equoriaSkippedTestsPlugin },
-        rules: { [RULE_ID]: 'error' },
+        rules: { [ruleId]: 'error' },
         languageOptions: {
           ecmaVersion: 'latest',
           sourceType: 'module',
@@ -65,7 +65,7 @@ function lint(source) {
 }
 
 function violationsOf(source) {
-  return lint(source).filter(m => m.ruleId === RULE_ID);
+  return lint(source).filter(m => m.ruleId === ruleId);
 }
 
 describe('equoria/no-skipped-tests — sentinel-positive (rule FIRES on skipped/todo tests)', () => {

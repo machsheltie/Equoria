@@ -23,7 +23,7 @@ import {
   canonicalizeHorseSex,
   canonicalizeHorseSexOrNull,
   horseSexFilterValues,
-  CANONICAL_HORSE_SEX_VALUES,
+  canonicalHorseSexValues,
 } from '../../../../packages/database/horseSexCanonical.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -74,7 +74,7 @@ describe('canonicalizeHorseSex (pure helper)', () => {
   });
 
   it('canonical list contains exactly the expected values', () => {
-    expect([...CANONICAL_HORSE_SEX_VALUES].sort()).toEqual(['Colt', 'Filly', 'Mare', 'Stallion']);
+    expect([...canonicalHorseSexValues].sort()).toEqual(['Colt', 'Filly', 'Mare', 'Stallion']);
   });
 });
 
@@ -230,11 +230,11 @@ describe('horseSexFilterValues — browse sex groups (Equoria-di2n5)', () => {
   });
 
   it('every canonical value is expandable, and every expansion is canonical', () => {
-    for (const value of CANONICAL_HORSE_SEX_VALUES) {
+    for (const value of canonicalHorseSexValues) {
       const expansion = horseSexFilterValues(value);
       expect(expansion).toContain(value);
       for (const v of expansion) {
-        expect(CANONICAL_HORSE_SEX_VALUES).toContain(v);
+        expect(canonicalHorseSexValues).toContain(v);
       }
     }
   });

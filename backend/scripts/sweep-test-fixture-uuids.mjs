@@ -52,10 +52,10 @@ const FILES = [
   '__tests__/unit/email-verification.test.mjs',
 ];
 
-const PHASE3A_RE = /\$\{Date\.now\(\)\}_\$\{Math\.random\(\)\.toString\(36\)\.slice\(2,\s*\d+\)\}/g;
-const REPLACE_WITH = '${randomUUID()}';
+const phase3aRe = /\$\{Date\.now\(\)\}_\$\{Math\.random\(\)\.toString\(36\)\.slice\(2,\s*\d+\)\}/g;
+const replaceWith = '${randomUUID()}';
 
-const IMPORT_LINE = "import { randomUUID } from 'node:crypto';";
+const importLine = "import { randomUUID } from 'node:crypto';";
 
 function ensureImport(content) {
   // Skip if already imported (any form: from 'node:crypto' or from 'crypto')
@@ -72,7 +72,7 @@ function ensureImport(content) {
     // transformation conservative and easy to review.)
   }
 
-  // Insert IMPORT_LINE after the last existing top-level import line.
+  // Insert importLine after the last existing top-level import line.
   // Top-level imports are lines starting with `import ` at column 0,
   // before any non-import non-comment content. We find the LAST such
   // line and insert after it.
@@ -92,9 +92,9 @@ function ensureImport(content) {
   }
   if (lastImportIdx === -1) {
     // No imports at all; prepend.
-    return `${IMPORT_LINE}\n${content}`;
+    return `${importLine}\n${content}`;
   }
-  lines.splice(lastImportIdx + 1, 0, IMPORT_LINE);
+  lines.splice(lastImportIdx + 1, 0, importLine);
   return lines.join('\n');
 }
 
@@ -116,12 +116,12 @@ function main() {
       console.error(`SKIP (read fail): ${path} — ${e.message}`);
       continue;
     }
-    const matches = content.match(PHASE3A_RE);
+    const matches = content.match(phase3aRe);
     if (!matches || matches.length === 0) {
       console.log(`SKIP (no pattern): ${path}`);
       continue;
     }
-    const newContent = ensureImport(content.replace(PHASE3A_RE, REPLACE_WITH));
+    const newContent = ensureImport(content.replace(phase3aRe, replaceWith));
     writeFileSync(path, newContent, 'utf8');
     totalReplacements += matches.length;
     touchedFiles += 1;

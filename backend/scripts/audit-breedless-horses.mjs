@@ -48,7 +48,7 @@ import { fileURLToPath } from 'url';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { defaultTemperamentBreed } from '../modules/horses/index.mjs';
 
-const AS_JSON = process.argv.includes('--json');
+const asJson = process.argv.includes('--json');
 
 /**
  * Foreign keys that point AT the horses table, straight from the live Postgres
@@ -206,7 +206,7 @@ async function auditBreedlessHorses() {
     horses: report,
   };
 
-  if (AS_JSON) {
+  if (asJson) {
     console.log(JSON.stringify(result, null, 2));
     return;
   }

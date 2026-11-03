@@ -23,7 +23,7 @@
  * finally. The flake cause was the shared database, not concurrency itself, so
  * two lanes with two databases keep the determinism of one serial stream.
  * Hard ceiling: 2 lanes (the machine's two-worker ceiling, CONTRIBUTING.md
- * "Test-run resource budget"), and HEAP_MB * LANES may not exceed HEAP_MB_MAX
+ * "Test-run resource budget"), and heapMb * LANES may not exceed heapMbMax
  * so the combined V8 cap never exceeds the single-process budget (768MB each
  * for two lanes; a shard measured 871MB peak tree RSS at that cap).
  *
@@ -32,7 +32,7 @@
  * lane database. With --lanes>1 they are excluded from the lane shards and run
  * afterwards in one short serial pass against the canonical DATABASE_URL; the
  * accounting below still requires every discovered suite to have run once.
- * The list is explicit and short by design (CANONICAL_DB_SUITES).
+ * The list is explicit and short by design (canonicalDbSuites).
  *
  * Timing sentinels (Equoria-jeci6) belong here too: an ABSOLUTE wall-clock
  * bound is a machine-load measurement, and under --lanes=2 the other lane's
@@ -146,24 +146,24 @@ function parseIntegerOption(
   return value;
 }
 
-const BATCH_SIZE = parseIntegerOption('batch-size', '25');
-const BATCH_TIMEOUT_MS = parseIntegerOption('timeout', '600') * 1000;
+const batchSize = parseIntegerOption('batch-size', '25');
+const batchTimeoutMs = parseIntegerOption('timeout', '600') * 1000;
 // Two-worker ceiling (CONTRIBUTING.md): never more than two concurrent jest
 // processes on this machine.
-const LANES_MAX = 2;
-const LANES = parseIntegerOption('lanes', '1', { max: LANES_MAX });
+const lanesMax = 2;
+const LANES = parseIntegerOption('lanes', '1', { max: lanesMax });
 // Heap ceiling (Equoria-5iggk, lowered to the budget 2026-09-14 under
 // Equoria-k09r9): refuse any --heap — or a drifted internal default — above
 // the ordinary 1536MB budget, divided across lanes so the combined V8 cap of
 // concurrent lane processes never exceeds the single-process budget.
-const HEAP_MB_MAX = 1536;
-const HEAP_MB = parseIntegerOption('heap', LANES > 1 ? '768' : '1536', {
-  max: HEAP_MB_MAX / LANES,
+const heapMbMax = 1536;
+const heapMb = parseIntegerOption('heap', LANES > 1 ? '768' : '1536', {
+  max: heapMbMax / LANES,
 });
-const JEST_SHARDS = parseIntegerOption('jest-shards', '0', { allowZero: true, max: 100 });
+const jestShards = parseIntegerOption('jest-shards', '0', { allowZero: true, max: 100 });
 const pattern = args.find(x => !x.startsWith('--'));
 
-if (LANES > 1 && !JEST_SHARDS) {
+if (LANES > 1 && !jestShards) {
   throw new Error('--lanes>1 requires --jest-shards=N (batch mode is single-lane only)');
 }
 
@@ -177,15 +177,13 @@ function normalizePath(p) {
 
 // Suites that assert against the live population and must run on the canonical
 // database. Paths are backend-relative. Keep this list short and justified.
-const CANONICAL_DB_SUITES = [
+const canonicalDbSuites = [
   '__tests__/horseColorDiversitySentinel.test.mjs',
   // Equoria-jeci6: absolute wall-clock bounds need a quiet machine (see above).
   // One list, shared with CI's quiet step (tree-lane-plan.mjs, Equoria-xh7zd).
   ...quietTimingSuites,
 ];
-const canonicalSet = new Set(
-  CANONICAL_DB_SUITES.map(rel => normalizePath(path.join(BACKEND, rel))),
-);
+const canonicalSet = new Set(canonicalDbSuites.map(rel => normalizePath(path.join(BACKEND, rel))));
 
 function listTestFiles() {
   // jest --listTests prints one absolute path per line on stdout. It applies the
@@ -232,29 +230,29 @@ function discoverAndPlan() {
   }
   discoveredSet = new Set(discovered.map(normalizePath));
 
-  if (JEST_SHARDS) {
+  if (jestShards) {
     // Canonical-db suites leave the lanes only when a canonical pass follows them.
     const isCanonical = f => LANES > 1 && canonicalSet.has(normalizePath(f));
     const plan = planLanes({
       discovered,
       backendDir: BACKEND,
       isCanonical,
-      shards: JEST_SHARDS,
+      shards: jestShards,
       lanes: LANES,
     });
     laneBatches = plan.lanes;
     batches = laneBatches.flat();
     console.log(
       `[shard] ${discovered.length} suites discovered once: ${plan.treeFiles.length} tree-touching in lane 1 only, ` +
-        `the rest in ${JEST_SHARDS} hash-ordered slices; batches per lane ${laneBatches.map(l => l.length).join('/')} ` +
-        `(explicit --runTestsByPath lists, heap ${HEAP_MB}MB, cap ${BATCH_TIMEOUT_MS / 1000}s each).`,
+        `the rest in ${jestShards} hash-ordered slices; batches per lane ${laneBatches.map(l => l.length).join('/')} ` +
+        `(explicit --runTestsByPath lists, heap ${heapMb}MB, cap ${batchTimeoutMs / 1000}s each).`,
     );
     return;
   }
-  batches = batchModeBatches({ discovered, backendDir: BACKEND, batchSize: BATCH_SIZE });
+  batches = batchModeBatches({ discovered, backendDir: BACKEND, batchSize });
   console.log(
-    `[shard] ${discovered.length} test files in ${batches.length} batches of ${BATCH_SIZE} ` +
-      `(per-batch heap ${HEAP_MB}MB, hard cap ${BATCH_TIMEOUT_MS / 1000}s, serial).`,
+    `[shard] ${discovered.length} test files in ${batches.length} batches of ${batchSize} ` +
+      `(per-batch heap ${heapMb}MB, hard cap ${batchTimeoutMs / 1000}s, serial).`,
   );
   laneBatches = [batches]; // batch mode is single-lane only (checked above)
 }
@@ -315,7 +313,7 @@ function runBatch(batch, jsonFile, env) {
     const child = spawn(
       process.execPath,
       [
-        `--max-old-space-size=${HEAP_MB}`,
+        `--max-old-space-size=${heapMb}`,
         '--experimental-vm-modules',
         JEST,
         '--runInBand',
@@ -334,7 +332,7 @@ function runBatch(batch, jsonFile, env) {
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill('SIGKILL');
-    }, BATCH_TIMEOUT_MS);
+    }, batchTimeoutMs);
     child.on('exit', (status, signal) => {
       clearTimeout(timer);
       ownedChildren.delete(child);

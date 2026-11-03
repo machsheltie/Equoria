@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import logger from '../utils/logger.mjs';
 
 // Health check configuration
-const HEALTH_CONFIG = {
+const healthConfig = {
   timeout: 10000, // 10 seconds
   retries: 3,
   endpoints: ['/ping', '/health'],
@@ -96,11 +96,11 @@ async function checkApiEndpoints(baseUrl = 'http://localhost:3000') {
 
   const results = [];
 
-  for (const endpoint of HEALTH_CONFIG.endpoints) {
+  for (const endpoint of healthConfig.endpoints) {
     try {
       const response = await fetch(`${baseUrl}${endpoint}`, {
         method: 'GET',
-        timeout: HEALTH_CONFIG.timeout,
+        timeout: healthConfig.timeout,
       });
 
       const result = {

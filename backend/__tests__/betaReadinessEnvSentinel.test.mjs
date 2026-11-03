@@ -155,7 +155,7 @@ describe('Beta-readiness env sentinel (Equoria-aih8)', () => {
     const rlSrc = read('backend/middleware/rateLimiting.mjs');
 
     // Owner ruling 2026-10-27: production and beta caps raised for ordinary play.
-    it('app.mjs RATE_LIMIT_MAX_BY_ENV has beta:10000, production:10000 and beta-readiness:1000', () => {
+    it('app.mjs rateLimitMaxByEnv has beta:10000, production:10000 and beta-readiness:1000', () => {
       expect(appSrc).toMatch(/beta:\s*10000/);
       expect(appSrc).toMatch(/production:\s*10000/);
       expect(appSrc).toMatch(/'beta-readiness':\s*1000/);

@@ -32,8 +32,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
 
-const SRC_DIR = 'backend/modules/services/__tests__';
-const DST_DIR = 'backend/__tests__';
+const srcDir = 'backend/modules/services/__tests__';
+const dstDir = 'backend/__tests__';
 const BASELINE = 'scripts/doctrine-checks/silent-cleanup-catch-baseline.json';
 
 /**
@@ -92,14 +92,14 @@ function main() {
 
   for (const f of files) {
     const base = path.basename(f);
-    const srcPath = path.join(repoRoot, SRC_DIR, base);
-    const dstPath = path.join(repoRoot, DST_DIR, base);
+    const srcPath = path.join(repoRoot, srcDir, base);
+    const dstPath = path.join(repoRoot, dstDir, base);
     if (!existsSync(srcPath)) {
-      console.error(`✗ missing: ${SRC_DIR}/${base}`);
+      console.error(`✗ missing: ${srcDir}/${base}`);
       process.exit(1);
     }
     if (existsSync(dstPath)) {
-      console.error(`✗ collision: ${DST_DIR}/${base} already exists`);
+      console.error(`✗ collision: ${dstDir}/${base} already exists`);
       process.exit(1);
     }
 
@@ -109,10 +109,10 @@ function main() {
 
     if (dryRun) {
       console.log(
-        `DRY: would git mv ${SRC_DIR}/${base} -> ${DST_DIR}/${base} (${out !== original ? 'imports rewritten' : 'no import change'})`,
+        `DRY: would git mv ${srcDir}/${base} -> ${dstDir}/${base} (${out !== original ? 'imports rewritten' : 'no import change'})`,
       );
     } else {
-      execSync(`git mv "${SRC_DIR}/${base}" "${DST_DIR}/${base}"`, {
+      execSync(`git mv "${srcDir}/${base}" "${dstDir}/${base}"`, {
         cwd: repoRoot,
         stdio: 'pipe',
       });
@@ -128,8 +128,8 @@ function main() {
     const json = JSON.parse(readFileSync(baselinePath, 'utf8'));
     let changed = false;
     for (const base of movedKeys) {
-      const oldKey = `${SRC_DIR}/${base}`;
-      const newKey = `${DST_DIR}/${base}`;
+      const oldKey = `${srcDir}/${base}`;
+      const newKey = `${dstDir}/${base}`;
       if (Object.prototype.hasOwnProperty.call(json, oldKey)) {
         json[newKey] = json[oldKey];
         delete json[oldKey];

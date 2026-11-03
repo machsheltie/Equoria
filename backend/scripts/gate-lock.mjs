@@ -84,10 +84,10 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-export const DEFAULT_LOCK_PATH = path.join(tmpdir(), 'equoria-backend-gate.lock');
-const DEFAULT_WAIT_MS = 25 * 60 * 1000; // one full gate plus margin
-const DEFAULT_POLL_MS = 5000;
-const NOTICE_EVERY_MS = 60 * 1000;
+export const defaultLockPath = path.join(tmpdir(), 'equoria-backend-gate.lock');
+const defaultWaitMs = 25 * 60 * 1000; // one full gate plus margin
+const defaultPollMs = 5000;
+const noticeEveryMs = 60 * 1000;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -106,7 +106,7 @@ export function isPidAlive(pid) {
   }
 }
 
-export function readGateLock(lockPath = DEFAULT_LOCK_PATH) {
+export function readGateLock(lockPath = defaultLockPath) {
   try {
     const parsed = JSON.parse(readFileSync(lockPath, 'utf8'));
     return parsed && typeof parsed === 'object' ? parsed : null;
@@ -223,9 +223,9 @@ function admissionError(state, holder, lockPath, waitMs) {
  * reclaims — when the lock is held, left over, or unreadable at the deadline.
  */
 export async function acquireGateLock({
-  lockPath = DEFAULT_LOCK_PATH,
-  waitMs = DEFAULT_WAIT_MS,
-  pollMs = DEFAULT_POLL_MS,
+  lockPath = defaultLockPath,
+  waitMs = defaultWaitMs,
+  pollMs = defaultPollMs,
   runId = 'unknown',
   log = () => {},
   pid = process.pid,
@@ -263,7 +263,7 @@ export async function acquireGateLock({
       throw admissionError(state, holder, lockPath, waitMs);
     }
 
-    if (state === 'held' && now() - lastNotice >= NOTICE_EVERY_MS) {
+    if (state === 'held' && now() - lastNotice >= noticeEveryMs) {
       lastNotice = now();
       log(
         `[gate-lock] waiting: another backend gate is running (pid ${holder.pid}, started ${holder.startedAt}, cwd ${holder.cwd}); this run starts when it finishes`,
@@ -283,7 +283,7 @@ export async function acquireGateLock({
  * handle must not free the gate the second acquisition is holding. The pid
  * comparison remains for callers that pass no token.
  */
-export function releaseGateLock({ lockPath = DEFAULT_LOCK_PATH, pid = process.pid, token } = {}) {
+export function releaseGateLock({ lockPath = defaultLockPath, pid = process.pid, token } = {}) {
   const holder = readGateLock(lockPath);
   if (!holder || holder.corrupt) {
     return false;

@@ -23,7 +23,7 @@ import { stopOwnedChildren } from '../scripts/gate-lock.mjs';
 import {
   activeProvisioningChildren,
   createLaneDatabase,
-  PROVISIONING_CANCELLED,
+  provisioningCancelled,
   runSupervisedStep,
 } from '../scripts/test-lane-db.mjs';
 
@@ -119,7 +119,7 @@ describe('lane provisioning supervision', () => {
    * barrier through the injectable `databaseOps`; every provisioning step is
    * the real code path. If the bug is present, the real `prisma migrate deploy`
    * launches (registering a child) and fails for want of a database — the
-   * rejection would then NOT carry PROVISIONING_CANCELLED.
+   * rejection would then NOT carry provisioningCancelled.
    */
   test('cancellation during the database wait launches no provisioning subprocess and drops the created database', async () => {
     const controller = new AbortController();
@@ -158,7 +158,7 @@ describe('lane provisioning supervision', () => {
       controller.abort(new Error('signal SIGTERM')); // arrives DURING the wait
       releaseCreate(); // creation completes after cancellation
 
-      await expect(provisioning).rejects.toMatchObject({ code: PROVISIONING_CANCELLED });
+      await expect(provisioning).rejects.toMatchObject({ code: provisioningCancelled });
       await expect(provisioning).rejects.toThrow(/after creating/);
     } finally {
       clearInterval(sampler);
@@ -192,7 +192,7 @@ describe('lane provisioning supervision', () => {
           },
         },
       }),
-    ).rejects.toMatchObject({ code: PROVISIONING_CANCELLED });
+    ).rejects.toMatchObject({ code: provisioningCancelled });
 
     expect(created).toBe(false);
     expect(dropped).toEqual([]); // nothing was created, so nothing to drop
@@ -215,7 +215,7 @@ describe('lane provisioning supervision', () => {
 
     controller.abort(new Error('signal SIGTERM'));
 
-    await expect(step).rejects.toMatchObject({ code: PROVISIONING_CANCELLED });
+    await expect(step).rejects.toMatchObject({ code: provisioningCancelled });
     await expect(step).rejects.toThrow(/running migrate was running; it was terminated/);
     expect(child.exitCode !== null || child.signalCode !== null).toBe(true);
     expect(activeProvisioningChildren.size).toBe(0);

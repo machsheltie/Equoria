@@ -5,8 +5,8 @@
  * that global lets the custom environment disconnect them after every suite
  * hook has finished, including suite-owned afterAll cleanup that uses Prisma.
  */
-export const PRISMA_CLEANUP_REGISTRY_KEY = '__equoriaPrismaCleanupRegistry';
-const DISCONNECT_TIMEOUT_MS = 10000;
+export const prismaCleanupRegistryKey = '__equoriaPrismaCleanupRegistry';
+const disconnectTimeoutMs = 10000;
 
 async function disconnectWithTimeout(prismaInstance) {
   let timer;
@@ -15,8 +15,8 @@ async function disconnectWithTimeout(prismaInstance) {
       prismaInstance.$disconnect(),
       new Promise((_, reject) => {
         timer = setTimeout(
-          () => reject(new Error(`disconnect timed out after ${DISCONNECT_TIMEOUT_MS}ms`)),
-          DISCONNECT_TIMEOUT_MS
+          () => reject(new Error(`disconnect timed out after ${disconnectTimeoutMs}ms`)),
+          disconnectTimeoutMs
         );
       }),
     ]);
@@ -30,7 +30,7 @@ function getRegistry(scope, create) {
     throw new TypeError('Prisma cleanup requires a valid global scope');
   }
 
-  const existing = scope[PRISMA_CLEANUP_REGISTRY_KEY];
+  const existing = scope[prismaCleanupRegistryKey];
   if (existing !== undefined) {
     if (!Array.isArray(existing)) {
       throw new TypeError('Prisma cleanup registry must be an array');
@@ -43,7 +43,7 @@ function getRegistry(scope, create) {
   }
 
   const registry = [];
-  Object.defineProperty(scope, PRISMA_CLEANUP_REGISTRY_KEY, {
+  Object.defineProperty(scope, prismaCleanupRegistryKey, {
     configurable: true,
     value: registry,
     writable: false,

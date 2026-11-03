@@ -18,7 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Pipeline validation configuration
-const VALIDATION_CONFIG = {
+const validationConfig = {
   timeout: 300000, // 5 minutes
   requiredScripts: [
     'test',
@@ -54,7 +54,7 @@ function executeCommand(command, options = {}) {
   try {
     const result = execSync(command, {
       encoding: 'utf8',
-      timeout: options.timeout || VALIDATION_CONFIG.timeout,
+      timeout: options.timeout || validationConfig.timeout,
       cwd: options.cwd || path.resolve(__dirname, '..'),
       stdio: options.silent ? 'pipe' : 'inherit',
     });
@@ -84,7 +84,7 @@ async function validatePackageScripts() {
     present: [],
   };
 
-  for (const script of VALIDATION_CONFIG.requiredScripts) {
+  for (const script of validationConfig.requiredScripts) {
     if (packageJson.scripts && packageJson.scripts[script]) {
       results.present.push(script);
       console.log(`✅ Script '${script}' found`);
@@ -110,7 +110,7 @@ async function validateRequiredFiles() {
     present: [],
   };
 
-  for (const file of VALIDATION_CONFIG.requiredFiles) {
+  for (const file of validationConfig.requiredFiles) {
     const filePath = path.resolve(__dirname, '..', file);
 
     try {
@@ -147,7 +147,7 @@ async function validateDependencies() {
     present: [],
   };
 
-  for (const dep of VALIDATION_CONFIG.requiredDependencies) {
+  for (const dep of validationConfig.requiredDependencies) {
     if (allDeps[dep]) {
       results.present.push(dep);
       console.log(`✅ Dependency '${dep}' found (${allDeps[dep]})`);

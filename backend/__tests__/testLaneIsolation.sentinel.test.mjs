@@ -23,8 +23,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import pg from 'pg';
 import {
-  DEFAULT_ENV_FILE,
-  LANE_DB_PREFIX,
+  defaultEnvFile,
+  laneDbPrefix,
   assertLaneName,
   baseDatabaseUrl,
   createLaneDatabase,
@@ -54,15 +54,15 @@ describe('lane naming and routing guards', () => {
     expect(() => assertLaneName('equoria')).toThrow(/not a lane database name/);
     expect(() => assertLaneName('postgres')).toThrow(/not a lane database name/);
     expect(() => assertLaneName('equoria_replay_sentinel_abcdef')).toThrow(/not a lane/);
-    expect(() => assertLaneName(`${LANE_DB_PREFIX}abc_1`)).toThrow(/not a lane/); // run id too short
-    expect(() => assertLaneName(`${LANE_DB_PREFIX}abcdef_1; DROP DATABASE equoria`)).toThrow();
+    expect(() => assertLaneName(`${laneDbPrefix}abc_1`)).toThrow(/not a lane/); // run id too short
+    expect(() => assertLaneName(`${laneDbPrefix}abcdef_1; DROP DATABASE equoria`)).toThrow();
     expect(() => laneName('short', 1)).toThrow(/run id/);
     expect(() => laneName('abcdef012345', 0)).toThrow(/lane index/);
     expect(() => laneName('abcdef012345', 100)).toThrow(/lane index/);
   });
 
   test('compliant names pass and carry the run id and lane index', () => {
-    expect(laneName('abcdef012345', 2)).toBe(`${LANE_DB_PREFIX}abcdef012345_2`);
+    expect(laneName('abcdef012345', 2)).toBe(`${laneDbPrefix}abcdef012345_2`);
     expect(assertLaneName(laneName(newRunId(), 1))).toMatch(/^equoria_lane_[a-f0-9]{12}_1$/);
   });
 
@@ -77,7 +77,7 @@ describe('lane naming and routing guards', () => {
     expect(url.hostname).toBe('localhost');
     expect(url.username).toBe('user');
     expect(url.password).toBe('secret');
-    expect(url.pathname).toBe(`/${LANE_DB_PREFIX}abcdef012345_1`);
+    expect(url.pathname).toBe(`/${laneDbPrefix}abcdef012345_1`);
     expect(url.searchParams.get('x')).toBe('1');
   });
 });
@@ -103,9 +103,7 @@ describe('base configuration resolves without backend/.env.test (Equoria-dwicn)'
     // absent file threw ENOENT before the environment was ever consulted.
     const url = 'postgresql://test:test@localhost:5432/equoria_test';
     expect(baseDatabaseUrl({ DATABASE_URL: url }, absent())).toBe(url);
-    expect(laneUrlFor(laneName('abcdef012345', 1), { DATABASE_URL: url })).toContain(
-      `/${LANE_DB_PREFIX}abcdef012345_1`,
-    );
+    expect(laneUrlFor(laneName('abcdef012345', 1), { DATABASE_URL: url })).toContain(`/${laneDbPrefix}abcdef012345_1`);
   });
 
   test('planted violation: an absent file AND no DATABASE_URL fails with the named cause, not ENOENT', () => {
@@ -148,7 +146,7 @@ describe('base configuration resolves without backend/.env.test (Equoria-dwicn)'
   });
 
   test('the default path is backend/.env.test', () => {
-    expect(DEFAULT_ENV_FILE.split(path.sep).slice(-2).join('/')).toBe('backend/.env.test');
+    expect(defaultEnvFile.split(path.sep).slice(-2).join('/')).toBe('backend/.env.test');
   });
 });
 

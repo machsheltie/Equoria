@@ -24,7 +24,7 @@ dotenv.config({ path: join(__dirname, '../.env') });
 const prisma = new PrismaClient();
 
 // Horse name → expected breed name mapping from seedDevData.mjs
-const HORSE_BREED_MAP = {
+const horseBreedMap = {
   'Midnight Star': 'Thoroughbred',
   'Golden Thunder': 'Arabian',
   'Silver Mist': 'American Saddlebred',
@@ -52,7 +52,7 @@ async function repairBreedIds() {
   let alreadyOk = 0;
   let notFound = 0;
 
-  for (const [horseName, expectedBreedName] of Object.entries(HORSE_BREED_MAP)) {
+  for (const [horseName, expectedBreedName] of Object.entries(horseBreedMap)) {
     const breedId = breedMap[expectedBreedName];
     if (!breedId) {
       console.warn(`  ⚠️  Breed "${expectedBreedName}" not found in DB — skipping ${horseName}`);
