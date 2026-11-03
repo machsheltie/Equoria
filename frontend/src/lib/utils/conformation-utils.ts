@@ -172,14 +172,19 @@ export function formatScore(score: number): string {
  * Used for tooltips and educational information
  */
 export function getRegionDescription(region: string): string {
+  const shoulder = 'Angle, slope, length, and connection to withers - affects movement quality';
   const descriptions: Record<string, string> = {
     head: 'Facial structure, profile, eyes, ears, and overall head proportion to body',
     neck: 'Length, crest development, throatlatch refinement, and connection to shoulder',
-    shoulder: 'Angle, slope, length, and connection to withers - affects movement quality',
+    shoulder,
+    // The Conformation tab names this region 'shoulders' (Equoria-c74ud).
+    shoulders: shoulder,
     back: 'Topline strength, length, coupling, loin strength, and overall structural integrity',
     hindquarters: 'Hip angle, croup slope, muscle development, and power generation capacity',
     legs: 'Bone structure, joint angles, symmetry, straightness, and soundness indicators',
     hooves: 'Size, shape, balance, quality, wall thickness, and overall hoof health',
+    topline:
+      'The line from the withers over the back and loin to the croup - smoothness, strength, and balance',
   };
 
   return descriptions[region.toLowerCase()] || 'Conformation assessment for this region';
