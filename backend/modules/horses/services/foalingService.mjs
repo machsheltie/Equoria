@@ -74,17 +74,15 @@ const pregnancyBonusNegativeTraits = Object.freeze(['fragile']);
 
 /** One trait list of a stored epigeneticModifiers value; [] when absent or not a list. */
 function traitList(modifiers, key) {
-  const src =
-    modifiers !== null && typeof modifiers === 'object' && !Array.isArray(modifiers)
-      ? modifiers
-      : {};
-  return Array.isArray(src[key]) ? src[key] : [];
+  const list = modifiers?.[key];
+  return Array.isArray(list) ? list : [];
 }
 
 /**
  * Collect the union of a horse's carried epigenetic traits (positive ∪ negative
- * ∪ hidden ∪ dormant) for §A inheritance input. A dormant trait (revealed, switched off; Equoria-nrto5) is
- * still carried and inheritable (owner ruling 2026-10-22 on Equoria-q4uem.17).
+ * ∪ hidden ∪ dormant) for §A inheritance input. A dormant trait (revealed,
+ * switched off; Equoria-nrto5) is still carried and inheritable (owner ruling
+ * 2026-10-22 on Equoria-q4uem.17).
  * Tolerates null / primitive / array-shaped epigeneticModifiers (legacy rows).
  */
 function collectEpigeneticTraits(modifiers) {
