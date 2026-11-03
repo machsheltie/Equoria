@@ -101,6 +101,9 @@ test('profile Game-Statistics cards render real non-zero values with no bypass h
       runDate: new Date(Date.now() - 86400000),
       showName: show.name,
       horseId: starterHorseId,
+      // A player's results are the ones she entered (owner ruling q256,
+      // Equoria-r9q06); old contract: read through the horse's owner.
+      entrantUserId: userId,
       showId: show.id,
       prizeWon: 500,
     },

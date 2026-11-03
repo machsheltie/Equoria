@@ -47,6 +47,7 @@
 
 import { test, expect, type APIRequestContext, type Browser } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+import { readTestCredentials } from './helpers/credentials';
 
 // Pull the data array out of the API envelope ({ success, data } or bare array).
 function unwrap<T = unknown>(body: unknown): T {
@@ -72,7 +73,17 @@ async function getStarterHorseId(request: APIRequestContext): Promise<number> {
     'Expected the storageState user to own at least one horse (the onboarding starter horse). ' +
       'Did tests/e2e/global-setup.ts complete onboarding?'
   ).toBe(true);
-  return horses[0].id;
+  // The starter horse global-setup recorded, not horses[0]: other specs give
+  // this player more horses, and the first listed was a newborn foal. A horse
+  // is ridden from age 3 (owner ruling, Equoria-y2ksc), so assigning a rider to
+  // that foal is refused horseTooYoung. The starter horse is 3.
+  const starterHorseId = readTestCredentials().testHorseId;
+  expect(starterHorseId, 'global-setup must record E2E_TEST_HORSE_ID').toBeTruthy();
+  expect(
+    horses.some((h) => h.id === starterHorseId),
+    `the storageState user must own the starter horse ${starterHorseId}`
+  ).toBe(true);
+  return starterHorseId as number;
 }
 
 /**

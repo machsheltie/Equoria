@@ -57,9 +57,16 @@ async function getPrisma(): Promise<PrismaSubset> {
 export type SeededPrizeResult = { showId: number; resultId: number; showName: string };
 
 /**
- * One completed show, run yesterday, in which `horseId` placed 1st and won 500.
+ * One completed show, run yesterday, in which `horseId` placed 1st and won 500,
+ * entered by `entrantUserId`. A player's results are the ones she entered
+ * (owner ruling q256, Equoria-r9q06: a sold horse's past results stay with the
+ * player who entered them), so the row names its entrant. Old contract: results
+ * were read through the horse's current owner, and this row had no entrant.
  */
-export async function seedPrizeResult(horseId: number): Promise<SeededPrizeResult> {
+export async function seedPrizeResult(
+  horseId: number,
+  entrantUserId: string
+): Promise<SeededPrizeResult> {
   const prisma = await getPrisma();
   const runDate = new Date(Date.now() - dayMs);
   const showName = `${showNamePrefix}${randomUUID()}`;
@@ -84,6 +91,7 @@ export async function seedPrizeResult(horseId: number): Promise<SeededPrizeResul
           runDate,
           showName,
           horseId,
+          entrantUserId,
           prizeWon: 500,
         },
       },

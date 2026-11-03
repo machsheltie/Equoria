@@ -35,7 +35,7 @@ async function playerWithResult(
   browser: import('@playwright/test').Browser
 ): Promise<PlayerWithResult> {
   const player = await createSeededPlayerSession(browser);
-  const prize = await seedPrizeResult(player.starterHorseId);
+  const prize = await seedPrizeResult(player.starterHorseId, player.userId);
   return { player, prize };
 }
 

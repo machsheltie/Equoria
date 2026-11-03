@@ -28,7 +28,7 @@
  *      assert remainingMoney === before − cost, cross-check the persisted
  *      profile balance, and assert the hired groom is OWNED via the real
  *      GET /api/v1/grooms/user/:id. The groom cost is read from the live
- *      marketplace response (sessionRate × 7), never hardcoded — and the groom
+ *      marketplace response (its weeklyFee), never hardcoded — and the groom
  *      is chosen to be affordable against the real balance. (The owned-groom
  *      Manage-TAB DOM render is deferred to Equoria-j2a51: GroomsPage feeds
  *      MyGroomsDashboard a NaN userId so owned grooms never render there, and
@@ -67,6 +67,7 @@ type MarketplaceGroom = {
   firstName: string;
   lastName: string;
   sessionRate: number;
+  weeklyFee: number;
 };
 
 type MarketplaceData = {
@@ -191,17 +192,20 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
       )
       .toBe(balanceBefore);
 
-    // Cost = sessionRate × 7 (one week upfront — backend hiringCost rule).
-    // Choose the cheapest affordable groom so the test user can actually pay.
+    // Cost = the offer's weeklyFee: hiring charges one week at the groom's
+    // star-level price, and the marketplace advertises exactly that price
+    // (owner ruling 2026-10-28, q226, Equoria-nawn5). Old contract: the cost was
+    // sessionRate × 7. Choose the cheapest affordable groom so the test user
+    // can actually pay.
     const affordable = marketplace.grooms
-      .map((g) => ({ groom: g, cost: g.sessionRate * 7 }))
+      .map((g) => ({ groom: g, cost: g.weeklyFee }))
       .filter(({ cost }) => cost <= balanceBefore)
       .sort((a, b) => a.cost - b.cost);
 
     expect(
       affordable.length,
       `test user balance (${balanceBefore}) must afford at least one groom; ` +
-        `cheapest costs ${Math.min(...marketplace.grooms.map((g) => g.sessionRate * 7))}. ` +
+        `cheapest costs ${Math.min(...marketplace.grooms.map((g) => g.weeklyFee))}. ` +
         'Precondition: the E2E user needs enough money to hire one week upfront.'
     ).toBeGreaterThan(0);
 

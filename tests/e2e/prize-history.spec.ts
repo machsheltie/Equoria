@@ -62,7 +62,7 @@ const test = base.extend<
       const body = (await res.json()) as { data?: Array<{ id: number }> } | Array<{ id: number }>;
       const horses = Array.isArray(body) ? body : (body.data ?? []);
       expect(horses.length, 'the seeded player must own its onboarding starter horse').toBe(1);
-      const seeded = await seedPrizeResult(horses[0].id);
+      const seeded = await seedPrizeResult(horses[0].id, seededPlayer.userId);
       await use(seeded);
       await removeSeededPrizeResult(seeded);
     },

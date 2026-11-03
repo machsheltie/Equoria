@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { createSeededPlayerSession, type SeededPlayerSession } from './fixtures/seededPlayer';
+import { markHorseFedTwoDaysAgo } from './fixtures/feedHistory';
 
 // Equoria-g3n8c / Equoria-0vhop: this spec needs a player whose feed inventory
 // is EMPTY and whose horse has not been fed today. The shared global-setup
@@ -27,6 +28,12 @@ const test = base.extend<object, { seededPlayer: SeededPlayerSession } & Starter
       const body = (await res.json()) as { data?: Array<{ id: number }> } | Array<{ id: number }>;
       const horses = Array.isArray(body) ? body : (body.data ?? []);
       expect(horses.length, 'the seeded player must own its onboarding starter horse').toBe(1);
+      // Owner ruling 2026-10-28 (Equoria-fd3f2): a starter horse arrives fully
+      // fed, so it cannot be fed again the day it arrives and the Feed button
+      // read "Fed today". Old contract: it arrived unfed. The spec still feeds
+      // over the real route; the starter horse is given a feeding two days ago
+      // (fixtures/feedHistory.ts), the same as every other feeding spec.
+      await markHorseFedTwoDaysAgo(horses[0].id);
       await use(horses[0].id);
     },
     { scope: 'worker' },
