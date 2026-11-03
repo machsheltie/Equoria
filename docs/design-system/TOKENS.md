@@ -41,7 +41,7 @@ existing spec token. Defined in the `SEMANTIC ROLE TOKENS` section of
 | `--role-accent-text`    | `var(--gold-light)`              | `#e8d48b` (12.28:1 on --bg-night-sky) |
 | `--role-accent-bg`      | `var(--btn-gold-bg)`             | `rgba(200, 168, 78, 0.2)`             |
 | `--role-accent-border`  | `var(--btn-gold-border)`         | `rgba(200, 168, 78, 0.4)`             |
-| `--role-neutral-text`   | `var(--text-secondary)`          | `#94a3b8`                             |
+| `--role-neutral-text`   | `var(--text-secondary)`          | `#97a6bb`                             |
 | `--role-neutral-bg`     | `var(--glass-surface-subtle-bg)` | `rgba(15, 23, 42, 0.4)`               |
 | `--role-neutral-border` | `var(--glass-border)`            | `rgba(148, 163, 184, 0.2)`            |
 
@@ -56,8 +56,8 @@ in page and component code.
 | Class                  | Token used              | Resolved value          | Notes                                                                              |
 | ---------------------- | ----------------------- | ----------------------- | ---------------------------------------------------------------------------------- |
 | `.text-role-primary`   | `var(--text-primary)`   | `#dcebff`               | 15.00:1 on --bg-night-sky, AAA — default body text                                 |
-| `.text-role-secondary` | `var(--text-secondary)` | `#94a3b8`               | 7.07:1 on --bg-night-sky, AA — supporting text                                     |
-| `.text-role-muted`     | `var(--text-muted)`     | `#64748b`               | 3.81:1 on --bg-night-sky — large text only; never small metadata or microcopy      |
+| `.text-role-secondary` | `var(--text-secondary)` | `#97a6bb`               | 7.33:1 on --bg-night-sky, AA — supporting text                                     |
+| `.text-role-muted`     | `var(--text-muted)`     | `#8c9cb1`               | 6.48:1 on --bg-night-sky, AA — timestamps, metadata (was `#64748b`, 3.81:1)        |
 | `.text-role-disabled`  | `var(--text-disabled)`  | `rgba(100,116,139,0.4)` | `--text-muted` at 40% — disabled controls                                          |
 | `.text-role-inverse`   | `var(--bg-deep-space)`  | `#0a0e1a`               | Dark text on gold/bright backgrounds                                               |
 | `.text-role-link`      | `var(--link-gold)`      | `#c8a84e`               | Inline text links; current `index.css` mapping to `--gold-light` is migration debt |
@@ -116,3 +116,4 @@ tint on the conformation card's night-sky ground.
 | 2026-06-09 | Initial creation (Equoria-o5hub.6 P2.1) — role tokens, text roles, radius mapping          |
 | 2026-08-19 | Corrected authority, inline-link token, muted-text guidance, and stale decision references |
 | 2026-10-29 | Conformation rating ladder tokens (Equoria-oxbda)                                          |
+| 2026-11-03 | Text muted/secondary lifted to pass 4.5:1 on real backdrops (Equoria-oey96.77, q344)       |

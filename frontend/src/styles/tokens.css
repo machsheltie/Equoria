@@ -69,8 +69,8 @@
 
   /* ── Text Colors (contrast-verified against --bg-night-sky) ────────── */
   --text-primary: #dcebff; /* 15.00:1 on --bg-night-sky — AAA — primary body text */
-  --text-secondary: #94a3b8; /* 7.07:1 on --bg-night-sky — AA — secondary/supporting */
-  --text-muted: #64748b; /* 3.81:1 on --bg-night-sky — AA large only — timestamps, meta */
+  --text-secondary: #97a6bb; /* 7.33:1 on --bg-night-sky — AA — secondary/supporting (was #94a3b8; lifted for the horse page panel, Equoria-oey96.77) */
+  --text-muted: #8c9cb1; /* 6.48:1 on --bg-night-sky — AA — timestamps, meta (was #64748b, 3.81:1; owner ruling q344, Equoria-oey96.77) */
   --text-gold: #c8a84e; /* 7.91:1 on --bg-night-sky — gold accent headers */
   /* DECISIONS.md §7: disabled = --text-muted (slate-500 #64748b) at 40% opacity.
      rgba form avoids color-mix (not used in this project). */
