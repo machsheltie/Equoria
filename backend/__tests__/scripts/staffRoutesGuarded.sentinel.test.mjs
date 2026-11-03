@@ -464,6 +464,17 @@ describe('check-staff-routes-guarded: time-back and jobs.hold are mounted nowher
     expect(failures[0].reason).toContain('requireFreshStaffProof');
   });
 
+  // Quality Gate run 41720629048: another suite's transient _ws4graphplant_ file
+  // vanished between the listing and the read (ENOENT). Reserved scratch plants
+  // are never tracked source, so the scan skips them; the real file still fails.
+  test("another suite's reserved scratch plant is skipped, a real file next to it still fails", () => {
+    const root = mirror({
+      'modules/admin/routes/adminRoutes.mjs': `${IMPORT}router.post('/x', requireStaffCapability('time-back'), h);\n`,
+      'modules/economy/_ws4graphplant_tick_0-0.mjs': `${IMPORT}router.post('/y', requireStaffCapability('time-back'), h);\n`,
+    });
+    expect(where(scanFreshProofCapabilityUse(root))).toEqual(['adminRoutes.mjs:2']);
+  });
+
   test('requireAnyStaffCapability, an alias, a member call and a template literal all fail', () => {
     const root = mirror({
       'modules/admin/routes/any.mjs': `${IMPORT}router.get('/a', requireAnyStaffCapability(['warn', 'jobs.hold']), h);\n`,

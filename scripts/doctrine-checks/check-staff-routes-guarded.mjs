@@ -48,6 +48,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as espree from 'espree';
 import { load, staticPath } from './staff-routes-ast.mjs';
+import { isReservedScratchPlantPathSegment } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(__filename), '..', '..');
@@ -421,6 +422,10 @@ const capabilityMapRel = path.join('modules', 'staff', 'capabilities.mjs');
 /** Backend source files outside tests and node_modules. */
 function backendSourceFiles(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    // Another suite's transient scratch plant (e.g. _ws4graphplant_*) can vanish
+    // between this listing and the read; it is never tracked source (Quality Gate
+    // run 41720629048, ENOENT on backend/modules/economy/_ws4graphplant_tick_*).
+    if (isReservedScratchPlantPathSegment(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       if (!skipDirs.has(entry.name) && !entry.name.startsWith('.')) backendSourceFiles(full, out);
