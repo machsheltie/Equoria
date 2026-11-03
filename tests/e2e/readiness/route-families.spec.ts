@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 // @ts-expect-error — JS module without .d.ts; import works at runtime via Node.
 import prisma from '../../../packages/database/prismaClient.mjs';
 import {
+  hireAndAssignTrainer,
   csrfRequest,
   expectOk,
   installProductionParityNetworkGuard,
@@ -120,14 +121,20 @@ test('all beta route families execute real read and write flows', async ({ page,
   const stallion = unwrapData<{ horse: Record<string, unknown> }>(stallionJson).horse;
   expect(Number(stallion.id)).toBeGreaterThan(0);
 
-  // Feed the stallion and dam so both horses pass the critical-health gate in
-  // POST /api/v1/horses/foals. The breeding endpoint uses getDisplayedHealth(),
-  // which is worseOf(feedHealth, vetHealth). A horse with lastFedDate=null has
-  // feedHealth='critical', blocking breeding regardless of healthStatus.
-  //
-  // Steps: buy feed → equip feed on each horse → feed each horse → proceed to breed.
-  // We do this here (before listing/training/breeding) so the horses are healthy
-  // by the time we reach the foal creation call.
+  // The feed family: buy feed → equip feed on each horse → feed each horse.
+  // Owner ruling 2026-10-28 (Equoria-fd3f2): a store horse and a starter horse
+  // arrive in Excellent health and fully fed, so both are already healthy for
+  // breeding, and a feeding the day they arrive is the real, authored refusal.
+  // Old contract: they arrived unfed and this feeding was what let them breed.
+  const expectFedOnArrival = async (horseId: number, label: string) => {
+    const response = await csrfRequest(page, 'POST', `/api/v1/horses/${horseId}/feed`, {});
+    const text = await response.text();
+    expect(
+      response.status(),
+      `${label} on arrival day answered ${response.status()}: ${text}`
+    ).toBe(400);
+    expect(JSON.parse(text).message).toBe('Already fed today. Try again tomorrow.');
+  };
   const feedCatalogForBreeding = unwrapData<Array<{ id: string }>>(
     await expectOk(
       await page.request.get('/api/v1/feed-shop/catalog'),
@@ -150,10 +157,7 @@ test('all beta route families execute real read and write flows', async ({ page,
     }),
     'POST /api/v1/horses/stallion/equip-feed'
   );
-  await expectOk(
-    await csrfRequest(page, 'POST', `/api/v1/horses/${Number(stallion.id)}/feed`, {}),
-    'POST /api/v1/horses/stallion/feed'
-  );
+  await expectFedOnArrival(Number(stallion.id), 'POST /api/v1/horses/stallion/feed');
   // Equip feed to starter mare (dam) then feed it
   await expectOk(
     await csrfRequest(page, 'POST', `/api/v1/horses/${starterHorseId}/equip-feed`, {
@@ -161,10 +165,7 @@ test('all beta route families execute real read and write flows', async ({ page,
     }),
     'POST /api/v1/horses/dam/equip-feed'
   );
-  await expectOk(
-    await csrfRequest(page, 'POST', `/api/v1/horses/${starterHorseId}/feed`, {}),
-    'POST /api/v1/horses/dam/feed'
-  );
+  await expectFedOnArrival(starterHorseId, 'POST /api/v1/horses/dam/feed');
 
   const listJson = await expectOk(
     await csrfRequest(page, 'POST', '/api/v1/marketplace/list', {
@@ -198,6 +199,9 @@ test('all beta route families execute real read and write flows', async ({ page,
   expect(unwrapData<Record<string, unknown>>(eligibilityJson).eligible).toEqual(
     expect.any(Boolean)
   );
+  // A trainer is required to train (owner ruling 2026-10-26, q81, Equoria-r8a6h).
+  // Old contract: the starter horse trained with no trainer.
+  await hireAndAssignTrainer(page, starterHorseId);
   const trainResponse = await csrfRequest(page, 'POST', '/api/v1/training/train', {
     horseId: starterHorseId,
     discipline: 'Dressage',

@@ -13,6 +13,7 @@ import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/a
 import { seedOwnedHorse } from './fixtures/ownedHorses';
 import { createSeededPlayerSession } from './fixtures/seededPlayer';
 import { markHorseFedTwoDaysAgo } from './fixtures/feedHistory';
+import { makeHorseReadyToTrain, removeFixtureTrainer } from './fixtures/trainingReadiness';
 import { readTestCredentials } from './helpers/credentials';
 import { trainAndAssertInPlace } from './helpers/training';
 
@@ -109,6 +110,7 @@ test.describe('AC4: Training Session', () => {
   // Always create a fresh horse so it has no training cooldown.
   // Reusing the global-setup horse risks cooldown from previous test runs.
   let trainingHorseId: number | null = null;
+  let fixtureTrainerId: number | null = null;
   let session: AuthedSession;
 
   // Equoria-oua3: bare `request` does NOT inherit storageState. Use
@@ -153,9 +155,17 @@ test.describe('AC4: Training Session', () => {
     // freshly seeded horse could train at once. New: it has to have been fed,
     // so it is given a feeding two days ago (fixtures/feedHistory.ts).
     await markHorseFedTwoDaysAgo(horse.id);
+    // Owner rulings 2026-10-23 and 2026-10-26: a horse never vetted is in Bad
+    // health, and a trainer is required to train. A seeded horse has neither,
+    // so it was listed "Not Fit to Train" with no Train button; it is given a
+    // vet visit and a fixture trainer (fixtures/trainingReadiness.ts).
+    fixtureTrainerId = await makeHorseReadyToTrain(horse.id);
   });
 
   test.afterAll(async () => {
+    if (fixtureTrainerId !== null) {
+      await removeFixtureTrainer(fixtureTrainerId);
+    }
     await session?.context.close();
   });
 

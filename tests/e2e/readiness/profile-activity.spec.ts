@@ -23,6 +23,7 @@ import { test, expect } from '@playwright/test';
 // @ts-expect-error — JS module without .d.ts; import works at runtime via Node.
 import prisma from '../../../packages/database/prismaClient.mjs';
 import {
+  hireAndAssignTrainer,
   csrfRequest,
   expectOk,
   installProductionParityNetworkGuard,
@@ -65,6 +66,11 @@ test('profile activity feed renders real XP event data with no bypass headers', 
   const starterHorse = horses.find((h) => h.name.startsWith('ActivityTest Horse'));
   expect(starterHorse, 'Starter horse must be findable by name prefix').toBeTruthy();
   const starterHorseId = Number(starterHorse!.id);
+
+  // A trainer is required to train (owner ruling 2026-10-26, q81, Equoria-r8a6h),
+  // so the player hires one and assigns it first; without it the train call was
+  // refused and the fresh account had no activity at all.
+  await hireAndAssignTrainer(page, starterHorseId);
 
   // Train — the response may be 200 (success) or 400 (cooldown active, already trained today).
   // Either way, the *act of registration + onboarding* itself likely seeded XP events.

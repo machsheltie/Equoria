@@ -26,10 +26,12 @@ import { test, expect } from '@playwright/test';
 import { createAuthedSession, type AuthedSession } from './helpers/api';
 import { seedOwnedHorse } from './fixtures/ownedHorses';
 import { markHorseFedTwoDaysAgo } from './fixtures/feedHistory';
+import { makeHorseReadyToTrain, removeFixtureTrainer } from './fixtures/trainingReadiness';
 import { trainAndAssertInPlace } from './helpers/training';
 
 test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
   let trainingHorseId: number | null = null;
+  let fixtureTrainerId: number | null = null;
   let session: AuthedSession;
 
   test.beforeAll(async ({ browser }) => {
@@ -72,9 +74,17 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
     // freshly seeded horse could train at once. New: it has to have been fed,
     // so it is given a feeding two days ago (fixtures/feedHistory.ts).
     await markHorseFedTwoDaysAgo(horse.id);
+    // Owner rulings 2026-10-23 and 2026-10-26: a horse never vetted is in Bad
+    // health, and a trainer is required to train. A seeded horse has neither,
+    // so it was listed "Not Fit to Train" with no Train button; it is given a
+    // vet visit and a fixture trainer (fixtures/trainingReadiness.ts).
+    fixtureTrainerId = await makeHorseReadyToTrain(horse.id);
   });
 
   test.afterAll(async () => {
+    if (fixtureTrainerId !== null) {
+      await removeFixtureTrainer(fixtureTrainerId);
+    }
     await session?.context.close();
   });
 
@@ -94,7 +104,12 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
     await expect(trainBtn).toBeVisible({ timeout: 15000 });
   });
 
-  test('opening the training modal shows the trait modifiers section', async ({ page }) => {
+  // Owner ruling 2026-10-23 (Equoria-576c0.1; ruling Q9 2026-10-21): a weekly
+  // session adds a flat +5 with no trait scaling, and the training screens'
+  // invented Trait Modifiers panel is removed. OLD CONTRACT: this test required
+  // that panel to render. NEW: the session popup opens against the real horse
+  // and shows no trait modifiers.
+  test('opening the training modal shows no trait modifiers section', async ({ page }) => {
     expect(trainingHorseId).not.toBeNull();
 
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
@@ -104,12 +119,13 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
     await expect(trainBtn).toBeVisible({ timeout: 15000 });
     await trainBtn.click();
 
-    // Trait modifiers section must render against the real horse — this is the
-    // assertion the deleted TrainingSessionModal.beta.test.tsx provided in
-    // mocked form.
-    await expect(page.locator('[data-testid="trait-modifiers-section"]')).toBeVisible({
+    // The popup has really opened (its real action is there) before the
+    // absence checks run.
+    await expect(page.getByRole('button', { name: /start training/i })).toBeVisible({
       timeout: 10000,
     });
+    await expect(page.locator('[data-testid="trait-modifiers-section"]')).toHaveCount(0);
+    await expect(page.getByRole('dialog').getByText(/trait modifiers/i)).toHaveCount(0);
   });
 
   test('training modal exposes Start Training and Check Eligibility actions', async ({ page }) => {

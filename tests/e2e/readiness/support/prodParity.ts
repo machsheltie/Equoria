@@ -245,3 +245,45 @@ export async function latestCapturedEmail(kind: string, to: string) {
     .map((line) => JSON.parse(line));
   return rows.reverse().find((row) => row.kind === kind && row.to === to);
 }
+
+/**
+ * Hire a trainer from the real marketplace and assign it to `horseId`, as a
+ * player does before training. Owner ruling 2026-10-26 (q81, Equoria-r8a6h): a
+ * trainer is required to train. Old contract: a horse without a trainer
+ * trained free. Real routes only; the hire is charged like any other.
+ */
+export async function hireAndAssignTrainer(page: Page, horseId: number): Promise<number> {
+  type Offer = { marketplaceId?: string; id?: string };
+  const offersOf = (json: unknown) =>
+    unwrapData<{ trainers?: Offer[] }>(json)?.trainers ?? ([] as Offer[]);
+  let offers = offersOf(
+    await expectOk(
+      await page.request.get('/api/v1/trainers/marketplace'),
+      'GET /api/v1/trainers/marketplace'
+    )
+  );
+  if (offers.length === 0) {
+    offers = offersOf(
+      await expectOk(
+        await csrfRequest(page, 'POST', '/api/v1/trainers/marketplace/refresh', { force: true }),
+        'POST /api/v1/trainers/marketplace/refresh'
+      )
+    );
+  }
+  expect(offers.length, 'the trainer marketplace must offer a trainer').toBeGreaterThan(0);
+  const hired = unwrapData<{ trainer?: { id: number } }>(
+    await expectOk(
+      await csrfRequest(page, 'POST', '/api/v1/trainers/marketplace/hire', {
+        marketplaceId: offers[0].marketplaceId ?? offers[0].id,
+      }),
+      'POST /api/v1/trainers/marketplace/hire'
+    )
+  );
+  const trainerId = hired?.trainer?.id;
+  expect(typeof trainerId, 'the hire must return the new trainer id').toBe('number');
+  await expectOk(
+    await csrfRequest(page, 'POST', '/api/v1/trainers/assignments', { trainerId, horseId }),
+    'POST /api/v1/trainers/assignments'
+  );
+  return trainerId as number;
+}
