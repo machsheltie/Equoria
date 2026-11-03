@@ -10,7 +10,10 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { backfillHorseColors } from './backfill-horse-colors.mjs';
-import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
+import {
+  calculatePhenotype,
+  calculateBreedPhenotype,
+} from '../modules/horses/services/phenotypeCalculationService.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 import { testHorseData } from '../__tests__/helpers/createTestHorse.mjs';
@@ -37,6 +40,11 @@ const inheritedGenotype = {
 
 let inheritedId;
 let genelessId;
+
+// Owner ruling q277 (2026-10-29): a horse's shade is rolled by its breed's shade
+// odds. The backfill takes the roll's random source, so the expected name below
+// is the same breed-odds roll, not an unweighted name.
+const shadeRng = () => 0;
 
 async function createHorse(name, colorGenotype) {
   const horse = await prisma.horse.create({
@@ -67,7 +75,11 @@ afterAll(async () => {
 
 describe('backfill-horse-colors (Equoria-k0d28)', () => {
   it('keeps an inherited genotype and derives the phenotype from it; generates one only when empty', async () => {
-    const result = await backfillHorseColors({ horseIds: [inheritedId, genelessId], log: () => {} });
+    const result = await backfillHorseColors({
+      horseIds: [inheritedId, genelessId],
+      log: () => {},
+      shadeRng,
+    });
     expect(result).toMatchObject({ found: 2, updated: 2, keptGenotype: 1, skipped: 0, failed: 0 });
 
     const inherited = await prisma.horse.findUnique({ where: { id: inheritedId } });
@@ -77,7 +89,12 @@ describe('backfill-horse-colors (Equoria-k0d28)', () => {
 
     const geneless = await prisma.horse.findUnique({ where: { id: genelessId } });
     expect(Object.keys(geneless.colorGenotype).length).toBeGreaterThan(0);
-    expect(geneless.phenotype.colorName).toBe(calculatePhenotype(geneless.colorGenotype).colorName);
+    const [breed] = await prisma.$queryRaw`
+      SELECT "breedGeneticProfile" FROM breeds WHERE id = ${geneless.breedId}
+    `;
+    expect(geneless.phenotype.colorName).toBe(
+      calculateBreedPhenotype(geneless.colorGenotype, breed.breedGeneticProfile, shadeRng).colorName,
+    );
   });
 
   it('a second run changes nothing (horses with a phenotype are not selected)', async () => {

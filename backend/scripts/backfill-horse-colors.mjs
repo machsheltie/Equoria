@@ -42,10 +42,17 @@ function hasGenotype(colorGenotype) {
 /**
  * Give a phenotype to every horse without one (optionally only the given ids).
  *
- * @param {{ horseIds?: number[]|null, log?: (msg: string) => void }} [options]
+ * The shade is rolled by the breed's shade odds (owner ruling q277, 2026-10-29);
+ * `shadeRng` is that roll's random source (Math.random unless a caller fixes it).
+ *
+ * @param {{ horseIds?: number[]|null, log?: (msg: string) => void, shadeRng?: () => number }} [options]
  * @returns {Promise<{ found: number, updated: number, keptGenotype: number, skipped: number, failed: number }>}
  */
-export async function backfillHorseColors({ horseIds = null, log = console.log } = {}) {
+export async function backfillHorseColors({
+  horseIds = null,
+  log = console.log,
+  shadeRng = Math.random,
+} = {}) {
   // Prisma's JSON null filter is complex; use raw SQL instead for reliability
   const horses = Array.isArray(horseIds)
     ? await prisma.$queryRaw`
@@ -83,7 +90,7 @@ export async function backfillHorseColors({ horseIds = null, log = console.log }
         ? horse.colorGenotype
         : generateGenotype(breedGeneticProfile);
       // q277: the shade is rolled by the breed's odds, as for any new horse.
-      const baseColor = calculateBreedPhenotype(colorGenotype, breedGeneticProfile);
+      const baseColor = calculateBreedPhenotype(colorGenotype, breedGeneticProfile, shadeRng);
       const markings = generateMarkings(
         breedGeneticProfile,
         baseColor.colorName,
