@@ -46,7 +46,7 @@ import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/he
 import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-jnk6r-escrow';
+const fixturePrefix = 'TestFixture-jnk6r-escrow';
 
 let creator;
 let entrant;
@@ -87,8 +87,8 @@ async function makeUser(money, suffix) {
   const u = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
+      username: `${fixturePrefix}-${suffix}-${tag}`,
+      email: `${fixturePrefix}-${suffix}-${tag}@example.com`,
       password: 'irrelevant-hash',
       firstName: 'Esc',
       lastName: suffix,
@@ -103,7 +103,7 @@ async function makeHorse(ownerId) {
   const h = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
+      name: `${fixturePrefix}-horse-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: competitionDateOfBirth(),
       age: 7,
@@ -124,7 +124,7 @@ async function makeShow(creatorId, entryFee) {
     await creditSystemAccount(tx, 'showEscrow', 1000, { category: 'testFixturePrizeEscrow' });
     return tx.show.create({
       data: {
-        name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+        name: `${fixturePrefix}-show-${randomBytes(4).toString('hex')}`,
         discipline: 'Dressage',
         entryFee,
         maxEntries: null,

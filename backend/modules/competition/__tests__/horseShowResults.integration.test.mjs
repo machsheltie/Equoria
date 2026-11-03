@@ -22,7 +22,7 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const uid = () => randomBytes(5).toString('hex');
-const ROW_KEYS = [
+const rowKeys = [
   'competitionType',
   'conformationAward',
   'date',
@@ -189,7 +189,7 @@ describe('GET /api/v1/competition/results/horse/:horseId — every entered show 
       shows.legacy.id,
     ]);
     for (const row of res.body.data) {
-      expect(Object.keys(row).sort()).toEqual(ROW_KEYS);
+      expect(Object.keys(row).sort()).toEqual(rowKeys);
     }
     expect(res.body.pagination).toMatchObject({ currentPage: 1, totalRecords: 4 });
   });

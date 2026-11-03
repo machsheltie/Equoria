@@ -34,12 +34,12 @@ import { EntryRefusalError } from './entryEligibility.mjs';
 import { recordStaffShowsTx } from '../../../services/staffGrowthService.mjs';
 
 import {
-  CONFORMATION_SHOW_CONFIG,
-  SCORE_NEUTRAL_CONFORMATION_CLASS,
+  conformationShowConfig,
+  scoreNeutralConformationClass,
   getConformationAgeClass,
   calculateConformationShowScore,
   resolveReward,
-  BREEDING_BOOST_CAP,
+  breedingBoostCap,
 } from './conformationShowScoring.mjs';
 import {
   activeGroomsForLegacyEntries,
@@ -53,19 +53,19 @@ import {
 // import scoring/reward helpers directly from this service path) are unaffected
 // by the split. Public-export parity per Equoria-urqic.7.
 export {
-  CONFORMATION_SHOW_CONFIG,
-  SHOW_HANDLING_SKILL_SCORES,
-  CONFORMATION_AGE_CLASSES,
-  SCORE_NEUTRAL_CONFORMATION_CLASS,
+  conformationShowConfig,
+  showHandlingSkillScores,
+  conformationAgeClasses,
+  scoreNeutralConformationClass,
   isValidConformationClass,
   calculateConformationScore,
   getHandlerScore,
   getConformationAgeClass,
   calculateSynergy,
   calculateConformationShowScore,
-  REWARD_TABLE,
-  BREEDING_BOOST_CAP,
-  TITLE_THRESHOLDS,
+  rewardTable,
+  breedingBoostCap,
+  titleThresholds,
   resolveReward,
   resolveTitle,
   applyBreedingValueBoost,
@@ -197,7 +197,7 @@ export async function validateConformationEntry(horse, groom, userId, client = p
 
     // Age validation — reject only invalid (< 0); Weanlings (0-<1) are allowed — AC4.
     // This checks the stored value itself: a negative stored age is bad data.
-    const ageIsInvalid = (horse.age ?? 0) < CONFORMATION_SHOW_CONFIG.MIN_AGE;
+    const ageIsInvalid = (horse.age ?? 0) < conformationShowConfig.minAge;
     if (ageIsInvalid) {
       errors.push('Horse age is invalid (negative)');
     }
@@ -432,13 +432,13 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
         }
 
         // Score each entry against its REAL handler. className is score-irrelevant
-        // (see SCORE_NEUTRAL_CONFORMATION_CLASS) and there is no per-entry class
+        // (see scoreNeutralConformationClass) and there is no per-entry class
         // column to read, so the score-neutral default satisfies class validation.
         const scored = resolved.map(({ entry, horse, groom }) => {
           const { finalScore } = calculateConformationShowScore(
             horse,
             groom,
-            SCORE_NEUTRAL_CONFORMATION_CLASS,
+            scoreNeutralConformationClass,
           );
           return { horse, finalScore, entrantUserId: entry.userId };
         });
@@ -454,7 +454,7 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
         }));
 
         const rewarded = await applyConformationRewards(tx, placed, {
-          boostCap: BREEDING_BOOST_CAP,
+          boostCap: breedingBoostCap,
         });
 
         // CompetitionResult — no prizeWon (AC4). One INSERT for the whole show

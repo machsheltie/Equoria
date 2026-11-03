@@ -159,7 +159,7 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
    * Under the null hypothesis of NO edge (broken modifier, rider term 0),
    * exact enumeration gives P(strict win) = 0.42 (ties are common with
    * whole-percent luck): mean 126, null-sd ≈ 8.55, so the threshold
-   * MIN_RIDER_WINS = 199 is ≈ 8.5 null-sd ABOVE it — a broken/zero modifier
+   * minRiderWins = 199 is ≈ 8.5 null-sd ABOVE it — a broken/zero modifier
    * fails this assertion essentially always.
    * The test therefore stays MEANINGFUL (detects a broken modifier) while no
    * longer flaking on normal RNG variance.
@@ -174,7 +174,7 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
     // Binomial bound: the healthy model wins ~267 of 300 (p = 0.89, q282); the no-edge
     // null averages 126, ≈ 8.5σ below this threshold.
     // Far below the rider's expected wins, far above the no-edge null (150).
-    const MIN_RIDER_WINS = 199;
+    const minRiderWins = 199;
 
     const openDate = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
     const closeDate = new Date(Date.now() - 60 * 60 * 1000);
@@ -288,7 +288,7 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
     // Primary statistical assertion: the healthy model (p = 0.89, ≈ 12σ above the
     // threshold) clears it, and it sits ≈ 8.5 null-σ above the no-edge center (p = 0.42),
     // so a broken modifier fails.
-    expect(riderWins).toBeGreaterThanOrEqual(MIN_RIDER_WINS);
+    expect(riderWins).toBeGreaterThanOrEqual(minRiderWins);
 
     // Average advantage should be materially positive — both horses draw luck
     // from the same +1..+10%, so averages differ by the rider's ~10% term.

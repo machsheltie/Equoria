@@ -38,14 +38,14 @@ import { enterShowAtomicTx } from '../shows/showEscrowTx.mjs';
 import {
   checkConformationEntryInTx,
   executeConformationShow,
-  BREEDING_BOOST_CAP,
-  REWARD_TABLE,
+  breedingBoostCap,
+  rewardTable,
 } from '../services/conformationShowService.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-mwjst-intx';
+const fixturePrefix = 'TestFixture-mwjst-intx';
 const ORIGIN = 'http://localhost:3000';
-const DAY_MS = 24 * 60 * 60 * 1000;
-const ENTRY_FEE = 120;
+const dayMs = 24 * 60 * 60 * 1000;
+const entryFee = 120;
 
 const tag = randomBytes(4).toString('hex');
 let csrf;
@@ -57,8 +57,8 @@ const assignmentIds = [];
 async function makePlayer(label, { money = 1000 } = {}) {
   seq += 1;
   return createTestUser({
-    username: `${FIXTURE_PREFIX}-${label}-${seq}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${label}-${seq}-${tag}@example.com`,
+    username: `${fixturePrefix}-${label}-${seq}-${tag}`,
+    email: `${fixturePrefix}-${label}-${seq}-${tag}@example.com`,
     money,
   });
 }
@@ -68,7 +68,7 @@ async function addHorse(user, label, horseFields = {}) {
   seq += 1;
   const now = new Date();
   const horse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-${label}-horse-${seq}-${tag}`,
+    name: `${fixturePrefix}-${label}-horse-${seq}-${tag}`,
     userId: user.id,
     healthStatus: 'Excellent',
     lastFedDate: now,
@@ -77,7 +77,7 @@ async function addHorse(user, label, horseFields = {}) {
   });
   const groom = await prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-groom-${seq}-${tag}`,
+      name: `${fixturePrefix}-${label}-groom-${seq}-${tag}`,
       speciality: 'show_handling',
       personality: 'gentle',
       skillLevel: 'expert',
@@ -91,7 +91,7 @@ async function addHorse(user, label, horseFields = {}) {
       foal: { connect: { id: horse.id } },
       user: { connect: { id: user.id } },
       isActive: true,
-      createdAt: new Date(Date.now() - 5 * DAY_MS),
+      createdAt: new Date(Date.now() - 5 * dayMs),
     },
   });
   assignmentIds.push(assignment.id);
@@ -100,13 +100,13 @@ async function addHorse(user, label, horseFields = {}) {
 
 async function makeShow(overrides = {}) {
   const openDate = new Date(Date.now() - 60 * 60 * 1000);
-  const closeDate = new Date(openDate.getTime() + 7 * DAY_MS);
+  const closeDate = new Date(openDate.getTime() + 7 * dayMs);
   return createTestShow({
-    name: `${FIXTURE_PREFIX}-show`,
+    name: `${fixturePrefix}-show`,
     discipline: 'Conformation',
     showType: 'conformation',
     status: 'open',
-    entryFee: ENTRY_FEE,
+    entryFee,
     prize: 0,
     levelMin: 1,
     levelMax: 10,
@@ -255,7 +255,7 @@ describe('entry rules are decided inside the entry transaction (Equoria-mwjst)',
 
 describe('two different entries against money for one fee (Equoria-mwjst)', () => {
   it('one entry is taken and charged once; the other is refused for funds', async () => {
-    const { user, token } = await makePlayer('onefee', { money: ENTRY_FEE });
+    const { user, token } = await makePlayer('onefee', { money: entryFee });
     const first = await addHorse(user, 'onefee-a');
     const second = await addHorse(user, 'onefee-b');
     const show = await makeShow();
@@ -270,10 +270,10 @@ describe('two different entries against money for one fee (Equoria-mwjst)', () =
     expect(await money(user.id)).toBe(0);
     expect(await prisma.showEntry.count({ where: { showId: show.id } })).toBe(1);
     const showRow = await prisma.show.findUnique({ where: { id: show.id }, select: { feeEscrow: true } });
-    expect(Number(showRow.feeEscrow)).toBe(ENTRY_FEE);
+    expect(Number(showRow.feeEscrow)).toBe(entryFee);
     const ledger = await ledgerFor(user.id, show.id);
-    expect(ledger.filter(r => r.category === 'competitionEntry').map(r => Number(r.amount))).toEqual([ENTRY_FEE]);
-    expect(ledger.filter(r => r.category === 'showEntryFeeEscrow').map(r => Number(r.amount))).toEqual([ENTRY_FEE]);
+    expect(ledger.filter(r => r.category === 'competitionEntry').map(r => Number(r.amount))).toEqual([entryFee]);
+    expect(ledger.filter(r => r.category === 'showEntryFeeEscrow').map(r => Number(r.amount))).toEqual([entryFee]);
   });
 });
 
@@ -304,11 +304,11 @@ describe('both entry routes keep the same books (Equoria-mwjst)', () => {
     }
 
     for (const r of results) {
-      expect(r.moneyDelta).toBe(ENTRY_FEE);
-      expect(r.feeEscrow).toBe(ENTRY_FEE);
-      expect(r.feePaid).toBe(ENTRY_FEE);
-      expect(r.debits).toEqual([{ type: 'debit', amount: ENTRY_FEE, balanceAfter: r.expectedBalance }]);
-      expect(r.escrowRows).toEqual([ENTRY_FEE]);
+      expect(r.moneyDelta).toBe(entryFee);
+      expect(r.feeEscrow).toBe(entryFee);
+      expect(r.feePaid).toBe(entryFee);
+      expect(r.debits).toEqual([{ type: 'debit', amount: entryFee, balanceAfter: r.expectedBalance }]);
+      expect(r.escrowRows).toEqual([entryFee]);
     }
   });
 });
@@ -362,11 +362,11 @@ describe('conformation settlement (Equoria-mwjst)', () => {
     await executeConformationShow(show.id);
 
     const hostAfter = await money(host.id);
-    expect(hostAfter).toBe(hostBefore + ENTRY_FEE);
+    expect(hostAfter).toBe(hostBefore + entryFee);
     const credits = (await ledgerFor(host.id, show.id)).filter(r => r.category === 'showEntryFeesReceived');
     expect(
       credits.map(r => ({ type: r.type, amount: Number(r.amount), balanceAfter: Number(r.balanceAfter) })),
-    ).toEqual([{ type: 'credit', amount: ENTRY_FEE, balanceAfter: hostAfter }]);
+    ).toEqual([{ type: 'credit', amount: entryFee, balanceAfter: hostAfter }]);
   });
 
   it('two shows settling at once both add their breeding boost to the horse they share', async () => {
@@ -397,13 +397,13 @@ describe('conformation settlement (Equoria-mwjst)', () => {
     await settling;
 
     // Alone in each show, the horse places first twice.
-    const expected = Math.min(BREEDING_BOOST_CAP, 2 * REWARD_TABLE[1].breedingBoostDelta);
+    const expected = Math.min(breedingBoostCap, 2 * rewardTable[1].breedingBoostDelta);
     const after = await prisma.horse.findUnique({
       where: { id: horse.id },
       select: { breedingValueBoost: true, titlePoints: true },
     });
     expect(after.breedingValueBoost).toBeCloseTo(expected, 10);
-    expect(after.titlePoints).toBe(2 * REWARD_TABLE[1].titlePoints);
+    expect(after.titlePoints).toBe(2 * rewardTable[1].titlePoints);
   });
 
   it('equal scores entered at the same moment place by entry id', async () => {

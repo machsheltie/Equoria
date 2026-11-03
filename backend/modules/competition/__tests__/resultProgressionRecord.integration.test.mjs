@@ -26,7 +26,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 
 const uid = () => randomBytes(6).toString('hex');
 // The Dressage stats the post-show roll may raise (utils/competitionRewards.mjs).
-const DRESSAGE_GAIN_STATS = ['precision', 'focus', 'obedience'];
+const dressageGainStats = ['precision', 'focus', 'obedience'];
 
 const cleanup = createCleanupTracker();
 afterAll(() => cleanup.run(), 60000);
@@ -102,7 +102,7 @@ async function makeCloseableShow(creatorId, tag, extra = {}) {
   });
 }
 
-const STAT_SELECT = { precision: true, focus: true, obedience: true };
+const statSelect = { precision: true, focus: true, obedience: true };
 
 describe('competition results record Horse Points and stat gains (R6)', () => {
   it('the nightly executor records every entrant’s Horse Points and only a stat gain that really happened', async () => {
@@ -120,7 +120,7 @@ describe('competition results record Horse Points and stat gains (R6)', () => {
     });
     const before = new Map();
     for (const h of horses) {
-      before.set(h.id, await prisma.horse.findUnique({ where: { id: h.id }, select: STAT_SELECT }));
+      before.set(h.id, await prisma.horse.findUnique({ where: { id: h.id }, select: statSelect }));
     }
 
     await executeClosedShows({ body: { showIds: [show.id] } }, null);
@@ -135,8 +135,8 @@ describe('competition results record Horse Points and stat gains (R6)', () => {
       // Whatever the table pays: 10/5/3/1 (owner ruling R8, Track B B1).
       expect(r.horsePointsAwarded).toBe(computePlacementAwards(placement).horseXp);
 
-      const after = await prisma.horse.findUnique({ where: { id: r.horseId }, select: STAT_SELECT });
-      const raised = DRESSAGE_GAIN_STATS.filter(s => after[s] !== before.get(r.horseId)[s]);
+      const after = await prisma.horse.findUnique({ where: { id: r.horseId }, select: statSelect });
+      const raised = dressageGainStats.filter(s => after[s] !== before.get(r.horseId)[s]);
       if (r.statGains === null) {
         expect(raised).toEqual([]);
       } else {

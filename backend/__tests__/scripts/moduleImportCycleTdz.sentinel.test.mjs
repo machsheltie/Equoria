@@ -110,7 +110,7 @@ describe('module-import TDZ circular-dependency sentinel (Equoria-hk739)', () =>
   });
 
   it('conformationShowScoring + competitionRoutes evaluated cleanly', () => {
-    expect(typeof conformationShowScoring.CONFORMATION_SHOW_CONFIG).toBe('object');
+    expect(typeof conformationShowScoring.conformationShowConfig).toBe('object');
     expect(typeof competitionRoutes).toBe('function'); // route module imported directly (WS4 S4)
   });
 

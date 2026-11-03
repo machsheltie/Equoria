@@ -9,9 +9,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
-  CONFORMATION_SHOW_CONFIG,
-  SHOW_HANDLING_SKILL_SCORES,
-  CONFORMATION_AGE_CLASSES,
+  conformationShowConfig,
+  showHandlingSkillScores,
+  conformationAgeClasses,
   isValidConformationClass,
   calculateConformationScore,
   getHandlerScore,
@@ -87,7 +87,7 @@ describe('calculateConformationScore', () => {
 
 describe('getHandlerScore', () => {
   it('returns 20 for novice', () => {
-    expect(getHandlerScore('novice')).toBe(SHOW_HANDLING_SKILL_SCORES.novice);
+    expect(getHandlerScore('novice')).toBe(showHandlingSkillScores.novice);
     expect(getHandlerScore('novice')).toBe(20);
   });
 
@@ -109,19 +109,19 @@ describe('getHandlerScore', () => {
 
 describe('getConformationAgeClass', () => {
   it('returns Weanling for age 0', () => {
-    expect(getConformationAgeClass(0)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+    expect(getConformationAgeClass(0)).toBe(conformationAgeClasses.WEANLING);
   });
 
   it('returns Weanling for age 0.5', () => {
-    expect(getConformationAgeClass(0.5)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+    expect(getConformationAgeClass(0.5)).toBe(conformationAgeClasses.WEANLING);
   });
 
   it('returns Yearling for age 1', () => {
-    expect(getConformationAgeClass(1)).toBe(CONFORMATION_AGE_CLASSES.YEARLING);
+    expect(getConformationAgeClass(1)).toBe(conformationAgeClasses.YEARLING);
   });
 
   it('returns Weanling for negative age', () => {
-    expect(getConformationAgeClass(-1)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+    expect(getConformationAgeClass(-1)).toBe(conformationAgeClasses.WEANLING);
   });
 });
 
@@ -179,8 +179,8 @@ describe('calculateConformationShowScore', () => {
   });
 
   it('weights sum to 1.0', () => {
-    const cfg = CONFORMATION_SHOW_CONFIG;
-    const sum = cfg.CONFORMATION_WEIGHT + cfg.HANDLER_WEIGHT + cfg.BOND_WEIGHT + cfg.TEMPERAMENT_WEIGHT;
+    const cfg = conformationShowConfig;
+    const sum = cfg.conformationWeight + cfg.handlerWeight + cfg.bondWeight + cfg.temperamentWeight;
     expect(Math.abs(sum - 1.0)).toBeLessThan(0.001);
   });
 
@@ -228,19 +228,19 @@ describe('resolveTitle', () => {
 
 describe('getConformationAgeClass — all age-class branches (Equoria-jkht)', () => {
   it('returns Youngstock for age=2 (2 <= age < 3)', () => {
-    expect(getConformationAgeClass(2)).toBe(CONFORMATION_AGE_CLASSES.YOUNGSTOCK);
+    expect(getConformationAgeClass(2)).toBe(conformationAgeClasses.YOUNGSTOCK);
   });
 
   it('returns Junior for age=4 (3 <= age < 6)', () => {
-    expect(getConformationAgeClass(4)).toBe(CONFORMATION_AGE_CLASSES.JUNIOR);
+    expect(getConformationAgeClass(4)).toBe(conformationAgeClasses.JUNIOR);
   });
 
   it('returns Senior for age=7 (age >= 6)', () => {
-    expect(getConformationAgeClass(7)).toBe(CONFORMATION_AGE_CLASSES.SENIOR);
+    expect(getConformationAgeClass(7)).toBe(conformationAgeClasses.SENIOR);
   });
 
   it('returns Weanling for NaN (!Number.isFinite branch)', () => {
-    expect(getConformationAgeClass(NaN)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+    expect(getConformationAgeClass(NaN)).toBe(conformationAgeClasses.WEANLING);
   });
 });
 

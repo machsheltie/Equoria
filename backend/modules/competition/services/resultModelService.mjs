@@ -6,7 +6,7 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 // and the bound keeps an `IN (...)` list from growing without limit. The route's
 // validator rejects anything longer before this service is reached; the constant
 // lives here so the service is safe for any future caller too.
-const MAX_MARK_VIEWED_SHOWS = 100;
+const maxMarkViewedShows = 100;
 
 /**
  * Get results by user ID
@@ -196,8 +196,8 @@ async function markUserResultsViewed(userId, showIds) {
   if (!Array.isArray(showIds) || showIds.length === 0) {
     throw new Error('At least one show ID is required');
   }
-  if (showIds.length > MAX_MARK_VIEWED_SHOWS) {
-    throw new Error(`At most ${MAX_MARK_VIEWED_SHOWS} show IDs may be marked at once`);
+  if (showIds.length > maxMarkViewedShows) {
+    throw new Error(`At most ${maxMarkViewedShows} show IDs may be marked at once`);
   }
   if (!showIds.every(id => Number.isInteger(id) && id > 0)) {
     throw new Error('Show IDs must be positive integers');

@@ -43,7 +43,7 @@ async function makeOwner() {
   });
 }
 
-const BASE_STATS = {
+const baseStats = {
   speed: 50,
   stamina: 50,
   agility: 50,
@@ -70,7 +70,7 @@ async function makeHorse(ownerId, stats, horseIds) {
       // own factor. Old fixture: healthStatus 'healthy' (no health term then).
       ...careForHealth('Good'),
       lastFedDate: new Date(),
-      ...BASE_STATS,
+      ...baseStats,
       ...stats,
     },
     horseIds,

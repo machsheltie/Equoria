@@ -16,13 +16,13 @@ export { disciplineStandingScore } from './services/competitionScoring.mjs';
 // The competition discipline stat map (Equoria-576c0 B3): the bible's 24-discipline
 // table. The shared stat-gain and competition-config helpers read it.
 export {
-  DISCIPLINE_STATS,
-  COMPETITION_DISCIPLINES,
+  disciplineStats,
+  competitionDisciplines as COMPETITION_DISCIPLINES,
   competitionDisciplines,
   isKnownDiscipline,
   getDisciplineStats,
   TEMPERAMENTS,
-  TEMPERAMENT_MATRIX,
+  temperamentMatrix,
   temperamentPercent,
 } from './rules/disciplineRules.mjs';
 // A horse's show ledger, paged: the visitor horse page reads it through

@@ -27,7 +27,7 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const uid = () => randomBytes(5).toString('hex');
-const RESULT_KEYS = [
+const resultKeys = [
   'conformationAward',
   'horseId',
   'horseName',
@@ -194,7 +194,7 @@ describe('GET /api/v1/competition/show/:showId/results — scoped DTO (R4)', () 
       prize: 1000,
     });
     for (const row of res.body.results) {
-      expect(Object.keys(row).sort()).toEqual(RESULT_KEYS);
+      expect(Object.keys(row).sort()).toEqual(resultKeys);
     }
     expect(res.body.results.map(r => r.horseId)).toEqual([rivalHorse.id, viewerHorse.id, legacyHorse.id]);
   });

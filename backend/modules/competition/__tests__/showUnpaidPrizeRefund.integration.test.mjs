@@ -36,7 +36,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { competitionDateOfBirth, giveEligibleRider } from '../../../__tests__/helpers/eligibleCompetitor.mjs';
 
 const PREFIX = 'TestFixture-w7fnz';
-const REFUND_CATEGORY = 'showRefundUnpaidPrize';
+const refundCategory = 'showRefundUnpaidPrize';
 const uid = () => randomBytes(5).toString('hex');
 
 const userIds = [];
@@ -176,7 +176,7 @@ async function moneyOf(userId) {
 
 async function refundRows(userId, showId) {
   const rows = await prisma.userTransaction.findMany({
-    where: { userId, category: REFUND_CATEGORY },
+    where: { userId, category: refundCategory },
   });
   return rows.filter(r => r.metadata?.showId === showId);
 }

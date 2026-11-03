@@ -32,7 +32,7 @@ import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/c
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const msPerDay = 24 * 60 * 60 * 1000;
 const ENDPOINT = '/api/v1/competition/results/viewed';
 
 const rand = () => randomBytes(6).toString('hex');
@@ -86,10 +86,10 @@ describe('POST /api/v1/competition/results/viewed (Equoria-oey96.28)', () => {
         levelMax: 999,
         entryFee: 100,
         prize: 1000,
-        runDate: new Date(now.getTime() - 2 * MS_PER_DAY),
+        runDate: new Date(now.getTime() - 2 * msPerDay),
         status: 'completed',
-        openDate: new Date(now.getTime() - 9 * MS_PER_DAY),
-        closeDate: new Date(now.getTime() - 2 * MS_PER_DAY),
+        openDate: new Date(now.getTime() - 9 * msPerDay),
+        closeDate: new Date(now.getTime() - 2 * msPerDay),
       },
     });
     showIds.push(show.id);

@@ -42,8 +42,8 @@ const riderIds = [];
 const cleanup = createCleanupTracker();
 
 // The old bracket [3, 6]; the XP values sat below, at and above it.
-const OLD_BRACKET = { levelMin: 3, levelMax: 6 };
-const XP_CASES = [
+const oldBracket = { levelMin: 3, levelMax: 6 };
+const xpCases = [
   ['below the old minimum (old L1)', 0],
   ['at the old minimum (old L3)', 250],
   ['at the old maximum (old L6)', 550],
@@ -57,7 +57,7 @@ async function makeShow() {
       discipline: 'Dressage',
       entryFee: 0,
       maxEntries: null,
-      ...OLD_BRACKET,
+      ...oldBracket,
       prize: 0,
       runDate: future(),
       closeDate: future(),
@@ -127,7 +127,7 @@ describe.each([
   ['POST /api/v1/shows/:id/enter', (showId, horseId) => post(`/api/v1/shows/${showId}/enter`, { horseId })],
   ['POST /api/v1/competition/enter', (showId, horseId) => post('/api/v1/competition/enter', { horseId, showId })],
 ])('%s: XP never refuses an entry (R9)', (_label, enter) => {
-  it.each(XP_CASES)(
+  it.each(xpCases)(
     'accepts a horse with XP %s',
     async (_case, horseXp) => {
       const show = await makeShow();

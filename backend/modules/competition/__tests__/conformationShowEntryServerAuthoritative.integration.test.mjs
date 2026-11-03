@@ -43,10 +43,10 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, createTestShow, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-mwjst-confentry';
+const fixturePrefix = 'TestFixture-mwjst-confentry';
 const ORIGIN = 'http://localhost:3000';
-const DAY_MS = 24 * 60 * 60 * 1000;
-const ENTRY_FEE = 120;
+const dayMs = 24 * 60 * 60 * 1000;
+const entryFee = 120;
 
 const tag = randomBytes(4).toString('hex');
 let csrf;
@@ -57,13 +57,13 @@ const assignmentIds = [];
 /** An entrant with a token, money, an entry-ready horse and an assigned groom. */
 async function makeEntrant(label, { money = 1000, horseXp = 0 } = {}) {
   const { user, token } = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${label}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${label}-${tag}@example.com`,
+    username: `${fixturePrefix}-${label}-${tag}`,
+    email: `${fixturePrefix}-${label}-${tag}@example.com`,
     money,
   });
   const now = new Date();
   const horse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-${label}-horse-${tag}`,
+    name: `${fixturePrefix}-${label}-horse-${tag}`,
     userId: user.id,
     healthStatus: 'Excellent',
     lastFedDate: now,
@@ -72,7 +72,7 @@ async function makeEntrant(label, { money = 1000, horseXp = 0 } = {}) {
   });
   const groom = await prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-groom-${tag}`,
+      name: `${fixturePrefix}-${label}-groom-${tag}`,
       speciality: 'show_handling',
       personality: 'gentle',
       skillLevel: 'expert',
@@ -86,7 +86,7 @@ async function makeEntrant(label, { money = 1000, horseXp = 0 } = {}) {
       foal: { connect: { id: horse.id } },
       user: { connect: { id: user.id } },
       isActive: true,
-      createdAt: new Date(Date.now() - 5 * DAY_MS),
+      createdAt: new Date(Date.now() - 5 * dayMs),
     },
   });
   assignmentIds.push(assignment.id);
@@ -96,13 +96,13 @@ async function makeEntrant(label, { money = 1000, horseXp = 0 } = {}) {
 /** A conformation show created the way the game creates shows: open now, closing in 7 days. */
 async function makeShow(overrides = {}) {
   const openDate = new Date(Date.now() - 60 * 60 * 1000);
-  const closeDate = new Date(openDate.getTime() + 7 * DAY_MS);
+  const closeDate = new Date(openDate.getTime() + 7 * dayMs);
   return createTestShow({
-    name: `${FIXTURE_PREFIX}-show`,
+    name: `${fixturePrefix}-show`,
     discipline: 'Conformation',
     showType: 'conformation',
     status: 'open',
-    entryFee: ENTRY_FEE,
+    entryFee,
     prize: 0,
     levelMin: 1,
     levelMax: 10,
@@ -152,8 +152,8 @@ function expectUnchanged(after, before) {
 
 beforeAll(async () => {
   ({ user: creator } = await createTestUser({
-    username: `${FIXTURE_PREFIX}-creator-${tag}`,
-    email: `${FIXTURE_PREFIX}-creator-${tag}@example.com`,
+    username: `${fixturePrefix}-creator-${tag}`,
+    email: `${fixturePrefix}-creator-${tag}@example.com`,
   }));
   csrf = await fetchCsrf(app);
 }, 120000);
@@ -176,10 +176,10 @@ describe('conformation entry is server-authoritative (Equoria-mwjst Finding 2)',
 
     expect(res.status).toBe(201);
     const after = await snapshot(entrant, show);
-    expect(after.money).toBe(before.money - ENTRY_FEE);
-    expect(after.feeEscrow).toBe(ENTRY_FEE);
+    expect(after.money).toBe(before.money - entryFee);
+    expect(after.feeEscrow).toBe(entryFee);
     expect(after.entries).toHaveLength(1);
-    expect(after.entries[0].feePaid).toBe(ENTRY_FEE);
+    expect(after.entries[0].feePaid).toBe(entryFee);
     expect(after.entries[0].userId).toBe(entrant.user.id);
     // The entry keeps the groom it was entered with (owner ruling 2026-10-12).
     expect(after.entries[0].groomId).toBe(entrant.groom.id);
@@ -189,8 +189,8 @@ describe('conformation entry is server-authoritative (Equoria-mwjst Finding 2)',
       showHandlingSkill: entrant.groom.showHandlingSkill,
       personality: entrant.groom.personality,
     });
-    expect(after.escrowCredits.map(row => Number(row.amount))).toEqual([ENTRY_FEE]);
-    expect(after.entrantDebits.map(row => Number(row.amount))).toEqual([ENTRY_FEE]);
+    expect(after.escrowCredits.map(row => Number(row.amount))).toEqual([entryFee]);
+    expect(after.entrantDebits.map(row => Number(row.amount))).toEqual([entryFee]);
     // The creator is paid at settlement, never at entry.
     const creatorNow = await prisma.user.findUnique({ where: { id: creator.id }, select: { money: true } });
     expect(Number(creatorNow.money)).toBe(Number(creator.money));
@@ -210,7 +210,7 @@ describe('conformation entry is server-authoritative (Equoria-mwjst Finding 2)',
   });
 
   it('refuses a player who cannot afford the fee (402) with no entry, debit, escrow or ledger drift', async () => {
-    const entrant = await makeEntrant('broke', { money: ENTRY_FEE - 1 });
+    const entrant = await makeEntrant('broke', { money: entryFee - 1 });
     const show = await makeShow();
     const before = await snapshot(entrant, show);
 
@@ -223,7 +223,7 @@ describe('conformation entry is server-authoritative (Equoria-mwjst Finding 2)',
   it('refuses a show whose closing date has passed (409) with no side effects', async () => {
     const entrant = await makeEntrant('late');
     const closeDate = new Date(Date.now() - 60 * 60 * 1000);
-    const show = await makeShow({ openDate: new Date(closeDate.getTime() - 7 * DAY_MS), closeDate });
+    const show = await makeShow({ openDate: new Date(closeDate.getTime() - 7 * dayMs), closeDate });
     const before = await snapshot(entrant, show);
 
     const res = await enter(entrant, show);
@@ -234,8 +234,8 @@ describe('conformation entry is server-authoritative (Equoria-mwjst Finding 2)',
 
   it('refuses a show that has not opened for entries yet (409) with no side effects', async () => {
     const entrant = await makeEntrant('early');
-    const openDate = new Date(Date.now() + DAY_MS);
-    const show = await makeShow({ openDate, closeDate: new Date(openDate.getTime() + 7 * DAY_MS) });
+    const openDate = new Date(Date.now() + dayMs);
+    const show = await makeShow({ openDate, closeDate: new Date(openDate.getTime() + 7 * dayMs) });
     const before = await snapshot(entrant, show);
 
     const res = await enter(entrant, show);
@@ -279,8 +279,8 @@ describe('conformation entry is server-authoritative (Equoria-mwjst Finding 2)',
     expect((await enter(entrant, show)).status).toBe(409);
 
     const after = await snapshot(entrant, show);
-    expect(after.money).toBe(before.money - ENTRY_FEE);
-    expect(after.feeEscrow).toBe(ENTRY_FEE);
+    expect(after.money).toBe(before.money - entryFee);
+    expect(after.feeEscrow).toBe(entryFee);
     expect(after.entries).toHaveLength(1);
     expect(after.escrowCredits).toHaveLength(1);
     expect(after.entrantDebits).toHaveLength(1);
@@ -297,8 +297,8 @@ describe('conformation entry is server-authoritative (Equoria-mwjst Finding 2)',
     expect(statuses.filter(s => s === 201)).toHaveLength(1);
     expect(statuses.filter(s => s !== 201).every(s => s === 409)).toBe(true);
     const after = await snapshot(entrant, show);
-    expect(after.money).toBe(before.money - ENTRY_FEE);
-    expect(after.feeEscrow).toBe(ENTRY_FEE);
+    expect(after.money).toBe(before.money - entryFee);
+    expect(after.feeEscrow).toBe(entryFee);
     expect(after.entries).toHaveLength(1);
     expect(after.escrowCredits).toHaveLength(1);
     expect(after.entrantDebits).toHaveLength(1);

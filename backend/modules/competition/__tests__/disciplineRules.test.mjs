@@ -13,8 +13,8 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  DISCIPLINE_STATS,
-  COMPETITION_DISCIPLINES,
+  disciplineStats,
+  competitionDisciplines,
   isKnownDiscipline,
   getDisciplineStats,
 } from '../rules/disciplineRules.mjs';
@@ -57,10 +57,10 @@ function pickedStat(discipline, pick) {
   return calculateStatGains('1st', discipline, () => (call++ === 0 ? 0 : pick))?.stat;
 }
 
-describe('DISCIPLINE_STATS — the bible table (R8, C6)', () => {
+describe('disciplineStats — the bible table (R8, C6)', () => {
   it('holds exactly the 24 bible disciplines with their primary, secondary and tertiary stats', () => {
-    expect(DISCIPLINE_STATS).toEqual(BIBLE);
-    expect([...COMPETITION_DISCIPLINES].sort()).toEqual(Object.keys(BIBLE).sort());
+    expect(disciplineStats).toEqual(BIBLE);
+    expect([...competitionDisciplines].sort()).toEqual(Object.keys(BIBLE).sort());
   });
 
   it('gives Racing Speed / Stamina / Focus (ruling C6)', () => {
@@ -68,7 +68,7 @@ describe('DISCIPLINE_STATS — the bible table (R8, C6)', () => {
   });
 
   it('uses only stats the Horse model has', () => {
-    for (const stats of Object.values(DISCIPLINE_STATS)) {
+    for (const stats of Object.values(disciplineStats)) {
       for (const stat of stats) {
         expect(horseStatValues).toContain(stat);
       }

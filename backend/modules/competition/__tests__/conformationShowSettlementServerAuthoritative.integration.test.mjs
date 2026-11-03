@@ -46,17 +46,17 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import {
   executeConformationShow,
-  REWARD_TABLE,
+  rewardTable,
   calculateConformationShowScore,
-  SCORE_NEUTRAL_CONFORMATION_CLASS,
+  scoreNeutralConformationClass,
 } from '../services/conformationShowService.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-mwjst-confsettle';
+const fixturePrefix = 'TestFixture-mwjst-confsettle';
 const ORIGIN = 'http://localhost:3000';
-const DAY_MS = 24 * 60 * 60 * 1000;
-const ENTRY_FEE = 75;
+const dayMs = 24 * 60 * 60 * 1000;
+const entryFee = 75;
 const byNumber = (a, b) => a - b;
-const PODIUM_POINTS = [REWARD_TABLE[1].titlePoints, REWARD_TABLE[2].titlePoints].sort(byNumber);
+const podiumPoints = [rewardTable[1].titlePoints, rewardTable[2].titlePoints].sort(byNumber);
 
 const tag = randomBytes(4).toString('hex');
 let csrf;
@@ -68,13 +68,13 @@ async function makeEntrant() {
   seq += 1;
   const label = `e${seq}`;
   const { user, token } = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${label}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${label}-${tag}@example.com`,
+    username: `${fixturePrefix}-${label}-${tag}`,
+    email: `${fixturePrefix}-${label}-${tag}@example.com`,
     money: 1000,
   });
   const now = new Date();
   const horse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-${label}-horse-${tag}`,
+    name: `${fixturePrefix}-${label}-horse-${tag}`,
     userId: user.id,
     healthStatus: 'Excellent',
     lastFedDate: now,
@@ -85,7 +85,7 @@ async function makeEntrant() {
   });
   const groom = await prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-groom-${tag}`,
+      name: `${fixturePrefix}-${label}-groom-${tag}`,
       speciality: 'show_handling',
       personality: 'gentle',
       skillLevel: 'expert',
@@ -99,7 +99,7 @@ async function makeEntrant() {
       foal: { connect: { id: horse.id } },
       user: { connect: { id: user.id } },
       isActive: true,
-      createdAt: new Date(Date.now() - 5 * DAY_MS),
+      createdAt: new Date(Date.now() - 5 * dayMs),
     },
   });
   assignmentIds.push(assignment.id);
@@ -109,13 +109,13 @@ async function makeEntrant() {
 /** A player-hosted conformation show created the way the game creates shows. */
 async function makeShow(host) {
   const openDate = new Date(Date.now() - 60 * 60 * 1000);
-  const closeDate = new Date(openDate.getTime() + 7 * DAY_MS);
+  const closeDate = new Date(openDate.getTime() + 7 * dayMs);
   return createTestShow({
-    name: `${FIXTURE_PREFIX}-show`,
+    name: `${fixturePrefix}-show`,
     discipline: 'Conformation',
     showType: 'conformation',
     status: 'open',
-    entryFee: ENTRY_FEE,
+    entryFee,
     prize: 0,
     levelMin: 1,
     levelMax: 10,
@@ -143,7 +143,7 @@ async function letWeekPass(show) {
   const closeDate = new Date(Date.now() - 60 * 60 * 1000);
   await prisma.show.update({
     where: { id: show.id },
-    data: { openDate: new Date(closeDate.getTime() - 7 * DAY_MS), closeDate, runDate: closeDate },
+    data: { openDate: new Date(closeDate.getTime() - 7 * dayMs), closeDate, runDate: closeDate },
   });
 }
 
@@ -156,7 +156,7 @@ async function failShowUpdatesFor(showId) {
     CREATE FUNCTION ${fn}() RETURNS trigger AS $$
     BEGIN
       IF OLD.id = ${Number(showId)} THEN
-        RAISE EXCEPTION 'injected test failure (${FIXTURE_PREFIX})';
+        RAISE EXCEPTION 'injected test failure (${fixturePrefix})';
       END IF;
       RETURN NEW;
     END $$ LANGUAGE plpgsql`);
@@ -170,8 +170,8 @@ async function failShowUpdatesFor(showId) {
 /** A due show hosted by one player with two entered horses (fees paid into escrow). */
 async function dueShowWithTwoEntries() {
   const host = await createTestUser({
-    username: `${FIXTURE_PREFIX}-host${++seq}-${tag}`,
-    email: `${FIXTURE_PREFIX}-host${seq}-${tag}@example.com`,
+    username: `${fixturePrefix}-host${++seq}-${tag}`,
+    email: `${fixturePrefix}-host${seq}-${tag}@example.com`,
   });
   const show = await makeShow(host.user);
   const entrants = [await makeEntrant(), await makeEntrant()];
@@ -227,8 +227,8 @@ afterAll(async () => {
 describe('conformation settlement is server-authoritative (Equoria-mwjst Finding 2)', () => {
   it('the host has no settle route: POST /conformation/execute is 404 and nothing is awarded', async () => {
     const host = await createTestUser({
-      username: `${FIXTURE_PREFIX}-route-host-${tag}`,
-      email: `${FIXTURE_PREFIX}-route-host-${tag}@example.com`,
+      username: `${fixturePrefix}-route-host-${tag}`,
+      email: `${fixturePrefix}-route-host-${tag}@example.com`,
     });
     const show = await makeShow(host.user);
     const entrants = [await makeEntrant(), await makeEntrant()];
@@ -247,13 +247,13 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     expect(res.status).toBe(404);
     const state = await rewardState(show, entrants);
     expectNothingAwarded(state);
-    expect(state.feeEscrow).toBe(2 * ENTRY_FEE);
+    expect(state.feeEscrow).toBe(2 * entryFee);
   });
 
   it('the nightly executor leaves a conformation show alone until its closing date passes', async () => {
     const host = await createTestUser({
-      username: `${FIXTURE_PREFIX}-early-host-${tag}`,
-      email: `${FIXTURE_PREFIX}-early-host-${tag}@example.com`,
+      username: `${fixturePrefix}-early-host-${tag}`,
+      email: `${fixturePrefix}-early-host-${tag}@example.com`,
     });
     const show = await makeShow(host.user);
     const entrants = [await makeEntrant(), await makeEntrant()];
@@ -266,14 +266,14 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
 
     const after = await rewardState(show, entrants);
     expectNothingAwarded(after);
-    expect(after.feeEscrow).toBe(2 * ENTRY_FEE);
+    expect(after.feeEscrow).toBe(2 * entryFee);
     expect(after.hostMoney).toBe(before.hostMoney);
   });
 
   it('the settlement service itself refuses a show that is not due, whoever calls it', async () => {
     const host = await createTestUser({
-      username: `${FIXTURE_PREFIX}-svc-host-${tag}`,
-      email: `${FIXTURE_PREFIX}-svc-host-${tag}@example.com`,
+      username: `${fixturePrefix}-svc-host-${tag}`,
+      email: `${fixturePrefix}-svc-host-${tag}@example.com`,
     });
     const show = await makeShow(host.user);
     const entrants = [await makeEntrant(), await makeEntrant()];
@@ -285,13 +285,13 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
 
     const state = await rewardState(show, entrants);
     expectNothingAwarded(state);
-    expect(state.feeEscrow).toBe(2 * ENTRY_FEE);
+    expect(state.feeEscrow).toBe(2 * entryFee);
   });
 
   it('a due show is settled by the nightly executor with conformation rewards and its fee escrow paid to the creator', async () => {
     const { show, entrants } = await dueShowWithTwoEntries();
     const before = await rewardState(show, entrants);
-    expect(before.feeEscrow).toBe(2 * ENTRY_FEE);
+    expect(before.feeEscrow).toBe(2 * entryFee);
 
     await executeClosedShows({ body: { showIds: [show.id] } });
 
@@ -299,13 +299,13 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     expect(after.status).toBe('completed');
     expect(after.results).toHaveLength(2);
     expect(after.results.every(r => r.discipline === 'conformation' && r.prizeWon === null)).toBe(true);
-    expect(after.titlePoints).toEqual(PODIUM_POINTS);
+    expect(after.titlePoints).toEqual(podiumPoints);
     expect(after.boosts.every(b => b > 0)).toBe(true);
     // Conformation shows award titles, never ridden-show horse XP.
     expect(after.horseXp).toEqual(before.horseXp);
     // The entry fees left escrow for the creator, exactly once.
     expect(after.feeEscrow).toBe(0);
-    expect(after.hostMoney).toBe(before.hostMoney + 2 * ENTRY_FEE);
+    expect(after.hostMoney).toBe(before.hostMoney + 2 * entryFee);
   });
 
   it('two concurrent executor runs settle a due show exactly once', async () => {
@@ -320,9 +320,9 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     const after = await rewardState(show, entrants);
     expect(after.status).toBe('completed');
     expect(after.results).toHaveLength(2);
-    expect(after.titlePoints).toEqual(PODIUM_POINTS);
+    expect(after.titlePoints).toEqual(podiumPoints);
     expect(after.feeEscrow).toBe(0);
-    expect(after.hostMoney).toBe(before.hostMoney + 2 * ENTRY_FEE);
+    expect(after.hostMoney).toBe(before.hostMoney + 2 * entryFee);
   });
 
   it('a settlement that fails part-way leaves the show open with no rewards and the escrow unsettled', async () => {
@@ -348,7 +348,7 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
 
     const after = await rewardState(show, entrants);
     expectNothingAwarded(after);
-    expect(after.feeEscrow).toBe(2 * ENTRY_FEE);
+    expect(after.feeEscrow).toBe(2 * entryFee);
     expect(after.hostMoney).toBe(before.hostMoney);
   });
 
@@ -368,9 +368,9 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     const after = await rewardState(show, entrants);
     expect(after.status).toBe('completed');
     expect(after.results).toHaveLength(2);
-    expect(after.titlePoints).toEqual(PODIUM_POINTS);
+    expect(after.titlePoints).toEqual(podiumPoints);
     expect(after.feeEscrow).toBe(0);
-    expect(after.hostMoney).toBe(before.hostMoney + 2 * ENTRY_FEE);
+    expect(after.hostMoney).toBe(before.hostMoney + 2 * entryFee);
   });
 
   // Codex review 2026-10-12: a released groom can be hired by another player
@@ -385,7 +385,7 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     // Meanwhile the horse gets a different groom, so a fallback would be visible.
     const standIn = await prisma.groom.create({
       data: {
-        name: `${FIXTURE_PREFIX}-standin-groom-${tag}`,
+        name: `${fixturePrefix}-standin-groom-${tag}`,
         speciality: 'show_handling',
         personality: 'strict',
         skillLevel: 'master',
@@ -406,15 +406,15 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
 
     // The entered groom moves to another player's staff, whose erasure deletes it.
     const other = await createTestUser({
-      username: `${FIXTURE_PREFIX}-erased-${tag}`,
-      email: `${FIXTURE_PREFIX}-erased-${tag}@example.com`,
+      username: `${fixturePrefix}-erased-${tag}`,
+      email: `${fixturePrefix}-erased-${tag}@example.com`,
     });
     await prisma.groom.update({ where: { id: asEntered.id }, data: { userId: other.user.id } });
     await prisma.groom.delete({ where: { id: asEntered.id } });
 
     const horseRow = await prisma.horse.findUnique({ where: { id: first.horse.id } });
     const scoreWith = groom =>
-      calculateConformationShowScore(horseRow, groom, SCORE_NEUTRAL_CONFORMATION_CLASS).finalScore;
+      calculateConformationShowScore(horseRow, groom, scoreNeutralConformationClass).finalScore;
     // Precondition: the two grooms would score this horse differently.
     expect(scoreWith(standIn)).not.toBe(scoreWith(asEntered));
     const before = await rewardState(show, entrants);
@@ -425,7 +425,7 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     expect(after.status).toBe('completed');
     expect(after.results).toHaveLength(2);
     expect(after.feeEscrow).toBe(0);
-    expect(after.hostMoney).toBe(before.hostMoney + 2 * ENTRY_FEE);
+    expect(after.hostMoney).toBe(before.hostMoney + 2 * entryFee);
     const firstResult = after.results.find(r => r.horseId === first.horse.id);
     expect(Number(firstResult.score)).toBe(scoreWith(asEntered));
   });
@@ -433,14 +433,14 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
   it('a ridden show that fails does not stop a due conformation show from settling', async () => {
     const { show, entrants } = await dueShowWithTwoEntries();
     const ridden = await createTestShow({
-      name: `${FIXTURE_PREFIX}-ridden`,
+      name: `${fixturePrefix}-ridden`,
       discipline: 'Dressage',
       status: 'open',
       entryFee: 0,
       prize: 0,
       levelMin: 1,
       levelMax: 10,
-      openDate: new Date(Date.now() - 8 * DAY_MS),
+      openDate: new Date(Date.now() - 8 * dayMs),
       closeDate: new Date(Date.now() - 60 * 60 * 1000),
       runDate: new Date(Date.now() - 60 * 60 * 1000),
     });
@@ -462,7 +462,7 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     expect(after.status).toBe('completed');
     expect(after.results).toHaveLength(2);
     expect(after.feeEscrow).toBe(0);
-    expect(after.hostMoney).toBe(before.hostMoney + 2 * ENTRY_FEE);
+    expect(after.hostMoney).toBe(before.hostMoney + 2 * entryFee);
     const riddenAfter = await prisma.show.findUnique({ where: { id: ridden.id } });
     expect(riddenAfter.status).toBe('open');
   });
@@ -478,14 +478,14 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
       data: { isActive: false },
     });
     const ridden = await createTestShow({
-      name: `${FIXTURE_PREFIX}-ridden-ok`,
+      name: `${fixturePrefix}-ridden-ok`,
       discipline: 'Dressage',
       status: 'open',
       entryFee: 0,
       prize: 0,
       levelMin: 1,
       levelMax: 10,
-      openDate: new Date(Date.now() - 8 * DAY_MS),
+      openDate: new Date(Date.now() - 8 * dayMs),
       closeDate: new Date(Date.now() - 60 * 60 * 1000),
       runDate: new Date(Date.now() - 60 * 60 * 1000),
     });
@@ -509,7 +509,7 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     // The conformation show waits, unsettled, with its fees held.
     const after = await rewardState(show, entrants);
     expectNothingAwarded(after);
-    expect(after.feeEscrow).toBe(2 * ENTRY_FEE);
+    expect(after.feeEscrow).toBe(2 * entryFee);
     expect(after.hostMoney).toBe(before.hostMoney);
   });
 });
@@ -534,8 +534,8 @@ describe('only settleable entries are accepted into a conformation show', () => 
 
   async function freshShow(label) {
     const host = await createTestUser({
-      username: `${FIXTURE_PREFIX}-${label}-host-${tag}`,
-      email: `${FIXTURE_PREFIX}-${label}-host-${tag}@example.com`,
+      username: `${fixturePrefix}-${label}-host-${tag}`,
+      email: `${fixturePrefix}-${label}-host-${tag}@example.com`,
     });
     return makeShow(host.user);
   }

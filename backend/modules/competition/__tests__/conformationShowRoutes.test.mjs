@@ -34,15 +34,15 @@ import { randomBytes } from 'node:crypto';
 import conformationShowRoutes from '../routes/conformationShowRoutes.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-conformation-routes-unit';
+const fixturePrefix = 'TestFixture-conformation-routes-unit';
 
 let token;
 
 beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
   const created = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   token = created.token;
 }, 120000);

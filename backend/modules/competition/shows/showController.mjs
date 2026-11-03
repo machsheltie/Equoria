@@ -24,7 +24,7 @@ import { SYSTEM_ACCOUNT_SHOW_ESCROW, creditSystemAccount } from '../../economy/i
 import { enterShowAtomicTx } from './showEscrowTx.mjs';
 import {
   getShowForEntry,
-  CONFORMATION_ENTRY_ONLY_MESSAGE,
+  conformationEntryOnlyMessage,
 } from '../services/competitionRouteQueries.mjs';
 import { sendEntryRefusal } from '../services/entryEligibility.mjs';
 // The 24 competition disciplines, from the one bible table (Equoria-576c0 B3 review).
@@ -314,7 +314,7 @@ export async function enterShow(req, res) {
       return res.status(400).json({
         success: false,
         code: 'conformationEntryOnly',
-        message: CONFORMATION_ENTRY_ONLY_MESSAGE,
+        message: conformationEntryOnlyMessage,
       });
     }
     if (show.status !== 'open') {

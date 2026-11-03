@@ -47,7 +47,7 @@ import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-conformation-routes-http';
+const fixturePrefix = 'TestFixture-conformation-routes-http';
 
 let owner;
 let token;
@@ -57,14 +57,14 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
 
   const created = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   owner = created.user;
   token = created.token;
 
   horse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-Horse-${tag}`,
+    name: `${fixturePrefix}-Horse-${tag}`,
     userId: owner.id,
   });
 }, 120000);

@@ -142,8 +142,8 @@ describe('calculateEntryFees', () => {
 // above only probe the probabilistic structure). Plus exhaustive discipline
 // coverage and the empty-rider-object edge case not present above.
 describe('competitionRewards — deterministic _rngFn & exhaustive coverage (merged from legacy backend/tests, Equoria-wvuin)', () => {
-  const ALWAYS_GAIN = () => 0.0; // 0.0 <= any chance → stat gained; index 0 selected
-  const NEVER_GAIN = () => 1.0; // 1.0 > any chance → null
+  const alwaysGain = () => 0.0; // 0.0 <= any chance → stat gained; index 0 selected
+  const neverGain = () => 1.0; // 1.0 > any chance → null
 
   function seqRng(vals) {
     let i = 0;
@@ -199,29 +199,29 @@ describe('competitionRewards — deterministic _rngFn & exhaustive coverage (mer
     it('returns null for undefined placement (no RNG call made)', () => {
       expect(calculateStatGains(undefined, 'Racing')).toBeNull();
     });
-    it('returns null when _rngFn produces a value above the 1st-place chance (NEVER_GAIN)', () => {
-      expect(calculateStatGains('1st', 'Racing', NEVER_GAIN)).toBeNull();
+    it('returns null when _rngFn produces a value above the 1st-place chance (neverGain)', () => {
+      expect(calculateStatGains('1st', 'Racing', neverGain)).toBeNull();
     });
-    it('returns null when _rngFn produces a value above the 2nd-place chance (NEVER_GAIN)', () => {
-      expect(calculateStatGains('2nd', 'Show Jumping', NEVER_GAIN)).toBeNull();
+    it('returns null when _rngFn produces a value above the 2nd-place chance (neverGain)', () => {
+      expect(calculateStatGains('2nd', 'Show Jumping', neverGain)).toBeNull();
     });
-    it('returns null when _rngFn produces a value above the 3rd-place chance (NEVER_GAIN)', () => {
-      expect(calculateStatGains('3rd', 'Dressage', NEVER_GAIN)).toBeNull();
+    it('returns null when _rngFn produces a value above the 3rd-place chance (neverGain)', () => {
+      expect(calculateStatGains('3rd', 'Dressage', neverGain)).toBeNull();
     });
     it('grants a stat gain for 1st place when _rngFn passes the chance check', () => {
-      const result = calculateStatGains('1st', 'Racing', ALWAYS_GAIN);
+      const result = calculateStatGains('1st', 'Racing', alwaysGain);
       expect(result).not.toBeNull();
       expect(result.gain).toBe(1);
       expect(['speed', 'stamina', 'focus']).toContain(result.stat);
     });
     it('grants a stat gain for 2nd place when _rngFn passes the chance check', () => {
-      const result = calculateStatGains('2nd', 'Show Jumping', ALWAYS_GAIN);
+      const result = calculateStatGains('2nd', 'Show Jumping', alwaysGain);
       expect(result).not.toBeNull();
       expect(result.gain).toBe(1);
       expect(['balance', 'agility', 'boldness']).toContain(result.stat);
     });
     it('grants a stat gain for 3rd place when _rngFn passes the chance check', () => {
-      const result = calculateStatGains('3rd', 'Dressage', ALWAYS_GAIN);
+      const result = calculateStatGains('3rd', 'Dressage', alwaysGain);
       expect(result).not.toBeNull();
       expect(result.gain).toBe(1);
       expect(['precision', 'focus', 'obedience']).toContain(result.stat);

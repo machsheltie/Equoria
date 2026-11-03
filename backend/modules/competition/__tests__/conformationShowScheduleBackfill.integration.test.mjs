@@ -24,15 +24,15 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const MIGRATION_SQL = readFileSync(
+const migrationSql = readFileSync(
   path.resolve(
     HERE,
     '../../../../packages/database/prisma/migrations/20261007120000_mwjst_backfill_conformation_show_schedule/migration.sql',
   ),
   'utf8',
 );
-const DAY_MS = 24 * 60 * 60 * 1000;
-const FIXTURE_PREFIX = 'TestFixture-mwjst-backfill';
+const dayMs = 24 * 60 * 60 * 1000;
+const fixturePrefix = 'TestFixture-mwjst-backfill';
 const tag = randomBytes(4).toString('hex');
 const createdIds = [];
 
@@ -41,7 +41,7 @@ class RollBack extends Error {}
 async function makeShow(label, data) {
   const show = await prisma.show.create({
     data: {
-      name: `${FIXTURE_PREFIX}-${label}-${tag}`,
+      name: `${fixturePrefix}-${label}-${tag}`,
       discipline: 'Conformation',
       showType: 'conformation',
       status: 'open',
@@ -64,7 +64,7 @@ async function afterBackfill(ids) {
   let rows;
   await expect(
     prisma.$transaction(async tx => {
-      await tx.$executeRawUnsafe(MIGRATION_SQL);
+      await tx.$executeRawUnsafe(migrationSql);
       rows = await tx.show.findMany({
         where: { id: { in: ids } },
         select: { id: true, openDate: true, closeDate: true, runDate: true },
@@ -81,9 +81,9 @@ afterAll(async () => {
 
 describe('undated conformation shows get the seven-day schedule (mwjst backfill)', () => {
   it('schedules open undated conformation shows and leaves every other show alone', async () => {
-    const createdAt = new Date(Date.now() - 3 * DAY_MS);
-    const openDate = new Date(Date.now() - 2 * DAY_MS);
-    const dated = new Date(Date.now() + 5 * DAY_MS);
+    const createdAt = new Date(Date.now() - 3 * dayMs);
+    const openDate = new Date(Date.now() - 2 * dayMs);
+    const dated = new Date(Date.now() + 5 * dayMs);
 
     const noDates = await makeShow('nodates', { createdAt });
     const opened = await makeShow('opened', { createdAt, openDate });
@@ -95,13 +95,13 @@ describe('undated conformation shows get the seven-day schedule (mwjst backfill)
 
     // openDate falls back to creation; closing is seven days later.
     expect(after.get(noDates.id).openDate.getTime()).toBe(createdAt.getTime());
-    expect(after.get(noDates.id).closeDate.getTime()).toBe(createdAt.getTime() + 7 * DAY_MS);
-    expect(after.get(noDates.id).runDate.getTime()).toBe(createdAt.getTime() + 7 * DAY_MS);
+    expect(after.get(noDates.id).closeDate.getTime()).toBe(createdAt.getTime() + 7 * dayMs);
+    expect(after.get(noDates.id).runDate.getTime()).toBe(createdAt.getTime() + 7 * dayMs);
     // An existing openDate is kept, but the week still counts from creation
     // (owner ruling 2026-10-12: "creation date").
     expect(after.get(opened.id).openDate.getTime()).toBe(openDate.getTime());
-    expect(after.get(opened.id).closeDate.getTime()).toBe(createdAt.getTime() + 7 * DAY_MS);
-    expect(after.get(opened.id).runDate.getTime()).toBe(createdAt.getTime() + 7 * DAY_MS);
+    expect(after.get(opened.id).closeDate.getTime()).toBe(createdAt.getTime() + 7 * dayMs);
+    expect(after.get(opened.id).runDate.getTime()).toBe(createdAt.getTime() + 7 * dayMs);
 
     for (const untouched of [ridden, completed, scheduled]) {
       expect(after.get(untouched.id).closeDate).toEqual(untouched.closeDate);
@@ -114,13 +114,13 @@ describe('undated conformation shows get the seven-day schedule (mwjst backfill)
   });
 
   it('a backfilled show whose week has passed is due for the nightly settlement', async () => {
-    const createdAt = new Date(Date.now() - 10 * DAY_MS);
+    const createdAt = new Date(Date.now() - 10 * dayMs);
     const stale = await makeShow('stale', { createdAt });
 
     let dueIds;
     await expect(
       prisma.$transaction(async tx => {
-        await tx.$executeRawUnsafe(MIGRATION_SQL);
+        await tx.$executeRawUnsafe(migrationSql);
         // The settlement scan's own predicate (settleDueConformationShows).
         const due = await tx.show.findMany({
           where: { id: stale.id, status: 'open', showType: 'conformation', closeDate: { lte: new Date() } },

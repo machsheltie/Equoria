@@ -41,7 +41,7 @@ import { isKnownDiscipline } from '../rules/disciplineRules.mjs';
  * Player XP 20/15/10 (BIBLE 13:86-88) and the 10/5/3% stat-gain chances are
  * unchanged. Frozen and pinned by competitionAwards.test.mjs.
  */
-const PLACEMENT_AWARD_TABLE = Object.freeze({
+const placementAwardTable = Object.freeze({
   1: Object.freeze({ horseXp: 10, userXp: 20, statGainChance: 0.1, ordinal: '1st' }),
   2: Object.freeze({ horseXp: 5, userXp: 15, statGainChance: 0.05, ordinal: '2nd' }),
   3: Object.freeze({ horseXp: 3, userXp: 10, statGainChance: 0.03, ordinal: '3rd' }),
@@ -50,7 +50,7 @@ const PLACEMENT_AWARD_TABLE = Object.freeze({
 // Every completed competition earns Horse Points, including non-placement
 // (BIBLE 13:209): 1 Horse Point for 4th and beyond, but NO player XP and NO
 // stat-gain roll.
-const PARTICIPATION_AWARD = Object.freeze({ horseXp: 1, userXp: 0, statGainChance: 0 });
+const participationAward = Object.freeze({ horseXp: 1, userXp: 0, statGainChance: 0 });
 
 /**
  * Map a NUMERIC placement (the executor stores the Int rank, Equoria-f46tb; this
@@ -67,12 +67,12 @@ const PARTICIPATION_AWARD = Object.freeze({ horseXp: 1, userXp: 0, statGainChanc
  */
 export function computePlacementAwards(placementNumber) {
   const n = Number(placementNumber);
-  const podium = Number.isInteger(n) ? PLACEMENT_AWARD_TABLE[n] : undefined;
+  const podium = Number.isInteger(n) ? placementAwardTable[n] : undefined;
   if (podium) {
     return podium;
   }
   const ordinal = Number.isInteger(n) && n >= 1 ? `${n}th` : 'participant';
-  return { ...PARTICIPATION_AWARD, ordinal };
+  return { ...participationAward, ordinal };
 }
 
 /**

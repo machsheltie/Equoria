@@ -8,7 +8,7 @@
 import logger from './logger.mjs';
 import { maxActiveAgeYears, minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 import { liveHorseAgeYears } from './horseAge.mjs';
-import { DISCIPLINE_STATS, disciplineStandingScore } from '../modules/competition/index.mjs';
+import { disciplineStats, disciplineStandingScore } from '../modules/competition/index.mjs';
 
 /**
  * Calculate prize distribution based on placement
@@ -175,7 +175,7 @@ function getDisciplineConfigurations() {
   // Competition stats come from the one bible table (owner ruling R8; Racing's
   // tertiary is Focus per ruling C6). 'Obedience Training' is a training
   // discipline: it keeps its own stats and is not a competition discipline.
-  for (const [discipline, stats] of Object.entries(DISCIPLINE_STATS)) {
+  for (const [discipline, stats] of Object.entries(disciplineStats)) {
     configs[discipline].stats = [...stats];
   }
   return configs;

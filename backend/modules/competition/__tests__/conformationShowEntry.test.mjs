@@ -25,7 +25,7 @@ import { enterConformationShow, checkConformationEligibility } from '../controll
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const SUITE_PREFIX = 'cfent';
+const suitePrefix = 'cfent';
 
 function buildReq({ body = {}, params = {}, user }) {
   return { body, params, user };
@@ -52,7 +52,7 @@ function buildRes() {
   };
 }
 
-const VALID_CONFORMATION_SCORES = {
+const validConformationScores = {
   head: 80,
   neck: 75,
   shoulders: 70,
@@ -68,9 +68,9 @@ async function createUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Cf',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -83,7 +83,7 @@ async function createHorse(userId, overrides = {}) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
+      name: `${suitePrefix}-h-${randomBytes(4).toString('hex')}`,
       sex: overrides.sex ?? 'Mare',
       dateOfBirth: overrides.dateOfBirth ?? new Date('2021-01-01'), // ~4 years old
       age: overrides.age ?? 4,
@@ -96,7 +96,7 @@ async function createHorse(userId, overrides = {}) {
       bondScore: overrides.bondScore ?? 70,
       temperament: overrides.temperament ?? 'Calm',
       conformationScores:
-        overrides.conformationScores === undefined ? VALID_CONFORMATION_SCORES : overrides.conformationScores,
+        overrides.conformationScores === undefined ? validConformationScores : overrides.conformationScores,
       user: { connect: { id: userId } },
     }),
   });
@@ -105,7 +105,7 @@ async function createHorse(userId, overrides = {}) {
 async function createGroom(userId, overrides = {}) {
   return prisma.groom.create({
     data: {
-      name: overrides.name ?? `${SUITE_PREFIX}-g-${randomBytes(4).toString('hex')}`,
+      name: overrides.name ?? `${suitePrefix}-g-${randomBytes(4).toString('hex')}`,
       speciality: overrides.speciality ?? 'show_handling',
       personality: overrides.personality ?? 'gentle',
       skillLevel: overrides.skillLevel ?? 'expert',
@@ -120,7 +120,7 @@ async function createGroom(userId, overrides = {}) {
 async function createConformationShow(overrides = {}) {
   return prisma.show.create({
     data: {
-      name: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+      name: `${suitePrefix}-show-${randomBytes(4).toString('hex')}`,
       discipline: overrides.discipline ?? 'Conformation',
       levelMin: 1,
       levelMax: 10,
@@ -151,7 +151,7 @@ async function createGroomAssignment(groomId, foalId, userId, overrides = {}) {
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {
@@ -174,7 +174,7 @@ async function cleanupSuite() {
   if (horseIds.length > 0) {
     await prisma.showEntry.deleteMany({ where: { horseId: { in: horseIds } } });
   }
-  await prisma.show.deleteMany({ where: { name: { startsWith: SUITE_PREFIX } } });
+  await prisma.show.deleteMany({ where: { name: { startsWith: suitePrefix } } });
   await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.groom.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });

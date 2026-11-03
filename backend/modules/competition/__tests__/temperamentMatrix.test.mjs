@@ -13,7 +13,7 @@
  * rules/disciplineRules.mjs.
  *
  * Owner ruling 2026-10-21: Playful was renamed Driven and Willing was added.
- * Old contract: 11 temperaments, 24 x 11 = 264 cells. SHEET_HEADER and SHEET
+ * Old contract: 11 temperaments, 24 x 11 = 264 cells. sheetHeader and SHEET
  * were regenerated from her updated Matrix sheet (read-only) that day.
  * Pleasure Driving is the 24th discipline (owner ruling 2026-10-21; old
  * contract: 23 rows).
@@ -21,13 +21,13 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  COMPETITION_DISCIPLINES,
+  competitionDisciplines,
   TEMPERAMENTS,
-  TEMPERAMENT_MATRIX,
+  temperamentMatrix,
   temperamentPercent,
 } from '../rules/disciplineRules.mjs';
 
-const SHEET_HEADER = [
+const sheetHeader = [
   'Spirited',
   'Nervous',
   'Calm',
@@ -71,17 +71,17 @@ const PERCENT = { Positive: 5, Neutral: 0, Negative: -5 };
 
 const cells = SHEET.flatMap(line => {
   const [discipline, ...values] = line.split('\t');
-  return values.map((value, i) => ({ discipline, temperament: SHEET_HEADER[i], value }));
+  return values.map((value, i) => ({ discipline, temperament: sheetHeader[i], value }));
 });
 
 describe("the temperament matrix is the owner's Matrix sheet (R1, O4)", () => {
   it("has the 12 temperaments in the sheet's order", () => {
-    expect(TEMPERAMENTS).toEqual(SHEET_HEADER);
+    expect(TEMPERAMENTS).toEqual(sheetHeader);
   });
 
   it('has exactly the 24 competition disciplines', () => {
     expect(SHEET).toHaveLength(24);
-    expect(Object.keys(TEMPERAMENT_MATRIX).sort()).toEqual([...COMPETITION_DISCIPLINES].sort());
+    expect(Object.keys(temperamentMatrix).sort()).toEqual([...competitionDisciplines].sort());
   });
 
   it('matches all 288 cells: Positive +5, Neutral 0, Negative -5', () => {

@@ -50,7 +50,7 @@
 import { computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
-  DISCIPLINE_STATS,
+  disciplineStats,
   disciplineTrainingPoints,
   isKnownDiscipline,
   temperamentPercent,
@@ -69,7 +69,7 @@ import { tackPoints } from '../rules/tackScoring.mjs';
  * @returns {number}
  */
 export function weightedDisciplineBase(horse, discipline) {
-  const [primary, secondary, tertiary] = DISCIPLINE_STATS[discipline];
+  const [primary, secondary, tertiary] = disciplineStats[discipline];
   // A stat column is a non-null Int (default 0); a row read without one counts
   // it as 0, never NaN (the level read, Equoria-n56bt).
   const stat = name => (Number.isFinite(horse[name]) ? horse[name] : 0);

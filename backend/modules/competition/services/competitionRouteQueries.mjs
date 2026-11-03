@@ -93,7 +93,7 @@ export function getShowEntriesWithHorseStats(showId) {
 
 // A conformation entry needs a groom (validated only by the conformation entry
 // route); a groomless entry would fail settlement for the whole show.
-export const CONFORMATION_ENTRY_ONLY_MESSAGE =
+export const conformationEntryOnlyMessage =
   'Conformation shows take entries through the conformation entry, where a groom presents the horse.';
 
 export function getShowForEntry(showId) {

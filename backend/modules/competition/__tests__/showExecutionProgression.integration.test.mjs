@@ -41,8 +41,8 @@ const uid = () => `${randomBytes(6).toString('hex')}`;
 // Expected horse-XP by numeric-string placement (the executor stores placement
 // as a numeric string — "1"/"2"/"3"/"4"). Derived from the PRD table.
 // Owner ruling R8 (2026-10-15): Horse Points 10/5/3/1 (old contract: 30/27/25/20).
-const HORSE_XP_BY_PLACEMENT = { 1: 10, 2: 5, 3: 3, 4: 1 };
-const USER_XP_BY_PLACEMENT = { 1: 20, 2: 15, 3: 10, 4: 0 };
+const horseXpByPlacement = { 1: 10, 2: 5, 3: 3, 4: 1 };
+const userXpByPlacement = { 1: 20, 2: 15, 3: 10, 4: 0 };
 
 const cleanup = createCleanupTracker();
 
@@ -203,7 +203,7 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
     // (a) Horse XP: every entrant gains exactly the table value for its placement.
     for (const h of horses) {
       const placement = placementByHorse.get(h.id);
-      const expectedXp = HORSE_XP_BY_PLACEMENT[placement];
+      const expectedXp = horseXpByPlacement[placement];
       const after = await prisma.horse.findUnique({
         where: { id: h.id },
         select: { horseXp: true },
@@ -225,7 +225,7 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
       where: { id: owner.id },
       select: { money: true, xp: true, level: true },
     });
-    const expectedUserXp = USER_XP_BY_PLACEMENT[1] + USER_XP_BY_PLACEMENT[2] + USER_XP_BY_PLACEMENT[3];
+    const expectedUserXp = userXpByPlacement[1] + userXpByPlacement[2] + userXpByPlacement[3];
     expect(ownerAfter.xp - ownerBefore.xp).toBe(expectedUserXp); // 45
     expect(ownerAfter.level).toBe(2);
     const ownerXpEvents = await prisma.xpEvent.findMany({ where: { userId: owner.id } });
@@ -326,7 +326,7 @@ describe('executeClosedShows progression awards (Equoria-oey96.4)', () => {
     // SUM(HorseXpEvent) reconciles.
     for (const h of horses) {
       const placement = placementByHorse.get(h.id);
-      const expectedXp = HORSE_XP_BY_PLACEMENT[placement];
+      const expectedXp = horseXpByPlacement[placement];
       const after = await prisma.horse.findUnique({ where: { id: h.id }, select: { horseXp: true } });
       expect(after.horseXp).toBe(expectedXp); // fixture starts at 0
       const events = await prisma.horseXpEvent.findMany({ where: { horseId: h.id } });

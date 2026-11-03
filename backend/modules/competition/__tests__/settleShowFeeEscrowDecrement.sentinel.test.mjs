@@ -36,8 +36,8 @@ import { settleShowFeeEscrow } from '../shows/showEscrowTx.mjs';
 const PREFIX = 'TestFixture-8pb6w-settle';
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 
-const SETTLED_AMOUNT = 100; // feeEscrow at settlement-read time
-const RACED_INCREMENT = 50; // an entry that commits between read and write
+const settledAmount = 100; // feeEscrow at settlement-read time
+const racedIncrement = 50; // an entry that commits between read and write
 
 let creator;
 const userIds = [];
@@ -71,12 +71,12 @@ afterAll(() => cleanup.run(), 60000);
 
 describe('settleShowFeeEscrow — decrement, not absolute-zero (Equoria-8pb6w)', () => {
   it('SENTINEL: a feeEscrow increment racing between settlement read and write is preserved', async () => {
-    // Show whose feeEscrow == SETTLED_AMOUNT, owned by a live creator.
+    // Show whose feeEscrow == settledAmount, owned by a live creator.
     const show = await prisma.show.create({
       data: {
         name: `${PREFIX}-show-${uid()}`,
         discipline: 'Dressage',
-        entryFee: SETTLED_AMOUNT,
+        entryFee: settledAmount,
         maxEntries: null,
         levelMin: 1,
         levelMax: 999,
@@ -87,15 +87,15 @@ describe('settleShowFeeEscrow — decrement, not absolute-zero (Equoria-8pb6w)',
         status: 'completed',
         createdByUserId: creator.id,
         prizeEscrow: 0,
-        feeEscrow: SETTLED_AMOUNT,
+        feeEscrow: settledAmount,
       },
     });
     showIds.push(show.id);
 
     // Fund SystemAccount[showEscrow] so the settlement debit (== read amount)
     // succeeds regardless of the shared row's starting balance. Delta-based:
-    // we credit exactly SETTLED_AMOUNT and settlement debits it back.
-    await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, SETTLED_AMOUNT, {
+    // we credit exactly settledAmount and settlement debits it back.
+    await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, settledAmount, {
       category: 'testSeedEscrow',
     });
 
@@ -116,7 +116,7 @@ describe('settleShowFeeEscrow — decrement, not absolute-zero (Equoria-8pb6w)',
               injected = true;
               await prisma.show.update({
                 where: { id: show.id },
-                data: { feeEscrow: { increment: RACED_INCREMENT } },
+                data: { feeEscrow: { increment: racedIncrement } },
               });
             }
             return result;
@@ -138,9 +138,9 @@ describe('settleShowFeeEscrow — decrement, not absolute-zero (Equoria-8pb6w)',
 
     // THE BUG GUARD: the raced increment survives as the residual. Absolute
     // `feeEscrow: 0` would wipe it to 0.
-    expect(Number(showAfter.feeEscrow)).toBe(RACED_INCREMENT);
-    // Settlement paid the creator exactly what it read (SETTLED_AMOUNT), not
+    expect(Number(showAfter.feeEscrow)).toBe(racedIncrement);
+    // Settlement paid the creator exactly what it read (settledAmount), not
     // the post-increment total — the residual stays escrowed for a later pass.
-    expect(Number(creatorAfter.money)).toBe(Number(creatorBefore.money) + SETTLED_AMOUNT);
+    expect(Number(creatorAfter.money)).toBe(Number(creatorBefore.money) + settledAmount);
   });
 });

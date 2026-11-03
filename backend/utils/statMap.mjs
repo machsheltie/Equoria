@@ -10,9 +10,9 @@
  * tertiary Focus, ruling C6). This file keeps its null-on-unknown helpers for
  * getStatScore, traitEffects and training (Equoria-576c0 B3 review).
  */
-import { DISCIPLINE_STATS, isKnownDiscipline } from '../modules/competition/index.mjs';
+import { disciplineStats, isKnownDiscipline } from '../modules/competition/index.mjs';
 
-const statMap = DISCIPLINE_STATS;
+const statMap = disciplineStats;
 
 /**
  * Get the stat configuration for a specific discipline

@@ -27,17 +27,17 @@ import { calculateOverallConformation } from '../../horses/index.mjs';
 // ---------------------------------------------------------------------------
 
 /** Scoring weights per spec (must sum to 1.00) */
-export const CONFORMATION_SHOW_CONFIG = Object.freeze({
-  CONFORMATION_WEIGHT: 0.65,
-  HANDLER_WEIGHT: 0.2,
-  BOND_WEIGHT: 0.08,
-  TEMPERAMENT_WEIGHT: 0.07,
+export const conformationShowConfig = Object.freeze({
+  conformationWeight: 0.65,
+  handlerWeight: 0.2,
+  bondWeight: 0.08,
+  temperamentWeight: 0.07,
 
   /**
    * Minimum age for show entry (0 = Weanlings allowed).
    * Reject only age < 0 (negative age is invalid).
    */
-  MIN_AGE: 0,
+  minAge: 0,
 });
 
 // ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ export const CONFORMATION_SHOW_CONFIG = Object.freeze({
  * Maps Prisma enum `groom.showHandlingSkill` to a 0-100 numeric handler score.
  * Unknown values default to the novice score (20).
  */
-export const SHOW_HANDLING_SKILL_SCORES = {
+export const showHandlingSkillScores = {
   novice: 20,
   competent: 40,
   skilled: 60,
@@ -64,7 +64,7 @@ export const SHOW_HANDLING_SKILL_SCORES = {
  * Age class definitions for conformation shows.
  * SEPARATE from conformationClasses (sex/category) in schema.mjs — do NOT merge.
  */
-export const CONFORMATION_AGE_CLASSES = {
+export const conformationAgeClasses = {
   WEANLING: 'Weanling',
   YEARLING: 'Yearling',
   YOUNGSTOCK: 'Youngstock',
@@ -86,7 +86,7 @@ export const CONFORMATION_AGE_CLASSES = {
  * data that influences any outcome. If a future migration adds a per-entry
  * class column, replace this with the persisted value.
  */
-export const SCORE_NEUTRAL_CONFORMATION_CLASS = Object.values(conformationClasses)[0];
+export const scoreNeutralConformationClass = Object.values(conformationClasses)[0];
 
 // ---------------------------------------------------------------------------
 // Temperament synergy table (PRD-03 §3.6) — AC2
@@ -96,7 +96,7 @@ export const SCORE_NEUTRAL_CONFORMATION_CLASS = Object.values(conformationClasse
 // Synergy scores are on a [0, 100] scale (normalized from PRD-03 §3.6 0.80–1.15 multiplier range).
 // Formula: Math.round((oldMultiplier * 100 - 80) / 35 * 100)
 // neutral (0.80) → 0, nervous+beneficial (1.15) → 100
-const SYNERGY_TABLE = {
+const synergyTable = {
   calm: {
     beneficial: ['gentle', 'patient', 'calm'],
     detrimental: ['energetic', 'strict'],
@@ -123,7 +123,7 @@ const SYNERGY_TABLE = {
   },
 };
 
-const NEUTRAL_SYNERGY_SCORE = 0;
+const neutralSynergyScore = 0;
 
 // ---------------------------------------------------------------------------
 // Pure scoring functions
@@ -167,31 +167,31 @@ export function calculateConformationScore(conformationScores) {
  * @returns {number} Handler score (0-100); defaults to novice (20) for unknown values
  */
 export function getHandlerScore(showHandlingSkill) {
-  return SHOW_HANDLING_SKILL_SCORES[showHandlingSkill] ?? SHOW_HANDLING_SKILL_SCORES.novice;
+  return showHandlingSkillScores[showHandlingSkill] ?? showHandlingSkillScores.novice;
 }
 
 /**
  * Assign an age class to a horse based on age in years — AC4.
  * @param {number} ageInYears
- * @returns {string} One of CONFORMATION_AGE_CLASSES values
+ * @returns {string} One of conformationAgeClasses values
  */
 export function getConformationAgeClass(ageInYears) {
   if (!Number.isFinite(ageInYears) || ageInYears < 0) {
-    return CONFORMATION_AGE_CLASSES.WEANLING;
+    return conformationAgeClasses.WEANLING;
   }
   if (ageInYears < 1) {
-    return CONFORMATION_AGE_CLASSES.WEANLING;
+    return conformationAgeClasses.WEANLING;
   }
   if (ageInYears < 2) {
-    return CONFORMATION_AGE_CLASSES.YEARLING;
+    return conformationAgeClasses.YEARLING;
   }
   if (ageInYears < 3) {
-    return CONFORMATION_AGE_CLASSES.YOUNGSTOCK;
+    return conformationAgeClasses.YOUNGSTOCK;
   }
   if (ageInYears < 6) {
-    return CONFORMATION_AGE_CLASSES.JUNIOR;
+    return conformationAgeClasses.JUNIOR;
   }
-  return CONFORMATION_AGE_CLASSES.SENIOR;
+  return conformationAgeClasses.SENIOR;
 }
 
 /**
@@ -204,9 +204,9 @@ export function getConformationAgeClass(ageInYears) {
  */
 export function calculateSynergy(temperament, personality) {
   // Normalize temperament to lowercase — DB stores title-case ('Calm') but table uses lowercase
-  const config = SYNERGY_TABLE[typeof temperament === 'string' ? temperament.toLowerCase() : ''];
+  const config = synergyTable[typeof temperament === 'string' ? temperament.toLowerCase() : ''];
   if (!config) {
-    return NEUTRAL_SYNERGY_SCORE;
+    return neutralSynergyScore;
   }
   const p = typeof personality === 'string' ? personality : '';
   if (config.beneficial.includes(p)) {
@@ -215,7 +215,7 @@ export function calculateSynergy(temperament, personality) {
   if (config.detrimental.includes(p)) {
     return config.detrimentalScore;
   }
-  return NEUTRAL_SYNERGY_SCORE;
+  return neutralSynergyScore;
 }
 
 /**
@@ -243,22 +243,22 @@ export function calculateConformationShowScore(horse, groom, className) {
 
   // 1. Conformation component (65%) — arithmetic mean of 8 regions
   const conformationScore = calculateConformationScore(horse.conformationScores);
-  const conformationComponent = conformationScore * CONFORMATION_SHOW_CONFIG.CONFORMATION_WEIGHT;
+  const conformationComponent = conformationScore * conformationShowConfig.conformationWeight;
 
   // 2. Handler component (20%) — showHandlingSkill mapped to 0-100
   const handlerScore = getHandlerScore(groom.showHandlingSkill);
-  const handlerComponent = handlerScore * CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT;
+  const handlerComponent = handlerScore * conformationShowConfig.handlerWeight;
 
   // 3. Bond component (8%) — horse.bondScore used directly (0-100), clamped to valid range
   const bondScore = Math.min(100, Math.max(0, horse.bondScore ?? 0));
-  const bondComponent = bondScore * CONFORMATION_SHOW_CONFIG.BOND_WEIGHT;
+  const bondComponent = bondScore * conformationShowConfig.bondWeight;
 
   // 4. Temperament synergy component (7%)
   // Every horse has a temperament (Equoria-576c0.5: NOT NULL). Old contract: a
   // missing one was scored as 'calm'.
   const personality = groom.personality ?? 'gentle';
   const synergyScore = calculateSynergy(horse.temperament, personality);
-  const synergyComponent = synergyScore * CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT;
+  const synergyComponent = synergyScore * conformationShowConfig.temperamentWeight;
 
   // 5. Final score — integer clamped to [0, 100], no random factor
   const rawScore = conformationComponent + handlerComponent + bondComponent + synergyComponent;
@@ -281,10 +281,10 @@ export function calculateConformationShowScore(horse, groom, className) {
       synergyComponent: Math.round(synergyComponent * 10) / 10,
     },
     weights: {
-      conformation: CONFORMATION_SHOW_CONFIG.CONFORMATION_WEIGHT,
-      handler: CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT,
-      bond: CONFORMATION_SHOW_CONFIG.BOND_WEIGHT,
-      temperament: CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT,
+      conformation: conformationShowConfig.conformationWeight,
+      handler: conformationShowConfig.handlerWeight,
+      bond: conformationShowConfig.bondWeight,
+      temperament: conformationShowConfig.temperamentWeight,
     },
   };
 }
@@ -297,7 +297,7 @@ export function calculateConformationShowScore(horse, groom, className) {
  * Reward by placement.
  * Placement 1/2/3 = podium; 4+ = participation.
  */
-export const REWARD_TABLE = Object.freeze({
+export const rewardTable = Object.freeze({
   1: { ribbon: 'Blue', titlePoints: 10, breedingBoostDelta: 0.05 },
   2: { ribbon: 'Red', titlePoints: 7, breedingBoostDelta: 0.03 },
   3: { ribbon: 'Yellow', titlePoints: 5, breedingBoostDelta: 0.01 },
@@ -305,13 +305,13 @@ export const REWARD_TABLE = Object.freeze({
 });
 
 /** Maximum breedingValueBoost a horse can accumulate (FR-41). */
-export const BREEDING_BOOST_CAP = 0.15;
+export const breedingBoostCap = 0.15;
 
 /**
  * Title thresholds — sorted descending so we find the highest reached.
  * @type {Array<{points: number, title: string}>}
  */
-export const TITLE_THRESHOLDS = Object.freeze([
+export const titleThresholds = Object.freeze([
   { points: 200, title: 'Grand Champion' },
   { points: 100, title: 'Champion' },
   { points: 50, title: 'Distinguished' },
@@ -328,7 +328,7 @@ export const TITLE_THRESHOLDS = Object.freeze([
  * @returns {{ ribbon: string, titlePoints: number, breedingBoostDelta: number }}
  */
 export function resolveReward(placement) {
-  return REWARD_TABLE[placement] ?? REWARD_TABLE.default;
+  return rewardTable[placement] ?? rewardTable.default;
 }
 
 /**
@@ -339,7 +339,7 @@ export function resolveReward(placement) {
  * @returns {string|null}
  */
 export function resolveTitle(accumulatedPoints) {
-  for (const { points, title } of TITLE_THRESHOLDS) {
+  for (const { points, title } of titleThresholds) {
     if (accumulatedPoints >= points) {
       return title;
     }
@@ -348,7 +348,7 @@ export function resolveTitle(accumulatedPoints) {
 }
 
 /**
- * Apply breeding value boost increment, capped at BREEDING_BOOST_CAP.
+ * Apply breeding value boost increment, capped at breedingBoostCap.
  *
  * @param {number} currentBoost - Horse's existing breedingValueBoost (0.0 – 0.15)
  * @param {number} delta - Boost amount to add (0.05 / 0.03 / 0.01 / 0)
@@ -358,5 +358,5 @@ export function applyBreedingValueBoost(currentBoost, delta) {
   if (delta <= 0) {
     return currentBoost;
   }
-  return Math.min(BREEDING_BOOST_CAP, currentBoost + delta);
+  return Math.min(breedingBoostCap, currentBoost + delta);
 }

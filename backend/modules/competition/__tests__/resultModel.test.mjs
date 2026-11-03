@@ -8,7 +8,7 @@
  * Cleanup strategy (Equoria-1ohys — fail-loud):
  *   - beforeAll: delete any stale fixtures from previous runs.
  *   - afterAll: scoped, name-prefix sweep (Show cascade-deletes its
- *     CompetitionResults + ShowEntries; then Horses by prefix; then the USER_ID
+ *     CompetitionResults + ShowEntries; then Horses by prefix; then the userId
  *     user). These deleteMany calls have NO swallowing `.catch` — a cleanup
  *     failure fails the suite so a leaked fixture surfaces at the source.
  *   - Per-test cleanup was previously done with swallowed-error helpers
@@ -29,7 +29,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const PREFIX = 'TestFixture-ResultModel-';
-const USER_ID = 'test-user-result-model';
+const userId = 'test-user-result-model';
 
 async function mkHorse(suffix) {
   return prisma.horse.create({
@@ -39,7 +39,7 @@ async function mkHorse(suffix) {
       sex: 'Colt',
       dateOfBirth: new Date('2020-01-01'),
       age: 4,
-      userId: USER_ID,
+      userId,
     }),
   });
 }
@@ -62,11 +62,11 @@ beforeAll(async () => {
   // Stale-fixture sweep — Show cascade-deletes its CompetitionResults
   await prisma.show.deleteMany({ where: { name: { startsWith: PREFIX } } });
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
-  await prisma.user.deleteMany({ where: { id: USER_ID } });
+  await prisma.user.deleteMany({ where: { id: userId } });
   await prisma.user.create({
     data: {
       emailVerified: true,
-      id: USER_ID,
+      id: userId,
       username: 'resultModelUser',
       email: 'resultmodel@example.com',
       password: 'TestPassword123!',
@@ -80,7 +80,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await prisma.show.deleteMany({ where: { name: { startsWith: PREFIX } } });
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
-  await prisma.user.deleteMany({ where: { id: USER_ID } });
+  await prisma.user.deleteMany({ where: { id: userId } });
 });
 
 // ─── getResultsByUser ─────────────────────────────────────────────────────────
@@ -103,11 +103,11 @@ describe('getResultsByUser', () => {
       },
     });
 
-    const results = await getResultsByUser(USER_ID);
+    const results = await getResultsByUser(userId);
 
     const ours = results.find(r => r.horseId === horse.id);
     expect(ours).toBeDefined();
-    expect(ours.horse.userId).toBe(USER_ID);
+    expect(ours.horse.userId).toBe(userId);
   });
 
   it('filters by discipline when the discipline option is provided', async () => {
@@ -143,7 +143,7 @@ describe('getResultsByUser', () => {
       },
     });
 
-    const results = await getResultsByUser(USER_ID, { discipline: 'Racing', limit: 100 });
+    const results = await getResultsByUser(userId, { discipline: 'Racing', limit: 100 });
 
     const horseResults = results.filter(r => r.horseId === horse.id);
     expect(horseResults.length).toBe(1);
@@ -151,7 +151,7 @@ describe('getResultsByUser', () => {
   });
 
   it('caps limit at 100 and enforces non-negative offset without throwing', async () => {
-    const results = await getResultsByUser(USER_ID, { limit: 200, offset: -5 });
+    const results = await getResultsByUser(userId, { limit: 200, offset: -5 });
     expect(Array.isArray(results)).toBe(true);
   });
 });

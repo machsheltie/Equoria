@@ -23,9 +23,9 @@ import {
   calculateSynergy,
   calculateConformationShowScore,
   validateConformationEntry,
-  CONFORMATION_SHOW_CONFIG,
-  SHOW_HANDLING_SKILL_SCORES,
-  CONFORMATION_AGE_CLASSES,
+  conformationShowConfig,
+  showHandlingSkillScores,
+  conformationAgeClasses,
 } from '../services/conformationShowService.mjs';
 import { conformationClasses } from '../../../constants/schema.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -33,13 +33,13 @@ import { conformationClasses } from '../../../constants/schema.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const SUITE_PREFIX = 'cfsco';
+const suitePrefix = 'cfsco';
 
 // ---------------------------------------------------------------------------
 // Shared test fixtures
 // ---------------------------------------------------------------------------
 
-const FULL_CONFORMATION_SCORES = {
+const fullConformationScores = {
   head: 70,
   neck: 80,
   shoulders: 60,
@@ -50,8 +50,8 @@ const FULL_CONFORMATION_SCORES = {
   topline: 75,
 };
 
-/** Arithmetic mean of FULL_CONFORMATION_SCORES = (70+80+60+75+65+85+70+75) / 8 = 580/8 = 72.5 → rounded = 73 */
-const EXPECTED_CONFORMATION_MEAN = Math.round((70 + 80 + 60 + 75 + 65 + 85 + 70 + 75) / 8);
+/** Arithmetic mean of fullConformationScores = (70+80+60+75+65+85+70+75) / 8 = 580/8 = 72.5 → rounded = 73 */
+const expectedConformationMean = Math.round((70 + 80 + 60 + 75 + 65 + 85 + 70 + 75) / 8);
 
 // ---------------------------------------------------------------------------
 // Task 4.2: calculateConformationScore — arithmetic mean of 8 regions
@@ -59,8 +59,8 @@ const EXPECTED_CONFORMATION_MEAN = Math.round((70 + 80 + 60 + 75 + 65 + 85 + 70 
 
 describe('calculateConformationScore', () => {
   test('returns arithmetic mean of all 8 regions (integer)', () => {
-    const score = calculateConformationScore(FULL_CONFORMATION_SCORES);
-    expect(score).toBe(EXPECTED_CONFORMATION_MEAN);
+    const score = calculateConformationScore(fullConformationScores);
+    expect(score).toBe(expectedConformationMean);
     expect(Number.isInteger(score)).toBe(true);
   });
 
@@ -140,8 +140,8 @@ describe('getHandlerScore', () => {
     expect(getHandlerScore('')).toBe(20);
   });
 
-  test('SHOW_HANDLING_SKILL_SCORES exported constant has all 5 skills', () => {
-    expect(Object.keys(SHOW_HANDLING_SKILL_SCORES)).toEqual(
+  test('showHandlingSkillScores exported constant has all 5 skills', () => {
+    expect(Object.keys(showHandlingSkillScores)).toEqual(
       expect.arrayContaining(['novice', 'competent', 'skilled', 'expert', 'master']),
     );
   });
@@ -153,63 +153,63 @@ describe('getHandlerScore', () => {
 
 describe('getConformationAgeClass', () => {
   test('age 0 → Weanling', () => {
-    expect(getConformationAgeClass(0)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+    expect(getConformationAgeClass(0)).toBe(conformationAgeClasses.WEANLING);
   });
 
   test('age 0.5 → Weanling', () => {
-    expect(getConformationAgeClass(0.5)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+    expect(getConformationAgeClass(0.5)).toBe(conformationAgeClasses.WEANLING);
   });
 
   test('age 1 → Yearling (boundary: exactly 1)', () => {
-    expect(getConformationAgeClass(1)).toBe(CONFORMATION_AGE_CLASSES.YEARLING);
+    expect(getConformationAgeClass(1)).toBe(conformationAgeClasses.YEARLING);
   });
 
   test('age 1.5 → Yearling', () => {
-    expect(getConformationAgeClass(1.5)).toBe(CONFORMATION_AGE_CLASSES.YEARLING);
+    expect(getConformationAgeClass(1.5)).toBe(conformationAgeClasses.YEARLING);
   });
 
   test('age 2 → Youngstock (boundary: exactly 2)', () => {
-    expect(getConformationAgeClass(2)).toBe(CONFORMATION_AGE_CLASSES.YOUNGSTOCK);
+    expect(getConformationAgeClass(2)).toBe(conformationAgeClasses.YOUNGSTOCK);
   });
 
   test('age 2.9 → Youngstock', () => {
-    expect(getConformationAgeClass(2.9)).toBe(CONFORMATION_AGE_CLASSES.YOUNGSTOCK);
+    expect(getConformationAgeClass(2.9)).toBe(conformationAgeClasses.YOUNGSTOCK);
   });
 
   test('age 3 → Junior (boundary: exactly 3)', () => {
-    expect(getConformationAgeClass(3)).toBe(CONFORMATION_AGE_CLASSES.JUNIOR);
+    expect(getConformationAgeClass(3)).toBe(conformationAgeClasses.JUNIOR);
   });
 
   test('age 5 → Junior (upper boundary of Junior band)', () => {
-    expect(getConformationAgeClass(5)).toBe(CONFORMATION_AGE_CLASSES.JUNIOR);
+    expect(getConformationAgeClass(5)).toBe(conformationAgeClasses.JUNIOR);
   });
 
   test('age 5.9 → Junior', () => {
-    expect(getConformationAgeClass(5.9)).toBe(CONFORMATION_AGE_CLASSES.JUNIOR);
+    expect(getConformationAgeClass(5.9)).toBe(conformationAgeClasses.JUNIOR);
   });
 
   test('age 6 → Senior (boundary: exactly 6)', () => {
-    expect(getConformationAgeClass(6)).toBe(CONFORMATION_AGE_CLASSES.SENIOR);
+    expect(getConformationAgeClass(6)).toBe(conformationAgeClasses.SENIOR);
   });
 
   test('age 20 → Senior', () => {
-    expect(getConformationAgeClass(20)).toBe(CONFORMATION_AGE_CLASSES.SENIOR);
+    expect(getConformationAgeClass(20)).toBe(conformationAgeClasses.SENIOR);
   });
 
-  test('CONFORMATION_AGE_CLASSES has 5 entries', () => {
-    expect(Object.keys(CONFORMATION_AGE_CLASSES)).toHaveLength(5);
+  test('conformationAgeClasses has 5 entries', () => {
+    expect(Object.keys(conformationAgeClasses)).toHaveLength(5);
   });
 
   test('age -1 (negative) → Weanling (guarded, not SENIOR)', () => {
-    expect(getConformationAgeClass(-1)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+    expect(getConformationAgeClass(-1)).toBe(conformationAgeClasses.WEANLING);
   });
 
   test('NaN → Weanling (guarded, not SENIOR)', () => {
-    expect(getConformationAgeClass(NaN)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+    expect(getConformationAgeClass(NaN)).toBe(conformationAgeClasses.WEANLING);
   });
 
   test('Infinity → Weanling (guarded, not SENIOR)', () => {
-    expect(getConformationAgeClass(Infinity)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+    expect(getConformationAgeClass(Infinity)).toBe(conformationAgeClasses.WEANLING);
   });
 });
 
@@ -333,7 +333,7 @@ describe('calculateConformationShowScore', () => {
   const horse = {
     id: 1,
     name: 'Stardust',
-    conformationScores: FULL_CONFORMATION_SCORES, // mean = EXPECTED_CONFORMATION_MEAN = 73
+    conformationScores: fullConformationScores, // mean = EXPECTED_CONFORMATION_MEAN = 73
     bondScore: 60,
     temperament: 'calm',
   };
@@ -357,7 +357,7 @@ describe('calculateConformationShowScore', () => {
 
   test('finalScore matches expected arithmetic with known inputs', () => {
     /**
-     * conformationScore = 73 (mean of FULL_CONFORMATION_SCORES)
+     * conformationScore = 73 (mean of fullConformationScores)
      * handlerScore      = 80 (expert)
      * bondScore         = 60
      * synergyScore      = 86 (calm + gentle, normalized [0,100])
@@ -477,9 +477,9 @@ describe('validateConformationEntry (real DB)', () => {
     const uid = randomBytes(8).toString('hex');
     user = await prisma.user.create({
       data: {
-        id: `${SUITE_PREFIX}-${uid}`,
-        username: `${SUITE_PREFIX}_${uid}`,
-        email: `${SUITE_PREFIX}-${uid}@example.com`,
+        id: `${suitePrefix}-${uid}`,
+        username: `${suitePrefix}_${uid}`,
+        email: `${suitePrefix}-${uid}@example.com`,
         firstName: 'Cfsco',
         lastName: 'Test',
         password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -497,7 +497,7 @@ describe('validateConformationEntry (real DB)', () => {
         healthStatus: 'Excellent',
         bondScore: 50,
         temperament: 'calm',
-        conformationScores: FULL_CONFORMATION_SCORES,
+        conformationScores: fullConformationScores,
         user: { connect: { id: user.id } },
       }),
     });
@@ -531,7 +531,7 @@ describe('validateConformationEntry (real DB)', () => {
       userId: user.id,
       age: 3,
       health: 'Excellent',
-      conformationScores: FULL_CONFORMATION_SCORES,
+      conformationScores: fullConformationScores,
       bondScore: 50,
       temperament: 'calm',
     };
@@ -554,7 +554,7 @@ describe('validateConformationEntry (real DB)', () => {
 
   test('assigns correct age class for valid horse', async () => {
     const result = await validateConformationEntry(horse, groom, user.id);
-    expect(result.ageClass).toBe(CONFORMATION_AGE_CLASSES.JUNIOR);
+    expect(result.ageClass).toBe(conformationAgeClasses.JUNIOR);
   });
 
   test('rejects when groom is not assigned to horse', async () => {
@@ -573,9 +573,9 @@ describe('validateConformationEntry (real DB)', () => {
     // Create a fresh user/horse/groom with a recent assignment.
     const u = await prisma.user.create({
       data: {
-        id: `${SUITE_PREFIX}-recent-${randomBytes(8).toString('hex')}`,
-        username: `${SUITE_PREFIX}_recent_${randomBytes(4).toString('hex')}`,
-        email: `${SUITE_PREFIX}-recent-${randomBytes(4).toString('hex')}@example.com`,
+        id: `${suitePrefix}-recent-${randomBytes(8).toString('hex')}`,
+        username: `${suitePrefix}_recent_${randomBytes(4).toString('hex')}`,
+        email: `${suitePrefix}-recent-${randomBytes(4).toString('hex')}@example.com`,
         firstName: 'Recent',
         lastName: 'Test',
         password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -621,7 +621,7 @@ describe('validateConformationEntry (real DB)', () => {
         userId: u.id,
         age: 3,
         health: 'Excellent',
-        conformationScores: FULL_CONFORMATION_SCORES,
+        conformationScores: fullConformationScores,
         bondScore: 50,
         temperament: 'calm',
       },
@@ -649,7 +649,7 @@ describe('validateConformationEntry (real DB)', () => {
     const weanling = { ...horse, age: 0, health: 'Excellent' };
     const result = await validateConformationEntry(weanling, groom, user.id);
     expect(result.valid).toBe(true);
-    expect(result.ageClass).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+    expect(result.ageClass).toBe(conformationAgeClasses.WEANLING);
   });
 
   test('rejects horse with age < 0 (invalid age)', async () => {
@@ -700,7 +700,7 @@ describe('validateConformationEntry (real DB)', () => {
 
 async function cleanupValidationFixtures() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {
@@ -721,40 +721,40 @@ async function cleanupValidationFixtures() {
 }
 
 // ---------------------------------------------------------------------------
-// CONFORMATION_SHOW_CONFIG — structural checks
+// conformationShowConfig — structural checks
 // ---------------------------------------------------------------------------
 
-describe('CONFORMATION_SHOW_CONFIG', () => {
+describe('conformationShowConfig', () => {
   test('weights sum to 1.00', () => {
     const total =
-      CONFORMATION_SHOW_CONFIG.CONFORMATION_WEIGHT +
-      CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT +
-      CONFORMATION_SHOW_CONFIG.BOND_WEIGHT +
-      CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT;
+      conformationShowConfig.conformationWeight +
+      conformationShowConfig.handlerWeight +
+      conformationShowConfig.bondWeight +
+      conformationShowConfig.temperamentWeight;
     expect(total).toBeCloseTo(1.0, 10);
   });
 
-  test('CONFORMATION_WEIGHT is 0.65', () => {
-    expect(CONFORMATION_SHOW_CONFIG.CONFORMATION_WEIGHT).toBe(0.65);
+  test('conformationWeight is 0.65', () => {
+    expect(conformationShowConfig.conformationWeight).toBe(0.65);
   });
 
-  test('HANDLER_WEIGHT is 0.20', () => {
-    expect(CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT).toBe(0.2);
+  test('handlerWeight is 0.20', () => {
+    expect(conformationShowConfig.handlerWeight).toBe(0.2);
   });
 
-  test('BOND_WEIGHT is 0.08', () => {
-    expect(CONFORMATION_SHOW_CONFIG.BOND_WEIGHT).toBe(0.08);
+  test('bondWeight is 0.08', () => {
+    expect(conformationShowConfig.bondWeight).toBe(0.08);
   });
 
-  test('TEMPERAMENT_WEIGHT is 0.07', () => {
-    expect(CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT).toBe(0.07);
+  test('temperamentWeight is 0.07', () => {
+    expect(conformationShowConfig.temperamentWeight).toBe(0.07);
   });
 
-  test('MIN_AGE is 0 (Weanlings allowed)', () => {
-    expect(CONFORMATION_SHOW_CONFIG.MIN_AGE).toBe(0);
+  test('minAge is 0 (Weanlings allowed)', () => {
+    expect(conformationShowConfig.minAge).toBe(0);
   });
 
   test('config is frozen — cannot be mutated at runtime', () => {
-    expect(Object.isFrozen(CONFORMATION_SHOW_CONFIG)).toBe(true);
+    expect(Object.isFrozen(conformationShowConfig)).toBe(true);
   });
 });

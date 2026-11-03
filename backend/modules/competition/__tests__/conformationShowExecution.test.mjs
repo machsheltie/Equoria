@@ -46,7 +46,7 @@ import { executeConformationShow } from '../services/conformationShowService.mjs
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const SUITE_PREFIX = 'cfexe';
+const suitePrefix = 'cfexe';
 
 function buildReq({ body = {}, params = {}, user }) {
   return { body, params, user };
@@ -73,7 +73,7 @@ function buildRes() {
   };
 }
 
-const VALID_CONFORMATION_SCORES = {
+const validConformationScores = {
   head: 80,
   neck: 75,
   shoulders: 70,
@@ -89,9 +89,9 @@ async function createUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'Cf',
       lastName: 'Exe',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -104,14 +104,14 @@ async function createHorse(userId, overrides = {}) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: overrides.name ?? `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
+      name: overrides.name ?? `${suitePrefix}-h-${randomBytes(4).toString('hex')}`,
       sex: overrides.sex ?? 'Mare',
       dateOfBirth: new Date('2021-01-01'),
       age: overrides.age ?? 4,
       healthStatus: overrides.healthStatus ?? 'Excellent',
       bondScore: 70,
       temperament: 'Calm',
-      conformationScores: VALID_CONFORMATION_SCORES,
+      conformationScores: validConformationScores,
       titlePoints: overrides.titlePoints ?? 0,
       currentTitle: overrides.currentTitle ?? null,
       breedingValueBoost: overrides.breedingValueBoost ?? 0,
@@ -123,7 +123,7 @@ async function createHorse(userId, overrides = {}) {
 async function createGroom(userId) {
   return prisma.groom.create({
     data: {
-      name: `${SUITE_PREFIX}-g-${randomBytes(4).toString('hex')}`,
+      name: `${suitePrefix}-g-${randomBytes(4).toString('hex')}`,
       speciality: 'show_handling',
       personality: 'gentle',
       skillLevel: 'expert',
@@ -140,7 +140,7 @@ async function createConformationShow(overrides = {}) {
   // from due, which only "settled" because the old code never checked.
   const closeDate = new Date(Date.now() - 60 * 60 * 1000);
   const data = {
-    name: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+    name: `${suitePrefix}-show-${randomBytes(4).toString('hex')}`,
     discipline: 'Conformation',
     levelMin: 1,
     levelMax: 10,
@@ -183,7 +183,7 @@ async function createShowEntry(showId, horseId, userId) {
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length === 0) {
@@ -207,7 +207,7 @@ async function cleanupSuite() {
     await prisma.competitionResult.deleteMany({ where: { horseId: { in: horseIds } } });
     await prisma.showEntry.deleteMany({ where: { horseId: { in: horseIds } } });
   }
-  await prisma.show.deleteMany({ where: { name: { startsWith: SUITE_PREFIX } } });
+  await prisma.show.deleteMany({ where: { name: { startsWith: suitePrefix } } });
   await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.groom.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });

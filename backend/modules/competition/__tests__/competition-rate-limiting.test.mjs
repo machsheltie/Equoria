@@ -49,8 +49,8 @@ const BASE = '/api/v1/competition';
 // passwordChangedAt check treats a missing user as "never rotated"), so it
 // can never own ANY horse; requireOwnership therefore yields 404 regardless
 // of whether the row exists (404-in-both-cases prevents ownership disclosure).
-const UNOWNED_HORSE_ID = 2147483000;
-const MISSING_SHOW_ID = 2147483000;
+const unownedHorseId = 2147483000;
+const missingShowId = 2147483000;
 
 describe('Competition Routes Rate Limiting Integration Tests', () => {
   const userId = 'test-user-uuid-123';
@@ -84,7 +84,7 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
 
     it('should apply queryRateLimiter to GET /api/v1/competition/show/:showId/results', async () => {
       // Non-existent show: the handler returns 200 with an empty results array.
-      const response = await authedGet(`${BASE}/show/${MISSING_SHOW_ID}/results`);
+      const response = await authedGet(`${BASE}/show/${missingShowId}/results`);
 
       expect(response.status).toBe(200);
       expect(response.body.results).toEqual([]);
@@ -92,7 +92,7 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
     });
 
     it('should apply queryRateLimiter to GET /api/v1/competition/eligibility/:horseId/:discipline', async () => {
-      const response = await authedGet(`${BASE}/eligibility/${UNOWNED_HORSE_ID}/showjumping`);
+      const response = await authedGet(`${BASE}/eligibility/${unownedHorseId}/showjumping`);
 
       expect(response.status).toBe(404);
       expectRateLimitHeaders(response);
@@ -117,8 +117,8 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
     it('should apply mutationRateLimiter to POST /api/v1/competition/enter', async () => {
       // Valid shape, unowned horse → requireOwnership 404, headers intact.
       const response = await authedPost(`${BASE}/enter`).send({
-        horseId: UNOWNED_HORSE_ID,
-        showId: MISSING_SHOW_ID,
+        horseId: unownedHorseId,
+        showId: missingShowId,
       });
 
       expect(response.status).toBe(404);
@@ -140,8 +140,8 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
       const queryResponse = await authedGet(`${BASE}/disciplines`);
 
       const mutationResponse = await authedPost(`${BASE}/enter`).send({
-        horseId: UNOWNED_HORSE_ID,
-        showId: MISSING_SHOW_ID,
+        horseId: unownedHorseId,
+        showId: missingShowId,
       });
 
       // Both chains carry rate limiting (positive limits)
@@ -165,7 +165,7 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
       const response = await request(app)
         .post(`${BASE}/enter`)
         .set('Origin', ORIGIN)
-        .send({ horseId: UNOWNED_HORSE_ID, showId: MISSING_SHOW_ID });
+        .send({ horseId: unownedHorseId, showId: missingShowId });
 
       expect(response.status).toBe(401);
     });
@@ -210,7 +210,7 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
     it('should rate limit invalid competition entry requests', async () => {
       const response = await authedPost(`${BASE}/enter`).send({
         horseId: 'invalid', // Should be integer
-        showId: MISSING_SHOW_ID,
+        showId: missingShowId,
       });
 
       // Dedicated validation middleware runs BEFORE requireOwnership → 400
@@ -221,7 +221,7 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
 
     it('should rate limit requests with missing required fields', async () => {
       const response = await authedPost(`${BASE}/enter`).send({
-        horseId: UNOWNED_HORSE_ID,
+        horseId: unownedHorseId,
         // Missing showId
       });
 

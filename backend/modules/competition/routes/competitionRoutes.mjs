@@ -11,7 +11,7 @@ import { requireOwnership } from '../../../middleware/ownership.mjs';
 // getCompetitionEligibilitySummary is still used by GET /eligibility.
 import { getCompetitionEligibilitySummary } from '../../../logic/enhancedCompetitionSimulation.mjs';
 import { getDisciplineConfig, calculateHorseLevel } from '../../../utils/competitionLogic.mjs';
-import { COMPETITION_DISCIPLINES, isKnownDiscipline } from '../rules/disciplineRules.mjs';
+import { competitionDisciplines, isKnownDiscipline } from '../rules/disciplineRules.mjs';
 import { sendEntryRefusal } from '../services/entryEligibility.mjs';
 import auth from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
@@ -20,7 +20,7 @@ import {
   getShowMetadata,
   getShowEntriesWithHorseStats,
   getShowForEntry,
-  CONFORMATION_ENTRY_ONLY_MESSAGE,
+  conformationEntryOnlyMessage,
   enterShowDeferredTx,
 } from '../services/competitionRouteQueries.mjs';
 import { listOpenShows } from '../controllers/openShowsController.mjs';
@@ -126,7 +126,7 @@ router.get(
         return res.status(404).json({ success: false, message: 'Show not found' });
       }
 
-      const STAT_KEYS = [
+      const statKeys = [
         'precision',
         'strength',
         'speed',
@@ -145,7 +145,7 @@ router.get(
 
       const field = entries.map(e => {
         const h = e.horse;
-        const allStats = STAT_KEYS.map(k => ({ name: k, value: h?.[k] ?? 0 }));
+        const allStats = statKeys.map(k => ({ name: k, value: h?.[k] ?? 0 }));
         const topStats = [...allStats].sort((a, b) => b.value - a.value).slice(0, 3);
         // The horse's level in this show's discipline: the same
         // calculateHorseLevel() the eligibility summary and the horse page's
@@ -335,7 +335,7 @@ router.post(
         return res.status(400).json({
           success: false,
           code: 'conformationEntryOnly',
-          message: CONFORMATION_ENTRY_ONLY_MESSAGE,
+          message: conformationEntryOnlyMessage,
         });
       }
 
@@ -507,7 +507,7 @@ router.get(
         return res.status(400).json({
           success: false,
           message: 'Invalid discipline',
-          availableDisciplines: COMPETITION_DISCIPLINES,
+          availableDisciplines: competitionDisciplines,
         });
       }
 
@@ -558,7 +558,7 @@ router.use('/conformation', conformationShowRoutes);
  */
 router.get('/disciplines', queryRateLimiter, async (req, res) => {
   try {
-    const disciplines = [...COMPETITION_DISCIPLINES];
+    const disciplines = [...competitionDisciplines];
     const disciplineDetails = disciplines.map(discipline => ({
       name: discipline,
       config: getDisciplineConfig(discipline),

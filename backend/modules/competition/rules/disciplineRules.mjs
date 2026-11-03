@@ -18,7 +18,7 @@ import { horseTemperamentValues } from '../../../constants/schema.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 /** [50% primary, 30% secondary, 20% tertiary] per competition discipline. */
-export const DISCIPLINE_STATS = Object.freeze({
+export const disciplineStats = Object.freeze({
   'Western Pleasure': Object.freeze(['focus', 'obedience', 'intelligence']),
   Reining: Object.freeze(['agility', 'precision', 'focus']),
   Cutting: Object.freeze(['intelligence', 'agility', 'boldness']),
@@ -46,16 +46,15 @@ export const DISCIPLINE_STATS = Object.freeze({
 });
 
 /** The 24 competition disciplines, in bible order. */
-export const competitionDisciplines = Object.freeze(Object.keys(DISCIPLINE_STATS));
+export const competitionDisciplines = Object.freeze(Object.keys(disciplineStats));
 /** The same list under its older name; new code reads competitionDisciplines (Equoria-pjvp8). */
-export const COMPETITION_DISCIPLINES = competitionDisciplines;
 
 /**
  * @param {string} discipline
  * @returns {boolean} Whether `discipline` is one of the 24 (exact, case-sensitive name).
  */
 export function isKnownDiscipline(discipline) {
-  return typeof discipline === 'string' && Object.hasOwn(DISCIPLINE_STATS, discipline);
+  return typeof discipline === 'string' && Object.hasOwn(disciplineStats, discipline);
 }
 
 /**
@@ -69,7 +68,7 @@ export function getDisciplineStats(discipline) {
   if (!isKnownDiscipline(discipline)) {
     throw new Error(`Unknown competition discipline: ${discipline}`);
   }
-  return DISCIPLINE_STATS[discipline];
+  return disciplineStats[discipline];
 }
 
 /**
@@ -88,7 +87,7 @@ export const TEMPERAMENTS = horseTemperamentValues;
  * (Pleasure Driving included) was regenerated from her updated sheet.
  */
 // prettier-ignore
-export const TEMPERAMENT_MATRIX = Object.freeze({
+export const temperamentMatrix = Object.freeze({
   'Western Pleasure': Object.freeze({ Spirited: 0, Nervous: -1, Calm: 1, Bold: 0, Steady: 1, Willing: 1, Independent: -1, Reactive: -1, Stubborn: -1, Driven: -1, Lazy: 1, Aggressive: -1 }),
   Reining: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 0, Bold: 1, Steady: 1, Willing: 1, Independent: 0, Reactive: 0, Stubborn: -1, Driven: 0, Lazy: -1, Aggressive: -1 }),
   Cutting: Object.freeze({ Spirited: 1, Nervous: -1, Calm: 1, Bold: 1, Steady: 0, Willing: 0, Independent: 1, Reactive: 1, Stubborn: -1, Driven: 0, Lazy: -1, Aggressive: 0 }),
@@ -116,7 +115,7 @@ export const TEMPERAMENT_MATRIX = Object.freeze({
 });
 
 /** Percent per matrix effect (R1): Positive +5, Neutral 0, Negative -5. */
-const TEMPERAMENT_EFFECT_PERCENT = 5;
+const temperamentEffectPercent = 5;
 
 /**
  * The temperament percent term for a ridden discipline.
@@ -131,11 +130,11 @@ export function temperamentPercent(discipline, temperament) {
   if (!isKnownDiscipline(discipline) || typeof temperament !== 'string') {
     return null;
   }
-  const row = TEMPERAMENT_MATRIX[discipline];
+  const row = temperamentMatrix[discipline];
   if (!Object.hasOwn(row, temperament)) {
     return null;
   }
-  return row[temperament] * TEMPERAMENT_EFFECT_PERCENT;
+  return row[temperament] * temperamentEffectPercent;
 }
 
 /**

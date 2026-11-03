@@ -27,7 +27,7 @@ const uid = () => randomBytes(6).toString('hex');
 const cleanup = createCleanupTracker();
 afterAll(() => cleanup.run(), 60000);
 
-const STATS_100 = {
+const stats100 = {
   speed: 100,
   stamina: 100,
   agility: 100,
@@ -74,7 +74,7 @@ describe('nightly settlement scores temperament as a percent term (B6)', () => {
           ...careForHealth('Good'),
           lastFedDate: new Date(),
           temperament,
-          ...STATS_100,
+          ...stats100,
         },
         horseIds,
       );

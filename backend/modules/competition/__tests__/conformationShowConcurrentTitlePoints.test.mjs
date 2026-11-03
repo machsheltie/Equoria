@@ -36,11 +36,11 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CHILD_SCRIPT = path.join(__dirname, 'helpers', 'runConformationShowChild.mjs');
+const childScript = path.join(__dirname, 'helpers', 'runConformationShowChild.mjs');
 
 function runConformationShowInChildProcess(showId) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [CHILD_SCRIPT, String(showId)], {
+    const child = spawn(process.execPath, [childScript, String(showId)], {
       env: { ...process.env, NODE_ENV: 'test' },
       stdio: ['ignore', 'pipe', 'pipe'],
     });

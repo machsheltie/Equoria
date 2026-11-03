@@ -126,7 +126,7 @@ function byPlacementThenScore(a, b) {
   return pa === pb ? b.score - a.score : pa - pb;
 }
 
-const RESULT_SELECT = {
+const resultSelect = {
   id: true,
   horseId: true,
   placement: true,
@@ -146,7 +146,7 @@ const RESULT_SELECT = {
  */
 export const showResultsLimit = 100;
 
-const SHOW_SELECT = {
+const showSelect = {
   id: true,
   name: true,
   discipline: true,
@@ -168,10 +168,10 @@ const SHOW_SELECT = {
  */
 export async function getShowResultsView(showId, viewerId) {
   const [show, rows] = await Promise.all([
-    prisma.show.findUnique({ where: { id: showId }, select: SHOW_SELECT }),
+    prisma.show.findUnique({ where: { id: showId }, select: showSelect }),
     prisma.competitionResult.findMany({
       where: { showId },
-      select: RESULT_SELECT,
+      select: resultSelect,
       // The same order byPlacementThenScore applies below, so the rows kept are
       // the top of the field: placement ascending (unplaced last), score
       // descending, id breaking ties so the cut is stable.
@@ -200,7 +200,7 @@ export async function getShowResultsView(showId, viewerId) {
   };
 }
 
-const HORSE_SHOW_SELECT = {
+const horseShowSelect = {
   id: true,
   name: true,
   discipline: true,
@@ -245,7 +245,7 @@ function horseShowStatus(show, result) {
  * One row of a horse's show list (owner ruling R7). `show` comes from the
  * entry or, for a result with no entry row left, from the result itself.
  *
- * @param {object} show - Show (HORSE_SHOW_SELECT).
+ * @param {object} show - Show (horseShowSelect).
  * @param {object|null} result - The horse's CompetitionResult for that show.
  * @returns {object}
  */
@@ -282,7 +282,7 @@ export async function getHorseShowResults(horseId, { skip, take }) {
   const [entries, results] = await Promise.all([
     prisma.showEntry.findMany({
       where: { horseId },
-      select: { show: { select: HORSE_SHOW_SELECT } },
+      select: { show: { select: horseShowSelect } },
     }),
     prisma.competitionResult.findMany({
       where: { horseId },
@@ -295,7 +295,7 @@ export async function getHorseShowResults(horseId, { skip, take }) {
         prizeWon: true,
         statGains: true,
         horsePointsAwarded: true,
-        show: { select: HORSE_SHOW_SELECT },
+        show: { select: horseShowSelect },
       },
     }),
   ]);
