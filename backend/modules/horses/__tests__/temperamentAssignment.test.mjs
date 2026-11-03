@@ -6,7 +6,7 @@ import { jest } from '@jest/globals';
 import logger from '../../../utils/logger.mjs';
 import { seededRng } from '../../../__tests__/helpers/seededRng.mjs';
 import { generateTemperament, weightedRandomSelect } from '../services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
+import { temperamentTypes } from '../data/temperamentTypes.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 describe('Temperament Assignment Service', () => {
@@ -82,7 +82,7 @@ describe('Temperament Assignment Service', () => {
         'Paint Horse',
       ]) {
         const temperament = generateTemperament(breedName);
-        expect(TEMPERAMENT_TYPES).toContain(temperament);
+        expect(temperamentTypes).toContain(temperament);
       }
     });
 
@@ -171,7 +171,7 @@ describe('Temperament Assignment Service', () => {
         const weights = getBreedProfile(breedName).temperamentWeights;
         const keys = Object.keys(weights);
         for (const key of keys) {
-          expect(TEMPERAMENT_TYPES).toContain(key);
+          expect(temperamentTypes).toContain(key);
         }
       }
     });
@@ -206,7 +206,7 @@ describe('Temperament Assignment Service', () => {
     // Chi-squared critical values at p=0.001 keyed by df (df 1–20).
     // Using the actual computed df prevents false failures when a breed has more
     // (or fewer) qualifying categories than the hardcoded df=10 assumption.
-    const CHI2_CRITICAL_P001 = {
+    const chi2CriticalP001 = {
       1: 10.828,
       2: 13.816,
       3: 16.266,
@@ -229,7 +229,7 @@ describe('Temperament Assignment Service', () => {
       20: 45.315,
     };
 
-    const SAMPLE_SIZE = 10000;
+    const sampleSize = 10000;
 
     /**
      * Calculate chi-squared statistic for observed vs expected frequencies.
@@ -251,24 +251,24 @@ describe('Temperament Assignment Service', () => {
     }
 
     // Test a representative subset of breeds (not all 12 to keep test time reasonable)
-    const BREEDS_TO_TEST = [
+    const breedsToTest = [
       { id: 1, name: 'Thoroughbred' },
       { id: 2, name: 'Arabian' },
       { id: 5, name: 'Pony Of The Americas' },
       { id: 9, name: 'American Quarter Horse' },
     ];
 
-    for (const breed of BREEDS_TO_TEST) {
+    for (const breed of breedsToTest) {
       test(`${breed.name} (ID ${breed.id}) temperament distribution matches breed weights (p > 0.001)`, () => {
         const weights = getBreedProfile(breed.name).temperamentWeights;
         const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
 
         const expected = {};
         for (const [type, weight] of Object.entries(weights)) {
-          expected[type] = (weight / totalWeight) * SAMPLE_SIZE;
+          expected[type] = (weight / totalWeight) * sampleSize;
         }
 
-        // Equoria-xylg: single chi-squared trial at p=0.001 with SAMPLE_SIZE=10000.
+        // Equoria-xylg: single chi-squared trial at p=0.001 with sampleSize=10000.
         // The previous two-trial workaround (require 1 of 2 pass at p=0.001) was
         // statistically opaque — a 5% drift on a single bucket could still
         // pass one trial by luck. At N=10000 samples per breed × 11 temperament
@@ -283,7 +283,7 @@ describe('Temperament Assignment Service', () => {
         const observed = {};
         const random = jest.spyOn(Math, 'random').mockImplementation(seededRng(0x5eed + breed.id));
         try {
-          for (let i = 0; i < SAMPLE_SIZE; i++) {
+          for (let i = 0; i < sampleSize; i++) {
             const t = generateTemperament(breed.name);
             observed[t] = (observed[t] || 0) + 1;
           }
@@ -291,12 +291,12 @@ describe('Temperament Assignment Service', () => {
           random.mockRestore();
         }
         const { stat, df } = chiSquared(observed, expected);
-        const criticalValue = CHI2_CRITICAL_P001[df] ?? CHI2_CRITICAL_P001[20];
+        const criticalValue = chi2CriticalP001[df] ?? chi2CriticalP001[20];
         // Sanity-tag failure for easy triage: include the offending breed and
         // computed stat so post-mortem doesn't require re-running.
         if (stat >= criticalValue) {
           logger.warn(
-            `[xylg] Chi-squared failed for breed ${breed.id} ${breed.name}: stat=${stat.toFixed(2)} >= crit=${criticalValue} (df=${df}, N=${SAMPLE_SIZE})`,
+            `[xylg] Chi-squared failed for breed ${breed.id} ${breed.name}: stat=${stat.toFixed(2)} >= crit=${criticalValue} (df=${df}, N=${sampleSize})`,
           );
         }
         expect(stat).toBeLessThan(criticalValue);

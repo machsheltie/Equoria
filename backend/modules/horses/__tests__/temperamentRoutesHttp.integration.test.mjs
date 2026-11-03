@@ -34,15 +34,15 @@ import app from '../../../app.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
 const ENDPOINT = '/api/v1/horses/temperament-definitions';
-const FIXTURE_PREFIX = 'TestFixture-temp-http';
+const fixturePrefix = 'TestFixture-temp-http';
 
 let userToken;
 
 beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
   const u = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   userToken = u.token;
 }, 120000);

@@ -44,7 +44,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { allocateStatPoint } from '../services/horseXpModelService.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const BASE_SPEED = 50;
+const baseSpeed = 50;
 const CONCURRENCY = 5;
 
 let ownerId;
@@ -59,7 +59,7 @@ async function makeHorse(availableStatPoints) {
       dateOfBirth: new Date(),
       age: 5,
       userId: ownerId,
-      speed: BASE_SPEED,
+      speed: baseSpeed,
       availableStatPoints,
     }),
   });
@@ -115,8 +115,8 @@ describe('INTEGRATION: allocateStatPoint atomic claim under concurrency (Equoria
     // Invariant 1: availableStatPoints never goes negative (pre-fix: -(N-1)).
     expect(after.availableStatPoints).toBe(0);
     // Invariant 2: exactly ONE stat increment applied for ONE earned point
-    // (pre-fix: BASE_SPEED + N).
-    expect(after.speed).toBe(BASE_SPEED + 1);
+    // (pre-fix: baseSpeed + N).
+    expect(after.speed).toBe(baseSpeed + 1);
   }, 120000);
 
   it('happy path preserved: a single allocation at one point succeeds and decrements to zero', async () => {
@@ -126,14 +126,14 @@ describe('INTEGRATION: allocateStatPoint atomic claim under concurrency (Equoria
 
     expect(result.success).toBe(true);
     expect(result.statName).toBe('speed');
-    expect(result.newStatValue).toBe(BASE_SPEED + 1);
+    expect(result.newStatValue).toBe(baseSpeed + 1);
     expect(result.remainingStatPoints).toBe(0);
 
     const after = await prisma.horse.findUnique({
       where: { id: horse.id },
       select: { speed: true, availableStatPoints: true },
     });
-    expect(after.speed).toBe(BASE_SPEED + 1);
+    expect(after.speed).toBe(baseSpeed + 1);
     expect(after.availableStatPoints).toBe(0);
   }, 120000);
 
@@ -150,7 +150,7 @@ describe('INTEGRATION: allocateStatPoint atomic claim under concurrency (Equoria
       select: { speed: true, availableStatPoints: true },
     });
     // Never over-decrements below zero on the reject path either.
-    expect(after.speed).toBe(BASE_SPEED);
+    expect(after.speed).toBe(baseSpeed);
     expect(after.availableStatPoints).toBe(0);
   }, 120000);
 });

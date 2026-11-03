@@ -15,7 +15,7 @@
  *   - both between minBreedingAgeYears (3) and maxBreedingAgeYears (20)
  *     game-years old, inclusive; a retired horse (21+) cannot breed (owner
  *     ruling, Stacey 2026-10-23, Equoria-e7tgc.4)
- *   - the DAM is off cooldown: DAM_BREEDING_COOLDOWN_DAYS after lastBredDate.
+ *   - the DAM is off cooldown: damBreedingCooldownDays after lastBredDate.
  *     Mares only; stallions have no cooldown or limit (owner rulings 2026-07-02,
  *     2026-10-02, S2 2026-10-15; S-Q1 2026-10-16 keeps 7 days)
  *   - sire and dam are the SAME breed, and the foal is always born that breed
@@ -56,7 +56,7 @@ export const maxBreedingAgeYears = maxActiveAgeYears;
  * Semantics: a mare bred any time on day D is breedable from 00:00 Eastern
  * on D+7 (mirrors the Equoria-vdw5 date-only, Eastern game clock convention).
  */
-export const DAM_BREEDING_COOLDOWN_DAYS = 7;
+export const damBreedingCooldownDays = 7;
 
 function refuse(status, message, kind) {
   return { ok: false, status, message, kind };
@@ -131,11 +131,11 @@ export async function validateBreedingPair({ sire, dam, client = prisma }) {
 
   // Guard 4: dam cooldown (1 game year = 7 real days; user decision 2026-07-02).
   // Stallions are unrestricted. Null-check FIRST — getHorseAgeDays(null) returns 0
-  // which would be < DAM_BREEDING_COOLDOWN_DAYS and block every first breeding (trap).
+  // which would be < damBreedingCooldownDays and block every first breeding (trap).
   if (dam.lastBredDate) {
     const daysSinceLastBred = getHorseAgeDays(dam.lastBredDate, new Date());
-    if (daysSinceLastBred < DAM_BREEDING_COOLDOWN_DAYS) {
-      const daysRemaining = DAM_BREEDING_COOLDOWN_DAYS - daysSinceLastBred;
+    if (daysSinceLastBred < damBreedingCooldownDays) {
+      const daysRemaining = damBreedingCooldownDays - daysSinceLastBred;
       return refuse(
         400,
         `${dam.name} is on breeding cooldown for ${daysRemaining} more day(s) (one breeding per game year)`,
@@ -258,7 +258,7 @@ export function pendingRequestMessage(damName) {
  * Mares only — a stallion never has one (owner rulings 2026-10-02 / S-Q1
  * 2026-10-16). The same Eastern day arithmetic the breeding guard uses: she is
  * on cooldown while the Eastern game day is before bred-day +
- * DAM_BREEDING_COOLDOWN_DAYS, so it ends at 00:00 Eastern that day
+ * damBreedingCooldownDays, so it ends at 00:00 Eastern that day
  * (lastBredDate is a date-only column: calendarDateDayIndex, never UTC ms).
  *
  * @param {{ sex?: string, lastBredDate?: Date|string|null }} horse
@@ -271,7 +271,7 @@ export function damBreedingCooldownEndsAt(horse, now = new Date()) {
     return null;
   }
   const ends = startOfGameDayIndex(
-    calendarDateDayIndex(horse.lastBredDate) + DAM_BREEDING_COOLDOWN_DAYS,
+    calendarDateDayIndex(horse.lastBredDate) + damBreedingCooldownDays,
   );
   return ends.getTime() > now.getTime() ? ends.toISOString() : null;
 }

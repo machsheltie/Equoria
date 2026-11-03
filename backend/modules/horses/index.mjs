@@ -34,7 +34,7 @@ export { runFoalingJob, createFoalFromPregnancy } from './services/foalingServic
 // Equoria-6p398.14: the nightly aging pass writes a birthday and, at 21, releases the horse's staff.
 // Equoria-6p398.14 follow-up: the groom, rider and trainer assign paths refuse a retired horse.
 export { writeBirthdayTx, assertHorseTakesNewStaffTx } from './services/horseRetirementStaff.mjs';
-export { GENERIC_DEFAULTS, generateGenotype } from './services/genotypeGenerationService.mjs';
+export { genericDefaults, generateGenotype } from './services/genotypeGenerationService.mjs';
 export { createHorse } from './services/horseCreation.mjs';
 // Owner request 2026-10-28 (Equoria-vqz4b, Equoria-17zgu): marketplace's Horse Trader and auth's
 // onboarding roll conformation and gaits from the breed's ranges.
@@ -69,7 +69,7 @@ export { coatColorNames, canonicalCoatColorName } from './services/coatColorName
 // Equoria-de7ts: a breed's coat-color portrait, rolled once when the horse is created.
 export { defaultHorseImageUrl, rollCoatImageUrl } from './services/coatImageService.mjs';
 export {
-  DEFAULT_TEMPERAMENT_BREED,
+  defaultTemperamentBreed,
   generateTemperament,
   generateTemperamentWithDefault,
   getTemperamentGroomSynergy,
@@ -81,4 +81,4 @@ export {
 // training/__tests__/trainerTrainingModifier.integration.test.mjs and
 // training/__tests__/temperamentTrainingModifiers.test.mjs. No production importer.
 // Equoria-7t1tn: kept as a small documented public API (orchestrator decision 2026-10-23).
-export { TEMPERAMENT_TYPES } from './data/temperamentTypes.mjs';
+export { temperamentTypes } from './data/temperamentTypes.mjs';

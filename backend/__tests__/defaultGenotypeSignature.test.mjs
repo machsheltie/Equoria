@@ -14,10 +14,10 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { isDefaultSignature, signatureOptionalLoci } from '../utils/defaultGenotypeSignature.mjs';
-import { GENERIC_DEFAULTS } from '../modules/horses/index.mjs';
+import { genericDefaults } from '../modules/horses/index.mjs';
 
 // The 17-locus all-Bay signature a legacy "First Horse" carries (pre-color-system
-// mint: fixed GENERIC_DEFAULTS, missing the .1 Prl/BR1 loci).
+// mint: fixed genericDefaults, missing the .1 Prl/BR1 loci).
 const LEGACY_ALL_BAY = {
   E_Extension: 'E/e',
   A_Agouti: 'A/a',
@@ -39,8 +39,8 @@ const LEGACY_ALL_BAY = {
 };
 
 describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
-  it('returns true for an exact full GENERIC_DEFAULTS genotype', () => {
-    expect(isDefaultSignature({ ...GENERIC_DEFAULTS })).toBe(true);
+  it('returns true for an exact full genericDefaults genotype', () => {
+    expect(isDefaultSignature({ ...genericDefaults })).toBe(true);
   });
 
   it('returns true for the legacy 17-locus all-Bay starter signature', () => {
@@ -68,7 +68,7 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
     // Build a genotype that includes the optional loci at their default, then
     // drop them — a legacy row would simply omit them. The helper must still
     // accept it as default (wild-type 'n/n' = no expression).
-    // Equoria-26qjf.1 added Prl_Pearl/BR1_Brindle1 to GENERIC_DEFAULTS with
+    // Equoria-26qjf.1 added Prl_Pearl/BR1_Brindle1 to genericDefaults with
     // wild-type 'n/n' defaults. A row that includes them at their default value
     // (post-.1 row) is still default; a legacy row missing the keys entirely
     // (predates .1) is tolerated as default by signatureOptionalLoci carve-out.
@@ -85,8 +85,8 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
     expect(isDefaultSignature(withoutOptional)).toBe(true);
   });
 
-  it('SENTINEL: a non-default value on an optional locus disqualifies (Equoria-26qjf.1 landed Prl/BR1 into GENERIC_DEFAULTS)', () => {
-    // Equoria-26qjf.1 added Prl_Pearl and BR1_Brindle1 to GENERIC_DEFAULTS with
+  it('SENTINEL: a non-default value on an optional locus disqualifies (Equoria-26qjf.1 landed Prl/BR1 into genericDefaults)', () => {
+    // Equoria-26qjf.1 added Prl_Pearl and BR1_Brindle1 to genericDefaults with
     // wild-type 'n/n' defaults. The signatureOptionalLoci carve-out tolerates
     // a MISSING optional locus (legacy rows predate the loci), but a PRESENT
     // non-default value goes through the normal loop and disqualifies — exactly

@@ -25,7 +25,7 @@ const { getFoalDevelopment } = foalModel;
  */
 
 const PREFIX = 'TestFixture-FoalModel-';
-const DATE_OF_BIRTH = new Date('2020-01-01');
+const dateOfBirth = new Date('2020-01-01');
 
 async function mkFoal(suffix, opts = {}) {
   return prisma.horse.create({
@@ -33,7 +33,7 @@ async function mkFoal(suffix, opts = {}) {
       ...fixtureColor(),
       name: `${PREFIX}${suffix}`,
       sex: opts.sex ?? 'Colt',
-      dateOfBirth: opts.dateOfBirth ?? DATE_OF_BIRTH,
+      dateOfBirth: opts.dateOfBirth ?? dateOfBirth,
       age: opts.age ?? 0,
       ...(opts.bondScore !== undefined && { bondScore: opts.bondScore }),
     }),

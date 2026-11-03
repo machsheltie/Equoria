@@ -3,7 +3,7 @@
  *
  * Covers:
  * - getTemperamentGroomSynergy() — all pairings from PRD-03 §7.6
- * - Data integrity — TEMPERAMENT_GROOM_SYNERGY keys match TEMPERAMENT_TYPES
+ * - Data integrity — temperamentGroomSynergy keys match temperamentTypes
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -13,8 +13,8 @@ import { describe, it, expect } from '@jest/globals';
 // calls. Per doctrine, observing logger calls cross-module is dropped
 // in favor of behavioural assertions on the function return values.
 
-import { getTemperamentGroomSynergy, TEMPERAMENT_GROOM_SYNERGY } from '../services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
+import { getTemperamentGroomSynergy, temperamentGroomSynergy } from '../services/temperamentService.mjs';
+import { temperamentTypes } from '../data/temperamentTypes.mjs';
 
 describe('Story 31D.4: Groom Temperament Synergy', () => {
   // ─── Unit tests: getTemperamentGroomSynergy() ────────────────────────────
@@ -190,11 +190,11 @@ describe('Story 31D.4: Groom Temperament Synergy', () => {
 
   // ─── Data integrity test ──────────────────────────────────────────────────
 
-  describe('TEMPERAMENT_GROOM_SYNERGY data integrity (Task 4.13)', () => {
+  describe('temperamentGroomSynergy data integrity (Task 4.13)', () => {
     // Old contract: 11 keys. Owner ruling 2026-10-21: Playful renamed Driven, Willing added (12 temperaments).
-    it('all 12 keys in TEMPERAMENT_GROOM_SYNERGY match TEMPERAMENT_TYPES array', () => {
-      const synergyKeys = Object.keys(TEMPERAMENT_GROOM_SYNERGY).sort();
-      const temperamentTypesKeys = [...TEMPERAMENT_TYPES].sort();
+    it('all 12 keys in temperamentGroomSynergy match temperamentTypes array', () => {
+      const synergyKeys = Object.keys(temperamentGroomSynergy).sort();
+      const temperamentTypesKeys = [...temperamentTypes].sort();
       expect(synergyKeys).toEqual(temperamentTypesKeys);
     });
   });

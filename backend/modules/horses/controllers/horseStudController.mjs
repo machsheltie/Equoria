@@ -28,13 +28,13 @@ import { minBreedingAgeYears } from '../services/breedingPairRules.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 /** Owner ruling 2026-10-15: the stallion owner chooses Public Stud or Private Stud. */
-const STUD_STATUS_BY_MODE = Object.freeze({
+const studStatusByMode = Object.freeze({
   public: studStatuses.public,
   private: studStatuses.private,
 });
 
-const STUD_LISTING_SELECT = { id: true, name: true, sex: true, studStatus: true, studFee: true };
-const BUSY_MESSAGE = 'The stud barn is busy right now, please retry in a moment.';
+const studListingSelect = { id: true, name: true, sex: true, studStatus: true, studFee: true };
+const busyMessage = 'The stud barn is busy right now, please retry in a moment.';
 
 /** The error `requireOwnership('horse')` throws for a horse the caller cannot see (CWE-639). */
 function horseNotFound() {
@@ -112,7 +112,7 @@ export async function listHorseAtStud(req, res) {
     // flip a Private stallion to Public and decline its requests); only a
     // horse with no listing yet defaults to Public. Resolved in the tx below.
     const mode = req.body?.mode;
-    const requestedStatus = mode === undefined ? null : STUD_STATUS_BY_MODE[mode];
+    const requestedStatus = mode === undefined ? null : studStatusByMode[mode];
     if (mode !== undefined && !requestedStatus) {
       return res
         .status(400)
@@ -130,9 +130,9 @@ export async function listHorseAtStud(req, res) {
           });
           const studStatus =
             requestedStatus ??
-            (Object.values(STUD_STATUS_BY_MODE).includes(current?.studStatus)
+            (Object.values(studStatusByMode).includes(current?.studStatus)
               ? current.studStatus
-              : STUD_STATUS_BY_MODE.public);
+              : studStatusByMode.public);
           // Guarded claim: the caller must STILL own this stallion at write time.
           const claim = await tx.horse.updateMany({
             where: { id: horseId, userId: ownerId, sex: 'Stallion' },
@@ -142,7 +142,7 @@ export async function listHorseAtStud(req, res) {
             throw horseNotFound();
           }
           const declined =
-            studStatus === STUD_STATUS_BY_MODE.private
+            studStatus === studStatusByMode.private
               ? []
               : await declinePendingRequestsForSire(tx, {
                   sireId: horseId,
@@ -151,14 +151,14 @@ export async function listHorseAtStud(req, res) {
           return {
             updated: await tx.horse.findUnique({
               where: { id: horseId },
-              select: STUD_LISTING_SELECT,
+              select: studListingSelect,
             }),
             notifications: declined,
           };
         },
         { timeout: 30000 },
       ),
-      { message: BUSY_MESSAGE },
+      { message: busyMessage },
     );
     for (const note of notifications) {
       finalizeNotificationAfterCommit(note.userId, note.type, note.payload);
@@ -219,14 +219,14 @@ export async function unlistHorseAtStud(req, res) {
           return {
             updated: await tx.horse.findUnique({
               where: { id: horseId },
-              select: STUD_LISTING_SELECT,
+              select: studListingSelect,
             }),
             notifications: declined,
           };
         },
         { timeout: 30000 },
       ),
-      { message: BUSY_MESSAGE },
+      { message: busyMessage },
     );
     for (const note of notifications) {
       finalizeNotificationAfterCommit(note.userId, note.type, note.payload);

@@ -561,7 +561,7 @@ describe('marketplaceController integration', () => {
         return;
       }
 
-      const { TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
+      const { temperamentTypes: TEMPERAMENT_TYPES } = await import('../../horses/data/temperamentTypes.mjs');
 
       await prisma.user.update({ where: { id: user.id }, data: { money: 5000 } });
 

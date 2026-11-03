@@ -40,11 +40,11 @@ const __dirname = dirname(__filename);
 // profile files samples/Breeds/*.txt -> backend/data/breeds/*.txt to
 // co-locate operational seed data with backend/data/breedProfiles.json.
 // The sentinel now scans the new canonical location.
-const BREEDS_DIR = resolve(__dirname, '../../../data/breeds');
+const breedsDir = resolve(__dirname, '../../../data/breeds');
 
-const PRL_BR1_KEY = /"(Prl_Pearl|BR1_Brindle1)"\s*:/g;
-const MUSHROOM_KEY = /"MFSD12_Mushroom"\s*:/g;
-const ALLELE_PAIR = /"([A-Za-z0-9]+\/[A-Za-z0-9]+)"/g;
+const prlBr1Key = /"(Prl_Pearl|BR1_Brindle1)"\s*:/g;
+const mushroomKey = /"MFSD12_Mushroom"\s*:/g;
+const allelePair = /"([A-Za-z0-9]+\/[A-Za-z0-9]+)"/g;
 
 /**
  * Block-aware extraction: given source text and a key-regex, return every
@@ -86,15 +86,15 @@ function extractAlleleTokens(src, keyRe) {
     }
     const block = src.slice(j, k);
     let pm;
-    ALLELE_PAIR.lastIndex = 0;
-    while ((pm = ALLELE_PAIR.exec(block)) !== null) {
+    allelePair.lastIndex = 0;
+    while ((pm = allelePair.exec(block)) !== null) {
       tokens.push(pm[1]);
     }
   }
   return tokens;
 }
 
-const breedFiles = readdirSync(BREEDS_DIR).filter(f => f.endsWith('.txt'));
+const breedFiles = readdirSync(breedsDir).filter(f => f.endsWith('.txt'));
 
 describe('breed source Pearl/Brindle allele-case sentinel (Equoria-je1q0)', () => {
   it('discovers the breed source files', () => {
@@ -105,8 +105,8 @@ describe('breed source Pearl/Brindle allele-case sentinel (Equoria-je1q0)', () =
   it('every Prl_Pearl / BR1_Brindle1 allele VALUE token is lowercase across all breed files', () => {
     const offenders = [];
     for (const file of breedFiles) {
-      const src = readFileSync(join(BREEDS_DIR, file), 'utf8');
-      for (const tok of extractAlleleTokens(src, PRL_BR1_KEY)) {
+      const src = readFileSync(join(breedsDir, file), 'utf8');
+      for (const tok of extractAlleleTokens(src, prlBr1Key)) {
         if (tok !== tok.toLowerCase()) {
           offenders.push(`${file}: "${tok}"`);
         }
@@ -121,8 +121,8 @@ describe('breed source Pearl/Brindle allele-case sentinel (Equoria-je1q0)', () =
     const lowercased = [];
     let sawAnyMushroomToken = false;
     for (const file of breedFiles) {
-      const src = readFileSync(join(BREEDS_DIR, file), 'utf8');
-      for (const tok of extractAlleleTokens(src, MUSHROOM_KEY)) {
+      const src = readFileSync(join(breedsDir, file), 'utf8');
+      for (const tok of extractAlleleTokens(src, mushroomKey)) {
         sawAnyMushroomToken = true;
         // Mushroom tokens use uppercase N and M; a fully-lowercase token
         // here would indicate the normalizer over-reached into this locus.
@@ -143,7 +143,7 @@ describe('breed source Pearl/Brindle allele-case sentinel (Equoria-je1q0)', () =
       ],
       "BR1_Brindle1": { "BR1/N": 0.5, "n/n": 0.5 }
     }`;
-    const tokens = extractAlleleTokens(planted, PRL_BR1_KEY);
+    const tokens = extractAlleleTokens(planted, prlBr1Key);
     const uppercase = tokens.filter(t => t !== t.toLowerCase());
     // Proves the check would catch real violations: N/Prl and BR1/N.
     expect(uppercase.sort()).toEqual(['BR1/N', 'N/Prl']);

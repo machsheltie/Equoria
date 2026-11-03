@@ -344,17 +344,17 @@ describe('calculatePhenotype — Roan pattern', () => {
 // ---------------------------------------------------------------------------
 
 describe('calculatePhenotype — Appaloosa patterns', () => {
-  const LP_ONLY = { LP_LeopardComplex: 'LP/lp', PATN1_Pattern1: 'patn1/patn1' };
-  const LP_PATN1 = { LP_LeopardComplex: 'LP/lp', PATN1_Pattern1: 'PATN1/patn1' };
+  const lpOnly = { LP_LeopardComplex: 'LP/lp', PATN1_Pattern1: 'patn1/patn1' };
+  const lpPatn1 = { LP_LeopardComplex: 'LP/lp', PATN1_Pattern1: 'PATN1/patn1' };
 
   it('LP/lp without PATN1 sets isAppaloosa = true and uses minimal pattern names', () => {
-    const result = calculatePhenotype(buildGenotype(LP_ONLY));
+    const result = calculatePhenotype(buildGenotype(lpOnly));
     expect(result.isAppaloosa).toBe(true);
     expect(['Varnish Roan', 'Fewspot Leopard', 'Snowcap']).toContain(result.colorName);
   });
 
   it('LP/lp + PATN1/patn1 sets isAppaloosa = true and uses full pattern names', () => {
-    const result = calculatePhenotype(buildGenotype(LP_PATN1));
+    const result = calculatePhenotype(buildGenotype(lpPatn1));
     expect(result.isAppaloosa).toBe(true);
     const fullPatterns = [
       'Blanket',
@@ -775,7 +775,7 @@ describe('createHorseFromRequest — phenotype integration', () => {
 // ---------------------------------------------------------------------------
 describe('FR36: distinct colorName coverage (Equoria-vst9)', () => {
   // Behaviourally-distinct allele pairs per colorName-affecting locus.
-  const LOCUS_VARIANTS = {
+  const locusVariants = {
     E_Extension: ['E/E', 'e/e'], // functional vs recessive red
     A_Agouti: ['A/a', 'At/a', 'a/a'], // bay / seal_brown / black
     EDXW: ['n/n', 'EDXW/n'], // off / black-pigment override
@@ -807,7 +807,7 @@ describe('FR36: distinct colorName coverage (Equoria-vst9)', () => {
   }
 
   it('produces at least 50 distinct colorName values across valid genotypes', () => {
-    const lociEntries = Object.entries(LOCUS_VARIANTS);
+    const lociEntries = Object.entries(locusVariants);
     const distinct = new Set();
     let combos = 0;
     // Every combination is still checked; the misses are collected and asserted

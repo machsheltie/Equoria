@@ -33,7 +33,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import { TEMPERAMENT_TYPES } from '../../horses/index.mjs';
+import { temperamentTypes } from '../../horses/index.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { isRosterTrait } from '../../../utils/epigeneticTraits.mjs';
 
@@ -196,7 +196,7 @@ describe('POST /auth/advance-onboarding — starter horse is chosen once (Equori
       where: { userId: user.id },
       select: { temperament: true, epigeneticModifiers: true },
     });
-    expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
+    expect(temperamentTypes).toContain(horse.temperament);
     // Old contract: the brand-new wizard horse carried no traits at all. Owner
     // ruling q308 (2026-10-29, Equoria-q4uem.17): it rolls the Horse Trader's
     // hidden traits. Still nothing visible and nothing from the player's body.

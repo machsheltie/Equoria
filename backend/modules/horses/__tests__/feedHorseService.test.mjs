@@ -32,10 +32,10 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // Resolved once at module load — used by the SELECT FOR UPDATE sentinel describe block.
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const FEED_SERVICE_SRC = readFileSync(resolve(__dirname, '../services/horseFeedService.mjs'), 'utf8');
+const feedServiceSrc = readFileSync(resolve(__dirname, '../services/horseFeedService.mjs'), 'utf8');
 
 // 12 stats matching backend/modules/horses/services/horseFeedService.mjs STATS array.
-const EXPECTED_STATS = [
+const expectedStats = [
   'precision',
   'strength',
   'speed',
@@ -71,7 +71,7 @@ describe('rollStatBoost (deterministic via injected rng)', () => {
     const result = rollStatBoost('elite', seqRng([0.1, 0]));
     expect(result).not.toBeNull();
     expect(result.amount).toBe(1);
-    expect(EXPECTED_STATS).toContain(result.stat);
+    expect(expectedStats).toContain(result.stat);
   });
 
   it('elite tier does NOT roll when rng >= 0.25', () => {
@@ -111,14 +111,14 @@ describe('rollStatBoost (deterministic via injected rng)', () => {
 
   it('stat-picker maps rng to the 12-stat list correctly (sentinel-positive)', () => {
     // For each of the 12 indices, force rng = [thresholdSucceeds, i/12]
-    // and verify the picked stat matches EXPECTED_STATS[i] AND is never
+    // and verify the picked stat matches expectedStats[i] AND is never
     // 'coordination' (recon Finding 1 → B: coordination removed from
     // boost pool when the column was dropped in Phase A).
-    for (let i = 0; i < EXPECTED_STATS.length; i++) {
+    for (let i = 0; i < expectedStats.length; i++) {
       const rng = seqRng([0.001, i / 12]);
       const result = rollStatBoost('elite', rng);
       expect(result).not.toBeNull();
-      expect(result.stat).toBe(EXPECTED_STATS[i]);
+      expect(result.stat).toBe(expectedStats[i]);
       expect(result.stat).not.toBe('coordination');
     }
   });
@@ -606,12 +606,12 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
  */
 describe('feedHorse — FOR UPDATE absence sentinel (Equoria-wsqw / Equoria-5g5k / Equoria-zvp4)', () => {
   it('horseFeedService.mjs does NOT contain a SELECT FOR UPDATE on the horse row (lock removed, Equoria-5g5k)', () => {
-    expect(FEED_SERVICE_SRC).not.toMatch(/SELECT id FROM "horses"[^;]*FOR UPDATE/);
+    expect(feedServiceSrc).not.toMatch(/SELECT id FROM "horses"[^;]*FOR UPDATE/);
   });
 
   // Broader sentinel-positive guard: catch ANY reintroduction of FOR UPDATE on
   // the horses table, not just the one exact string the original regex matched.
   it('horseFeedService.mjs contains NO "FOR UPDATE" clause at all (Equoria-zvp4 optimistic concurrency)', () => {
-    expect(FEED_SERVICE_SRC).not.toMatch(/FOR\s+UPDATE/i);
+    expect(feedServiceSrc).not.toMatch(/FOR\s+UPDATE/i);
   });
 });

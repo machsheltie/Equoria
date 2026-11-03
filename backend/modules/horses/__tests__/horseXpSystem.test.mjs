@@ -13,7 +13,7 @@ import {
   allocateStatPoint,
   getHorseXpHistory,
   validateStatName,
-  HORSE_POINTS_PER_STAT_POINT as P,
+  horsePointsPerStatPoint as P,
 } from '../services/horseXpModelService.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 // Owner ruling C15 (2026-10-16; Equoria-576c0 B13): 1,000 Horse Points per stat
@@ -21,7 +21,7 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 // the new scale; every assertion keeps its meaning.
 
 const PREFIX = 'TestFixture-HorseXpSys-';
-const USER_ID = 'test-user-horse-xp-sys';
+const userId = 'test-user-horse-xp-sys';
 
 async function mkHorse(suffix, opts = {}) {
   return prisma.horse.create({
@@ -31,7 +31,7 @@ async function mkHorse(suffix, opts = {}) {
       sex: 'Colt',
       dateOfBirth: new Date('2020-01-01'),
       age: 0,
-      userId: USER_ID,
+      userId,
       horseXp: opts.horseXp ?? 0,
       availableStatPoints: opts.availableStatPoints ?? 0,
       ...(opts.speed !== undefined && { speed: opts.speed }),
@@ -41,11 +41,11 @@ async function mkHorse(suffix, opts = {}) {
 
 beforeAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
-  await prisma.user.deleteMany({ where: { id: USER_ID } });
+  await prisma.user.deleteMany({ where: { id: userId } });
   await prisma.user.create({
     data: {
       emailVerified: true,
-      id: USER_ID,
+      id: userId,
       username: 'horsexpSysUser',
       email: 'horsexpsys@example.com',
       password: 'TestPassword123!',
@@ -58,7 +58,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
-  await prisma.user.deleteMany({ where: { id: USER_ID } });
+  await prisma.user.deleteMany({ where: { id: userId } });
 });
 
 describe('Horse XP System - Core Business Logic', () => {

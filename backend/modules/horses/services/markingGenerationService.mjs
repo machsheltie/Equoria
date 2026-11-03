@@ -28,7 +28,7 @@
 // ---------------------------------------------------------------------------
 
 /** Default face marking weights when no breed profile is available. */
-export const FACE_MARKING_DEFAULTS = {
+export const faceMarkingDefaults = {
   none: 0.6,
   star: 0.15,
   strip: 0.12,
@@ -37,21 +37,21 @@ export const FACE_MARKING_DEFAULTS = {
 };
 
 /** Default leg marking configuration when no breed profile is available. */
-export const LEG_MARKING_DEFAULTS = {
+export const legMarkingDefaults = {
   legsGeneralProbability: 0.25,
   legSpecificProbabilities: { coronet: 0.4, pastern: 0.3, sock: 0.2, stocking: 0.1 },
   maxLegsMarked: 4,
 };
 
 /** Base probabilities for advanced markings (before breed multiplier). */
-export const ADVANCED_MARKING_BASE_RATES = {
+export const advancedMarkingBaseRates = {
   bloody_shoulder: 0.02,
   snowflake: 0.03,
   frost: 0.03,
 };
 
 /** Default boolean modifier probabilities when no breed profile is available. */
-export const MODIFIER_DEFAULTS = {
+export const modifierDefaults = {
   sooty: 0.3,
   flaxen: 0.1,
   pangare: 0.1,
@@ -73,7 +73,7 @@ export function carriesAppaloosaGene(colorGenotype) {
 }
 
 // Ordered leg names used for both generation and inheritance.
-const LEG_NAMES = ['frontLeft', 'frontRight', 'hindLeft', 'hindRight'];
+const legNames = ['frontLeft', 'frontRight', 'hindLeft', 'hindRight'];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -130,7 +130,7 @@ export function sampleWeightedFromMap(weightMap, rng) {
  * @returns {string} face marking: 'none'|'star'|'strip'|'blaze'|'snip'
  */
 export function generateFaceMarking(markingBias, rng) {
-  const faceWeights = markingBias?.face ?? FACE_MARKING_DEFAULTS;
+  const faceWeights = markingBias?.face ?? faceMarkingDefaults;
   return sampleWeightedFromMap(faceWeights, rng) ?? 'none';
 }
 
@@ -145,7 +145,7 @@ export function generateFaceMarking(markingBias, rng) {
  * @returns {number}
  */
 function maxMarkedLegs(markingBias) {
-  return markingBias?.maxLegsMarked ?? LEG_MARKING_DEFAULTS.maxLegsMarked;
+  return markingBias?.maxLegsMarked ?? legMarkingDefaults.maxLegsMarked;
 }
 
 /**
@@ -160,15 +160,15 @@ function maxMarkedLegs(markingBias) {
  */
 export function generateLegMarkings(markingBias, rng) {
   const generalProb =
-    markingBias?.legsGeneralProbability ?? LEG_MARKING_DEFAULTS.legsGeneralProbability;
+    markingBias?.legsGeneralProbability ?? legMarkingDefaults.legsGeneralProbability;
   const typeWeights =
-    markingBias?.legSpecificProbabilities ?? LEG_MARKING_DEFAULTS.legSpecificProbabilities;
+    markingBias?.legSpecificProbabilities ?? legMarkingDefaults.legSpecificProbabilities;
   const maxLegs = maxMarkedLegs(markingBias);
 
   const result = {};
   let markedCount = 0;
 
-  for (const leg of LEG_NAMES) {
+  for (const leg of legNames) {
     if (markedCount >= maxLegs) {
       result[leg] = 'none';
       continue;
@@ -206,12 +206,9 @@ export function generateAdvancedMarkings(advancedMarkingsBias, rng, hasAppaloosa
   const frMultiplier = advancedMarkingsBias?.frostProbabilityMultiplier ?? 1.0;
 
   // D-1: Math.max(0, ...) clamps negative multipliers to 0 probability
-  const bsProb = Math.min(
-    1,
-    Math.max(0, ADVANCED_MARKING_BASE_RATES.bloody_shoulder * bsMultiplier),
-  );
-  const swProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.snowflake * swMultiplier));
-  const frProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.frost * frMultiplier));
+  const bsProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.bloody_shoulder * bsMultiplier));
+  const swProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.snowflake * swMultiplier));
+  const frProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.frost * frMultiplier));
 
   // Every roll is drawn whatever the gene, so later seeded rolls do not shift.
   const bloodyShoulderPresent = rng() < bsProb;
@@ -259,10 +256,10 @@ function isBaseChestnut(colorName) {
  * @returns {{ isSooty: boolean, isFlaxen: boolean, hasPangare: boolean, isRabicano: boolean }}
  */
 export function generateBooleanModifiers(modifierPrevalence, colorName, rng) {
-  const sooty = modifierPrevalence?.sooty ?? MODIFIER_DEFAULTS.sooty;
-  const flaxen = modifierPrevalence?.flaxen ?? MODIFIER_DEFAULTS.flaxen;
-  const pangare = modifierPrevalence?.pangare ?? MODIFIER_DEFAULTS.pangare;
-  const rabicano = modifierPrevalence?.rabicano ?? MODIFIER_DEFAULTS.rabicano;
+  const sooty = modifierPrevalence?.sooty ?? modifierDefaults.sooty;
+  const flaxen = modifierPrevalence?.flaxen ?? modifierDefaults.flaxen;
+  const pangare = modifierPrevalence?.pangare ?? modifierDefaults.pangare;
+  const rabicano = modifierPrevalence?.rabicano ?? modifierDefaults.rabicano;
 
   return {
     isSooty: rng() < sooty,
@@ -390,16 +387,16 @@ export function inheritMarkings(
 
   // Leg markings — inherit or reroll each leg independently
   const legMarkings = {};
-  for (const leg of LEG_NAMES) {
+  for (const leg of legNames) {
     legMarkings[leg] = pickInherited(
       sireMarkings?.legMarkings?.[leg],
       damMarkings?.legMarkings?.[leg],
       () => {
         // Single-leg random: roll general probability once
         const generalProb =
-          markingBias?.legsGeneralProbability ?? LEG_MARKING_DEFAULTS.legsGeneralProbability;
+          markingBias?.legsGeneralProbability ?? legMarkingDefaults.legsGeneralProbability;
         const typeWeights =
-          markingBias?.legSpecificProbabilities ?? LEG_MARKING_DEFAULTS.legSpecificProbabilities;
+          markingBias?.legSpecificProbabilities ?? legMarkingDefaults.legSpecificProbabilities;
         if (rng() < generalProb) {
           return sampleWeightedFromMap(typeWeights, rng) ?? 'coronet';
         }
@@ -436,9 +433,9 @@ export function inheritMarkings(
   const bsMult = advancedBias?.bloodyShoulderProbabilityMultiplier ?? 1.0;
   const swMult = advancedBias?.snowflakeProbabilityMultiplier ?? 1.0;
   const frMult = advancedBias?.frostProbabilityMultiplier ?? 1.0;
-  const bsProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.bloody_shoulder * bsMult));
-  const swProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.snowflake * swMult));
-  const frProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.frost * frMult));
+  const bsProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.bloody_shoulder * bsMult));
+  const swProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.snowflake * swMult));
+  const frProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.frost * frMult));
 
   // Advanced markings — inherit or reroll each flag independently
   const advancedMarkings = {
@@ -468,7 +465,7 @@ export function inheritMarkings(
     isSooty: pickInherited(
       sireMarkings?.modifiers?.isSooty,
       damMarkings?.modifiers?.isSooty,
-      () => rng() < (modifierPrevalence?.sooty ?? MODIFIER_DEFAULTS.sooty),
+      () => rng() < (modifierPrevalence?.sooty ?? modifierDefaults.sooty),
     ),
     // P-1: Apply chestnut guard to inherited value too — a non-chestnut foal must
     // never carry isFlaxen=true even if a chestnut parent had it.
@@ -476,18 +473,18 @@ export function inheritMarkings(
       ? pickInherited(
           sireMarkings?.modifiers?.isFlaxen,
           damMarkings?.modifiers?.isFlaxen,
-          () => rng() < (modifierPrevalence?.flaxen ?? MODIFIER_DEFAULTS.flaxen),
+          () => rng() < (modifierPrevalence?.flaxen ?? modifierDefaults.flaxen),
         )
       : false,
     hasPangare: pickInherited(
       sireMarkings?.modifiers?.hasPangare,
       damMarkings?.modifiers?.hasPangare,
-      () => rng() < (modifierPrevalence?.pangare ?? MODIFIER_DEFAULTS.pangare),
+      () => rng() < (modifierPrevalence?.pangare ?? modifierDefaults.pangare),
     ),
     isRabicano: pickInherited(
       sireMarkings?.modifiers?.isRabicano,
       damMarkings?.modifiers?.isRabicano,
-      () => rng() < (modifierPrevalence?.rabicano ?? MODIFIER_DEFAULTS.rabicano),
+      () => rng() < (modifierPrevalence?.rabicano ?? modifierDefaults.rabicano),
     ),
   };
 

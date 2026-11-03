@@ -15,7 +15,7 @@
  * Story: 31E-2 — Mendelian Breeding Inheritance + Lethal Filtering
  */
 
-import { CORE_LOCI, GENERIC_DEFAULTS, generateGenotype } from './genotypeGenerationService.mjs';
+import { coreLoci, genericDefaults, generateGenotype } from './genotypeGenerationService.mjs';
 import {
   lethalCombinations,
   buildDisallowedMap,
@@ -29,7 +29,7 @@ import logger from '../../../utils/logger.mjs';
 
 // Re-exported: callers and tests import these from this service.
 export {
-  lethalCombinations as LETHAL_COMBINATIONS,
+  lethalCombinations,
   buildDisallowedMap,
   isDisallowedCombination,
   splitAlleles,
@@ -39,7 +39,7 @@ export {
 };
 
 /** Maximum reroll attempts before using the heterozygous fallback. */
-const MAX_REROLL_ATTEMPTS = 100;
+const maxRerollAttempts = 100;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -121,7 +121,7 @@ function buildHeterozygousFallback(sireAlleles, damAlleles) {
 
 /**
  * Inherit a single locus from sire and dam alleles.
- * Rerolls up to MAX_REROLL_ATTEMPTS times if the result is a lethal combination.
+ * Rerolls up to maxRerollAttempts times if the result is a lethal combination.
  * Falls back to a non-lethal heterozygous form after exhausted attempts.
  *
  * Equoria-26qjf.2: an optional `disallowedSet` (breed-forbidden pairs for this
@@ -142,7 +142,7 @@ export function inheritLocus(locus, sireAllelePair, damAllelePair, rng, disallow
     isLethalCombination(locus, pair) ||
     (disallowedSet ? disallowedSet.has(pair) || disallowedSet.has(allelePairKey(pair)) : false);
 
-  for (let attempt = 0; attempt < MAX_REROLL_ATTEMPTS; attempt++) {
+  for (let attempt = 0; attempt < maxRerollAttempts; attempt++) {
     const sireAllele = drawAllele(sireAlleles, rng);
     const damAllele = drawAllele(damAlleles, rng);
     const pair = assembleAllelePair(sireAllele, damAllele);
@@ -152,9 +152,9 @@ export function inheritLocus(locus, sireAllelePair, damAllelePair, rng, disallow
     }
   }
 
-  // Fallback: could not produce a non-forbidden result in MAX_REROLL_ATTEMPTS attempts.
+  // Fallback: could not produce a non-forbidden result in maxRerollAttempts attempts.
   logger.warn(
-    `[breedingColorInheritanceService] Locus ${locus}: exhausted ${MAX_REROLL_ATTEMPTS} reroll attempts — using heterozygous fallback`,
+    `[breedingColorInheritanceService] Locus ${locus}: exhausted ${maxRerollAttempts} reroll attempts — using heterozygous fallback`,
   );
   const fallback = buildHeterozygousFallback(sireAlleles, damAlleles);
   // If even the heterozygous fallback is forbidden (e.g. both parents homozygous
@@ -254,8 +254,8 @@ function enforceBreedRestrictions(
     let replacement = pickReplacement(locus, allowedAlleles?.[locus]);
     if (replacement === null) {
       // No usable allowed allele declared — fall back to the per-locus wild-type
-      // (GENERIC_DEFAULTS), which is non-lethal and effectively never disallowed.
-      const wildType = GENERIC_DEFAULTS[locus] ?? 'n/n';
+      // (genericDefaults), which is non-lethal and effectively never disallowed.
+      const wildType = genericDefaults[locus] ?? 'n/n';
       replacement =
         !isDisallowedCombination(disallowedMap, locus, wildType) &&
         !isLethalCombination(locus, wildType)
@@ -320,7 +320,7 @@ export function inheritColorGenotype(
 
   // Union of core loci + any extra loci from either parent
   const allLoci = [
-    ...new Set([...CORE_LOCI, ...Object.keys(sireGenotype), ...Object.keys(damGenotype)]),
+    ...new Set([...coreLoci, ...Object.keys(sireGenotype), ...Object.keys(damGenotype)]),
   ];
 
   // Equoria-26qjf.2: breed-disallowed pairs, treated like lethals during inheritance.
@@ -330,9 +330,9 @@ export function inheritColorGenotype(
   const parentPairs = {};
 
   for (const locus of allLoci) {
-    // If a locus is missing from a parent, use the per-locus GENERIC_DEFAULTS wild-type value
+    // If a locus is missing from a parent, use the per-locus genericDefaults wild-type value
     // (e.g. D_Dun → 'nd2/nd2', not 'n/n'). Fall back to 'n/n' only for unknown loci.
-    const locusDefault = GENERIC_DEFAULTS[locus] ?? 'n/n';
+    const locusDefault = genericDefaults[locus] ?? 'n/n';
     const sireAllelePair = sireGenotype[locus] ?? locusDefault;
     const damAllelePair = damGenotype[locus] ?? locusDefault;
 

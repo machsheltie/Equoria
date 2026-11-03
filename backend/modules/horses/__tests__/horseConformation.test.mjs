@@ -5,7 +5,7 @@
  * live conformationService. No mocks of any kind.
  *
  * Coverage:
- *   - CONFORMATION_REGIONS structure (8 required regions)
+ *   - conformationRegions structure (8 required regions)
  *   - clampScore: valid range enforcement and edge cases
  *   - calculateOverallConformation: arithmetic mean of all 8 regions
  *   - hasValidConformationScores: presence of at least one finite numeric region
@@ -19,7 +19,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
-  CONFORMATION_REGIONS,
+  conformationRegions,
   clampScore,
   calculateOverallConformation,
   hasValidConformationScores,
@@ -42,23 +42,23 @@ afterAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
 });
 
-// ─── CONFORMATION_REGIONS ─────────────────────────────────────────────────────
+// ─── conformationRegions ─────────────────────────────────────────────────────
 
-describe('CONFORMATION_REGIONS', () => {
+describe('conformationRegions', () => {
   it('contains exactly 8 regions', () => {
-    expect(CONFORMATION_REGIONS).toHaveLength(8);
+    expect(conformationRegions).toHaveLength(8);
   });
 
   it('contains all required region names', () => {
     const required = ['head', 'neck', 'shoulders', 'back', 'legs', 'hooves', 'topline', 'hindquarters'];
 
     for (const region of required) {
-      expect(CONFORMATION_REGIONS).toContain(region);
+      expect(conformationRegions).toContain(region);
     }
   });
 
   it('contains only strings', () => {
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(typeof region).toBe('string');
     }
   });
@@ -191,7 +191,7 @@ describe('validateConformationScores', () => {
 
     const result = validateConformationScores(input);
 
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(result[region]).toBe(20);
     }
     expect(result.overallConformation).toBe(20);
@@ -205,7 +205,7 @@ describe('validateConformationScores', () => {
     expect(result.head).toBe(80);
     expect(result.neck).toBe(80);
     // Other 6 regions default to 50
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       if (region !== 'head' && region !== 'neck') {
         expect(result[region]).toBe(50);
       }
@@ -216,7 +216,7 @@ describe('validateConformationScores', () => {
   it('returns neutral 50 defaults for null input', () => {
     const result = validateConformationScores(null);
 
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(result[region]).toBe(50);
     }
     expect(result.overallConformation).toBe(50);
@@ -256,7 +256,7 @@ describe('default conformation score object (all 20)', () => {
   };
 
   it('has all 8 required regions each set to 20', () => {
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(defaults[region]).toBe(20);
     }
   });

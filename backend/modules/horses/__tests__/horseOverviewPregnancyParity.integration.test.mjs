@@ -23,7 +23,7 @@ import { randomBytes } from 'node:crypto';
 import app from '../../../app.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-overview-1adr';
+const fixturePrefix = 'TestFixture-overview-1adr';
 
 let owner;
 let token;
@@ -35,14 +35,14 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
 
   const a = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   owner = a.user;
   token = a.token;
 
   const sire = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-sire-${tag}`,
+    name: `${fixturePrefix}-sire-${tag}`,
     userId: owner.id,
     sex: 'Stallion',
     age: 6,
@@ -50,7 +50,7 @@ beforeAll(async () => {
   sireId = sire.id;
 
   inFoalMare = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-mare-${tag}`,
+    name: `${fixturePrefix}-mare-${tag}`,
     userId: owner.id,
     sex: 'Mare',
     age: 5,
@@ -60,7 +60,7 @@ beforeAll(async () => {
   });
 
   notPregnantHorse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-open-${tag}`,
+    name: `${fixturePrefix}-open-${tag}`,
     userId: owner.id,
     sex: 'Mare',
     age: 5,

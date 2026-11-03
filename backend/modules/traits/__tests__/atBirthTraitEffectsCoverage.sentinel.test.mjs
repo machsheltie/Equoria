@@ -132,7 +132,7 @@ function extractPushedTraitLiterals(filePath) {
 function extractPregnancyBonusPoolTraits() {
   const src = readFileSync(FOALING_SERVICE, 'utf8');
   const found = new Set();
-  for (const poolName of ['PREGNANCY_BONUS_POSITIVE_TRAITS', 'PREGNANCY_BONUS_NEGATIVE_TRAITS']) {
+  for (const poolName of ['pregnancyBonusPositiveTraits', 'pregnancyBonusNegativeTraits']) {
     // Match `const POOL = Object.freeze([ ... ]);` (or plain `[ ... ]`).
     const blockRe = new RegExp(`${poolName}\\s*=\\s*(?:Object\\.freeze\\()?\\[([\\s\\S]*?)\\]`);
     const block = blockRe.exec(src);

@@ -64,7 +64,7 @@ import {
   generateBreedPhysiqueOrRefuse,
   breedScoresMissingCode,
   breedBirthDisciplineScores,
-  DEFAULT_TEMPERAMENT_BREED,
+  defaultTemperamentBreed,
   horseNameMaxLength,
 } from '../../horses/index.mjs';
 import { generateStoreHorseTraitRoster } from '../../traits/index.mjs';
@@ -98,7 +98,7 @@ export function starterHorseName(username) {
  * @param {{ id: string, username: string }} user  The freshly-created user row.
  * @param {object} [options]
  * @param {string} [options.breedName]  Name of the breed the starter horse is
- *   seeded with. Defaults to the canonical DEFAULT_TEMPERAMENT_BREED
+ *   seeded with. Defaults to the canonical defaultTemperamentBreed
  *   ('Thoroughbred'). Explicit because the fail-closed path (Equoria-2wjp7 —
  *   breed row absent ⇒ no horse) is only reachable with a breed name that is
  *   genuinely not in the `breeds` table, and CLAUDE.md forbids mocking an
@@ -108,7 +108,7 @@ export function starterHorseName(username) {
  */
 export async function createStarterHorseForNewUser(
   user,
-  { breedName = DEFAULT_TEMPERAMENT_BREED } = {},
+  { breedName = defaultTemperamentBreed } = {},
 ) {
   try {
     // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year

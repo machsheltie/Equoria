@@ -74,7 +74,7 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 // public API boundaries"), not the service's internal path.
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-9tque';
+const fixturePrefix = 'TestFixture-9tque';
 
 const tag = () => randomBytes(6).toString('hex');
 
@@ -86,8 +86,8 @@ async function makeUser(label) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${label}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${label}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${label}-${suffix}`,
+      email: `${fixturePrefix}-${label}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'Task18',
       lastName: label,
@@ -106,7 +106,7 @@ async function makeHorse(ownerId, label, extra = {}) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-${label}-${tag()}`,
+      name: `${fixturePrefix}-${label}-${tag()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -133,7 +133,7 @@ async function makeRider(ownerId) {
 async function makeGroom(ownerId) {
   return prisma.groom.create({
     data: {
-      name: `${FIXTURE_PREFIX}-groom-${tag()}`,
+      name: `${fixturePrefix}-groom-${tag()}`,
       speciality: 'foalCare',
       personality: 'gentle',
       skillLevel: 'intermediate',

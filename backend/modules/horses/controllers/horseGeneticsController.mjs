@@ -6,15 +6,15 @@
  * prediction was removed (owner ruling q91, Equoria-m13fh: players see no foal outcome).
  * No behavior changes — functions moved verbatim.
  */
-import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
-import { TEMPERAMENT_GROOM_SYNERGY } from '../services/temperamentService.mjs';
+import { temperamentTypes } from '../data/temperamentTypes.mjs';
+import { temperamentGroomSynergy } from '../services/temperamentService.mjs';
 import logger from '../../../utils/logger.mjs';
 import { satisfiesRole } from '../../staff/index.mjs';
 
 /**
  * Canonical groom personalities — defined once at module scope (not per-request).
  */
-const CANONICAL_PERSONALITIES = Object.freeze(['gentle', 'energetic', 'patient', 'strict']);
+const canonicalPersonalities = Object.freeze(['gentle', 'energetic', 'patient', 'strict']);
 
 /**
  * Static descriptions for all 12 temperament types.
@@ -27,7 +27,7 @@ const CANONICAL_PERSONALITIES = Object.freeze(['gentle', 'energetic', 'patient',
  * no "potential", and no groom/trainer personality names (the "Best with grooms"
  * line shows those).
  */
-const TEMPERAMENT_DESCRIPTIONS = Object.freeze({
+const temperamentDescriptions = Object.freeze({
   Spirited: {
     description:
       'Bright-eyed and full of go, a Spirited horse greets every day as if something wonderful is about to happen. That fire goes with them into the show ring and lights up their time with their groom and their trainer.',
@@ -90,8 +90,8 @@ const TEMPERAMENT_DESCRIPTIONS = Object.freeze({
  */
 export async function getTemperamentDefinitions(req, res) {
   try {
-    const definitions = TEMPERAMENT_TYPES.map(name => {
-      const desc = TEMPERAMENT_DESCRIPTIONS[name];
+    const definitions = temperamentTypes.map(name => {
+      const desc = temperamentDescriptions[name];
       if (!desc) {
         logger.warn(
           `[horseController.getTemperamentDefinitions] Unknown temperament "${name}" — missing description`,
@@ -99,11 +99,11 @@ export async function getTemperamentDefinitions(req, res) {
       }
       const description = desc?.description ?? name;
 
-      const synergyMap = TEMPERAMENT_GROOM_SYNERGY[name] ?? {};
+      const synergyMap = temperamentGroomSynergy[name] ?? {};
 
       let bestGroomPersonalities;
       if ('_any' in synergyMap) {
-        bestGroomPersonalities = [...CANONICAL_PERSONALITIES];
+        bestGroomPersonalities = [...canonicalPersonalities];
       } else {
         bestGroomPersonalities = Object.entries(synergyMap)
           .filter(([, v]) => v > 0)

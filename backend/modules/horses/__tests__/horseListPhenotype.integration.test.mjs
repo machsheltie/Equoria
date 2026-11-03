@@ -20,7 +20,7 @@ import { randomBytes } from 'node:crypto';
 import app from '../../../app.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-list-phenotype';
+const fixturePrefix = 'TestFixture-list-phenotype';
 
 let owner;
 let token;
@@ -31,14 +31,14 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
 
   const a = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   owner = a.user;
   token = a.token;
 
   horseWithPhenotype = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-WithColor-${tag}`,
+    name: `${fixturePrefix}-WithColor-${tag}`,
     userId: owner.id,
     phenotype: {
       colorName: 'Bay',
@@ -48,7 +48,7 @@ beforeAll(async () => {
   });
 
   horseWithoutPhenotype = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-NoColor-${tag}`,
+    name: `${fixturePrefix}-NoColor-${tag}`,
     userId: owner.id,
     phenotype: null,
   });

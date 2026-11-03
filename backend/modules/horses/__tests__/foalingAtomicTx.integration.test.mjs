@@ -28,8 +28,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const FIXTURE_PREFIX = 'TestFixture-bvddn20';
+const dayMs = 24 * 60 * 60 * 1000;
+const fixturePrefix = 'TestFixture-bvddn20';
 const tag = randomBytes(4).toString('hex');
 const constraintName = `tf_bvddn20_block_foal_${tag}`;
 
@@ -46,7 +46,7 @@ async function createPregnantMare(label) {
   const sire = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-Sire-${label}-${tag}`,
+      name: `${fixturePrefix}-Sire-${label}-${tag}`,
       sex: 'Stallion',
       dateOfBirth: dob,
       age: 5,
@@ -55,11 +55,11 @@ async function createPregnantMare(label) {
       healthStatus: 'Good',
     }),
   });
-  const inFoalSinceDate = new Date(Date.now() - 8 * DAY_MS);
+  const inFoalSinceDate = new Date(Date.now() - 8 * dayMs);
   const dam = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-Dam-${label}-${tag}`,
+      name: `${fixturePrefix}-Dam-${label}-${tag}`,
       sex: 'Mare',
       dateOfBirth: dob,
       age: 5,
@@ -69,7 +69,7 @@ async function createPregnantMare(label) {
       inFoalSinceDate,
       pregnancySireId: sire.id,
       pregnancyFeedingsByTier: { performance: 2 },
-      pendingFoalName: `${FIXTURE_PREFIX}-Foal-${label}-${tag}`,
+      pendingFoalName: `${fixturePrefix}-Foal-${label}-${tag}`,
     }),
   });
   return { sire, dam, inFoalSinceDate };
@@ -110,8 +110,8 @@ beforeAll(async () => {
   testUser = await prisma.user.create({
     data: {
       emailVerified: true,
-      email: `${FIXTURE_PREFIX}-${tag}@test.com`,
-      username: `${FIXTURE_PREFIX}-${tag}`.slice(0, 30),
+      email: `${fixturePrefix}-${tag}@test.com`,
+      username: `${fixturePrefix}-${tag}`.slice(0, 30),
       password: 'irrelevant-hash',
       firstName: 'Atomic',
       lastName: 'Foaling',

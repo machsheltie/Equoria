@@ -26,20 +26,20 @@ import { dirname, join } from 'node:path';
 const HERE = dirname(fileURLToPath(import.meta.url));
 // backend/modules/horses/__tests__ → repo root is four levels up
 // (__tests__ → horses → modules → backend → repo root).
-const REPO_ROOT = join(HERE, '..', '..', '..', '..');
+const repoRoot = join(HERE, '..', '..', '..', '..');
 // Equoria-dsd2a: c12c53c72 (Equoria-26qjf.3) relocated the 312 breed
 // SQL profile files samples/Breeds/*.txt -> backend/data/breeds/*.txt.
 // The auditor SCRIPTS still live in samples/Breeds/ (they are editing
 // tools, not seed data), so we spawn them from there but point them at
 // the canonical breed-data directory via BREED_DIR.
-const AUDITOR_SCRIPTS_DIR = join(REPO_ROOT, 'samples', 'Breeds');
-const BREEDS_DATA_DIR = join(REPO_ROOT, 'backend', 'data', 'breeds');
+const auditorScriptsDir = join(repoRoot, 'samples', 'Breeds');
+const breedsDataDir = join(repoRoot, 'backend', 'data', 'breeds');
 
 function runAuditor(scriptName) {
-  const scriptPath = join(AUDITOR_SCRIPTS_DIR, scriptName);
+  const scriptPath = join(auditorScriptsDir, scriptName);
   return execFileSync(process.execPath, [scriptPath], {
     encoding: 'utf8',
-    env: { ...process.env, BREED_DIR: BREEDS_DATA_DIR },
+    env: { ...process.env, BREED_DIR: breedsDataDir },
     maxBuffer: 10 * 1024 * 1024,
   });
 }

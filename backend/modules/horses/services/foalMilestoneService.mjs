@@ -44,14 +44,14 @@ import AppError from '../../../errors/AppError.mjs';
 import { toJsonParam } from '../../../utils/userSettingsPaths.mjs';
 
 // Bond thresholds → canonical persisted milestone id.
-export const BOND_MILESTONE_THRESHOLDS = Object.freeze([
+export const bondMilestoneThresholds = Object.freeze([
   Object.freeze({ id: 'bond-25', threshold: 25 }),
   Object.freeze({ id: 'bond-50', threshold: 50 }),
   Object.freeze({ id: 'bond-75', threshold: 75 }),
   Object.freeze({ id: 'bond-100', threshold: 100 }),
 ]);
 
-export const FIRST_TRAIT_MILESTONE_ID = 'first-trait';
+export const firstTraitMilestoneId = 'first-trait';
 
 /**
  * Four-part JSONB guard (CONTRIBUTING.md § JSONB): Prisma returns JSONB as a
@@ -104,14 +104,14 @@ function hasDiscoveredEpigeneticTrait(horse) {
 export function computeReachedMilestones({ bondScore, hasDiscoveredTrait }) {
   const reached = [];
 
-  for (const { id, threshold } of BOND_MILESTONE_THRESHOLDS) {
+  for (const { id, threshold } of bondMilestoneThresholds) {
     if (bondScore >= threshold) {
       reached.push(id);
     }
   }
 
   if (hasDiscoveredTrait) {
-    reached.push(FIRST_TRAIT_MILESTONE_ID);
+    reached.push(firstTraitMilestoneId);
   }
 
   return reached;

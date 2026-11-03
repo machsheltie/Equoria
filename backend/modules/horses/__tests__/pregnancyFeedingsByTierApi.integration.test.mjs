@@ -36,7 +36,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-pfbt-m282';
+const fixturePrefix = 'TestFixture-pfbt-m282';
 
 let owner;
 let token;
@@ -47,8 +47,8 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
 
   const a = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   owner = a.user;
   token = a.token;
@@ -73,7 +73,7 @@ beforeAll(async () => {
 
   // In-foal mare that WILL be fed via the real service.
   fedMare = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-fed-${tag}`,
+    name: `${fixturePrefix}-fed-${tag}`,
     userId: owner.id,
     sex: 'Mare',
     age: 5,
@@ -84,7 +84,7 @@ beforeAll(async () => {
 
   // In-foal mare that is NEVER fed — counter stays {} (default).
   unfedMare = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-unfed-${tag}`,
+    name: `${fixturePrefix}-unfed-${tag}`,
     userId: owner.id,
     sex: 'Mare',
     age: 5,

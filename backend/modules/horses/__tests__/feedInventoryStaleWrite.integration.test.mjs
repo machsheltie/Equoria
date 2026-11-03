@@ -42,9 +42,9 @@ import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs'
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-FeedStale';
-const START_UNITS = 5;
-const UNITS_PER_PACK = 100;
+const fixturePrefix = 'TestFixture-FeedStale';
+const startUnits = 5;
+const unitsPerPack = 100;
 
 // Dedicated client so the barrier never competes with the app singleton's
 // pool for the connections the blocked requests hold.
@@ -181,7 +181,7 @@ describe('Equoria-bvddn.13 — feeding never overwrites the feed inventory with 
     createTestHorse(
       prisma,
       {
-        name: `${FIXTURE_PREFIX}-${uniq()}`,
+        name: `${fixturePrefix}-${uniq()}`,
         sex: 'Mare',
         dateOfBirth: new Date('2022-01-01'),
         age: 4,
@@ -199,13 +199,13 @@ describe('Equoria-bvddn.13 — feeding never overwrites the feed inventory with 
     user = await prisma.user.create({
       data: {
         emailVerified: true,
-        email: `${FIXTURE_PREFIX}-${tag}@example.com`,
-        username: `${FIXTURE_PREFIX}-${tag}`,
+        email: `${fixturePrefix}-${tag}@example.com`,
+        username: `${fixturePrefix}-${tag}`,
         password: 'irrelevant-hash',
         firstName: 'Feed',
         lastName: 'Stale',
         money: 10000,
-        settings: { inventory: [basicFeed(START_UNITS)] },
+        settings: { inventory: [basicFeed(startUnits)] },
       },
     });
     userIds.push(user.id);
@@ -258,7 +258,7 @@ describe('Equoria-bvddn.13 — feeding never overwrites the feed inventory with 
     const units = await readFeedUnits(user.id);
 
     // Conservation: the 100 purchased units must all still be there.
-    expect(units).toBe(START_UNITS + UNITS_PER_PACK - successfulFeeds);
+    expect(units).toBe(startUnits + unitsPerPack - successfulFeeds);
     // A rejected feed leaves its horse unfed (the claim rolled back with it).
     expect(await countFedHorses([horse.id])).toBe(successfulFeeds);
 
@@ -266,7 +266,7 @@ describe('Equoria-bvddn.13 — feeding never overwrites the feed inventory with 
     if (feedRes.status === 409) {
       const retry = await authedPost(`/api/v1/horses/${horse.id}/feed`, token, await csrfFor(token));
       expect(retry.status).toBe(200);
-      expect(await readFeedUnits(user.id)).toBe(START_UNITS + UNITS_PER_PACK - 1);
+      expect(await readFeedUnits(user.id)).toBe(startUnits + unitsPerPack - 1);
     }
   }, 120000);
 
@@ -300,7 +300,7 @@ describe('Equoria-bvddn.13 — feeding never overwrites the feed inventory with 
     expect(successfulFeeds).toBeGreaterThanOrEqual(1);
 
     // Conservation: every successful feed consumed exactly one unit.
-    expect(await readFeedUnits(user.id)).toBe(START_UNITS - successfulFeeds);
+    expect(await readFeedUnits(user.id)).toBe(startUnits - successfulFeeds);
     expect(await countFedHorses([horseA.id, horseB.id])).toBe(successfulFeeds);
   }, 120000);
 });

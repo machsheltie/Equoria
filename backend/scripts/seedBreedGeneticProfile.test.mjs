@@ -7,7 +7,7 @@
  * check so importing this module here does not run the re-roll.
  *
  * The critical case (Equoria-26qjf.1 interaction): legacy default-signature
- * horses were minted with the OLD 17-locus GENERIC_DEFAULTS and therefore LACK
+ * horses were minted with the OLD 17-locus genericDefaults and therefore LACK
  * the Prl_Pearl / BR1_Brindle1 keys added in .1. They must still be recognized
  * as default-signature so .5 re-rolls them — otherwise the .1 change silently
  * orphans the exact population this story exists to fix.
@@ -17,9 +17,9 @@ import { describe, it, expect } from '@jest/globals';
 // Equoria-kfgep: isDefaultSignature was extracted from the seed script into a
 // shared helper module — import from there.
 import { isDefaultSignature } from '../utils/defaultGenotypeSignature.mjs';
-import { GENERIC_DEFAULTS } from '../modules/horses/services/genotypeGenerationService.mjs';
+import { genericDefaults } from '../modules/horses/services/genotypeGenerationService.mjs';
 
-// The original 17-locus GENERIC_DEFAULTS set, BEFORE Prl_Pearl/BR1_Brindle1 were
+// The original 17-locus genericDefaults set, BEFORE Prl_Pearl/BR1_Brindle1 were
 // added in 26qjf.1. A legacy starter horse's stored genotype looks like this.
 const LEGACY_17_DEFAULT = {
   E_Extension: 'E/e',
@@ -43,11 +43,11 @@ const LEGACY_17_DEFAULT = {
 
 describe('isDefaultSignature (Equoria-26qjf.5)', () => {
   it('recognizes a full current (19-locus) default genotype', () => {
-    expect(isDefaultSignature({ ...GENERIC_DEFAULTS })).toBe(true);
+    expect(isDefaultSignature({ ...genericDefaults })).toBe(true);
   });
 
   it('CRITICAL: recognizes a legacy 17-locus default genotype missing Prl_Pearl/BR1_Brindle1', () => {
-    // This is the population 26qjf.5 must re-roll. The .1 GENERIC_DEFAULTS growth
+    // This is the population 26qjf.5 must re-roll. The .1 genericDefaults growth
     // must NOT cause these to read as non-default.
     expect(LEGACY_17_DEFAULT.Prl_Pearl).toBeUndefined();
     expect(LEGACY_17_DEFAULT.BR1_Brindle1).toBeUndefined();
@@ -60,7 +60,7 @@ describe('isDefaultSignature (Equoria-26qjf.5)', () => {
 
   it('SENTINEL: a non-default value at any locus disqualifies (customization preserved)', () => {
     // A horse with a real, non-default color must NOT be re-rolled.
-    expect(isDefaultSignature({ ...GENERIC_DEFAULTS, E_Extension: 'e/e' })).toBe(false);
+    expect(isDefaultSignature({ ...genericDefaults, E_Extension: 'e/e' })).toBe(false);
     expect(isDefaultSignature({ ...LEGACY_17_DEFAULT, Cr_Cream: 'Cr/n' })).toBe(false);
   });
 

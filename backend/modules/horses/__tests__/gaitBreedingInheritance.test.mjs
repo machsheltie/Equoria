@@ -7,7 +7,7 @@ import {
   generateGaitScores,
   hasValidGaitScores,
   validateGaitScores,
-  STANDARD_GAITS,
+  standardGaits,
 } from '../services/gaitService.mjs';
 // Equoria-f6xgn: gait inheritance assertions read the breed's gait means
 // through the loader (DB-cache backed), the same source the service reads.
@@ -46,7 +46,7 @@ describe('hasValidGaitScores', () => {
 
   test('returns false for object with only NaN gait values', () => {
     const nanGaits = {};
-    for (const gait of STANDARD_GAITS) {
+    for (const gait of standardGaits) {
       nanGaits[gait] = NaN;
     }
     expect(hasValidGaitScores(nanGaits)).toBe(false);
@@ -88,7 +88,7 @@ describe('validateGaitScores', () => {
 
   test('handles null input gracefully', () => {
     const result = validateGaitScores(null);
-    for (const gait of STANDARD_GAITS) {
+    for (const gait of standardGaits) {
       expect(result[gait]).toBe(50);
     }
     expect(result.gaiting).toBeNull();
@@ -96,7 +96,7 @@ describe('validateGaitScores', () => {
 
   test('handles undefined input gracefully', () => {
     const result = validateGaitScores(undefined);
-    for (const gait of STANDARD_GAITS) {
+    for (const gait of standardGaits) {
       expect(result[gait]).toBe(50);
     }
   });
@@ -184,7 +184,7 @@ describe('generateInheritedGaitScores — corrupted parent data', () => {
   test('partial parent gaits (missing some gaits) still produces valid foal', () => {
     const partialSire = { walk: 70, trot: 80 }; // missing canter, gallop
     const scores = generateInheritedGaitScores('Thoroughbred', partialSire, damGaits);
-    for (const gait of STANDARD_GAITS) {
+    for (const gait of standardGaits) {
       expect(Number.isInteger(scores[gait])).toBe(true);
       expect(scores[gait]).toBeGreaterThanOrEqual(0);
       expect(scores[gait]).toBeLessThanOrEqual(100);
@@ -195,7 +195,7 @@ describe('generateInheritedGaitScores — corrupted parent data', () => {
     const sireStrings = { walk: 'fast', trot: 'slow', canter: 'medium', gallop: 'high' };
     const damStrings = { walk: 'ok', trot: 'good', canter: 'bad', gallop: 'great' };
     const scores = generateInheritedGaitScores('Thoroughbred', sireStrings, damStrings);
-    for (const gait of STANDARD_GAITS) {
+    for (const gait of standardGaits) {
       expect(Number.isInteger(scores[gait])).toBe(true);
       expect(scores[gait]).toBeGreaterThanOrEqual(0);
       expect(scores[gait]).toBeLessThanOrEqual(100);
@@ -303,7 +303,7 @@ describe('Statistical validation — gait inheritance', () => {
 
     for (let i = 0; i < 50; i++) {
       const scores = generateInheritedGaitScores(breedName, sire, dam);
-      for (const gait of STANDARD_GAITS) {
+      for (const gait of standardGaits) {
         expect(Number.isInteger(scores[gait])).toBe(true);
         expect(scores[gait]).toBeGreaterThanOrEqual(0);
         expect(scores[gait]).toBeLessThanOrEqual(100);

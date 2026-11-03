@@ -12,10 +12,10 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { isDefaultSignature } from './recolor-starter-horses.mjs';
-import { GENERIC_DEFAULTS } from '../modules/horses/services/genotypeGenerationService.mjs';
+import { genericDefaults } from '../modules/horses/services/genotypeGenerationService.mjs';
 
 // The 17-locus all-Bay signature a legacy "First Horse" carries (pre-color-system
-// mint: fixed GENERIC_DEFAULTS, missing the .1 Prl/BR1 loci).
+// mint: fixed genericDefaults, missing the .1 Prl/BR1 loci).
 const LEGACY_ALL_BAY = {
   E_Extension: 'E/e',
   A_Agouti: 'A/a',
@@ -42,7 +42,7 @@ describe('recolor-starter-horses isDefaultSignature (Equoria-wvdya)', () => {
   });
 
   it('matches a full current 19-locus default signature', () => {
-    expect(isDefaultSignature({ ...GENERIC_DEFAULTS })).toBe(true);
+    expect(isDefaultSignature({ ...genericDefaults })).toBe(true);
   });
 
   it('SENTINEL: a starter with real color is NOT recolored (customization preserved)', () => {

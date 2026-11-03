@@ -40,7 +40,7 @@ import { dirname, join } from 'node:path';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createStarterHorseForNewUser } from '../services/onboardingService.mjs';
-import { DEFAULT_TEMPERAMENT_BREED } from '../../horses/index.mjs';
+import { defaultTemperamentBreed } from '../../horses/index.mjs';
 
 const SERVICE_SRC = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '../services/onboardingService.mjs'),
@@ -113,7 +113,7 @@ describe('INTEGRATION: onboarding starter horse is fail-closed on breed (Equoria
 
   it('still creates the starter horse with a breedId when the breed resolves', async () => {
     const defaultBreed = await prisma.breed.findUnique({
-      where: { name: DEFAULT_TEMPERAMENT_BREED },
+      where: { name: defaultTemperamentBreed },
       select: { id: true },
     });
     // Guard: a missing canonical default breed is a seeding problem, not the

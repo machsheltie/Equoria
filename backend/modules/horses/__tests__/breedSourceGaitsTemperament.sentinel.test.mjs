@@ -68,13 +68,13 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // backend/modules/horses/__tests__ → backend/data/breeds is up 3, then data/breeds.
-const BREED_DATA_DIR = join(__dirname, '..', '..', '..', 'data', 'breeds');
+const breedDataDir = join(__dirname, '..', '..', '..', 'data', 'breeds');
 
-// Meta/reference files the importer (populateBreedsFromSql.mjs SKIP_FILES)
+// Meta/reference files the importer (populateBreedsFromSql.mjs skipFiles)
 // never seeds. None are currently present in backend/data/breeds, but we
 // filter them so a future re-mirror that drops a meta file here cannot make
 // this sentinel try to JSON-parse a non-INSERT file. Mirrors the 9cpop sibling.
-const SKIP_FILES = new Set([
+const skipFiles = new Set([
   'seed.sql',
   'populate_breed_ratings.sql',
   'populate_breed_temperaments.sql',
@@ -214,11 +214,11 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
   let parsed = [];
 
   beforeAll(async () => {
-    const entries = await readdir(BREED_DATA_DIR);
-    const txtFiles = entries.filter(f => f.endsWith('.txt') && !SKIP_FILES.has(f)).sort();
+    const entries = await readdir(breedDataDir);
+    const txtFiles = entries.filter(f => f.endsWith('.txt') && !skipFiles.has(f)).sort();
     parsed = [];
     for (const file of txtFiles) {
-      const body = await readFile(join(BREED_DATA_DIR, file), 'utf8');
+      const body = await readFile(join(breedDataDir, file), 'utf8');
       // Parse failures are real failures — let them throw out of beforeAll so a
       // malformed source file is loud, not silently skipped.
       const profile = extractProfileJson(body);

@@ -32,7 +32,7 @@ const PREFIX = 'TestFixture-q4uem9-listfields';
 
 // The list item's keys before slice 6 (HORSE_LIST_SELECT + withHealth +
 // withAgeYears + the latest-event/championship fields): all must remain.
-const EXISTING_LIST_KEYS = [
+const existingListKeys = [
   'id',
   'name',
   'age',
@@ -76,7 +76,7 @@ const EXISTING_LIST_KEYS = [
   'hasChampionship',
 ];
 
-const REAL_EXCEPT_DATE = [
+const realExceptDate = [
   'hrtime',
   'nextTick',
   'performance',
@@ -204,7 +204,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
 
     expect(res.status).toBe(200);
     const item = res.body.data.find(h => h.id === mare.id);
-    expect(Object.keys(item)).toEqual(expect.arrayContaining(EXISTING_LIST_KEYS));
+    expect(Object.keys(item)).toEqual(expect.arrayContaining(existingListKeys));
     expect(item).toEqual(
       expect.objectContaining({
         studStatus: 'Not at Stud',
@@ -237,7 +237,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
     const EVENING = new Date('2026-10-17T00:30:00.000Z'); // 2026-10-16 20:30 EDT
 
     it('a mare bred 3 Eastern days ago shows the end of her 7-day cooldown; one bred 7 days ago and a stallion show none', async () => {
-      jest.useFakeTimers({ now: EVENING, doNotFake: REAL_EXCEPT_DATE });
+      jest.useFakeTimers({ now: EVENING, doNotFake: realExceptDate });
       const owner = await player('owner');
       const recent = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: gameCalendarDate(EVENING, -3) });
       const done = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: gameCalendarDate(EVENING, -7) });
@@ -287,7 +287,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
     }
 
     it('at 00:05 EDT on 2026-10-20: bred 6 Eastern days ago -> ends 2026-10-21 00:00 EDT; bred exactly 7 days ago -> null', async () => {
-      jest.useFakeTimers({ now: new Date('2026-10-20T04:05:00.000Z'), doNotFake: REAL_EXCEPT_DATE });
+      jest.useFakeTimers({ now: new Date('2026-10-20T04:05:00.000Z'), doNotFake: realExceptDate });
       const owner = await player('owner');
       const six = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: calendarDate('2026-10-14') });
       const seven = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: calendarDate('2026-10-13') });
@@ -297,7 +297,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
     });
 
     it('spring forward (2026-03-08): bred 2026-03-04 -> ends 2026-03-11 00:00 EDT = 04:00Z', async () => {
-      jest.useFakeTimers({ now: new Date('2026-03-08T12:00:00.000Z'), doNotFake: REAL_EXCEPT_DATE });
+      jest.useFakeTimers({ now: new Date('2026-03-08T12:00:00.000Z'), doNotFake: realExceptDate });
       const owner = await player('owner');
       const mare = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: calendarDate('2026-03-04') });
 
@@ -305,7 +305,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
     });
 
     it('fall back (2026-11-01): bred 2026-10-26 -> ends 2026-11-02 00:00 EST = 05:00Z', async () => {
-      jest.useFakeTimers({ now: new Date('2026-11-01T12:00:00.000Z'), doNotFake: REAL_EXCEPT_DATE });
+      jest.useFakeTimers({ now: new Date('2026-11-01T12:00:00.000Z'), doNotFake: realExceptDate });
       const owner = await player('owner');
       const mare = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: calendarDate('2026-10-26') });
 
@@ -318,7 +318,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
     ])(
       'cross-check at %s: the field is null exactly when the real breeding guard allows the breeding',
       async (_label, instant, guardAllows) => {
-        jest.useFakeTimers({ now: new Date(instant), doNotFake: REAL_EXCEPT_DATE });
+        jest.useFakeTimers({ now: new Date(instant), doNotFake: realExceptDate });
         const owner = await player('owner');
         const stallion = await horse({ ownerId: owner.user.id, sex: 'Stallion' });
         const mare = await horse({ ownerId: owner.user.id, sex: 'Mare', lastBredDate: calendarDate('2026-10-13') });

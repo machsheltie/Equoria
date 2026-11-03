@@ -10,7 +10,7 @@
  * 2026-10-29, Equoria-oxbda): nothing else read it.
  */
 import {
-  CONFORMATION_REGIONS,
+  conformationRegions,
   calculateOverallConformation,
 } from '../services/conformationService.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -39,7 +39,7 @@ export async function getConformation(req, res) {
 
     // Build response with all 8 regions + overall (null for missing legacy regions)
     const conformationScores = {};
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       conformationScores[region] = scores[region] ?? null;
     }
     conformationScores.overallConformation =

@@ -46,12 +46,12 @@ import {
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const msPerDay = 1000 * 60 * 60 * 24;
 
 // A dateOfBirth N whole days ago, anchored off-midnight UTC so the date-only
 // game-year age math (Equoria-vdw5 / oey96.16) is exercised honestly.
 function dobDaysAgo(days) {
-  const d = new Date(Date.now() - days * MS_PER_DAY);
+  const d = new Date(Date.now() - days * msPerDay);
   d.setUTCHours(4, 0, 0, 0);
   return d;
 }
@@ -243,7 +243,7 @@ describe('a foal past age 3 records no stage and no graduation milestone (real D
 // Postgres reports A as blocked by B's backend is B released to commit — so
 // A's read is guaranteed to precede B's commit, and A's write to follow it.
 // ---------------------------------------------------------------------------
-const RACE_TX_OPTS = { maxWait: 10000, timeout: 20000 };
+const raceTxOpts = { maxWait: 10000, timeout: 20000 };
 
 async function waitUntilBlockedBy(blockerPid) {
   const deadline = Date.now() + 10000;
@@ -294,7 +294,7 @@ async function raceRecordings(foalId, { bNow, aNow, aPrepare, bPrepare }) {
     signalBRecorded(pid);
     await bMayCommit;
     return result;
-  }, RACE_TX_OPTS);
+  }, raceTxOpts);
 
   let txA;
   try {
@@ -305,7 +305,7 @@ async function raceRecordings(foalId, { bNow, aNow, aPrepare, bPrepare }) {
         await aPrepare(tx);
       }
       return detectAndRecordFoalMilestonesCore(tx, foalId, { now: aNow });
-    }, RACE_TX_OPTS);
+    }, raceTxOpts);
     await waitUntilBlockedBy(bPid);
   } finally {
     releaseB();

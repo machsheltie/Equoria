@@ -64,7 +64,7 @@ import { createHorse } from '../services/horseCreation.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const STORE_PRICE = 1000; // mirrors marketplaceController.STORE_PRICE
+const storePrice = 1000; // mirrors marketplaceController.storePrice
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const uid = () => randomBytes(6).toString('hex');
@@ -296,7 +296,7 @@ describe('Finding 2 — the legitimate paid acquisition path is untouched', () =
         password: 'irrelevant-hash',
         firstName: 'Finding2',
         lastName: 'Buyer',
-        money: STORE_PRICE, // exactly enough for ONE purchase
+        money: storePrice, // exactly enough for ONE purchase
         settings: {},
       },
     });
@@ -334,7 +334,7 @@ describe('Finding 2 — the legitimate paid acquisition path is untouched', () =
       where: { id: buyer.id },
       select: { money: true },
     });
-    expect(Number(after.money)).toBe(0); // STORE_PRICE - STORE_PRICE
+    expect(Number(after.money)).toBe(0); // storePrice - storePrice
 
     expect(await prisma.horse.count({ where: { userId: buyer.id } })).toBe(1);
 
@@ -342,7 +342,7 @@ describe('Finding 2 — the legitimate paid acquisition path is untouched', () =
       where: { userId: buyer.id, type: 'debit', category: 'horseTraderPurchase' },
     });
     expect(debitRows).toHaveLength(1);
-    expect(Number(debitRows[0].amount)).toBe(STORE_PRICE);
+    expect(Number(debitRows[0].amount)).toBe(storePrice);
   }, 60000);
 
   it('leaves no partial purchase when the buyer cannot afford the horse', async () => {
@@ -354,7 +354,7 @@ describe('Finding 2 — the legitimate paid acquisition path is untouched', () =
         password: 'irrelevant-hash',
         firstName: 'Finding2',
         lastName: 'Broke',
-        money: STORE_PRICE - 1,
+        money: storePrice - 1,
         settings: {},
       },
     });
@@ -371,7 +371,7 @@ describe('Finding 2 — the legitimate paid acquisition path is untouched', () =
       where: { id: broke.id },
       select: { money: true },
     });
-    expect(Number(after.money)).toBe(STORE_PRICE - 1); // untouched
+    expect(Number(after.money)).toBe(storePrice - 1); // untouched
     expect(await prisma.horse.count({ where: { userId: broke.id } })).toBe(0);
     expect(await prisma.userTransaction.count({ where: { userId: broke.id } })).toBe(0);
   }, 60000);

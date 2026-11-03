@@ -2,7 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { rollStatBoost } from '../services/horseFeedService.mjs';
 
 // Valid stat fields (must match what horseFeedService exports internally)
-const VALID_STATS = [
+const validStats = [
   'precision',
   'strength',
   'speed',
@@ -66,7 +66,7 @@ describe('rollStatBoost — successful boost', () => {
     expect(result).not.toBeNull();
     expect(result).toHaveProperty('stat');
     expect(result).toHaveProperty('amount', 1);
-    expect(VALID_STATS).toContain(result.stat);
+    expect(validStats).toContain(result.stat);
   });
 
   it('returns { stat, amount } when rng passes threshold for performancePlus', () => {
@@ -75,7 +75,7 @@ describe('rollStatBoost — successful boost', () => {
     const result = rollStatBoost('performancePlus', rng);
     expect(result).not.toBeNull();
     expect(result.amount).toBe(1);
-    expect(VALID_STATS).toContain(result.stat);
+    expect(validStats).toContain(result.stat);
   });
 
   it('returns { stat, amount } when rng passes threshold for highPerformance', () => {
@@ -84,7 +84,7 @@ describe('rollStatBoost — successful boost', () => {
     const result = rollStatBoost('highPerformance', rng);
     expect(result).not.toBeNull();
     expect(result.amount).toBe(1);
-    expect(VALID_STATS).toContain(result.stat);
+    expect(validStats).toContain(result.stat);
   });
 
   it('returns { stat, amount } when rng passes threshold for elite', () => {
@@ -93,16 +93,16 @@ describe('rollStatBoost — successful boost', () => {
     const result = rollStatBoost('elite', rng);
     expect(result).not.toBeNull();
     expect(result.amount).toBe(1);
-    expect(VALID_STATS).toContain(result.stat);
+    expect(validStats).toContain(result.stat);
   });
 
   it('stat selection maps second rng value to a valid stat', () => {
     // Test each stat index with a fixed rng sequence
-    for (let statIdx = 0; statIdx < VALID_STATS.length; statIdx++) {
-      const rng = makeRng([0.0, statIdx / VALID_STATS.length]);
+    for (let statIdx = 0; statIdx < validStats.length; statIdx++) {
+      const rng = makeRng([0.0, statIdx / validStats.length]);
       const result = rollStatBoost('elite', rng);
       expect(result).not.toBeNull();
-      expect(VALID_STATS).toContain(result.stat);
+      expect(validStats).toContain(result.stat);
     }
   });
 

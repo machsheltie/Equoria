@@ -6,7 +6,7 @@ import {
   generateInheritedConformationScores,
   hasValidConformationScores,
   validateConformationScores,
-  CONFORMATION_REGIONS,
+  conformationRegions,
 } from '../services/conformationService.mjs';
 // Equoria-5p26: All breed-mean assertions now read from getBreedProfile() — the same
 // runtime data source consumed by the service under test (breedProfiles.json via
@@ -18,7 +18,7 @@ import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 // Helper: create a scores object with a uniform value for all regions
 function uniformScores(value) {
   const scores = {};
-  for (const region of CONFORMATION_REGIONS) {
+  for (const region of conformationRegions) {
     scores[region] = value;
   }
   return scores;
@@ -32,7 +32,7 @@ describe('generateInheritedConformationScores', () => {
 
   test('returns all 8 conformation regions', () => {
     const scores = generateInheritedConformationScores('Thoroughbred', sireScores, damScores);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(scores).toHaveProperty(region);
     }
   });
@@ -52,7 +52,7 @@ describe('generateInheritedConformationScores', () => {
   test('all region scores are integers in [0, 100]', () => {
     for (let i = 0; i < 50; i++) {
       const scores = generateInheritedConformationScores('Thoroughbred', sireScores, damScores);
-      for (const region of CONFORMATION_REGIONS) {
+      for (const region of conformationRegions) {
         expect(Number.isInteger(scores[region])).toBe(true);
         expect(scores[region]).toBeGreaterThanOrEqual(0);
         expect(scores[region]).toBeLessThanOrEqual(100);
@@ -93,7 +93,7 @@ describe('generateInheritedConformationScores', () => {
 
   test('null sireScores falls back to breed-only generation', () => {
     const scores = generateInheritedConformationScores('Thoroughbred', null, damScores);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
       expect(scores[region]).toBeLessThanOrEqual(100);
@@ -103,7 +103,7 @@ describe('generateInheritedConformationScores', () => {
 
   test('null damScores falls back to breed-only generation', () => {
     const scores = generateInheritedConformationScores('Thoroughbred', sireScores, null);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
       expect(scores[region]).toBeLessThanOrEqual(100);
@@ -113,7 +113,7 @@ describe('generateInheritedConformationScores', () => {
 
   test('both parents null falls back to breed-only generation', () => {
     const scores = generateInheritedConformationScores('Thoroughbred', null, null);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
       expect(scores[region]).toBeLessThanOrEqual(100);
@@ -124,10 +124,10 @@ describe('generateInheritedConformationScores', () => {
   // === Task 3.10: All 12 representative breeds produce valid inherited scores ===
   // Equoria-f6xgn (2026-05-28) removed the numeric-breedId shim; the service now
   // passes the breed name straight through to getBreedProfile(), which throws on
-  // any numeric input. These are the same 12 names ALL_BREED_NAMES uses in the
+  // any numeric input. These are the same 12 names allBreedNames uses in the
   // companion conformationScoreGeneration.test.mjs (formerly numeric IDs 1-12).
 
-  const ALL_BREED_NAMES = [
+  const allBreedNames = [
     'Thoroughbred',
     'Arabian',
     'American Saddlebred',
@@ -142,9 +142,9 @@ describe('generateInheritedConformationScores', () => {
     'Paint Horse',
   ];
 
-  test.each(ALL_BREED_NAMES)('breed %s produces valid inherited conformation scores', breedName => {
+  test.each(allBreedNames)('breed %s produces valid inherited conformation scores', breedName => {
     const scores = generateInheritedConformationScores(breedName, sireScores, damScores);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
       expect(scores[region]).toBeLessThanOrEqual(100);
@@ -285,7 +285,7 @@ describe('Statistical validation - breeding inheritance', () => {
       allScores.push(generateInheritedConformationScores(breedName, sire, dam));
     }
 
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       const regionMean = conformation[region].mean;
       const regionStdDev = conformation[region].stdDev;
       // baseValue = (sire*0.5 + dam*0.5)*0.6 + breedMean*0.4
@@ -439,7 +439,7 @@ describe('hasValidConformationScores', () => {
 
   test('returns false for object with only NaN region values', () => {
     const nanScores = {};
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       nanScores[region] = NaN;
     }
     expect(hasValidConformationScores(nanScores)).toBe(false);
@@ -453,7 +453,7 @@ describe('Partial parent conformation scores', () => {
     const partialSire = { head: 85, neck: 80 };
     const fullDam = uniformScores(70);
     const scores = generateInheritedConformationScores('Thoroughbred', partialSire, fullDam);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
       expect(scores[region]).toBeLessThanOrEqual(100);
@@ -465,7 +465,7 @@ describe('Partial parent conformation scores', () => {
     const fullSire = uniformScores(80);
     const partialDam = { hindquarters: 90 };
     const scores = generateInheritedConformationScores('Thoroughbred', fullSire, partialDam);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
       expect(scores[region]).toBeLessThanOrEqual(100);
@@ -476,7 +476,7 @@ describe('Partial parent conformation scores', () => {
     const partialSire = { head: 85, neck: 80, shoulders: 75 };
     const partialDam = { back: 70, hindquarters: 90, legs: 65 };
     const scores = generateInheritedConformationScores('Thoroughbred', partialSire, partialDam);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
       expect(scores[region]).toBeLessThanOrEqual(100);
@@ -491,7 +491,7 @@ describe('validateConformationScores', () => {
     const input = uniformScores(75);
     const result = validateConformationScores(input);
     expect(Object.keys(result)).toHaveLength(9);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(result[region]).toBe(75);
     }
     expect(result.overallConformation).toBe(75);
@@ -514,7 +514,7 @@ describe('validateConformationScores', () => {
 
   test('handles null input gracefully', () => {
     const result = validateConformationScores(null);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(result[region]).toBe(50);
     }
     expect(result.overallConformation).toBe(50);
@@ -522,7 +522,7 @@ describe('validateConformationScores', () => {
 
   test('handles undefined input gracefully', () => {
     const result = validateConformationScores(undefined);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(result[region]).toBe(50);
     }
   });
@@ -609,7 +609,7 @@ describe('generateInheritedConformationScores — breedingValueBoost (Equoria-84
   test('all scores remain integers in [0,100] even at max boost', () => {
     for (let i = 0; i < 50; i++) {
       const s = generateInheritedConformationScores('Thoroughbred', sireScores, damScores, 0.15);
-      for (const region of CONFORMATION_REGIONS) {
+      for (const region of conformationRegions) {
         expect(Number.isInteger(s[region])).toBe(true);
         expect(s[region]).toBeGreaterThanOrEqual(0);
         expect(s[region]).toBeLessThanOrEqual(100);

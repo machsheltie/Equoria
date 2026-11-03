@@ -24,7 +24,7 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const app = (await import('../../../app.mjs')).default;
 const rand = () => randomBytes(4).toString('hex');
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const msPerDay = 24 * 60 * 60 * 1000;
 
 // dateOfBirth and lastBredDate are date-only columns on the Eastern game
 // calendar (owner ruling 2026-10-09): store the Eastern date `n` game days
@@ -267,7 +267,7 @@ describe('createFoal - biological validation guards (Equoria-mhdul)', () => {
   // game days. The value still carries 23:59:59.999 on that date to prove the
   // date-only column ignores the time of day.
   it('allows breeding when lastBredDate is exactly 7 Eastern game days ago', async () => {
-    const sevenDaysAgo = new Date(gameDaysAgo(7).getTime() + MS_PER_DAY - 1);
+    const sevenDaysAgo = new Date(gameDaysAgo(7).getTime() + msPerDay - 1);
     await prisma.horse.update({
       where: { id: adultMare.id },
       // doctrine-allow: utc-date-only-fixture — 23:59:59.999 on the Eastern date on purpose; the date-only column drops the time

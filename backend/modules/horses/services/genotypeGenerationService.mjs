@@ -21,8 +21,8 @@ import {
 // carry these loci even when a breed profile gives them nonzero alleleWeights
 // (e.g. American Quarter Horse). phenotypeCalculationService already renders
 // Pearl + Brindle colors but read these loci off the genotype — without them in
-// CORE_LOCI the generator never emitted them, so the colors were unreachable.
-export const CORE_LOCI = [
+// coreLoci the generator never emitted them, so the colors were unreachable.
+export const coreLoci = [
   'E_Extension',
   'A_Agouti',
   'Cr_Cream',
@@ -50,7 +50,7 @@ export const CORE_LOCI = [
  * Exported so that breedingColorInheritanceService can use the correct per-locus default
  * when a parent's sparse genotype is missing a locus (instead of hardcoding 'n/n').
  */
-export const GENERIC_DEFAULTS = {
+export const genericDefaults = {
   E_Extension: 'E/e',
   A_Agouti: 'A/a',
   Cr_Cream: 'n/n',
@@ -76,22 +76,22 @@ export const GENERIC_DEFAULTS = {
   // falsely flag every sparse-parent foal as Brindle. (The breed *data* files
   // happen to spell these alleles uppercase, 'N/N'/'Prl' — that data/engine
   // case mismatch is a separate defect tracked under the verification gate;
-  // GENERIC_DEFAULTS follows the engine's casing, which is the consumer here.)
+  // genericDefaults follows the engine's casing, which is the consumer here.)
   Prl_Pearl: 'n/n',
   BR1_Brindle1: 'n/n',
 };
 
 /**
- * GENERIC_STARTER_WEIGHTS (Equoria-mvrvb)
+ * genericStarterWeights (Equoria-mvrvb)
  *
  * Realistic population-level allele-pair frequencies used when NO breed genetic
  * profile is available (e.g. the starter horse minted at user registration, and
  * the fixtureColor() default path). Sampling from these instead of the fixed
- * GENERIC_DEFAULTS set is what gives starter horses a varied, plausible coat-color
+ * genericDefaults set is what gives starter horses a varied, plausible coat-color
  * distribution instead of a 100%-Bay monoculture.
  *
- * WHY a separate map (not a change to GENERIC_DEFAULTS):
- *   GENERIC_DEFAULTS is the per-locus WILD-TYPE fill that
+ * WHY a separate map (not a change to genericDefaults):
+ *   genericDefaults is the per-locus WILD-TYPE fill that
  *   breedingColorInheritanceService uses for sparse parents — it MUST stay fixed
  *   and non-random. This map is only consumed by the no-profile generation path.
  *
@@ -127,12 +127,12 @@ export const GENERIC_DEFAULTS = {
  *         this map's pattern-suppression design prevents.
  *   What WAS done instead: these weights are kept as a curated, pattern-suppressed
  *   distribution whose game-coherence is now LOCKED by a sentinel test
- *   (genotypeGenerationService.test.mjs → 'GENERIC_STARTER_WEIGHTS coherence'):
+ *   (genotypeGenerationService.test.mjs → 'genericStarterWeights coherence'):
  *   Bay + Chestnut are the dominant starter colors, all three base colors are
  *   reachable, and rare-pattern colors stay rare. Player-chosen-breed starter
  *   color remains a product decision tracked separately (not an engine change).
  */
-export const GENERIC_STARTER_WEIGHTS = Object.freeze({
+export const genericStarterWeights = Object.freeze({
   E_Extension: { 'E/e': 0.4, 'e/e': 0.4, 'E/E': 0.2 },
   A_Agouti: { 'A/a': 0.4, 'A/A': 0.3, 'a/a': 0.3 },
   Cr_Cream: { 'n/n': 0.86, 'Cr/n': 0.12, 'Cr/Cr': 0.02 },
@@ -151,7 +151,7 @@ export const GENERIC_STARTER_WEIGHTS = Object.freeze({
   EDXW: { 'n/n': 1.0 },
   MFSD12_Mushroom: { 'N/N': 0.98, 'M/N': 0.02 },
   // Equoria-26qjf.1: starter-population frequencies for the two new loci.
-  // Lowercase 'n/n' wild-type (see GENERIC_DEFAULTS note). Pearl is a rare
+  // Lowercase 'n/n' wild-type (see genericDefaults note). Pearl is a rare
   // recessive carrier in the general population; Brindle is rare and
   // sex-limited, so starters stay at wild-type (no Brindle starter horses).
   Prl_Pearl: { 'n/n': 0.98, 'prl/n': 0.02 },
@@ -245,19 +245,19 @@ function sampleMintableAllele(locus, weights, allowed, disallowedMap, rng) {
 
 /**
  * Generate a complete coat color genotype for a horse given its breed genetic profile.
- * Always includes all 19 CORE_LOCI plus any additional loci present in the breed profile.
+ * Always includes all 19 coreLoci plus any additional loci present in the breed profile.
  *
  * Selection priority per locus:
  *   1. alleleWeights[locus] present → weighted random sampling
  *   2. allowedAlleles[locus] present (no weights) → first entry (most common by convention)
- *   3. Neither present → GENERIC_DEFAULTS fallback
+ *   3. Neither present → genericDefaults fallback
  *
  * Equoria-piiof: a lethal pair, a breed-disallowed pair or a pair outside
  * allowedAlleles is never minted, whatever its weight. A locus with no mintable
  * weighted pair falls through to the next rule.
  *
  * No-profile path (Equoria-mvrvb): when breedGeneticProfile is null/undefined,
- * the generic GENERIC_STARTER_WEIGHTS distribution is used so starter / fixture
+ * the generic genericStarterWeights distribution is used so starter / fixture
  * horses get a varied, realistic coat color instead of always resolving to Bay.
  *
  * @param {Object|null} breedGeneticProfile - the breed's JSONB profile from DB
@@ -266,21 +266,21 @@ function sampleMintableAllele(locus, weights, allowed, disallowedMap, rng) {
  */
 export function generateGenotype(breedGeneticProfile, rng = Math.random) {
   // No breed profile → sample from the generic starter distribution rather than
-  // the fixed GENERIC_DEFAULTS (which always yields Bay). Synthesizing a profile
+  // the fixed genericDefaults (which always yields Bay). Synthesizing a profile
   // keeps a single weighted-sampling code path below.
   const effectiveProfile =
     breedGeneticProfile &&
     typeof breedGeneticProfile === 'object' &&
     !Array.isArray(breedGeneticProfile)
       ? breedGeneticProfile
-      : { alleleWeights: GENERIC_STARTER_WEIGHTS };
+      : { alleleWeights: genericStarterWeights };
 
   const allowedAlleles = effectiveProfile?.allowedAlleles ?? {};
   const alleleWeights = effectiveProfile?.alleleWeights ?? {};
 
   // Union of core loci + any extra loci in the breed profile
   const profileLoci = Object.keys(allowedAlleles);
-  const allLoci = [...new Set([...CORE_LOCI, ...profileLoci])];
+  const allLoci = [...new Set([...coreLoci, ...profileLoci])];
 
   const disallowedMap = buildDisallowedMap(effectiveProfile);
   const genotype = {};
@@ -299,7 +299,7 @@ export function generateGenotype(breedGeneticProfile, rng = Math.random) {
       ? allowed.find(pair => isMintable(locus, pair, allowed, disallowedMap))
       : undefined;
     // Unknown locus with no breed data: use generic default
-    genotype[locus] = sampled ?? firstAllowed ?? GENERIC_DEFAULTS[locus] ?? 'n/n';
+    genotype[locus] = sampled ?? firstAllowed ?? genericDefaults[locus] ?? 'n/n';
   }
 
   return genotype;

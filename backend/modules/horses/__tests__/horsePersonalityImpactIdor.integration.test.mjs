@@ -33,7 +33,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 import config from '../../../config/config.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-07ym2-idor';
+const fixturePrefix = 'TestFixture-07ym2-idor';
 
 let attackerToken;
 let victimUser;
@@ -49,8 +49,8 @@ async function makeUser(suffix, role = 'user') {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
+      username: `${fixturePrefix}-${suffix}-${tag}`,
+      email: `${fixturePrefix}-${suffix}-${tag}@example.com`,
       password: pw,
       firstName: 'IDORTest',
       lastName: suffix,
@@ -71,7 +71,7 @@ beforeAll(async () => {
   victimHorse = await createTestHorse(
     prisma,
     {
-      name: `${FIXTURE_PREFIX}-victim-horse`,
+      name: `${fixturePrefix}-victim-horse`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       userId: victimUser.id,

@@ -23,7 +23,7 @@ import app from '../../../app.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-ageYears-lvjy';
+const fixturePrefix = 'TestFixture-ageYears-lvjy';
 
 let owner;
 let token;
@@ -34,15 +34,15 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
 
   const a = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   owner = a.user;
   token = a.token;
 
   // dateOfBirth = today - 21 days → ageYears === 3 (lvjy AC literal)
   horse21d = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-21d-${tag}`,
+    name: `${fixturePrefix}-21d-${tag}`,
     userId: owner.id,
     age: 99, // deliberately wrong cached age — proves ageYears comes from dob, not cache
     dateOfBirth: gameCalendarDate(new Date(), -21),
@@ -50,7 +50,7 @@ beforeAll(async () => {
 
   // dateOfBirth = today - 7 days → ageYears === 1
   horse7d = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-7d-${tag}`,
+    name: `${fixturePrefix}-7d-${tag}`,
     userId: owner.id,
     age: 0, // deliberately wrong cached age
     dateOfBirth: gameCalendarDate(new Date(), -7),

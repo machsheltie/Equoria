@@ -51,7 +51,7 @@ const STATS = [
   'focus',
 ];
 
-const TIER_BY_ID = Object.fromEntries(FEED_CATALOG.map(t => [t.id, t]));
+const tierById = Object.fromEntries(FEED_CATALOG.map(t => [t.id, t]));
 
 // Equoria-zvp4 / Equoria-lnblu: the optimistic-claim UPDATE interpolates the
 // stat-boost column name as a raw identifier (`Prisma.raw`) — a parameterized
@@ -62,7 +62,7 @@ const TIER_BY_ID = Object.fromEntries(FEED_CATALOG.map(t => [t.id, t]));
 // belt-and-braces assertion that the value about to be interpolated is a
 // known column; an unrecognised name throws rather than reaching SQL. All
 // VALUES (lastFedDate, tier id, horse id, start-of-today) are bound via ${}.
-const STAT_COLUMN_WHITELIST = new Set(STATS);
+const statColumnWhitelist = new Set(STATS);
 
 // Equoria-7uphu: "lastFedDate" is `timestamp without time zone` holding UTC wall
 // time (what every typed Prisma write stores). A JS Date bound into raw SQL
@@ -102,7 +102,7 @@ function getInventory(settings) {
  * @returns {{ stat: string, amount: number } | null}
  */
 export function rollStatBoost(feedTier, rng = Math.random) {
-  const tier = TIER_BY_ID[feedTier];
+  const tier = tierById[feedTier];
   if (!tier || tier.statRollPct === 0) {
     return null;
   }
@@ -214,7 +214,7 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
         throw e;
       }
 
-      const tier = TIER_BY_ID[horse.equippedFeedType];
+      const tier = tierById[horse.equippedFeedType];
       if (!tier) {
         const e = new Error(`Unknown feed tier: ${horse.equippedFeedType}`);
         e.status = 400;
@@ -298,7 +298,7 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       }
 
       if (statBoost) {
-        if (!STAT_COLUMN_WHITELIST.has(statBoost.stat)) {
+        if (!statColumnWhitelist.has(statBoost.stat)) {
           // Unreachable in practice (rollStatBoost only returns STATS members),
           // but fail-closed rather than interpolate an unvetted identifier.
           const e = new Error(`Refusing to apply boost to unknown stat column: ${statBoost.stat}`);

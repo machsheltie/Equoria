@@ -19,7 +19,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 // Temperament classification definitions
-const TEMPERAMENT_CLASSIFICATIONS = {
+const temperamentClassifications = {
   confident: {
     name: 'Confident',
     description: 'Self-assured, bold, and adaptable',
@@ -446,7 +446,7 @@ function analyzeFromInteractions(horse, interactions) {
 
   return {
     primaryTemperament,
-    traits: TEMPERAMENT_CLASSIFICATIONS[primaryTemperament]?.traits || [],
+    traits: temperamentClassifications[primaryTemperament]?.traits || [],
     confidenceLevel,
     socialTendency,
     adaptability,

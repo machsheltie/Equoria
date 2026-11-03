@@ -49,14 +49,14 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { addXpToHorseCore, HORSE_POINTS_PER_STAT_POINT as P } from '../services/horseXpModelService.mjs';
+import { addXpToHorseCore, horsePointsPerStatPoint as P } from '../services/horseXpModelService.mjs';
 // Owner ruling C15 (2026-10-16; Equoria-576c0 B13): 1,000 Horse Points per stat
 // allocation. Old contract: 100. The point amounts below are the old scenarios at
 // the new scale; every assertion keeps its meaning.
 
 const ORIGIN = 'http://localhost:3000';
-const BASE_SPEED = 50;
-const ALLOC_CONCURRENCY = 5;
+const baseSpeed = 50;
+const allocConcurrency = 5;
 
 const cleanup = createCleanupTracker();
 const createdHorseIds = [];
@@ -99,7 +99,7 @@ async function makeHorse(userId, tag, extra = {}) {
       dateOfBirth: new Date('2020-01-01'),
       age: 5,
       userId,
-      speed: BASE_SPEED,
+      speed: baseSpeed,
       horseXp: 0,
       availableStatPoints: 0,
       ...extra,
@@ -293,11 +293,11 @@ describe('owners keep XP reads and earned-stat allocation', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.newStatValue).toBe(BASE_SPEED + 1);
+    expect(res.body.data.newStatValue).toBe(baseSpeed + 1);
     expect(res.body.data.remainingStatPoints).toBe(0);
 
     const after = await readXpState(earnedHorse.id);
-    expect(after.speed).toBe(BASE_SPEED + 1);
+    expect(after.speed).toBe(baseSpeed + 1);
     expect(after.availableStatPoints).toBe(0);
     // Spending a point must not rewrite XP or the audit trail.
     expect(after.horseXp).toBe(P);
@@ -306,7 +306,7 @@ describe('owners keep XP reads and earned-stat allocation', () => {
 
   it('concurrent allocation cannot overspend one earned point (Equoria-wsj2i preserved)', async () => {
     const responses = await Promise.all(
-      Array.from({ length: ALLOC_CONCURRENCY }, () =>
+      Array.from({ length: allocConcurrency }, () =>
         authedPost(`/api/v1/horses/${raceHorse.id}/allocate-stat`, ownerToken, {
           statName: 'speed',
         }),
@@ -318,6 +318,6 @@ describe('owners keep XP reads and earned-stat allocation', () => {
 
     const after = await readXpState(raceHorse.id);
     expect(after.availableStatPoints).toBe(0);
-    expect(after.speed).toBe(BASE_SPEED + 1);
+    expect(after.speed).toBe(baseSpeed + 1);
   }, 120000);
 });

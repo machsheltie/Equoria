@@ -6,7 +6,7 @@
  * starter horse via a raw prisma.horse.create() that set name/sex/age/stats but
  * NO breed connection, so every registration starter horse was born breedless
  * (the canonical DB had 0/3334 horses with breedId set). The fix resolves the
- * canonical default breed (DEFAULT_TEMPERAMENT_BREED = 'Thoroughbred') and
+ * canonical default breed (defaultTemperamentBreed = 'Thoroughbred') and
  * connects it at creation; the onboarding breed-selection step later UPDATES
  * breedId to the player's chosen breed.
  *
@@ -24,7 +24,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { DEFAULT_TEMPERAMENT_BREED } from '../../horses/index.mjs';
+import { defaultTemperamentBreed } from '../../horses/index.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -64,7 +64,7 @@ describe('INTEGRATION: starter horse breedId (Equoria-b9zgr)', () => {
     // assertion can prove the starter horse links to the CORRECT breed, not
     // merely some non-null value.
     const breed = await prisma.breed.findUnique({
-      where: { name: DEFAULT_TEMPERAMENT_BREED },
+      where: { name: defaultTemperamentBreed },
       select: { id: true },
     });
     defaultBreedId = breed?.id ?? null;

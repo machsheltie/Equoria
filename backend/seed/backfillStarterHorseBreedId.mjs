@@ -24,7 +24,7 @@
  *      sire's breedId (else the dam's). Foals descend from a known breed line.
  *   2. DEFAULT — otherwise (the registration starter-horse case, which has no
  *      lineage and no breed-identifying data), assign the canonical default
- *      breed (DEFAULT_TEMPERAMENT_BREED = 'Thoroughbred'), matching exactly
+ *      breed (defaultTemperamentBreed = 'Thoroughbred'), matching exactly
  *      what the fixed registration path now writes for new starter horses.
  *
  * All writes are id-scoped per-row updates (never an unscoped deleteMany /
@@ -33,7 +33,7 @@
 
 import { fileURLToPath } from 'url';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { DEFAULT_TEMPERAMENT_BREED } from '../modules/horses/index.mjs';
+import { defaultTemperamentBreed } from '../modules/horses/index.mjs';
 
 const APPLY = process.argv.includes('--apply');
 
@@ -43,17 +43,17 @@ async function backfillStarterHorseBreedId() {
   );
 
   const defaultBreed = await prisma.breed.findUnique({
-    where: { name: DEFAULT_TEMPERAMENT_BREED },
+    where: { name: defaultTemperamentBreed },
     select: { id: true },
   });
   if (!defaultBreed) {
     console.error(
-      `❌ Default breed "${DEFAULT_TEMPERAMENT_BREED}" not found. Seed breeds before backfilling. Aborting.`,
+      `❌ Default breed "${defaultTemperamentBreed}" not found. Seed breeds before backfilling. Aborting.`,
     );
     process.exitCode = 1;
     return;
   }
-  console.log(`Default breed "${DEFAULT_TEMPERAMENT_BREED}" → id ${defaultBreed.id}\n`);
+  console.log(`Default breed "${defaultTemperamentBreed}" → id ${defaultBreed.id}\n`);
 
   // Scope: only NULL-breedId rows. Pull lineage breedIds so we can inherit.
   const breedlessHorses = await prisma.horse.findMany({

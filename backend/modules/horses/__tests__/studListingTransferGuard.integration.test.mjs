@@ -33,9 +33,9 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-q4uem9-studxfer';
-const SALE_PRICE = 900;
-const STUD_FEE = 1234;
+const fixturePrefix = 'TestFixture-q4uem9-studxfer';
+const salePrice = 900;
+const studFee = 1234;
 
 function tag() {
   return randomBytes(6).toString('hex');
@@ -46,8 +46,8 @@ async function makeUser(role, money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${role}-${suffix}`,
-      email: `${FIXTURE_PREFIX}-${role}-${suffix}@example.com`,
+      username: `${fixturePrefix}-${role}-${suffix}`,
+      email: `${fixturePrefix}-${role}-${suffix}@example.com`,
       password: 'irrelevant-not-a-login-test',
       firstName: 'StudXfer',
       lastName: role,
@@ -64,16 +64,16 @@ async function makeStudStallionForSale(ownerId) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-stallion-${tag()}`,
+      name: `${fixturePrefix}-stallion-${tag()}`,
       sex: 'Stallion',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
       userId: ownerId,
       healthStatus: 'Excellent',
       forSale: true,
-      salePrice: SALE_PRICE,
+      salePrice,
       studStatus: 'At Public Stud',
-      studFee: STUD_FEE,
+      studFee,
     }),
   });
 }

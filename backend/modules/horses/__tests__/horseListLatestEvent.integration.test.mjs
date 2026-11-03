@@ -22,7 +22,7 @@ import app from '../../../app.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-list-latestEvent';
+const fixturePrefix = 'TestFixture-list-latestEvent';
 
 let owner;
 let token;
@@ -34,25 +34,25 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
 
   const a = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   owner = a.user;
   token = a.token;
 
   horseWithResults = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-WithResults-${tag}`,
+    name: `${fixturePrefix}-WithResults-${tag}`,
     userId: owner.id,
   });
   horseNoResults = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-NoResults-${tag}`,
+    name: `${fixturePrefix}-NoResults-${tag}`,
     userId: owner.id,
   });
 
   // Older result
   const olderShow = await prisma.show.create({
     data: {
-      name: `${FIXTURE_PREFIX}-OldShow-${tag}`,
+      name: `${fixturePrefix}-OldShow-${tag}`,
       discipline: 'Dressage',
       levelMin: 1,
       levelMax: 10,
@@ -64,7 +64,7 @@ beforeAll(async () => {
   // Newer result (this one must win)
   const newerShow = await prisma.show.create({
     data: {
-      name: `${FIXTURE_PREFIX}-NewShow-${tag}`,
+      name: `${fixturePrefix}-NewShow-${tag}`,
       discipline: 'Show Jumping',
       levelMin: 1,
       levelMax: 10,

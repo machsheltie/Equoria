@@ -35,7 +35,7 @@ import app from '../../../app.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-list-championship';
+const fixturePrefix = 'TestFixture-list-championship';
 
 let owner;
 let token;
@@ -48,22 +48,22 @@ beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
 
   const a = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   owner = a.user;
   token = a.token;
 
   championHorse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-Champion-${tag}`,
+    name: `${fixturePrefix}-Champion-${tag}`,
     userId: owner.id,
   });
   placedNoFirstHorse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-Placed-${tag}`,
+    name: `${fixturePrefix}-Placed-${tag}`,
     userId: owner.id,
   });
   noHistoryHorse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-NoHistory-${tag}`,
+    name: `${fixturePrefix}-NoHistory-${tag}`,
     userId: owner.id,
   });
 
@@ -75,7 +75,7 @@ beforeAll(async () => {
     [1, 2, 3, 4, 5].map(i =>
       prisma.show.create({
         data: {
-          name: `${FIXTURE_PREFIX}-Show${i}-${tag}`,
+          name: `${fixturePrefix}-Show${i}-${tag}`,
           discipline: 'Dressage',
           levelMin: 1,
           levelMax: 10,

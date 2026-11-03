@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  STANDARD_GAITS,
+  standardGaits,
   hasValidGaitScores,
   validateGaitScores,
   generateGaitScores,
@@ -17,16 +17,16 @@ import {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-describe('STANDARD_GAITS', () => {
+describe('standardGaits', () => {
   it('has exactly 4 gaits', () => {
-    expect(STANDARD_GAITS).toHaveLength(4);
+    expect(standardGaits).toHaveLength(4);
   });
 
   it('includes walk, trot, canter, gallop', () => {
-    expect(STANDARD_GAITS).toContain('walk');
-    expect(STANDARD_GAITS).toContain('trot');
-    expect(STANDARD_GAITS).toContain('canter');
-    expect(STANDARD_GAITS).toContain('gallop');
+    expect(standardGaits).toContain('walk');
+    expect(standardGaits).toContain('trot');
+    expect(standardGaits).toContain('canter');
+    expect(standardGaits).toContain('gallop');
   });
 });
 
@@ -127,7 +127,7 @@ describe('validateGaitScores', () => {
 
   it('replaces missing gaits with 50', () => {
     const result = validateGaitScores({});
-    for (const gait of STANDARD_GAITS) {
+    for (const gait of standardGaits) {
       expect(result[gait]).toBe(50);
     }
   });
@@ -286,7 +286,7 @@ describe('validateGaitScores', () => {
 describe('generateGaitScores', () => {
   it('returns all 4 standard gaits for a valid breed', () => {
     const result = generateGaitScores('Thoroughbred');
-    for (const gait of STANDARD_GAITS) {
+    for (const gait of standardGaits) {
       expect(typeof result[gait]).toBe('number');
       expect(result[gait]).toBeGreaterThanOrEqual(0);
       expect(result[gait]).toBeLessThanOrEqual(100);
@@ -300,7 +300,7 @@ describe('generateGaitScores', () => {
 
   it('all scores are integers', () => {
     const result = generateGaitScores('Arabian');
-    for (const gait of STANDARD_GAITS) {
+    for (const gait of standardGaits) {
       expect(Number.isInteger(result[gait])).toBe(true);
     }
   });
@@ -324,7 +324,7 @@ describe('generateInheritedGaitScores', () => {
 
   it('returns all 4 standard gaits', () => {
     const result = generateInheritedGaitScores('Thoroughbred', sireGaits, damGaits);
-    for (const gait of STANDARD_GAITS) {
+    for (const gait of standardGaits) {
       expect(typeof result[gait]).toBe('number');
     }
   });
@@ -341,7 +341,7 @@ describe('generateInheritedGaitScores', () => {
 
   it('all scores are integers in [0, 100]', () => {
     const result = generateInheritedGaitScores('Arabian', sireGaits, damGaits);
-    for (const gait of STANDARD_GAITS) {
+    for (const gait of standardGaits) {
       expect(Number.isInteger(result[gait])).toBe(true);
       expect(result[gait]).toBeGreaterThanOrEqual(0);
       expect(result[gait]).toBeLessThanOrEqual(100);

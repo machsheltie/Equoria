@@ -11,10 +11,10 @@ import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import logger from '../../../utils/logger.mjs';
 
 // The 4 standard gaits every horse has
-export const STANDARD_GAITS = ['walk', 'trot', 'canter', 'gallop'];
+export const standardGaits = ['walk', 'trot', 'canter', 'gallop'];
 
 // Default gait scores for unknown breeds (score 50 per gait, no gaiting)
-const DEFAULT_UNKNOWN_BREED_GAIT_SCORES = Object.freeze({
+const defaultUnknownBreedGaitScores = Object.freeze({
   walk: 50,
   trot: 50,
   canter: 50,
@@ -57,7 +57,7 @@ export function hasValidGaitScores(scores) {
   if (!scores || typeof scores !== 'object') {
     return false;
   }
-  return STANDARD_GAITS.some(gait => Number.isFinite(scores[gait]));
+  return standardGaits.some(gait => Number.isFinite(scores[gait]));
 }
 
 /**
@@ -69,11 +69,11 @@ export function hasValidGaitScores(scores) {
 export function validateGaitScores(scores) {
   if (!scores || typeof scores !== 'object') {
     logger.warn('[gaitService] validateGaitScores received invalid input, using defaults');
-    return { ...DEFAULT_UNKNOWN_BREED_GAIT_SCORES };
+    return { ...defaultUnknownBreedGaitScores };
   }
 
   const validated = {};
-  for (const gait of STANDARD_GAITS) {
+  for (const gait of standardGaits) {
     const val = scores[gait];
     validated[gait] = Number.isFinite(val) ? clampScore(val) : 50;
   }
@@ -108,7 +108,7 @@ export function generateGaitScores(breedName, { random = Math.random } = {}) {
   const scores = {};
 
   // Generate 4 standard gait scores
-  for (const gait of STANDARD_GAITS) {
+  for (const gait of standardGaits) {
     const gaitProfile = gaits[gait];
     if (!gaitProfile || !Number.isFinite(gaitProfile.mean)) {
       throw new Error(
@@ -161,7 +161,7 @@ export function generateInheritedGaitScores(breedName, sireGaitScores, damGaitSc
   const scores = {};
 
   // Generate 4 standard gait scores with inheritance
-  for (const gait of STANDARD_GAITS) {
+  for (const gait of standardGaits) {
     const gaitProfile = gaits[gait];
     if (!gaitProfile || !Number.isFinite(gaitProfile.mean)) {
       throw new Error(

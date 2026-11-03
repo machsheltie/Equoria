@@ -3,7 +3,7 @@
  *
  * WHY THIS SUITE EXISTS
  *   A foal is born `unnamed` and stays so until her player names her (owner
- *   ruling 2026-09-14, Equoria-4fnro; `UNNAMED_HORSE_NAME` in
+ *   ruling 2026-09-14, Equoria-4fnro; `unnamedHorseName` in
  *   services/horseNamePolicy.mjs). Before that ruling the foaling service
  *   DERIVED a name, `<Dam> Foal` — that is history, not current behaviour, and
  *   the cases below assert the birth name is now the shared constant. The owner
@@ -51,13 +51,13 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { renameHorseById } from '../services/renameHorseService.mjs';
-import { horseNameRejectionReason, unnamedNameIsAcceptable, UNNAMED_HORSE_NAME } from '../services/horseNamePolicy.mjs';
+import { horseNameRejectionReason, unnamedNameIsAcceptable, unnamedHorseName } from '../services/horseNamePolicy.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const FIXTURE_PREFIX = 'TestFixture-qkgfh1';
-const DAY_MS = 24 * 60 * 60 * 1000;
+const fixturePrefix = 'TestFixture-qkgfh1';
+const dayMs = 24 * 60 * 60 * 1000;
 
 const cleanup = createCleanupTracker();
 
@@ -87,8 +87,8 @@ async function makeUser(suffix) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
+      username: `${fixturePrefix}-${suffix}-${tag}`,
+      email: `${fixturePrefix}-${suffix}-${tag}@example.com`,
       password: 'irrelevant-hash',
       firstName: 'Rename',
       lastName: suffix,
@@ -168,21 +168,21 @@ beforeAll(async () => {
   });
 
   stable = await prisma.stable.create({
-    data: { name: `${FIXTURE_PREFIX}-Stable-${randomBytes(4).toString('hex')}` },
+    data: { name: `${fixturePrefix}-Stable-${randomBytes(4).toString('hex')}` },
   });
 
   owner = await makeUser('owner');
   intruder = await makeUser('intruder');
 
-  horseA = await makeHorse(owner, `${FIXTURE_PREFIX}-HorseA`, { stableId: stable.id });
-  horseB = await makeHorse(owner, `${FIXTURE_PREFIX}-HorseB`, { stableId: stable.id });
-  intruderHorse = await makeHorse(intruder, `${FIXTURE_PREFIX}-IntruderHorse`);
+  horseA = await makeHorse(owner, `${fixturePrefix}-HorseA`, { stableId: stable.id });
+  horseB = await makeHorse(owner, `${fixturePrefix}-HorseB`, { stableId: stable.id });
+  intruderHorse = await makeHorse(intruder, `${fixturePrefix}-IntruderHorse`);
 
   // Real pregnancy → real foaling, so the foal's name is derived by the actual
   // production code path rather than typed by the test.
-  sire = await makeHorse(owner, `${FIXTURE_PREFIX}-Sire`, { sex: 'Stallion' });
-  dam = await makeHorse(owner, `${FIXTURE_PREFIX}-Dam`, {
-    inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+  sire = await makeHorse(owner, `${fixturePrefix}-Sire`, { sex: 'Stallion' });
+  dam = await makeHorse(owner, `${fixturePrefix}-Dam`, {
+    inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
     pregnancySireId: sire.id,
     pregnancyFeedingsByTier: {},
   });
@@ -221,7 +221,7 @@ afterAll(async () => {
 
 describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
   it('renames the horse and persists the new name', async () => {
-    const newName = `${FIXTURE_PREFIX}-Renamed-${randomBytes(3).toString('hex')}`;
+    const newName = `${fixturePrefix}-Renamed-${randomBytes(3).toString('hex')}`;
 
     const res = await rename(horseA.id, { name: newName }, { token: ownerToken, csrf: ownerCsrf });
 
@@ -283,7 +283,7 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
     // OWNER RULING 2026-09-14 (Equoria-4fnro): a foal nobody named is born
     // 'unnamed' and stays so until the player names her. This asserted
     // `<Dam> Foal` before — a generated name that read like a choice.
-    expect(foal.name).toBe(UNNAMED_HORSE_NAME);
+    expect(foal.name).toBe(unnamedHorseName);
     expect(foal.name).toBe('unnamed');
 
     const chosenName = 'Fred';
@@ -301,17 +301,17 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
     // unnamed foal in the same stable is simply a second horse waiting for a
     // name — if a unique index or a name lookup ever appeared, this fails.
     expect(unnamedNameIsAcceptable()).toBe(true);
-    expect(horseNameRejectionReason(UNNAMED_HORSE_NAME)).toBeNull();
+    expect(horseNameRejectionReason(unnamedHorseName)).toBeNull();
 
     // Two dams of this case's own — the shared `dam` fixture's pregnancy is
     // consumed by whichever foaling case runs first.
     const inFoal = () => ({
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancySireId: sire.id,
       pregnancyFeedingsByTier: {},
     });
-    const firstDam = await makeHorse(owner, `${FIXTURE_PREFIX}-DamA`, inFoal());
-    const secondDam = await makeHorse(owner, `${FIXTURE_PREFIX}-DamB`, inFoal());
+    const firstDam = await makeHorse(owner, `${fixturePrefix}-DamA`, inFoal());
+    const secondDam = await makeHorse(owner, `${fixturePrefix}-DamB`, inFoal());
 
     const { foal: firstFoal } = await createFoalFromPregnancy({
       damId: firstDam.id,
@@ -327,20 +327,20 @@ describe('PATCH /api/v1/horses/:id/name — the owner can rename', () => {
     });
     createdHorseIds.push(secondFoal.id);
 
-    expect(firstFoal.name).toBe(UNNAMED_HORSE_NAME);
-    expect(secondFoal.name).toBe(UNNAMED_HORSE_NAME);
+    expect(firstFoal.name).toBe(unnamedHorseName);
+    expect(secondFoal.name).toBe(unnamedHorseName);
     expect(secondFoal.id).not.toBe(firstFoal.id);
 
     // And naming one leaves the other exactly as she was.
-    const res = await rename(firstFoal.id, { name: `${FIXTURE_PREFIX}-Named` }, { token: ownerToken, csrf: ownerCsrf });
+    const res = await rename(firstFoal.id, { name: `${fixturePrefix}-Named` }, { token: ownerToken, csrf: ownerCsrf });
     expect(res.status).toBe(200);
-    expect(await storedName(secondFoal.id)).toBe(UNNAMED_HORSE_NAME);
+    expect(await storedName(secondFoal.id)).toBe(unnamedHorseName);
   }, 120000);
 });
 
 describe('PATCH /api/v1/horses/:id/name — authorization collapses (CWE-639)', () => {
   it('refuses a non-owner and returns a response identical to a horse that does not exist', async () => {
-    const attempt = `${FIXTURE_PREFIX}-Stolen`;
+    const attempt = `${fixturePrefix}-Stolen`;
 
     const notMine = await rename(horseB.id, { name: attempt }, { token: intruderToken, csrf: intruderCsrf });
     const notReal = await rename(nonExistentHorseId, { name: attempt }, { token: intruderToken, csrf: intruderCsrf });
@@ -360,7 +360,7 @@ describe('PATCH /api/v1/horses/:id/name — authorization collapses (CWE-639)', 
     });
 
     // And the refusal was real — HorseB still carries its original name.
-    expect(await storedName(horseB.id)).toBe(`${FIXTURE_PREFIX}-HorseB`);
+    expect(await storedName(horseB.id)).toBe(`${fixturePrefix}-HorseB`);
   }, 60000);
 
   it('refuses an unauthenticated request', async () => {
@@ -368,10 +368,10 @@ describe('PATCH /api/v1/horses/:id/name — authorization collapses (CWE-639)', 
       .patch(`/api/v1/horses/${horseA.id}/name`)
       .set('Origin', ORIGIN)
       .set('Content-Type', 'application/json')
-      .send({ name: `${FIXTURE_PREFIX}-Anon` });
+      .send({ name: `${fixturePrefix}-Anon` });
 
     expect([401, 403]).toContain(res.status);
-    expect(await storedName(horseA.id)).not.toBe(`${FIXTURE_PREFIX}-Anon`);
+    expect(await storedName(horseA.id)).not.toBe(`${fixturePrefix}-Anon`);
   }, 60000);
 });
 
@@ -475,17 +475,17 @@ describe('PATCH /api/v1/horses/:id/name — validation is fail-closed', () => {
   // The stated policy is "rejected with a message naming the rule", so each case
   // pins the EXACT message. A refactor collapsing all three into one generic
   // string would now fail here instead of staying green.
-  const TYPE_MSG = 'Horse name must be a string';
-  const LENGTH_MSG = 'Horse name must be between 1 and 40 characters';
-  const CHAR_MSG = 'Horse name may not contain < or a null character';
+  const typeMsg = 'Horse name must be a string';
+  const lengthMsg = 'Horse name must be between 1 and 40 characters';
+  const charMsg = 'Horse name may not contain < or a null character';
 
   const rejected = [
-    ['a non-string name', { name: 42 }, TYPE_MSG],
-    ['a null name', { name: null }, TYPE_MSG],
-    ['a missing name', {}, TYPE_MSG],
-    ['an empty name', { name: '' }, LENGTH_MSG],
-    ['a whitespace-only name', { name: '   ' }, LENGTH_MSG],
-    ['a name longer than 40 characters', { name: 'L'.repeat(41) }, LENGTH_MSG],
+    ['a non-string name', { name: 42 }, typeMsg],
+    ['a null name', { name: null }, typeMsg],
+    ['a missing name', {}, typeMsg],
+    ['an empty name', { name: '' }, lengthMsg],
+    ['a whitespace-only name', { name: '   ' }, lengthMsg],
+    ['a name longer than 40 characters', { name: 'L'.repeat(41) }, lengthMsg],
     // Boundary hygiene, not a naming rule: '<' is refused so a name can never be
     // interpreted as markup by a surface that renders it unescaped. Ratified by the
     // owner 2026-09-14 (Equoria-du5qe); see horseNamePolicy.mjs for why, and do not
@@ -493,9 +493,9 @@ describe('PATCH /api/v1/horses/:id/name — validation is fail-closed', () => {
     [
       'a name containing an angle bracket (boundary hygiene against unescaped rendering surfaces)',
       { name: '<script>Fred' },
-      CHAR_MSG,
+      charMsg,
     ],
-    ['a name containing a NUL byte', { name: 'Fred\u0000Bell' }, CHAR_MSG],
+    ['a name containing a NUL byte', { name: 'Fred\u0000Bell' }, charMsg],
     ['an unexpected extra field', { name: 'Fred', userId: 'someone-else' }, 'Invalid rename payload: unexpected field'],
   ];
 
@@ -547,7 +547,7 @@ describe('one name rule governs every GATED horse-name path', () => {
   // policy uses, and under it by validator.js's code-point count. That gap is why
   // the policy measures raw `.length` (Equoria-zalyb moved the bound from 100 to
   // 40; the arithmetic it guards is unchanged).
-  const EMOJI_OVER_CAP = '\u{1F600}'.repeat(21);
+  const emojiOverCap = '\u{1F600}'.repeat(21);
 
   /** Breed with a supplied name. Validation runs before ownership/eligibility. */
   function breedWithName(name) {
@@ -584,7 +584,7 @@ describe('one name rule governs every GATED horse-name path', () => {
   }, 60000);
 
   it('POST /horses/foals refuses an emoji name over the raw 40-unit cap, as rename does', async () => {
-    const res = await breedWithName(EMOJI_OVER_CAP);
+    const res = await breedWithName(emojiOverCap);
 
     expect(res.status).toBe(400);
     const mare = await pregnancyStateOf(horseB.id);
@@ -593,7 +593,7 @@ describe('one name rule governs every GATED horse-name path', () => {
   }, 60000);
 
   it('rename refuses that same emoji name, so no gated path can mint an unrenameable horse', async () => {
-    const res = await rename(horseA.id, { name: EMOJI_OVER_CAP }, { token: ownerToken, csrf: ownerCsrf });
+    const res = await rename(horseA.id, { name: emojiOverCap }, { token: ownerToken, csrf: ownerCsrf });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('Horse name must be between 1 and 40 characters');

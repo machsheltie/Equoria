@@ -5,4 +5,4 @@
 // (breedGeneticProfiles.mjs), which used to hold a second copy, was deleted.
 import { horseTemperamentValues } from '../../../constants/schema.mjs';
 
-export const TEMPERAMENT_TYPES = horseTemperamentValues;
+export const temperamentTypes = horseTemperamentValues;

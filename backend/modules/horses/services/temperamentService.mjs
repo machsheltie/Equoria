@@ -21,7 +21,7 @@
 // modifier; outside the show matrix (competition rules) it matters only for
 // groom bond synergy (here) and trainer fit (trainers/services/trainerModifiers.mjs).
 
-import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
+import { temperamentTypes } from '../data/temperamentTypes.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -33,7 +33,7 @@ import logger from '../../../utils/logger.mjs';
  * (eager to please) bonds best with gentle and patient grooms.
  * @type {Object.<string, Object.<string, number>>}
  */
-export const TEMPERAMENT_GROOM_SYNERGY = Object.freeze({
+export const temperamentGroomSynergy = Object.freeze({
   Spirited: Object.freeze({ energetic: 0.2 }),
   Nervous: Object.freeze({ patient: 0.25, gentle: 0.25, strict: -0.15 }),
   Calm: Object.freeze({ _any: 0.1 }),
@@ -57,7 +57,7 @@ export const TEMPERAMENT_GROOM_SYNERGY = Object.freeze({
  * @returns {number} Decimal modifier (e.g., 0.25 = +25%) or 0 for no synergy
  */
 // Canonical groom personalities — used to validate inputs before synergy lookup.
-const CANONICAL_GROOM_PERSONALITIES = new Set(['gentle', 'energetic', 'patient', 'strict']);
+const canonicalGroomPersonalities = new Set(['gentle', 'energetic', 'patient', 'strict']);
 
 export function getTemperamentGroomSynergy(temperament, groomPersonality) {
   if (!temperament || typeof temperament !== 'string') {
@@ -67,7 +67,7 @@ export function getTemperamentGroomSynergy(temperament, groomPersonality) {
     return 0;
   }
 
-  const synergyMap = TEMPERAMENT_GROOM_SYNERGY[temperament.trim()];
+  const synergyMap = temperamentGroomSynergy[temperament.trim()];
   if (!synergyMap) {
     logger.warn(
       `[temperamentService] Unknown temperament "${temperament}" — returning zero groom synergy`,
@@ -79,7 +79,7 @@ export function getTemperamentGroomSynergy(temperament, groomPersonality) {
 
   // TEMP-5: warn when personality is not canonical so DB data errors surface in logs
   // (an unrecognised personality silently returns 0 for Calm/Steady _any synergy without this)
-  if (!CANONICAL_GROOM_PERSONALITIES.has(normalizedPersonality)) {
+  if (!canonicalGroomPersonalities.has(normalizedPersonality)) {
     logger.warn(
       `[temperamentService] Unrecognized groom personality "${groomPersonality}" — not in canonical set, returning zero synergy`,
     );
@@ -156,8 +156,8 @@ export function generateTemperament(breedName) {
 
   // TEMP-4: if weights contain a misspelled key, fall back to a valid type rather than
   // persisting an unknown string that would silently zero all modifiers on every request
-  if (!TEMPERAMENT_TYPES.includes(temperament)) {
-    const fallback = TEMPERAMENT_TYPES[Math.floor(Math.random() * TEMPERAMENT_TYPES.length)];
+  if (!temperamentTypes.includes(temperament)) {
+    const fallback = temperamentTypes[Math.floor(Math.random() * temperamentTypes.length)];
     logger.warn(
       `[temperamentService] Generated unknown temperament "${temperament}" for breed "${breedName}" — falling back to "${fallback}"`,
     );
@@ -176,7 +176,7 @@ export function generateTemperament(breedName) {
  * (e.g. the registration starter horse) or an unknown breed. Thoroughbred is
  * the canonical default elsewhere in the codebase (generateTemperament(1)).
  */
-export const DEFAULT_TEMPERAMENT_BREED = 'Thoroughbred';
+export const defaultTemperamentBreed = 'Thoroughbred';
 
 /**
  * Generate a temperament, falling back to a default breed's weights when the
@@ -195,9 +195,9 @@ export function generateTemperamentWithDefault(breedName) {
       return generateTemperament(breedName);
     } catch (err) {
       logger.warn(
-        `[temperamentService] No usable profile for breed "${breedName}" — falling back to default breed "${DEFAULT_TEMPERAMENT_BREED}": ${err.message}`,
+        `[temperamentService] No usable profile for breed "${breedName}" — falling back to default breed "${defaultTemperamentBreed}": ${err.message}`,
       );
     }
   }
-  return generateTemperament(DEFAULT_TEMPERAMENT_BREED);
+  return generateTemperament(defaultTemperamentBreed);
 }

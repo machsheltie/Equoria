@@ -18,9 +18,9 @@ const { isFoalByBirthDate, computeAgeInWeeks } = foalAgeUtils;
 // Fixed reference "now" — injected, never Date.now() (Equoria-oey96.16 trap).
 // Chosen at 12:00Z so a whole-day dob subtraction lands on exact UTC-day diffs.
 const NOW = new Date('2026-06-15T12:00:00.000Z');
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 // dob for a horse that is exactly `days` real days old at NOW (date-only UTC).
-const daysAgo = days => new Date(NOW.getTime() - days * DAY_MS);
+const daysAgo = days => new Date(NOW.getTime() - days * dayMs);
 
 // ---------------------------------------------------------------------------
 // Named life stages (removed)

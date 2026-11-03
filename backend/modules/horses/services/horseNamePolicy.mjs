@@ -67,7 +67,7 @@
  * module's rule rather than reintroduce its own.
  */
 
-export const HORSE_NAME_MIN_LENGTH = 1;
+export const horseNameMinLength = 1;
 export const horseNameMaxLength = 40;
 
 /**
@@ -93,7 +93,7 @@ export const horseNameMaxLength = 40;
  * that looked like a choice somebody made, so a player could easily not notice
  * that no one had named her foal. 'unnamed' cannot be mistaken for a decision.
  */
-export const UNNAMED_HORSE_NAME = 'unnamed';
+export const unnamedHorseName = 'unnamed';
 
 /**
  * Why a candidate horse name is unacceptable, or null when it is acceptable.
@@ -115,7 +115,7 @@ export function horseNameRejectionReason(name) {
   if (name.length > horseNameMaxLength) {
     return 'length';
   }
-  if (name.trim().length < HORSE_NAME_MIN_LENGTH) {
+  if (name.trim().length < horseNameMinLength) {
     return 'length';
   }
   // ── THE CHARACTER RULE IS A DELIBERATE BOUNDARY DECISION ──────────────────
@@ -168,7 +168,7 @@ export function horseNameRejectionMessage(reason) {
     case 'type':
       return 'Horse name must be a string';
     case 'length':
-      return `Horse name must be between ${HORSE_NAME_MIN_LENGTH} and ${horseNameMaxLength} characters`;
+      return `Horse name must be between ${horseNameMinLength} and ${horseNameMaxLength} characters`;
     case 'characters':
       return 'Horse name may not contain < or a null character';
     default:
@@ -223,7 +223,7 @@ export function firstHorseNameRejectionMessage(reason, name) {
 /**
  * Is the birth name the game mints acceptable under the rule the game enforces?
  *
- * A one-line invariant rather than a comment claiming it: `UNNAMED_HORSE_NAME`
+ * A one-line invariant rather than a comment claiming it: `unnamedHorseName`
  * is written by `foalingService` at every birth, and the day it stops
  * satisfying the policy is the day the game mints horses it would refuse to
  * accept. The rename suite asserts this.
@@ -231,5 +231,5 @@ export function firstHorseNameRejectionMessage(reason, name) {
  * @returns {boolean}
  */
 export function unnamedNameIsAcceptable() {
-  return horseNameRejectionReason(UNNAMED_HORSE_NAME) === null;
+  return horseNameRejectionReason(unnamedHorseName) === null;
 }

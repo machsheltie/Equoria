@@ -56,7 +56,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FOALING_SERVICE_SRC = readFileSync(
+const foalingServiceSrc = readFileSync(
   resolve(dirname(fileURLToPath(import.meta.url)), '../services/foalingService.mjs'),
   'utf8',
 );
@@ -249,12 +249,12 @@ describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k,
   //    2026-09-30.
   describe('source sentinel — direct branch uses a guarded atomic claim (Equoria-wgw5k)', () => {
     it('contains an updateMany claim guarded by inFoalSinceDate: { not: null }', () => {
-      expect(FOALING_SERVICE_SRC).toMatch(/(?:prisma|tx)\.horse\.updateMany\(/);
-      expect(FOALING_SERVICE_SRC).toMatch(/inFoalSinceDate:[^\n]*\{\s*not:\s*null\s*\}/);
+      expect(foalingServiceSrc).toMatch(/(?:prisma|tx)\.horse\.updateMany\(/);
+      expect(foalingServiceSrc).toMatch(/inFoalSinceDate:[^\n]*\{\s*not:\s*null\s*\}/);
     });
 
     it('rejects the concurrent loser on claim.count === 0', () => {
-      expect(FOALING_SERVICE_SRC).toMatch(/claim\.count\s*===\s*0/);
+      expect(foalingServiceSrc).toMatch(/claim\.count\s*===\s*0/);
     });
   });
 });

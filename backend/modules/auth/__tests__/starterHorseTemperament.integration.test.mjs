@@ -20,7 +20,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { TEMPERAMENT_TYPES } from '../../horses/index.mjs';
+import { temperamentTypes } from '../../horses/index.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -84,6 +84,6 @@ describe('INTEGRATION: starter horse temperament (Equoria-f5372)', () => {
     createdHorseIds.push(horse.id);
 
     expect(horse.temperament).toBeTruthy();
-    expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
+    expect(temperamentTypes).toContain(horse.temperament);
   }, 60000);
 });

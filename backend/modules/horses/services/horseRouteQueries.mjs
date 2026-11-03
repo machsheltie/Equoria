@@ -28,7 +28,7 @@ import { findKeysetPage } from '../../../utils/paginationHelper.mjs';
  * but INCLUDES phenotype (~500 bytes/row) because HorseCard.tsx reads
  * `phenotype.colorName` to render the coat-color chip.
  */
-export const HORSE_LIST_SELECT = Object.freeze({
+export const horseListSelect = Object.freeze({
   id: true,
   name: true,
   age: true,
@@ -101,7 +101,7 @@ export function listHorses(where, { limit, skip, cursor }) {
     limit,
     skip,
     cursor,
-    extra: { select: HORSE_LIST_SELECT },
+    extra: { select: horseListSelect },
   });
 }
 

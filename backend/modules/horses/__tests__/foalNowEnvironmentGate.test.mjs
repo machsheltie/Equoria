@@ -31,8 +31,8 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
-const FIVE_YEARS_AGO = gameCalendarDate(new Date(), -5 * 365);
+const originalNodeEnv = process.env.NODE_ENV;
+const fiveYearsAgo = gameCalendarDate(new Date(), -5 * 365);
 
 describe('POST /horses/:id/foal-now — the gestation bypass is gone (Equoria-6nl3j, real DB)', () => {
   let csrf;
@@ -79,7 +79,7 @@ describe('POST /horses/:id/foal-now — the gestation bypass is gone (Equoria-6n
         ...fixtureColor(),
         name: `TestFixture-Bhf6nSire_${ts}`,
         sex: 'Stallion',
-        dateOfBirth: FIVE_YEARS_AGO,
+        dateOfBirth: fiveYearsAgo,
         age: 5,
         breedId: breed.id,
         userId: user.id,
@@ -91,7 +91,7 @@ describe('POST /horses/:id/foal-now — the gestation bypass is gone (Equoria-6n
         ...fixtureColor(),
         name: `TestFixture-Bhf6nDam_${ts}`,
         sex: 'Mare',
-        dateOfBirth: FIVE_YEARS_AGO,
+        dateOfBirth: fiveYearsAgo,
         age: 5,
         breedId: breed.id,
         userId: user.id,
@@ -105,7 +105,7 @@ describe('POST /horses/:id/foal-now — the gestation bypass is gone (Equoria-6n
   });
 
   afterEach(async () => {
-    process.env.NODE_ENV = ORIGINAL_NODE_ENV;
+    process.env.NODE_ENV = originalNodeEnv;
     if (!user) {
       return;
     }
@@ -117,7 +117,7 @@ describe('POST /horses/:id/foal-now — the gestation bypass is gone (Equoria-6n
   });
 
   afterAll(() => {
-    process.env.NODE_ENV = ORIGINAL_NODE_ENV;
+    process.env.NODE_ENV = originalNodeEnv;
   });
 
   // The old route answered differently per NODE_ENV (403 outside the harness

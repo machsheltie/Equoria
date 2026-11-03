@@ -42,7 +42,7 @@ const { computeTrainerModifiers, TRAINER_BONUS_CAP, TRAINER_PENALTY_CAP, TRAINER
 // Cross-module barrel import (allowed in tests) — the horses module OWNS the
 // canonical temperament list; the trainer service duplicates it locally to stay
 // a leaf, and this sentinel proves the two never drift.
-const { TEMPERAMENT_TYPES } = await import(join(__dirname, '../../horses/index.mjs'));
+const { temperamentTypes: TEMPERAMENT_TYPES } = await import(join(__dirname, '../../horses/index.mjs'));
 
 const SUFFIX = randomBytes(6).toString('hex');
 

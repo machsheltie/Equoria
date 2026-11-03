@@ -25,7 +25,7 @@ import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 // TEMPERAMENT_TYPES is part of the horses barrel's documented public API.
-const { TEMPERAMENT_TYPES } = horsesModule;
+const { temperamentTypes: TEMPERAMENT_TYPES } = horsesModule;
 
 const SUITE_PREFIX = 'tmod';
 

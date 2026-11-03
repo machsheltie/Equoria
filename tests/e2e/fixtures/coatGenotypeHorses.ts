@@ -88,7 +88,7 @@ function genotypesForScenario(
       //
       // CRITICAL (Equoria-wrm5): locus key MUST match `O_FrameOvero` from
       // backend/modules/horses/services/genotypeGenerationService.mjs CORE_LOCI
-      // AND `LETHAL_COMBINATIONS.O_FrameOvero = Set(['O/O'])` from
+      // AND `lethalCombinations.O_FrameOvero = Set(['O/O'])` from
       // breedingColorInheritanceService.mjs. Using any other key (e.g. the
       // legacy 'W20_Pattern' placeholder) silently passes through
       // filterLethalGenotypes() because no lethal set is registered for that

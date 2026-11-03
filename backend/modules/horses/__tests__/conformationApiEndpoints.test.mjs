@@ -15,12 +15,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // beforeEach. The real logger fires at LOG_LEVEL=error per setup.mjs.
 
 import { getConformation } from '../controllers/horseController.mjs';
-import { CONFORMATION_REGIONS } from '../services/conformationService.mjs';
+import { conformationRegions } from '../services/conformationService.mjs';
 
 // ── Test data setup ────────────────────────────────────────────────────────
 let testBreed;
 
-const BASE_SCORES = {
+const baseScores = {
   head: 82,
   neck: 75,
   shoulders: 70,
@@ -38,7 +38,7 @@ function makeMockReqRes(horseOverrides = {}) {
     id: 0,
     name: 'Midnight Star',
     breedId: testBreed?.id ?? 1,
-    conformationScores: { ...BASE_SCORES },
+    conformationScores: { ...baseScores },
     ...horseOverrides,
   };
   const req = { horse, params: { id: String(horse.id) } };
@@ -83,7 +83,7 @@ describe('getConformation', () => {
     expect(response.data.breedId).toBe(testBreed.id);
 
     const scores = response.data.conformationScores;
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(scores).toHaveProperty(region);
       expect(typeof scores[region]).toBe('number');
     }

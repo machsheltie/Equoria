@@ -10,7 +10,7 @@
  *   - clampStatsToTotalCap: total ≤ cap, no stat < 1, all keys preserved,
  *     iterative trim converges
  *   - generateStoreStats: throws 500 on bad input, returns valid 12-stat
- *     object with sum ≤ TOTAL_STAT_CAP for every breed in the JSON
+ *     object with sum ≤ totalStatCap for every breed in the JSON
  *   - Data contract: every breed in breedStarterStats.json has a complete
  *     profile (this catches future data drift that would 500 in production)
  *
@@ -25,8 +25,8 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 
 import {
-  STAT_KEYS,
-  TOTAL_STAT_CAP,
+  statKeys,
+  totalStatCap,
   sampleStat,
   clampStatsToTotalCap,
   generateStoreStats,
@@ -51,14 +51,14 @@ const breedNames = Object.keys(breedData);
 const knownBreed = [...breedNames].sort()[0];
 
 describe('horseStarterStats — exported constants', () => {
-  it('TOTAL_STAT_CAP is 200 (game rule)', () => {
-    expect(TOTAL_STAT_CAP).toBe(200);
+  it('totalStatCap is 200 (game rule)', () => {
+    expect(totalStatCap).toBe(200);
   });
 
-  it('STAT_KEYS contains exactly the canonical 12 stats', () => {
+  it('statKeys contains exactly the canonical 12 stats', () => {
     // Order matters — Prisma schema column order. Any consumer that hard-codes
     // a different order is a bug per the service's contract comment.
-    expect(STAT_KEYS).toEqual([
+    expect(statKeys).toEqual([
       'speed',
       'stamina',
       'agility',
@@ -74,8 +74,8 @@ describe('horseStarterStats — exported constants', () => {
     ]);
   });
 
-  it('STAT_KEYS has length 12 (sentinel against silent shrink)', () => {
-    expect(STAT_KEYS).toHaveLength(12);
+  it('statKeys has length 12 (sentinel against silent shrink)', () => {
+    expect(statKeys).toHaveLength(12);
   });
 });
 
@@ -180,7 +180,7 @@ describe('horseStarterStats — sampleStat (Box-Muller + clamp)', () => {
 });
 
 describe('horseStarterStats — clampStatsToTotalCap', () => {
-  const buildStats = values => Object.fromEntries(STAT_KEYS.map((k, i) => [k, values[i] ?? 0]));
+  const buildStats = values => Object.fromEntries(statKeys.map((k, i) => [k, values[i] ?? 0]));
 
   it('returns input unchanged (cloned) when total is already ≤ cap', () => {
     // Sum = 12 (one per stat), cap = 200 — well under.
@@ -212,7 +212,7 @@ describe('horseStarterStats — clampStatsToTotalCap', () => {
   it('preserves all stat keys (no drops)', () => {
     const input = buildStats(Array(12).fill(50));
     const out = clampStatsToTotalCap(input, 200);
-    expect(Object.keys(out).sort()).toEqual([...STAT_KEYS].sort());
+    expect(Object.keys(out).sort()).toEqual([...statKeys].sort());
   });
 
   it('converges (iterative trim terminates) for a heavy clamp scenario', () => {
@@ -226,12 +226,12 @@ describe('horseStarterStats — clampStatsToTotalCap', () => {
     expect(total).toBeGreaterThan(0); // sanity
   });
 
-  it('handles cap === STAT_KEYS.length (the documented worst case)', () => {
+  it('handles cap === statKeys.length (the documented worst case)', () => {
     // Every stat must be exactly 1; total === 12.
     const input = buildStats(Array(12).fill(50));
-    const out = clampStatsToTotalCap(input, STAT_KEYS.length);
+    const out = clampStatsToTotalCap(input, statKeys.length);
     expect(Object.values(out).every(v => v === 1)).toBe(true);
-    expect(Object.values(out).reduce((s, v) => s + v, 0)).toBe(STAT_KEYS.length);
+    expect(Object.values(out).reduce((s, v) => s + v, 0)).toBe(statKeys.length);
   });
 
   it('handles cap exactly equal to total (no scaling needed)', () => {
@@ -284,9 +284,9 @@ describe('horseStarterStats — generateStoreStats input validation', () => {
 });
 
 describe('horseStarterStats — generateStoreStats output for a known breed', () => {
-  it('returns an object with exactly the 12 STAT_KEYS', () => {
+  it('returns an object with exactly the 12 statKeys', () => {
     const stats = generateStoreStats(knownBreed);
-    expect(Object.keys(stats).sort()).toEqual([...STAT_KEYS].sort());
+    expect(Object.keys(stats).sort()).toEqual([...statKeys].sort());
   });
 
   it('every stat is an integer in [1, 20]', () => {
@@ -298,11 +298,11 @@ describe('horseStarterStats — generateStoreStats output for a known breed', ()
       expect(value).toBeGreaterThanOrEqual(1);
       expect(value).toBeLessThanOrEqual(20);
       // Defensive: catch a future regression where a key sneaks in unmapped.
-      expect(STAT_KEYS).toContain(key);
+      expect(statKeys).toContain(key);
     }
   });
 
-  it('total stats = TOTAL_STAT_CAP across 1000 generations (enforced at generation time)', () => {
+  it('total stats = totalStatCap across 1000 generations (enforced at generation time)', () => {
     // Old contract: each stat in [1, 100], total ≤ 200. Owner ruling 2026-10-16
     // (Equoria-7wqbs): store horses get each stat 1–20, totaling exactly 200.
     let maxTotal = 0;
@@ -318,7 +318,7 @@ describe('horseStarterStats — generateStoreStats output for a known breed', ()
           minStat = v;
         }
       }
-      expect(total).toBe(TOTAL_STAT_CAP);
+      expect(total).toBe(totalStatCap);
     }
     // Sanity: at least one iteration should have hit the cap reasonably close
     // (otherwise the JSON means + std are too low to ever reach the cap and
@@ -343,7 +343,7 @@ describe('horseStarterStats — data contract (every breed in the JSON)', () => 
     const incompleteBreeds = [];
     for (const breedName of breedNames) {
       const profile = breedData[breedName];
-      const missing = STAT_KEYS.filter(k => {
+      const missing = statKeys.filter(k => {
         const s = profile[k];
         return !s || typeof s.mean !== 'number';
       });
@@ -372,8 +372,8 @@ describe('horseStarterStats — data contract (every breed in the JSON)', () => 
         const total = Object.values(stats).reduce((s, v) => s + v, 0);
         // Old contract: each stat in [1, 100], total ≤ 200. Owner ruling 2026-10-16
         // (Equoria-7wqbs): store horses get each stat 1–20, totaling exactly 200.
-        if (total !== TOTAL_STAT_CAP) {
-          failures.push(`${breedName}: total ${total} !== ${TOTAL_STAT_CAP}`);
+        if (total !== totalStatCap) {
+          failures.push(`${breedName}: total ${total} !== ${totalStatCap}`);
         }
         for (const [k, v] of Object.entries(stats)) {
           if (!Number.isInteger(v) || v < 1 || v > 20) {
@@ -451,12 +451,12 @@ describe('horseStarterStats — store horse ruling (each stat 1–20, total exac
     // Pick a breed whose profile has a spread of means, and compare its
     // highest-mean stat against its lowest-mean stat over many seeds.
     const breedName = breedNames.find(name => {
-      const means = STAT_KEYS.map(k => breedData[name][k].mean);
+      const means = statKeys.map(k => breedData[name][k].mean);
       return Math.max(...means) - Math.min(...means) >= 4;
     });
     expect(breedName).toBeDefined();
     const profile = breedData[breedName];
-    const byMean = [...STAT_KEYS].sort((x, y) => profile[x].mean - profile[y].mean);
+    const byMean = [...statKeys].sort((x, y) => profile[x].mean - profile[y].mean);
     const low = byMean[0];
     const high = byMean[byMean.length - 1];
     let lowSum = 0;

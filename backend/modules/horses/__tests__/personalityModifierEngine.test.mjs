@@ -13,10 +13,10 @@ import {
 } from '../../../utils/personalityModifierEngine.mjs';
 
 // Valid types from groomPersonalityTraitBonus — Calm groom is ideal for Nervous/Spirited foals
-const MATCH_GROOM = 'Calm';
-const MATCH_FOAL = 'Nervous';
-const MISMATCH_GROOM = 'Assertive';
-const MISMATCH_FOAL = 'Nervous';
+const matchGroom = 'Calm';
+const matchFoal = 'Nervous';
+const mismatchGroom = 'Assertive';
+const mismatchFoal = 'Nervous';
 
 // ---------------------------------------------------------------------------
 // applyPersonalityEffectsToMilestone
@@ -25,7 +25,7 @@ describe('applyPersonalityEffectsToMilestone', () => {
   it('returns original values when groomPersonality is missing', () => {
     const result = applyPersonalityEffectsToMilestone({
       groomPersonality: null,
-      foalTemperament: MATCH_FOAL,
+      foalTemperament: matchFoal,
       baseMilestoneScore: 5,
       baseBondingRate: 2,
     });
@@ -36,7 +36,7 @@ describe('applyPersonalityEffectsToMilestone', () => {
 
   it('returns original values when foalTemperament is missing', () => {
     const result = applyPersonalityEffectsToMilestone({
-      groomPersonality: MATCH_GROOM,
+      groomPersonality: matchGroom,
       foalTemperament: null,
       baseMilestoneScore: 5,
     });
@@ -45,8 +45,8 @@ describe('applyPersonalityEffectsToMilestone', () => {
 
   it('applies personality effects and sets personalityEffectApplied=true', () => {
     const result = applyPersonalityEffectsToMilestone({
-      groomPersonality: MATCH_GROOM,
-      foalTemperament: MATCH_FOAL,
+      groomPersonality: matchGroom,
+      foalTemperament: matchFoal,
       bondScore: 50,
       baseMilestoneScore: 3,
       baseBondingRate: 1,
@@ -58,8 +58,8 @@ describe('applyPersonalityEffectsToMilestone', () => {
 
   it('returns result with effects shape including isMatch/isStrongMatch', () => {
     const result = applyPersonalityEffectsToMilestone({
-      groomPersonality: MATCH_GROOM,
-      foalTemperament: MATCH_FOAL,
+      groomPersonality: matchGroom,
+      foalTemperament: matchFoal,
       bondScore: 50,
       baseMilestoneScore: 5,
       baseBondingRate: 2,
@@ -73,7 +73,7 @@ describe('applyPersonalityEffectsToMilestone', () => {
   it('passes base scores through when params is default (no-op return on null personality)', () => {
     const result = applyPersonalityEffectsToMilestone({
       groomPersonality: '',
-      foalTemperament: MATCH_FOAL,
+      foalTemperament: matchFoal,
       baseMilestoneScore: 7,
       baseBondingRate: 1,
     });
@@ -88,8 +88,8 @@ describe('applyPersonalityEffectsToMilestone', () => {
 describe('calculateTraitDevelopmentBonus', () => {
   it('returns a traitModifier of +1 or +2 for a matching pair', () => {
     const result = calculateTraitDevelopmentBonus({
-      groomPersonality: MATCH_GROOM,
-      foalTemperament: MATCH_FOAL,
+      groomPersonality: matchGroom,
+      foalTemperament: matchFoal,
       bondScore: 50,
       baseMilestoneScore: 0,
     });
@@ -99,8 +99,8 @@ describe('calculateTraitDevelopmentBonus', () => {
 
   it('returns a traitModifier of -1 for a mismatch', () => {
     const result = calculateTraitDevelopmentBonus({
-      groomPersonality: MISMATCH_GROOM,
-      foalTemperament: MISMATCH_FOAL,
+      groomPersonality: mismatchGroom,
+      foalTemperament: mismatchFoal,
       bondScore: 0,
       baseMilestoneScore: 0,
     });
@@ -109,8 +109,8 @@ describe('calculateTraitDevelopmentBonus', () => {
 
   it('assigns positive trait when finalScore >= 3', () => {
     const result = calculateTraitDevelopmentBonus({
-      groomPersonality: MATCH_GROOM,
-      foalTemperament: MATCH_FOAL,
+      groomPersonality: matchGroom,
+      foalTemperament: matchFoal,
       bondScore: 100,
       baseMilestoneScore: 5,
     });
@@ -120,8 +120,8 @@ describe('calculateTraitDevelopmentBonus', () => {
 
   it('assigns negative trait when finalScore <= -3', () => {
     const result = calculateTraitDevelopmentBonus({
-      groomPersonality: MISMATCH_GROOM,
-      foalTemperament: MISMATCH_FOAL,
+      groomPersonality: mismatchGroom,
+      foalTemperament: mismatchFoal,
       bondScore: 0,
       baseMilestoneScore: -10,
     });
@@ -131,8 +131,8 @@ describe('calculateTraitDevelopmentBonus', () => {
 
   it('assigns randomized when score is between -2 and 2', () => {
     const result = calculateTraitDevelopmentBonus({
-      groomPersonality: MISMATCH_GROOM,
-      foalTemperament: MISMATCH_FOAL,
+      groomPersonality: mismatchGroom,
+      foalTemperament: mismatchFoal,
       bondScore: 0,
       baseMilestoneScore: 0, // 0 + (-1) = -1, in [-2, 2]
     });
@@ -141,8 +141,8 @@ describe('calculateTraitDevelopmentBonus', () => {
 
   it('includes personalityCompatibility in result', () => {
     const result = calculateTraitDevelopmentBonus({
-      groomPersonality: MATCH_GROOM,
-      foalTemperament: MATCH_FOAL,
+      groomPersonality: matchGroom,
+      foalTemperament: matchFoal,
       bondScore: 50,
       baseMilestoneScore: 0,
     });
@@ -167,7 +167,7 @@ describe('calculateTraitDevelopmentBonus', () => {
 // ---------------------------------------------------------------------------
 describe('getPersonalityEffectPreview', () => {
   it('returns expected shape', () => {
-    const preview = getPersonalityEffectPreview(MATCH_GROOM, MATCH_FOAL, 50);
+    const preview = getPersonalityEffectPreview(matchGroom, matchFoal, 50);
     expect(preview).toHaveProperty('isCompatible');
     expect(preview).toHaveProperty('compatibilityLevel');
     expect(preview).toHaveProperty('traitBonus');
@@ -177,17 +177,17 @@ describe('getPersonalityEffectPreview', () => {
   });
 
   it('isCompatible is true for matching pair', () => {
-    const preview = getPersonalityEffectPreview(MATCH_GROOM, MATCH_FOAL, 50);
+    const preview = getPersonalityEffectPreview(matchGroom, matchFoal, 50);
     expect(preview.isCompatible).toBe(true);
   });
 
   it('compatibilityLevel is strong for very good match with high bond', () => {
-    const preview = getPersonalityEffectPreview(MATCH_GROOM, MATCH_FOAL, 100);
+    const preview = getPersonalityEffectPreview(matchGroom, matchFoal, 100);
     expect(['strong', 'good']).toContain(preview.compatibilityLevel);
   });
 
   it('compatibilityLevel is poor for mismatch', () => {
-    const preview = getPersonalityEffectPreview(MISMATCH_GROOM, MISMATCH_FOAL, 0);
+    const preview = getPersonalityEffectPreview(mismatchGroom, mismatchFoal, 0);
     expect(preview.compatibilityLevel).toBe('poor');
   });
 

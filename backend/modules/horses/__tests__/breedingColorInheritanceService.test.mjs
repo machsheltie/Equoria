@@ -24,11 +24,11 @@ import {
   inheritColorGenotype,
   assembleAllelePair,
   drawAllele,
-  LETHAL_COMBINATIONS,
+  lethalCombinations,
   buildDisallowedMap,
   isDisallowedCombination,
 } from '../services/breedingColorInheritanceService.mjs';
-import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
+import { coreLoci } from '../services/genotypeGenerationService.mjs';
 import { createHorseFromRequest } from '../services/createHorseService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -166,11 +166,11 @@ describe('isLethalCombination', () => {
     expect(isLethalCombination('Unknown_Locus', 'X/X')).toBe(false);
   });
 
-  it('LETHAL_COMBINATIONS is exported and contains expected loci', () => {
-    expect(LETHAL_COMBINATIONS).toHaveProperty('O_FrameOvero');
-    expect(LETHAL_COMBINATIONS).toHaveProperty('W_DominantWhite');
-    expect(LETHAL_COMBINATIONS).toHaveProperty('SW_SplashWhite');
-    expect(LETHAL_COMBINATIONS).toHaveProperty('EDXW');
+  it('lethalCombinations is exported and contains expected loci', () => {
+    expect(lethalCombinations).toHaveProperty('O_FrameOvero');
+    expect(lethalCombinations).toHaveProperty('W_DominantWhite');
+    expect(lethalCombinations).toHaveProperty('SW_SplashWhite');
+    expect(lethalCombinations).toHaveProperty('EDXW');
   });
 
   it('detects lethal pair in reversed ordering (B/A as well as A/B)', () => {
@@ -278,11 +278,11 @@ describe('inheritLocus — lethal reroll', () => {
 // ---------------------------------------------------------------------------
 
 describe('inheritColorGenotype — structure', () => {
-  it('returns an object containing all CORE_LOCI', () => {
+  it('returns an object containing all coreLoci', () => {
     const sire = buildGenotype();
     const dam = buildGenotype();
     const result = inheritColorGenotype(sire, dam);
-    for (const locus of CORE_LOCI) {
+    for (const locus of coreLoci) {
       expect(result).toHaveProperty(locus);
       expect(typeof result[locus]).toBe('string');
     }

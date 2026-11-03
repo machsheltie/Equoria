@@ -47,12 +47,12 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const msPerDay = 1000 * 60 * 60 * 24;
 
 // A dateOfBirth N whole days ago, anchored off-midnight UTC so the date-only
 // game-year age math (Equoria-vdw5 / oey96.16) is exercised honestly.
 function dobDaysAgo(days) {
-  const d = new Date(Date.now() - days * MS_PER_DAY);
+  const d = new Date(Date.now() - days * msPerDay);
   d.setUTCHours(4, 0, 0, 0);
   return d;
 }
@@ -60,7 +60,7 @@ function dobDaysAgo(days) {
 const cleanup = createCleanupTracker();
 const TAG = `oey9617-${randomBytes(4).toString('hex')}`;
 // A real, server-shaped ISO timestamp seeded into the milestone store.
-const SEEDED_MILESTONE_TS = '2026-01-01T00:00:00.000Z';
+const seededMilestoneTs = '2026-01-01T00:00:00.000Z';
 
 let user;
 let token;
@@ -108,7 +108,7 @@ beforeAll(async () => {
       currentDay: 2,
       bondingLevel: 45,
       completedActivities: { 0: ['gentleTouch'] },
-      completedMilestones: { bond25: SEEDED_MILESTONE_TS },
+      completedMilestones: { bond25: seededMilestoneTs },
     },
   });
 }, 30000);
@@ -159,7 +159,7 @@ describe('GET /api/v1/foals/:foalId/development — BB.1/BB.2/BB.3 additive (Equ
     expect(Array.isArray(data.completedMilestones)).toBe(true);
     expect(data.completedMilestones).toContainEqual({
       id: 'bond25',
-      timestamp: SEEDED_MILESTONE_TS,
+      timestamp: seededMilestoneTs,
     });
   });
 

@@ -5,8 +5,8 @@
  * No database required — all functions are deterministic/statistical algorithms.
  *
  * Covered exports:
- *   - STAT_KEYS (constant)
- *   - TOTAL_STAT_CAP (constant)
+ *   - statKeys (constant)
+ *   - totalStatCap (constant)
  *   - sampleStat({ mean, stdDev })
  *   - clampStatsToTotalCap(stats, cap)
  *   - generateStoreStats(breedName)
@@ -15,18 +15,18 @@
 import { describe, it, expect } from '@jest/globals';
 import { generateStoreStats } from '../modules/horses/index.mjs';
 import {
-  STAT_KEYS,
-  TOTAL_STAT_CAP,
+  statKeys,
+  totalStatCap,
   sampleStat,
   clampStatsToTotalCap,
 } from '../modules/horses/services/horseStarterStats.mjs';
 
-// ─── STAT_KEYS ─────────────────────────────────────────────────────────────────
+// ─── statKeys ─────────────────────────────────────────────────────────────────
 
-describe('STAT_KEYS', () => {
+describe('statKeys', () => {
   it('exports an array of 12 stat names', () => {
-    expect(Array.isArray(STAT_KEYS)).toBe(true);
-    expect(STAT_KEYS).toHaveLength(12);
+    expect(Array.isArray(statKeys)).toBe(true);
+    expect(statKeys).toHaveLength(12);
   });
 
   it('contains expected stat names', () => {
@@ -44,24 +44,24 @@ describe('STAT_KEYS', () => {
       'strength',
       'endurance',
     ];
-    expected.forEach(stat => expect(STAT_KEYS).toContain(stat));
+    expected.forEach(stat => expect(statKeys).toContain(stat));
   });
 
   it('contains no duplicates', () => {
-    expect(new Set(STAT_KEYS).size).toBe(STAT_KEYS.length);
+    expect(new Set(statKeys).size).toBe(statKeys.length);
   });
 });
 
-// ─── TOTAL_STAT_CAP ────────────────────────────────────────────────────────────
+// ─── totalStatCap ────────────────────────────────────────────────────────────
 
-describe('TOTAL_STAT_CAP', () => {
+describe('totalStatCap', () => {
   it('is 200', () => {
-    expect(TOTAL_STAT_CAP).toBe(200);
+    expect(totalStatCap).toBe(200);
   });
 
   it('is a positive number', () => {
-    expect(typeof TOTAL_STAT_CAP).toBe('number');
-    expect(TOTAL_STAT_CAP).toBeGreaterThan(0);
+    expect(typeof totalStatCap).toBe('number');
+    expect(totalStatCap).toBeGreaterThan(0);
   });
 });
 
@@ -120,14 +120,14 @@ describe('sampleStat', () => {
 
 describe('clampStatsToTotalCap', () => {
   function makeStats(values) {
-    return Object.fromEntries(STAT_KEYS.map((k, i) => [k, values[i] ?? 0]));
+    return Object.fromEntries(statKeys.map((k, i) => [k, values[i] ?? 0]));
   }
 
   it('returns stats unchanged when total is already at cap', () => {
     // Make a stats object that sums to exactly 200
     const base = Math.floor(200 / 12); // 16
     const remainder = 200 - base * 12; // 8
-    const values = STAT_KEYS.map((_, i) => (i < remainder ? base + 1 : base));
+    const values = statKeys.map((_, i) => (i < remainder ? base + 1 : base));
     const stats = makeStats(values);
     const result = clampStatsToTotalCap(stats, 200);
     const total = Object.values(result).reduce((s, v) => s + v, 0);
@@ -135,23 +135,23 @@ describe('clampStatsToTotalCap', () => {
   });
 
   it('returns new object (does not mutate input)', () => {
-    const stats = makeStats(STAT_KEYS.map(() => 20)); // total = 240
+    const stats = makeStats(statKeys.map(() => 20)); // total = 240
     const original = { ...stats };
     clampStatsToTotalCap(stats, 200);
-    STAT_KEYS.forEach(k => {
+    statKeys.forEach(k => {
       expect(stats[k]).toBe(original[k]);
     });
   });
 
   it('total of clamped stats is <= cap', () => {
-    const stats = makeStats(STAT_KEYS.map(() => 30)); // total = 360
+    const stats = makeStats(statKeys.map(() => 30)); // total = 360
     const result = clampStatsToTotalCap(stats, 200);
     const total = Object.values(result).reduce((s, v) => s + v, 0);
     expect(total).toBeLessThanOrEqual(200);
   });
 
   it('no stat falls below 1 after clamping', () => {
-    const stats = makeStats(STAT_KEYS.map(() => 30)); // total = 360
+    const stats = makeStats(statKeys.map(() => 30)); // total = 360
     const result = clampStatsToTotalCap(stats, 200);
     Object.values(result).forEach(v => {
       expect(v).toBeGreaterThanOrEqual(1);
@@ -159,25 +159,25 @@ describe('clampStatsToTotalCap', () => {
   });
 
   it('returns stats as-is when total is under cap', () => {
-    const stats = makeStats(STAT_KEYS.map(() => 5)); // total = 60 < 200
+    const stats = makeStats(statKeys.map(() => 5)); // total = 60 < 200
     const result = clampStatsToTotalCap(stats, 200);
     const total = Object.values(result).reduce((s, v) => s + v, 0);
     expect(total).toBe(60);
-    STAT_KEYS.forEach(k => {
+    statKeys.forEach(k => {
       expect(result[k]).toBe(5);
     });
   });
 
   it('handles edge case where all stats are exactly 1', () => {
-    const stats = makeStats(STAT_KEYS.map(() => 1)); // total = 12
+    const stats = makeStats(statKeys.map(() => 1)); // total = 12
     const result = clampStatsToTotalCap(stats, 200);
     const total = Object.values(result).reduce((s, v) => s + v, 0);
     expect(total).toBe(12);
     Object.values(result).forEach(v => expect(v).toBe(1));
   });
 
-  it('works with custom cap smaller than TOTAL_STAT_CAP', () => {
-    const stats = makeStats(STAT_KEYS.map(() => 20)); // total = 240
+  it('works with custom cap smaller than totalStatCap', () => {
+    const stats = makeStats(statKeys.map(() => 20)); // total = 240
     const result = clampStatsToTotalCap(stats, 100);
     const total = Object.values(result).reduce((s, v) => s + v, 0);
     expect(total).toBeLessThanOrEqual(100);
@@ -187,7 +187,7 @@ describe('clampStatsToTotalCap', () => {
   it('trims from highest stat when proportional rounding pushes total over cap', () => {
     // Design a scenario where scaling pushes one stat just over cap
     // 12 stats at 50 = total 600, cap 200
-    const stats = makeStats(STAT_KEYS.map(() => 50));
+    const stats = makeStats(statKeys.map(() => 50));
     const result = clampStatsToTotalCap(stats, 200);
     const total = Object.values(result).reduce((s, v) => s + v, 0);
     expect(total).toBeLessThanOrEqual(200);
@@ -247,7 +247,7 @@ describe('generateStoreStats', () => {
         const result = generateStoreStats(breed);
         // If it returned without throwing, validate the shape
         expect(typeof result).toBe('object');
-        STAT_KEYS.forEach(stat => {
+        statKeys.forEach(stat => {
           expect(result).toHaveProperty(stat);
           expect(typeof result[stat]).toBe('number');
           expect(result[stat]).toBeGreaterThanOrEqual(1);
@@ -256,8 +256,8 @@ describe('generateStoreStats', () => {
           expect(result[stat]).toBeLessThanOrEqual(20);
         });
 
-        const total = STAT_KEYS.reduce((s, k) => s + result[k], 0);
-        expect(total).toBe(TOTAL_STAT_CAP);
+        const total = statKeys.reduce((s, k) => s + result[k], 0);
+        expect(total).toBe(totalStatCap);
 
         worked = true;
         break;
@@ -284,13 +284,13 @@ describe('generateStoreStats', () => {
       const firstBreed = Object.keys(breedData)[0];
       expect(firstBreed).toBeTruthy();
       const result = generateStoreStats(firstBreed);
-      STAT_KEYS.forEach(stat => {
+      statKeys.forEach(stat => {
         expect(result).toHaveProperty(stat);
         expect(result[stat]).toBeGreaterThanOrEqual(1);
         expect(result[stat]).toBeLessThanOrEqual(20);
       });
-      const total = STAT_KEYS.reduce((s, k) => s + result[k], 0);
-      expect(total).toBe(TOTAL_STAT_CAP);
+      const total = statKeys.reduce((s, k) => s + result[k], 0);
+      expect(total).toBe(totalStatCap);
     }
   });
 
@@ -302,16 +302,16 @@ describe('generateStoreStats', () => {
     for (const breed of knownBreeds) {
       try {
         const results = Array.from({ length: 20 }, () => generateStoreStats(breed));
-        const totals = results.map(r => STAT_KEYS.reduce((s, k) => s + r[k], 0));
+        const totals = results.map(r => statKeys.reduce((s, k) => s + r[k], 0));
         // Not all totals can be identical (unless every stat hit mean exactly)
         const _uniqueTotals = new Set(totals);
         // At minimum, the function returns valid stats every time
         results.forEach(r => {
-          const total = STAT_KEYS.reduce((s, k) => s + r[k], 0);
+          const total = statKeys.reduce((s, k) => s + r[k], 0);
           // Old contract: each stat in [1, 100], total ≤ 200. Owner ruling 2026-10-16
           // (Equoria-7wqbs): store horses get each stat 1–20, totaling exactly 200.
-          expect(total).toBe(TOTAL_STAT_CAP);
-          STAT_KEYS.forEach(k => {
+          expect(total).toBe(totalStatCap);
+          statKeys.forEach(k => {
             expect(r[k]).toBeGreaterThanOrEqual(1);
             expect(r[k]).toBeLessThanOrEqual(20);
           });

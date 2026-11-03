@@ -46,7 +46,7 @@
 
 import { fileURLToPath } from 'url';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { DEFAULT_TEMPERAMENT_BREED } from '../modules/horses/index.mjs';
+import { defaultTemperamentBreed } from '../modules/horses/index.mjs';
 
 const AS_JSON = process.argv.includes('--json');
 
@@ -124,7 +124,7 @@ async function auditBreedlessHorses() {
   const ids = breedless.map(h => h.id);
 
   const defaultBreed = await prisma.breed.findUnique({
-    where: { name: DEFAULT_TEMPERAMENT_BREED },
+    where: { name: defaultTemperamentBreed },
     select: { id: true, name: true },
   });
 

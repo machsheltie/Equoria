@@ -3,13 +3,13 @@
 // cross-breed gaiting, and statistical distribution. Owner ruling 2026-10-28 (q210)
 // removed the conformation-to-gait adjustment and the tests that specified it.
 
-import { generateGaitScores, generateInheritedGaitScores, STANDARD_GAITS } from '../services/gaitService.mjs';
+import { generateGaitScores, generateInheritedGaitScores, standardGaits } from '../services/gaitService.mjs';
 
 describe('Gait Score Generation Service', () => {
-  describe('STANDARD_GAITS constant', () => {
+  describe('standardGaits constant', () => {
     test('contains exactly 4 standard gaits', () => {
-      expect(STANDARD_GAITS).toEqual(['walk', 'trot', 'canter', 'gallop']);
-      expect(STANDARD_GAITS).toHaveLength(4);
+      expect(standardGaits).toEqual(['walk', 'trot', 'canter', 'gallop']);
+      expect(standardGaits).toHaveLength(4);
     });
   });
 
@@ -27,7 +27,7 @@ describe('Gait Score Generation Service', () => {
     test('all standard gait scores are integers in [0, 100]', () => {
       for (let i = 0; i < 50; i++) {
         const scores = generateGaitScores(breedName);
-        for (const gait of STANDARD_GAITS) {
+        for (const gait of standardGaits) {
           expect(Number.isInteger(scores[gait])).toBe(true);
           expect(scores[gait]).toBeGreaterThanOrEqual(0);
           expect(scores[gait]).toBeLessThanOrEqual(100);
@@ -151,7 +151,7 @@ describe('Gait Score Generation Service', () => {
     test.each(allBreedNames)('breed %s produces valid gait scores', breedName => {
       const scores = generateGaitScores(breedName);
 
-      for (const gait of STANDARD_GAITS) {
+      for (const gait of standardGaits) {
         expect(Number.isInteger(scores[gait])).toBe(true);
         expect(scores[gait]).toBeGreaterThanOrEqual(0);
         expect(scores[gait]).toBeLessThanOrEqual(100);
@@ -188,7 +188,7 @@ describe('Gait Score Generation Service', () => {
 
     test('produces all 4 standard gait scores', () => {
       const scores = generateInheritedGaitScores(breedName, sireGaits, damGaits);
-      for (const gait of STANDARD_GAITS) {
+      for (const gait of standardGaits) {
         expect(Number.isInteger(scores[gait])).toBe(true);
         expect(scores[gait]).toBeGreaterThanOrEqual(0);
         expect(scores[gait]).toBeLessThanOrEqual(100);
@@ -197,7 +197,7 @@ describe('Gait Score Generation Service', () => {
 
     test('falls back to breed-only when sire gait scores are null', () => {
       const scores = generateInheritedGaitScores(breedName, null, damGaits);
-      for (const gait of STANDARD_GAITS) {
+      for (const gait of standardGaits) {
         expect(Number.isInteger(scores[gait])).toBe(true);
         expect(scores[gait]).toBeGreaterThanOrEqual(0);
         expect(scores[gait]).toBeLessThanOrEqual(100);
@@ -206,14 +206,14 @@ describe('Gait Score Generation Service', () => {
 
     test('falls back to breed-only when dam gait scores are null', () => {
       const scores = generateInheritedGaitScores(breedName, sireGaits, null);
-      for (const gait of STANDARD_GAITS) {
+      for (const gait of standardGaits) {
         expect(Number.isInteger(scores[gait])).toBe(true);
       }
     });
 
     test('falls back to breed-only when both parent gait scores are null', () => {
       const scores = generateInheritedGaitScores(breedName, null, null);
-      for (const gait of STANDARD_GAITS) {
+      for (const gait of standardGaits) {
         expect(Number.isInteger(scores[gait])).toBe(true);
       }
     });

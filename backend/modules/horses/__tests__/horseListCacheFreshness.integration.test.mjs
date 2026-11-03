@@ -33,9 +33,9 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-gf4kd';
+const fixturePrefix = 'TestFixture-gf4kd';
 const ORIGIN = 'http://localhost:3000';
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 const tag = randomBytes(4).toString('hex');
 
 let csrf;
@@ -51,8 +51,8 @@ const soldHorseIds = [];
 async function makeOwner() {
   seq += 1;
   return createTestUser({
-    username: `${FIXTURE_PREFIX}-${seq}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${seq}-${tag}@example.com`,
+    username: `${fixturePrefix}-${seq}-${tag}`,
+    email: `${fixturePrefix}-${seq}-${tag}@example.com`,
   });
 }
 
@@ -81,7 +81,7 @@ afterAll(async () => {
 describe('the horse list reflects changes immediately (Equoria-gf4kd, Equoria-3427a)', () => {
   it('a renamed horse shows its new name in the stable straight away', async () => {
     const { user: owner, token } = await makeOwner();
-    const horse = await createTestHorse({ name: `${FIXTURE_PREFIX}-r-${tag}`, userId: owner.id });
+    const horse = await createTestHorse({ name: `${fixturePrefix}-r-${tag}`, userId: owner.id });
     const oldName = horse.name;
     const newName = `Renamed ${tag}`;
     expect(await stableNames(token)).toContain(oldName);
@@ -104,19 +104,19 @@ describe('the horse list reflects changes immediately (Equoria-gf4kd, Equoria-34
     const { user: owner, token } = await makeOwner();
     const dob = gameCalendarDate(new Date(), -5 * 365);
     const sire = await createTestHorse({
-      name: `${FIXTURE_PREFIX}-sire-${tag}`,
+      name: `${fixturePrefix}-sire-${tag}`,
       userId: owner.id,
       sex: 'Stallion',
       dateOfBirth: dob,
       age: 5,
     });
     const dam = await createTestHorse({
-      name: `${FIXTURE_PREFIX}-dam-${tag}`,
+      name: `${fixturePrefix}-dam-${tag}`,
       userId: owner.id,
       sex: 'Mare',
       dateOfBirth: dob,
       age: 5,
-      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
       pregnancySireId: sire.id,
     });
     const before = await stableNames(token);
@@ -133,7 +133,7 @@ describe('the horse list reflects changes immediately (Equoria-gf4kd, Equoria-34
   // the very next read.
   it('the list reflects a change made by any code, with nothing to clear', async () => {
     const { user: owner, token } = await makeOwner();
-    const horse = await createTestHorse({ name: `${FIXTURE_PREFIX}-d-${tag}`, userId: owner.id });
+    const horse = await createTestHorse({ name: `${fixturePrefix}-d-${tag}`, userId: owner.id });
     expect(await stableNames(token)).toContain(horse.name);
 
     const newName = `Direct ${tag}`;
@@ -145,11 +145,11 @@ describe('the horse list reflects changes immediately (Equoria-gf4kd, Equoria-34
   it('a marketplace sale moves the horse between both stables straight away', async () => {
     const seller = await makeOwner();
     const buyer = await createTestUser({
-      username: `${FIXTURE_PREFIX}-buyer-${tag}`,
-      email: `${FIXTURE_PREFIX}-buyer-${tag}@example.com`,
+      username: `${fixturePrefix}-buyer-${tag}`,
+      email: `${fixturePrefix}-buyer-${tag}@example.com`,
       money: 5000,
     });
-    const horse = await createTestHorse({ name: `${FIXTURE_PREFIX}-s-${tag}`, userId: seller.user.id });
+    const horse = await createTestHorse({ name: `${fixturePrefix}-s-${tag}`, userId: seller.user.id });
     const post = (path, token) =>
       request(app)
         .post(path)

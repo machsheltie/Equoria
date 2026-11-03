@@ -44,14 +44,14 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 // the new scale; every assertion keeps its meaning.
 
 const CONCURRENCY = 10;
-const XP_EACH = 150; // 10 x 150 = 1500 -> crosses the 1,000-point stat-point threshold once
+const xpEach = 150; // 10 x 150 = 1500 -> crosses the 1,000-point stat-point threshold once
 
 // A NUL character (char code 0), built at runtime so the SOURCE file contains no
 // literal NUL byte. It is a valid JS string that passes addXpToHorse's reason
 // validation, but Postgres text columns reject NUL, so horseXpEvent.create throws
 // at the DB boundary while the horseXp increment would otherwise apply — the exact
 // injection needed to prove the audit row is inside the transaction.
-const NUL_CHAR = String.fromCharCode(0);
+const nulChar = String.fromCharCode(0);
 
 let ownerId;
 const createdHorseIds = [];
@@ -105,7 +105,7 @@ describe('INTEGRATION: addXpToHorse atomic XP award (Equoria-geo1a)', () => {
     const horse = await makeHorse(0, 0);
 
     const results = await Promise.all(
-      Array.from({ length: CONCURRENCY }, () => addXpToHorse(horse.id, XP_EACH, 'TestFixture-geo1a-concurrent')),
+      Array.from({ length: CONCURRENCY }, () => addXpToHorse(horse.id, xpEach, 'TestFixture-geo1a-concurrent')),
     );
 
     // Every award must succeed.
@@ -120,10 +120,10 @@ describe('INTEGRATION: addXpToHorse atomic XP award (Equoria-geo1a)', () => {
     const eventSum = events.reduce((sum, e) => sum + e.amount, 0);
 
     // XP conservation: all N increments applied (pre-fix: last-writer-wins loses most).
-    expect(after.horseXp).toBe(CONCURRENCY * XP_EACH); // 1500
+    expect(after.horseXp).toBe(CONCURRENCY * xpEach); // 1500
     // Audit consistency: one event per award, and horseXp == SUM(events) (base was 0).
     expect(events.length).toBe(CONCURRENCY); // 10
-    expect(eventSum).toBe(CONCURRENCY * XP_EACH); // 1500
+    expect(eventSum).toBe(CONCURRENCY * xpEach); // 1500
     expect(after.horseXp).toBe(eventSum);
     // Stat-point conservation: 0 -> 1500 crosses the 1,000 threshold exactly once.
     expect(after.availableStatPoints).toBe(1);
@@ -132,7 +132,7 @@ describe('INTEGRATION: addXpToHorse atomic XP award (Equoria-geo1a)', () => {
   it('SENTINEL: a failure at the audit-create boundary rolls back the XP write (atomicity)', async () => {
     const horse = await makeHorse(0, 0);
 
-    const result = await addXpToHorse(horse.id, 5, `bad${NUL_CHAR}reason`);
+    const result = await addXpToHorse(horse.id, 5, `bad${nulChar}reason`);
 
     expect(result.success).toBe(false);
 

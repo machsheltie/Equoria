@@ -9,7 +9,7 @@ import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import logger from '../../../utils/logger.mjs';
 
 // The 8 conformation regions in canonical order
-const CONFORMATION_REGIONS = [
+const conformationRegions = [
   'head',
   'neck',
   'shoulders',
@@ -62,9 +62,9 @@ export function calculateOverallConformation(scores) {
   if (!scores || typeof scores !== 'object') {
     return 50;
   }
-  const values = CONFORMATION_REGIONS.map(region => scores[region] ?? 0);
+  const values = conformationRegions.map(region => scores[region] ?? 0);
   const sum = values.reduce((acc, val) => acc + val, 0);
-  return Math.round(sum / CONFORMATION_REGIONS.length);
+  return Math.round(sum / conformationRegions.length);
 }
 
 /**
@@ -87,7 +87,7 @@ export function generateConformationScores(breedName, { random = Math.random } =
 
   const scores = {};
 
-  for (const region of CONFORMATION_REGIONS) {
+  for (const region of conformationRegions) {
     const regionProfile = conformation[region];
     // Every region must be present with valid mean and stdDev. An incomplete profile is a data bug.
     if (
@@ -168,7 +168,7 @@ export function generateInheritedConformationScores(
 
   const scores = {};
 
-  for (const region of CONFORMATION_REGIONS) {
+  for (const region of conformationRegions) {
     const regionProfile = conformation[region];
     if (
       !regionProfile ||
@@ -213,7 +213,7 @@ export function hasValidConformationScores(scores) {
   if (!scores || typeof scores !== 'object') {
     return false;
   }
-  return CONFORMATION_REGIONS.some(region => Number.isFinite(scores[region]));
+  return conformationRegions.some(region => Number.isFinite(scores[region]));
 }
 
 /**
@@ -228,7 +228,7 @@ export function validateConformationScores(scores) {
       '[conformationService] validateConformationScores received invalid input, using neutral 50 defaults',
     );
     const defaults = {};
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       defaults[region] = 50;
     }
     defaults.overallConformation = 50;
@@ -236,7 +236,7 @@ export function validateConformationScores(scores) {
   }
 
   const validated = {};
-  for (const region of CONFORMATION_REGIONS) {
+  for (const region of conformationRegions) {
     const val = scores[region];
     validated[region] = Number.isFinite(val) ? clampScore(val) : 50;
   }
@@ -244,4 +244,4 @@ export function validateConformationScores(scores) {
   return validated;
 }
 
-export { CONFORMATION_REGIONS };
+export { conformationRegions };

@@ -8,14 +8,14 @@
 import { describe, it, expect } from '@jest/globals';
 import * as temperamentService from '../services/temperamentService.mjs';
 import {
-  TEMPERAMENT_GROOM_SYNERGY,
+  temperamentGroomSynergy,
   getTemperamentGroomSynergy,
   weightedRandomSelect,
   generateTemperament,
   generateTemperamentWithDefault,
-  DEFAULT_TEMPERAMENT_BREED,
+  defaultTemperamentBreed,
 } from '../services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../data/temperamentTypes.mjs';
+import { temperamentTypes } from '../data/temperamentTypes.mjs';
 
 // ---------------------------------------------------------------------------
 // Owner ruling 2026-10-21: a temperament has no training modifier and no
@@ -35,20 +35,20 @@ describe('no training or ridden/conformation temperament modifiers (owner ruling
 });
 
 // ---------------------------------------------------------------------------
-// TEMPERAMENT_GROOM_SYNERGY
+// temperamentGroomSynergy
 // ---------------------------------------------------------------------------
-describe('TEMPERAMENT_GROOM_SYNERGY', () => {
+describe('temperamentGroomSynergy', () => {
   // Old contract: 11. Owner ruling 2026-10-21: Playful renamed Driven, Willing added.
   it('has entries for all 12 temperament types', () => {
-    expect(Object.keys(TEMPERAMENT_GROOM_SYNERGY)).toHaveLength(12);
+    expect(Object.keys(temperamentGroomSynergy)).toHaveLength(12);
   });
 
   it('Calm uses _any for universal synergy', () => {
-    expect(TEMPERAMENT_GROOM_SYNERGY.Calm._any).toBeDefined();
+    expect(temperamentGroomSynergy.Calm._any).toBeDefined();
   });
 
   it('Nervous has a negative synergy with strict personality', () => {
-    expect(TEMPERAMENT_GROOM_SYNERGY.Nervous.strict).toBeLessThan(0);
+    expect(temperamentGroomSynergy.Nervous.strict).toBeLessThan(0);
   });
 });
 
@@ -145,20 +145,20 @@ describe('generateTemperament', () => {
   });
 
   it('returns one of the 11 canonical temperament types', () => {
-    const valid = new Set(TEMPERAMENT_TYPES);
+    const valid = new Set(temperamentTypes);
     for (let i = 0; i < 20; i++) {
       expect(valid.has(generateTemperament('Thoroughbred'))).toBe(true);
     }
   });
 
   it('works for Arabian', () => {
-    const valid = new Set(TEMPERAMENT_TYPES);
+    const valid = new Set(temperamentTypes);
     const result = generateTemperament('Arabian');
     expect(valid.has(result)).toBe(true);
   });
 
   it('works for American Quarter Horse', () => {
-    const valid = new Set(TEMPERAMENT_TYPES);
+    const valid = new Set(temperamentTypes);
     expect(valid.has(generateTemperament('American Quarter Horse'))).toBe(true);
   });
 
@@ -171,10 +171,10 @@ describe('generateTemperament', () => {
 // generateTemperamentWithDefault (Equoria-f5372 — breedless fallback)
 // ---------------------------------------------------------------------------
 describe('generateTemperamentWithDefault', () => {
-  const valid = new Set(TEMPERAMENT_TYPES);
+  const valid = new Set(temperamentTypes);
 
   it('exposes Thoroughbred as the default breed', () => {
-    expect(DEFAULT_TEMPERAMENT_BREED).toBe('Thoroughbred');
+    expect(defaultTemperamentBreed).toBe('Thoroughbred');
   });
 
   it('returns a valid type for null (breedless starter horse)', () => {

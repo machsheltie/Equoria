@@ -35,10 +35,10 @@ import {
  * source: the status response carries it as `pointsPerStatPoint`, which the
  * frontend progress bar reads.
  */
-export const HORSE_POINTS_PER_STAT_POINT = 1000;
+export const horsePointsPerStatPoint = 1000;
 
 // Valid horse stats that can receive stat point allocations
-const VALID_HORSE_STATS = horseStatValues;
+const validHorseStats = horseStatValues;
 
 /**
  * Cache keys of the horse XP routes (horseXpController): the status read and
@@ -71,7 +71,7 @@ export async function invalidateHorseXpCaches(horseId) {
  * @returns {number} Total available stat points
  */
 function calculateAvailableStatPoints(horseXp) {
-  const earnedStatPoints = Math.floor(horseXp / HORSE_POINTS_PER_STAT_POINT);
+  const earnedStatPoints = Math.floor(horseXp / horsePointsPerStatPoint);
   return earnedStatPoints;
 }
 
@@ -82,11 +82,11 @@ function calculateAvailableStatPoints(horseXp) {
  */
 export function statPointProgress(currentXP) {
   const nextStatPointAt =
-    (Math.floor(currentXP / HORSE_POINTS_PER_STAT_POINT) + 1) * HORSE_POINTS_PER_STAT_POINT;
+    (Math.floor(currentXP / horsePointsPerStatPoint) + 1) * horsePointsPerStatPoint;
   return {
     nextStatPointAt,
     xpToNextStatPoint: nextStatPointAt - currentXP,
-    pointsPerStatPoint: HORSE_POINTS_PER_STAT_POINT,
+    pointsPerStatPoint: horsePointsPerStatPoint,
   };
 }
 
@@ -229,7 +229,7 @@ export async function addXpToHorse(horseId, amount, reason) {
  * @returns {boolean} True if valid, false otherwise
  */
 export function validateStatName(statName) {
-  return VALID_HORSE_STATS.includes(statName);
+  return validHorseStats.includes(statName);
 }
 
 /**
@@ -245,9 +245,7 @@ export async function allocateStatPoint(horseId, statName) {
       throw new Error('Horse ID is required.');
     }
     if (!validateStatName(statName)) {
-      throw new Error(
-        `Invalid stat name: ${statName}. Valid stats: ${VALID_HORSE_STATS.join(', ')}`,
-      );
+      throw new Error(`Invalid stat name: ${statName}. Valid stats: ${validHorseStats.join(', ')}`);
     }
 
     // Equoria-wsj2i: atomic conditional claim replaces the former read-check-write

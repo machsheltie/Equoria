@@ -60,7 +60,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const START_UNITS = 100;
+const startUnits = 100;
 
 function sumCounters(obj) {
   if (!obj || typeof obj !== 'object') {
@@ -119,13 +119,13 @@ describe('feedHorse — in-foal feed conservation, exact equality (Equoria-qi1ns
         money: 10000,
         settings: {
           inventory: [
-            { id: 'feed-basic', itemId: 'basic', category: 'feed', name: 'Basic Feed', quantity: START_UNITS },
+            { id: 'feed-basic', itemId: 'basic', category: 'feed', name: 'Basic Feed', quantity: startUnits },
             {
               id: 'feed-performance',
               itemId: 'performance',
               category: 'feed',
               name: 'Performance Feed',
-              quantity: START_UNITS,
+              quantity: startUnits,
             },
           ],
         },
@@ -198,7 +198,7 @@ describe('feedHorse — in-foal feed conservation, exact equality (Equoria-qi1ns
       // EXACT equality must hold after EVERY feed, not only at the end. A single
       // torn triple (lost counter bump or lost inventory decrement) breaks it here.
       const consumed =
-        START_UNITS - (await unitsRemaining('basic')) + (START_UNITS - (await unitsRemaining('performance')));
+        startUnits - (await unitsRemaining('basic')) + (startUnits - (await unitsRemaining('performance')));
       const { pregnancyFeedingsByTier, inFoalSinceDate } = await pregCounter();
       const counterDelta = sumCounters(pregnancyFeedingsByTier); // baseline {} → 0
 

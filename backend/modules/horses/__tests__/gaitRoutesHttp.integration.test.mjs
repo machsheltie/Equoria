@@ -35,7 +35,7 @@ let gaitedHorse;
 let nonGaitedHorse;
 let horseOwnedByB;
 
-const FIXTURE_PREFIX = 'TestFixture-gait-http';
+const fixturePrefix = 'TestFixture-gait-http';
 
 // Realistic gaitScores JSONB for a gaited breed (e.g. American Saddlebred).
 // The endpoint is breed-agnostic — it returns whatever JSONB is on the row —
@@ -69,34 +69,34 @@ beforeAll(async () => {
 
   // Two users — A is the owner; B is used to assert the IDOR contract.
   const a = await createTestUser({
-    username: `${FIXTURE_PREFIX}-A-${tag}`,
-    email: `${FIXTURE_PREFIX}-A-${tag}@example.com`,
+    username: `${fixturePrefix}-A-${tag}`,
+    email: `${fixturePrefix}-A-${tag}@example.com`,
   });
   ownerA = a.user;
   tokenA = a.token;
 
   const b = await createTestUser({
-    username: `${FIXTURE_PREFIX}-B-${tag}`,
-    email: `${FIXTURE_PREFIX}-B-${tag}@example.com`,
+    username: `${fixturePrefix}-B-${tag}`,
+    email: `${fixturePrefix}-B-${tag}@example.com`,
   });
   ownerB = b.user;
   // tokenB intentionally unused — IDOR test exercises A's token against
   // a horse owned by B; we never authenticate as B in this suite.
 
   gaitedHorse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-Gaited-${tag}`,
+    name: `${fixturePrefix}-Gaited-${tag}`,
     userId: ownerA.id,
     gaitScores: makeGaitedScores(),
   });
 
   nonGaitedHorse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-NonGaited-${tag}`,
+    name: `${fixturePrefix}-NonGaited-${tag}`,
     userId: ownerA.id,
     gaitScores: makeNonGaitedScores(),
   });
 
   horseOwnedByB = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-OwnerB-${tag}`,
+    name: `${fixturePrefix}-OwnerB-${tag}`,
     userId: ownerB.id,
     gaitScores: makeGaitedScores(),
   });

@@ -16,15 +16,15 @@ import { listHorseAtStud, unlistHorseAtStud } from '../controllers/horseControll
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const SUITE_PREFIX = 'studlist';
+const suitePrefix = 'studlist';
 
 async function createUser() {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: `${SUITE_PREFIX}_${uid}`,
-      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${suitePrefix}-${uid}`,
+      username: `${suitePrefix}_${uid}`,
+      email: `${suitePrefix}-${uid}@example.com`,
       firstName: 'StudList',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
@@ -35,7 +35,7 @@ async function createUser() {
 
 async function createBreed() {
   return prisma.breed.create({
-    data: { name: `${SUITE_PREFIX}-breed-${randomBytes(4).toString('hex')}` },
+    data: { name: `${suitePrefix}-breed-${randomBytes(4).toString('hex')}` },
   });
 }
 
@@ -43,7 +43,7 @@ async function createHorse(userId, breedId, sex, overrides = {}) {
   return prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
+      name: `${suitePrefix}-h-${randomBytes(4).toString('hex')}`,
       sex,
       dateOfBirth: new Date('2020-01-01'),
       user: { connect: { id: userId } },
@@ -76,7 +76,7 @@ function makeRes() {
 
 async function cleanupSuite() {
   const users = await prisma.user.findMany({
-    where: { id: { startsWith: SUITE_PREFIX } },
+    where: { id: { startsWith: suitePrefix } },
     select: { id: true },
   });
   if (users.length > 0) {
@@ -84,7 +84,7 @@ async function cleanupSuite() {
     await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   }
-  await prisma.breed.deleteMany({ where: { name: { startsWith: SUITE_PREFIX } } });
+  await prisma.breed.deleteMany({ where: { name: { startsWith: suitePrefix } } });
 }
 
 describe('listHorseAtStud / unlistHorseAtStud controllers (real DB)', () => {

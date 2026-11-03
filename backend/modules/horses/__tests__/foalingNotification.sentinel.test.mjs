@@ -16,7 +16,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const dayMs = 24 * 60 * 60 * 1000;
 
 describe('SENTINEL: foal born → foalBorn Notification', () => {
   let user;
@@ -66,7 +66,7 @@ describe('SENTINEL: foal born → foalBorn Notification', () => {
         age: 5,
         breedId: breed.id,
         userId: user.id,
-        inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+        inFoalSinceDate: new Date(Date.now() - 8 * dayMs),
         pregnancySireId: sire.id,
         pregnancyFeedingsByTier: {},
       }),

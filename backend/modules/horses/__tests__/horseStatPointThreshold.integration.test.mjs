@@ -23,7 +23,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { addXpToHorse, getHorseXpStatus, HORSE_POINTS_PER_STAT_POINT } from '../services/horseXpModelService.mjs';
+import { addXpToHorse, getHorseXpStatus, horsePointsPerStatPoint } from '../services/horseXpModelService.mjs';
 
 const rand = () => randomBytes(5).toString('hex');
 const cleanup = createCleanupTracker();
@@ -69,7 +69,7 @@ function makeHorse(fields = {}) {
 
 describe('1,000 Horse Points per stat allocation (C15)', () => {
   it('the threshold is 1,000', () => {
-    expect(HORSE_POINTS_PER_STAT_POINT).toBe(1000);
+    expect(horsePointsPerStatPoint).toBe(1000);
   });
 
   it('999 points earn nothing; the 1,000th earns one allocation', async () => {

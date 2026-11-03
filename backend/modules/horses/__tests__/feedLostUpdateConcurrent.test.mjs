@@ -74,13 +74,13 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FEED_SERVICE_SRC = readFileSync(
+const feedServiceSrc = readFileSync(
   resolve(dirname(fileURLToPath(import.meta.url)), '../services/horseFeedService.mjs'),
   'utf8',
 );
 
-const FEED_TIER = 'basic';
-const START_UNITS = 100;
+const feedTier = 'basic';
+const startUnits = 100;
 
 // ── POOL-BUDGET-AWARE CONCURRENCY (Equoria-aq1nh) ───────────────────────────
 // Each feedHorse() call opens an interactive `prisma.$transaction`, which holds
@@ -112,7 +112,7 @@ const START_UNITS = 100;
 // weakened: the first batch of `budget` feeds still races same-row (the real
 // lost-update window), and the remaining feeds still see lastFedDate=today and
 // reject "already fed". No timeout is inflated; no retry-as-fix is added.
-const POOL_BUDGET = getPoolConfig(process.env)?.connection_limit ?? 3;
+const poolBudget = getPoolConfig(process.env)?.connection_limit ?? 3;
 
 /**
  * Run `total` invocations of `makeTask()` against the same row with at most
@@ -160,7 +160,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
   async function remainingUnits() {
     const u = await prisma.user.findUnique({ where: { id: user.id }, select: { settings: true } });
     const inv = Array.isArray(u?.settings?.inventory) ? u.settings.inventory : [];
-    const row = inv.find(i => i.id === `feed-${FEED_TIER}`);
+    const row = inv.find(i => i.id === `feed-${feedTier}`);
     return row ? Number(row.quantity) || 0 : 0;
   }
 
@@ -196,7 +196,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
         money: 10000,
         settings: {
           inventory: [
-            { id: `feed-${FEED_TIER}`, itemId: FEED_TIER, category: 'feed', name: 'Basic Feed', quantity: START_UNITS },
+            { id: `feed-${feedTier}`, itemId: feedTier, category: 'feed', name: 'Basic Feed', quantity: startUnits },
           ],
         },
       },
@@ -231,7 +231,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
         breedId: breed.id,
         userId: user.id,
         healthStatus: 'Good',
-        equippedFeedType: FEED_TIER,
+        equippedFeedType: feedTier,
         // In foal so each successful feed bumps pregnancyFeedingsByTier.
         inFoalSinceDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
         pregnancySireId: sire.id,
@@ -256,11 +256,11 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
 
   it('N concurrent feeds on ONE in-foal mare (same day): EXACTLY ONE wins, and -1 unit pairs with +1 counter (no torn triple)', async () => {
     const N = 6;
-    // At most POOL_BUDGET feeds hold an interactive-tx connection at once, so
+    // At most poolBudget feeds hold an interactive-tx connection at once, so
     // the race resolves at the guarded UPDATE — never in the pool-acquire queue
     // (Equoria-aq1nh). The first batch genuinely contends same-row; later feeds
     // see lastFedDate=today and reject "already fed".
-    const results = await settleWithPoolBudget(N, POOL_BUDGET, () => feedHorse({ userId: user.id, horseId: mareId }));
+    const results = await settleWithPoolBudget(N, poolBudget, () => feedHorse({ userId: user.id, horseId: mareId }));
 
     const fulfilled = results.filter(r => r.status === 'fulfilled' && r.value?.feed);
     const rejected = results.filter(r => r.status === 'rejected');
@@ -276,7 +276,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
     // ── The atomic triple held: ONE unit consumed AND ONE counter increment,
     //    paired. A torn triple would show e.g. unitsConsumed=1 but counterDelta=0
     //    (lost increment) or counterDelta>1 (loser double-bumped).
-    const unitsConsumed = START_UNITS - (await remainingUnits());
+    const unitsConsumed = startUnits - (await remainingUnits());
     const counterDelta = await pregCounterTotal(); // baseline was {} → 0
     expect(unitsConsumed).toBe(1);
     expect(counterDelta).toBe(1);
@@ -294,7 +294,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
         // in-foal (we never clear inFoalSinceDate/pregnancySireId here).
         await rewindLastFed();
       }
-      const round = await settleWithPoolBudget(N, POOL_BUDGET, () => feedHorse({ userId: user.id, horseId: mareId }));
+      const round = await settleWithPoolBudget(N, poolBudget, () => feedHorse({ userId: user.id, horseId: mareId }));
       const wins = round.filter(r => r.status === 'fulfilled' && r.value?.feed).length;
       // Exactly one winner per day — the guarded claim serialises the feed-day.
       expect(wins).toBe(1);
@@ -305,7 +305,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
     const mareAfter = await prisma.horse.findUnique({ where: { id: mareId } });
     expect(mareAfter.inFoalSinceDate).not.toBeNull();
 
-    const unitsConsumed = START_UNITS - (await remainingUnits());
+    const unitsConsumed = startUnits - (await remainingUnits());
     const counterDelta = await pregCounterTotal();
 
     expect(totalSuccesses).toBe(DAYS);
@@ -349,9 +349,9 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
     it('source: inventory decrement runs only AFTER the guarded claim (affected===1 gate) and the counter bump rides the SAME UPDATE', () => {
       // The pregnancy counter is bumped INSIDE the single guarded UPDATE's SET
       // list (jsonb_set on pregnancyFeedingsByTier) — not a separate statement.
-      expect(FEED_SERVICE_SRC).toMatch(/jsonb_set\(COALESCE\("pregnancyFeedingsByTier"/);
+      expect(feedServiceSrc).toMatch(/jsonb_set\(COALESCE\("pregnancyFeedingsByTier"/);
       // The loser (affected === 0) rejects BEFORE the inventory write.
-      expect(FEED_SERVICE_SRC).toMatch(/if\s*\(affected\s*===\s*0\)/);
+      expect(feedServiceSrc).toMatch(/if\s*\(affected\s*===\s*0\)/);
       // The inventory decrement comes AFTER the affected===0 guard — i.e. it is
       // gated on a winning claim.
       //
@@ -374,19 +374,19 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
       //   NEW contract: the write still sets ONLY `inventory` and still comes
       //     after the `affected === 0` claim check, AND it must carry the
       //     `expect: { inventory: ... }` compare-and-swap on the value it read.
-      const guardIdx = FEED_SERVICE_SRC.search(/if\s*\(affected\s*===\s*0\)/);
-      const invWriteIdx = FEED_SERVICE_SRC.search(
+      const guardIdx = feedServiceSrc.search(/if\s*\(affected\s*===\s*0\)/);
+      const invWriteIdx = feedServiceSrc.search(
         /updateUserSettingsPaths\(\s*tx,\s*userId,\s*\{\s*set:\s*\{\s*inventory\s*\}/,
       );
       expect(guardIdx).toBeGreaterThan(-1);
       expect(invWriteIdx).toBeGreaterThan(-1);
       expect(invWriteIdx).toBeGreaterThan(guardIdx);
-      const casIdx = FEED_SERVICE_SRC.slice(invWriteIdx).search(/expect:\s*\{\s*inventory:/);
+      const casIdx = feedServiceSrc.slice(invWriteIdx).search(/expect:\s*\{\s*inventory:/);
       expect(casIdx).toBeGreaterThan(-1);
       // The CAS belongs to THIS call: it appears before the call's closing `});`.
-      expect(casIdx).toBeLessThan(FEED_SERVICE_SRC.slice(invWriteIdx).indexOf('});'));
+      expect(casIdx).toBeLessThan(feedServiceSrc.slice(invWriteIdx).indexOf('});'));
       // No writer in this service may replace the whole settings document.
-      expect(FEED_SERVICE_SRC).not.toMatch(/data:\s*\{\s*settings:\s*\{\s*\.\.\.settings/);
+      expect(feedServiceSrc).not.toMatch(/data:\s*\{\s*settings:\s*\{\s*\.\.\.settings/);
     });
   });
 });

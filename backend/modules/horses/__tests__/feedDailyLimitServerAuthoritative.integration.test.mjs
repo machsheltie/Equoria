@@ -43,9 +43,9 @@ import horseRoutes from '../routes/horseRoutes.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-mwjst-feed';
+const fixturePrefix = 'TestFixture-mwjst-feed';
 const ORIGIN = 'http://localhost:3000';
-const STAT_COLUMNS = [
+const statColumns = [
   'precision',
   'strength',
   'speed',
@@ -59,8 +59,8 @@ const STAT_COLUMNS = [
   'obedience',
   'focus',
 ];
-const STARTING_UNITS = 10;
-const DAY_MS = 24 * 60 * 60 * 1000;
+const startingUnits = 10;
+const dayMs = 24 * 60 * 60 * 1000;
 
 let owner;
 let token;
@@ -100,12 +100,12 @@ async function readPerformanceUnits() {
 }
 
 function statSum(horse) {
-  return STAT_COLUMNS.reduce((sum, column) => sum + (horse[column] ?? 0), 0);
+  return statColumns.reduce((sum, column) => sum + (horse[column] ?? 0), 0);
 }
 
 async function seedMare(name, extra = {}) {
   return createTestHorse({
-    name: `${FIXTURE_PREFIX}-${name}-${tag}`,
+    name: `${fixturePrefix}-${name}-${tag}`,
     userId: owner.id,
     sex: 'Mare',
     age: 5,
@@ -129,8 +129,8 @@ function collectRoutePaths(router) {
 
 beforeAll(async () => {
   const created = await createTestUser({
-    username: `${FIXTURE_PREFIX}-${tag}`,
-    email: `${FIXTURE_PREFIX}-${tag}@example.com`,
+    username: `${fixturePrefix}-${tag}`,
+    email: `${fixturePrefix}-${tag}@example.com`,
   });
   owner = created.user;
   token = created.token;
@@ -164,7 +164,7 @@ describe('daily feed limit is server-authoritative (Equoria-mwjst Finding 1)', (
   it('feed → attempted rewind → feed again: the second feed is refused and every effect happened exactly once', async () => {
     await prisma.user.update({
       where: { id: owner.id },
-      data: { settings: { inventory: performanceInventory(STARTING_UNITS) } },
+      data: { settings: { inventory: performanceInventory(startingUnits) } },
     });
     const mare = await seedMare('attack', {
       lastFedDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
@@ -186,7 +186,7 @@ describe('daily feed limit is server-authoritative (Equoria-mwjst Finding 1)', (
     expect(secondFeed.body.message).toMatch(/already fed today/i);
 
     const after = await readHorse(mare.id);
-    expect(await readPerformanceUnits()).toBe(STARTING_UNITS - 1);
+    expect(await readPerformanceUnits()).toBe(startingUnits - 1);
     expect(after.pregnancyFeedingsByTier).toEqual({ performance: 1 });
     expect(statSum(after)).toBe(statSum(before) + firstBoost);
     expect(after.lastFedDate.getTime()).toBe(afterFirst.lastFedDate.getTime());
@@ -195,7 +195,7 @@ describe('daily feed limit is server-authoritative (Equoria-mwjst Finding 1)', (
   it('two concurrent same-day feeds of one horse consume one unit and bump the pregnancy counter once', async () => {
     await prisma.user.update({
       where: { id: owner.id },
-      data: { settings: { inventory: performanceInventory(STARTING_UNITS) } },
+      data: { settings: { inventory: performanceInventory(startingUnits) } },
     });
     const mare = await seedMare('race', {
       lastFedDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Excellent hunger, not fed today: owner ruling 2026-10-23 (hunger fill bar) - a never-fed horse is Bad and can be fed again today
@@ -217,7 +217,7 @@ describe('daily feed limit is server-authoritative (Equoria-mwjst Finding 1)', (
 
     const winner = responses.find(r => r.status === 200);
     const after = await readHorse(mare.id);
-    expect(await readPerformanceUnits()).toBe(STARTING_UNITS - 1);
+    expect(await readPerformanceUnits()).toBe(startingUnits - 1);
     expect(after.pregnancyFeedingsByTier).toEqual({ performance: 1 });
     expect(statSum(after)).toBe(statSum(before) + (winner.body.data?.statBoost ? 1 : 0));
   });
@@ -225,19 +225,19 @@ describe('daily feed limit is server-authoritative (Equoria-mwjst Finding 1)', (
   it('a test fixture backdates lastFedDate in the database (no route) and the next legitimate feed is accepted', async () => {
     await prisma.user.update({
       where: { id: owner.id },
-      data: { settings: { inventory: performanceInventory(STARTING_UNITS) } },
+      data: { settings: { inventory: performanceInventory(startingUnits) } },
     });
     const mare = await seedMare('fixture', { lastFedDate: new Date() });
 
     const sameDay = await post(`/api/v1/horses/${mare.id}/feed`);
     expect(sameDay.status).toBe(400);
-    expect(await readPerformanceUnits()).toBe(STARTING_UNITS);
+    expect(await readPerformanceUnits()).toBe(startingUnits);
 
     // Test-database fixture write — the only sanctioned way to give a horse
     // feeding history. Two full days back is before today's UTC midnight in
     // either time frame the feed guard can compare in (Equoria-7uphu: a
     // non-UTC database session shifts raw-SQL Date binds by its offset).
-    const backdated = new Date(Date.now() - 2 * DAY_MS);
+    const backdated = new Date(Date.now() - 2 * dayMs);
     await prisma.horse.update({
       where: { id: mare.id },
       data: { lastFedDate: backdated },
@@ -245,7 +245,7 @@ describe('daily feed limit is server-authoritative (Equoria-mwjst Finding 1)', (
 
     const nextDay = await post(`/api/v1/horses/${mare.id}/feed`);
     expect(nextDay.status).toBe(200);
-    expect(await readPerformanceUnits()).toBe(STARTING_UNITS - 1);
+    expect(await readPerformanceUnits()).toBe(startingUnits - 1);
     // The feed claim itself moved lastFedDate forward from the fixture value.
     const after = await readHorse(mare.id);
     expect(after.lastFedDate.getTime()).toBeGreaterThan(backdated.getTime());

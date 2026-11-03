@@ -23,7 +23,7 @@ import { feedHorse } from '../services/horseFeedService.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 
-const VALID_TIERS = new Set(FEED_CATALOG.map(t => t.id));
+const validTiers = new Set(FEED_CATALOG.map(t => t.id));
 
 /**
  * Read inventory array from User.settings, defaulting to empty array.
@@ -59,7 +59,7 @@ export async function equipFeedHandler(req, res) {
         data: null,
       });
     }
-    if (!VALID_TIERS.has(feedType)) {
+    if (!validTiers.has(feedType)) {
       return res.status(400).json({
         success: false,
         message: `Unknown feed tier: ${feedType}`,

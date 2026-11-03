@@ -52,14 +52,14 @@ import {
   createNotificationTx,
   finalizeNotificationAfterCommit,
 } from '../../../utils/notificationService.mjs';
-import { UNNAMED_HORSE_NAME } from './horseNamePolicy.mjs';
+import { unnamedHorseName } from './horseNamePolicy.mjs';
 import { releaseStaffIfRetiredTx } from './horseRetirementStaff.mjs';
 import { foalBornPayload, linkBreedingRecordToFoalTx } from './foalBirthRecords.mjs';
 import { horseHealthGrade, negativeTraitChanceMultiplier } from '../../../utils/horseHealth.mjs';
 import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 
-// Gestation length; mirrors pregnancyBonus.mjs GESTATION_DAYS, kept local for the job's date math.
-const GESTATION_DAYS = 7;
+// Gestation length; mirrors pregnancyBonus.mjs gestationDays, kept local for the job's date math.
+const gestationDays = 7;
 
 /**
  * Pool of bonus epigenetic traits the pregnancy formula can roll on top of
@@ -73,8 +73,8 @@ const GESTATION_DAYS = 7;
 // Owner ruling 2026-10-27 (q117, Equoria-2d55z): only roster traits are ever
 // generated, so athletic, calm, lowImmunity, nervous and reactive (no longer
 // traits) left both pools. Order is unchanged for the names that remain.
-const PREGNANCY_BONUS_POSITIVE_TRAITS = Object.freeze(['resilient', 'peopleTrusting']);
-const PREGNANCY_BONUS_NEGATIVE_TRAITS = Object.freeze(['fragile']);
+const pregnancyBonusPositiveTraits = Object.freeze(['resilient', 'peopleTrusting']);
+const pregnancyBonusNegativeTraits = Object.freeze(['fragile']);
 
 /**
  * Collect the union of a horse's carried epigenetic traits (positive ∪ negative
@@ -96,7 +96,7 @@ function collectActiveTraits(modifiers) {
 }
 
 /** Error code thrown when the guarded pregnancy claim matches no row. */
-export const PREGNANCY_NOT_CLAIMABLE = 'PREGNANCY_NOT_CLAIMABLE';
+export const pregnancyNotClaimable = 'PREGNANCY_NOT_CLAIMABLE';
 
 function pickFirstUnused(pool, existing) {
   for (const trait of pool) {
@@ -171,7 +171,7 @@ function assessFeedQualityFromMare(mare) {
  *   `sireSnapshot`) lets the foaling job skip re-reading the dam; `dueBy`
  *   limits the claim to a pregnancy that began on or before that Date.
  * @returns {Promise<object>} the created foal Horse row + applied traits
- * @throws {Error} with `code === PREGNANCY_NOT_CLAIMABLE` when the mare is no
+ * @throws {Error} with `code === pregnancyNotClaimable` when the mare is no
  *   longer in foal at claim time (another caller foaled her first).
  */
 export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
@@ -275,7 +275,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const bornAs = (trait, activeList) =>
     parentActiveTraits.includes(trait) ? activeList : hiddenTraits;
   if (positiveChance > 0 && rng() * 100 < positiveChance) {
-    const bonus = pickFirstUnused(PREGNANCY_BONUS_POSITIVE_TRAITS, carriedTraits());
+    const bonus = pickFirstUnused(pregnancyBonusPositiveTraits, carriedTraits());
     if (bonus) {
       bornAs(bonus, positiveTraits).push(bonus);
       logger.info(
@@ -284,7 +284,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     }
   }
   if (negativeChance > 0 && rng() * 100 < negativeChance) {
-    const bonus = pickFirstUnused(PREGNANCY_BONUS_NEGATIVE_TRAITS, carriedTraits());
+    const bonus = pickFirstUnused(pregnancyBonusNegativeTraits, carriedTraits());
     if (bonus) {
       bornAs(bonus, negativeTraits).push(bonus);
       logger.info(
@@ -405,7 +405,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
 
   const horseData = {
     // Equoria-4fnro (ruling 2026-09-14): unnamed at birth — see horseNamePolicy.
-    name: options.name || dam.pendingFoalName || UNNAMED_HORSE_NAME,
+    name: options.name || dam.pendingFoalName || unnamedHorseName,
     age: 0,
     breedId: requestedBreedId,
     sireId,
@@ -440,7 +440,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   // the pregnancy with no foal. Now a failure anywhere rolls the claim back with it. The claim is a
   // guarded conditional update (Equoria-wgw5k): it clears the pregnancy only if it is STILL set for
   // this sire, so of N overlapping callers (foaling-job runs or foal-now requests) exactly one
-  // matches (count=1); the others match 0 and throw PREGNANCY_NOT_CLAIMABLE ("not in foal", which
+  // matches (count=1); the others match 0 and throw pregnancyNotClaimable ("not in foal", which
   // foal-now maps to 400 and the job treats as already foaled). `options.dueBy` is the foaling
   // job's gestation cutoff. All fallible generation above ran before the transaction, so it stays
   // short. Lock order: the tx write-locks only this mare's row, then inserts the foal and the
@@ -462,7 +462,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     });
     if (claim.count === 0) {
       const lost = new Error(`createFoalFromPregnancy: mare ${damId} is not in foal`);
-      lost.code = PREGNANCY_NOT_CLAIMABLE;
+      lost.code = pregnancyNotClaimable;
       throw lost;
     }
     // The foal is the mare's owner's at birth (q253, Equoria-x1t7q): read on the row the
@@ -517,7 +517,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
  */
 export async function runFoalingJob({ now = new Date(), rng = Math.random, traitRng } = {}) {
   // Bred before 00:00 Eastern on (today - 6) means bred on day <= today - 7.
-  const cutoff = startOfGameDayIndex(gameDayIndex(now) - GESTATION_DAYS + 1);
+  const cutoff = startOfGameDayIndex(gameDayIndex(now) - gestationDays + 1);
   logger.info(
     `[foalingService.runFoalingJob] Searching for mares due as of ${cutoff.toISOString()}`,
   );
@@ -579,7 +579,7 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random, trait
       });
       foalsBorn += 1;
     } catch (err) {
-      if (err.code === PREGNANCY_NOT_CLAIMABLE) {
+      if (err.code === pregnancyNotClaimable) {
         logger.info(`[foalingService.runFoalingJob] Dam ${damId} already foaled; skipping`);
         continue;
       }

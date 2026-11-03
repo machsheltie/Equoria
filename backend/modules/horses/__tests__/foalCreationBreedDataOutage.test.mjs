@@ -108,12 +108,12 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 // never written, never deleted.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const TRACKED_PROFILES_PATH = resolve(__dirname, '../../../data/breedProfiles.json');
+const trackedProfilesPath = resolve(__dirname, '../../../data/breedProfiles.json');
 
-if (!existsSync(TRACKED_PROFILES_PATH)) {
+if (!existsSync(trackedProfilesPath)) {
   throw new Error(
     '[foalCreationBreedDataOutage.test.mjs] Expected the tracked breed profile file at ' +
-      `${TRACKED_PROFILES_PATH}. This suite only ever reads it, so its absence is not this ` +
+      `${trackedProfilesPath}. This suite only ever reads it, so its absence is not this ` +
       "suite's doing. An OLD revision of this file renamed it aside and may have left a " +
       '".equoria-task20-outage-backup" sibling: restore with ' +
       '"git checkout -- backend/data/breedProfiles.json" and delete the stray backup. ' +
@@ -124,10 +124,10 @@ if (!existsSync(TRACKED_PROFILES_PATH)) {
 // The disposable copy the loader is pointed at, in a fresh OS temp directory —
 // outside the repository, so no state this suite creates can reach the working
 // tree or another agent's checkout.
-const COPY_DIR = mkdtempSync(join(tmpdir(), 'equoria-breed-profiles-'));
-const COPY_PATH = join(COPY_DIR, 'breedProfiles.json');
-copyFileSync(TRACKED_PROFILES_PATH, COPY_PATH);
-process.env.BREED_PROFILES_PATH = COPY_PATH;
+const copyDir = mkdtempSync(join(tmpdir(), 'equoria-breed-profiles-'));
+const copyPath = join(copyDir, 'breedProfiles.json');
+copyFileSync(trackedProfilesPath, copyPath);
+process.env.BREED_PROFILES_PATH = copyPath;
 
 const app = (await import('../../../app.mjs')).default;
 const rand = () => randomBytes(4).toString('hex');
@@ -144,11 +144,11 @@ const rand = () => randomBytes(4).toString('hex');
  * file in an OS temp directory, and the tracked tree is untouched either way.
  */
 async function withBreedProfilesUnreadable(fn) {
-  rmSync(COPY_PATH);
+  rmSync(copyPath);
   try {
     return await fn();
   } finally {
-    copyFileSync(TRACKED_PROFILES_PATH, COPY_PATH);
+    copyFileSync(trackedProfilesPath, copyPath);
   }
 }
 
@@ -156,7 +156,7 @@ async function withBreedProfilesUnreadable(fn) {
 // finishes so no later suite in the same worker inherits a redirected path.
 afterAll(() => {
   delete process.env.BREED_PROFILES_PATH;
-  rmSync(COPY_DIR, { recursive: true, force: true });
+  rmSync(copyDir, { recursive: true, force: true });
 });
 
 describe("POST /horses/foals — breed-data outage reports 500, not the breed's fault (Equoria-6w3ur)", () => {

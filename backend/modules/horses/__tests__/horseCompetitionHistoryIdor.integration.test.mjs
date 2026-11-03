@@ -29,7 +29,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import config from '../../../config/config.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-r54u9';
+const fixturePrefix = 'TestFixture-r54u9';
 
 let userA;
 let userAToken;
@@ -48,8 +48,8 @@ async function makeUser(suffix) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
+      username: `${fixturePrefix}-${suffix}-${tag}`,
+      email: `${fixturePrefix}-${suffix}-${tag}@example.com`,
       password: pw,
       firstName: 'IDOR',
       lastName: suffix,
@@ -85,7 +85,7 @@ beforeAll(async () => {
   horseA = await prisma.horse.create({
     data: await testHorseData(prisma, {
       ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horseA-${randomBytes(4).toString('hex')}`,
+      name: `${fixturePrefix}-horseA-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: new Date('2019-06-15'),
       age: 6,
@@ -101,7 +101,7 @@ beforeAll(async () => {
   const pastRunDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   showA = await prisma.show.create({
     data: {
-      name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+      name: `${fixturePrefix}-show-${randomBytes(4).toString('hex')}`,
       discipline: 'Dressage',
       entryFee: 0,
       levelMin: 1,

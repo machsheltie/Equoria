@@ -31,7 +31,7 @@ function createMockRes() {
 // Shared fixtures
 // ---------------------------------------------------------------------------
 
-const MOCK_GENOTYPE = {
+const mockGenotype = {
   E: ['E', 'e'],
   A: ['A', 'a'],
   G: ['G', 'G'],
@@ -50,7 +50,7 @@ const MOCK_GENOTYPE = {
   PATN1: ['N', 'N'],
 };
 
-const MOCK_PHENOTYPE = {
+const mockPhenotype = {
   colorName: 'Bay',
   shade: 'standard',
   faceMarking: 'star',
@@ -79,8 +79,8 @@ function createMockReqRes(horseOverrides = {}) {
     id: 42,
     name: 'Shadowfax',
     breedId: 3,
-    colorGenotype: MOCK_GENOTYPE,
-    phenotype: MOCK_PHENOTYPE,
+    colorGenotype: mockGenotype,
+    phenotype: mockPhenotype,
     colorGeneticsTested: true,
     ...horseOverrides,
   };
@@ -111,8 +111,8 @@ describe('getGenetics', () => {
     expect(response.message).toBe('Genetics data retrieved successfully');
     expect(response.data.horseId).toBe(42);
     expect(response.data.horseName).toBe('Shadowfax');
-    expect(response.data.colorGenotype).toEqual(MOCK_GENOTYPE);
-    expect(response.data.phenotype).toEqual(MOCK_PHENOTYPE);
+    expect(response.data.colorGenotype).toEqual(mockGenotype);
+    expect(response.data.phenotype).toEqual(mockPhenotype);
   });
 
   test('T3.1: response shape has exactly horseId, horseName, colorGenotype, phenotype keys', async () => {
@@ -154,7 +154,7 @@ describe('getGenetics', () => {
     const data = res.body.data;
     expect(data).not.toBeNull();
     expect(data.phenotype).toBeNull();
-    expect(data.colorGenotype).toEqual(MOCK_GENOTYPE);
+    expect(data.colorGenotype).toEqual(mockGenotype);
   });
 });
 

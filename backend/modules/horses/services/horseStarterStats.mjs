@@ -39,7 +39,7 @@ const __dirname__ = dirname(__filename__);
 // three levels up ('..','..','..') then 'data' — NOT one level ('..','data'),
 // which resolved to the nonexistent backend/modules/horses/data/ after the
 // horses-module move and made every store purchase + perf-seed run throw.
-const BREED_STARTER_STATS_PATH = resolve(
+const breedStarterStatsPath = resolve(
   __dirname__,
   '..',
   '..',
@@ -48,15 +48,15 @@ const BREED_STARTER_STATS_PATH = resolve(
   'breedStarterStats.json',
 );
 
-let BREED_STARTER_STATS_BY_NAME = {};
+let breedStarterStatsByName = {};
 try {
-  BREED_STARTER_STATS_BY_NAME = JSON.parse(readFileSync(BREED_STARTER_STATS_PATH, 'utf8'));
+  breedStarterStatsByName = JSON.parse(readFileSync(breedStarterStatsPath, 'utf8'));
 } catch (err) {
   // Loading this file is required for store purchases AND perf-seed runs.
   // Log loudly at boot so the failure is obvious in deployment logs rather
   // than silent until the first buy attempt or seed step.
   logger.error(
-    `[horseStarterStats] FATAL: Failed to load breedStarterStats.json (${BREED_STARTER_STATS_PATH}): ${err.message}. ` +
+    `[horseStarterStats] FATAL: Failed to load breedStarterStats.json (${breedStarterStatsPath}): ${err.message}. ` +
       'Every store purchase and perf-seed run will throw until this file is readable.',
   );
 }
@@ -65,7 +65,7 @@ try {
  * Canonical 12-stat ordering. Order matches the Prisma schema's Horse model
  * declaration. Any consumer that hardcodes a different order is a bug.
  */
-export const STAT_KEYS = [
+export const statKeys = [
   'speed',
   'stamina',
   'agility',
@@ -106,7 +106,7 @@ export function sampleStat({ mean, stdDev }, random = Math.random) {
  *   3. The clamp step may push the post-scale total back above `cap` (when
  *      some stats were rounded UP to 1). Iteratively decrement the highest
  *      stat by 1 until the total reaches `cap`. This terminates: in the
- *      worst case every stat is 1 and total = STAT_KEYS.length, well under
+ *      worst case every stat is 1 and total = statKeys.length, well under
  *      any realistic cap.
  *
  * Why proportional + iterative trim instead of a single pass: pure
@@ -136,7 +136,7 @@ export function clampStatsToTotalCap(stats, cap) {
     const sorted = Object.entries(result).sort(([, a], [, b]) => b - a);
     const target = sorted.find(([, v]) => v > 1);
     if (!target) {
-      break; // safety; mathematically unreachable when cap ≥ STAT_KEYS.length
+      break; // safety; mathematically unreachable when cap ≥ statKeys.length
     }
     result[target[0]] -= 1;
     total -= 1;
@@ -148,17 +148,17 @@ export function clampStatsToTotalCap(stats, cap) {
 /**
  * Total stats game-rule cap. Exposed so callers can reference the same
  * constant the service enforces internally — and so a test can assert
- * `total <= TOTAL_STAT_CAP` against a sampled horse.
+ * `total <= totalStatCap` against a sampled horse.
  */
-export const TOTAL_STAT_CAP = 200;
+export const totalStatCap = 200;
 
 /**
  * Owner ruling 2026-10-16 (Equoria-7wqbs): a store horse's stats are each
- * 1–20 at purchase and total exactly TOTAL_STAT_CAP.
+ * 1–20 at purchase and total exactly totalStatCap.
  */
 export const storeStatMinimum = 1;
 export const storeStatMaximum = 20;
-export const storeStatTotal = TOTAL_STAT_CAP;
+export const storeStatTotal = totalStatCap;
 
 /**
  * Raise a stat object's total to exactly `total`, one point at a time, each
@@ -197,8 +197,8 @@ export function topUpStatsToTotal(stats, total, max, random = Math.random) {
  * @param {string} breedName - Breed display name (must match JSON key exactly)
  * @param {{ random?: () => number }} [options] - `random`: uniform [0, 1)
  *   source for every draw (defaults to Math.random; tests pass a seeded one)
- * @returns {Record<string, number>} object keyed by STAT_KEYS, each in
- *   [storeStatMinimum, storeStatMaximum], summing to exactly TOTAL_STAT_CAP
+ * @returns {Record<string, number>} object keyed by statKeys, each in
+ *   [storeStatMinimum, storeStatMaximum], summing to exactly totalStatCap
  * @throws {Error} (statusCode=500) on missing breed name, missing profile,
  *   or incomplete profile
  */
@@ -209,7 +209,7 @@ export function generateStoreStats(breedName, { random = Math.random } = {}) {
     });
   }
 
-  const profile = BREED_STARTER_STATS_BY_NAME[breedName];
+  const profile = breedStarterStatsByName[breedName];
   if (!profile) {
     throw Object.assign(
       new Error(
@@ -221,7 +221,7 @@ export function generateStoreStats(breedName, { random = Math.random } = {}) {
     );
   }
 
-  const missingKeys = STAT_KEYS.filter(k => {
+  const missingKeys = statKeys.filter(k => {
     const s = profile[k];
     return !s || typeof s.mean !== 'number';
   });
@@ -236,7 +236,7 @@ export function generateStoreStats(breedName, { random = Math.random } = {}) {
   }
 
   const sampled = Object.fromEntries(
-    STAT_KEYS.map(k => {
+    statKeys.map(k => {
       const s = profile[k];
       // JSON uses `std`; sampleStat uses `stdDev`. Accept either.
       const stdDev = typeof s.stdDev === 'number' ? s.stdDev : s.std;

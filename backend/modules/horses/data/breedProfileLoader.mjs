@@ -63,7 +63,7 @@ const __dirname = dirname(__filename);
 // is unset (the normal case, including production) the constant below wins.
 //
 // It exists because backend/modules/horses/__tests__/foalCreationBreedDataOutage.test.mjs
-// must make this read genuinely fail to prove the 500 arm (JSON_LOAD_ERROR is
+// must make this read genuinely fail to prove the 500 arm (jsonLoadError is
 // captured once, right here, at module init, and mocking an Equoria-owned module
 // is forbidden). That suite used to rename the TRACKED backend/data/breedProfiles.json
 // aside for one request — so a run killed inside the window left the tracked file
@@ -74,10 +74,10 @@ const __dirname = dirname(__filename);
 //
 // Set it in the process environment, or in the env file config.mjs loads for the
 // current NODE_ENV. A relative value resolves against the process working directory.
-const DEFAULT_PROFILES_PATH = resolve(__dirname, '../../../data/breedProfiles.json');
-const PROFILES_PATH = process.env.BREED_PROFILES_PATH
+const defaultProfilesPath = resolve(__dirname, '../../../data/breedProfiles.json');
+const profilesPath = process.env.BREED_PROFILES_PATH
   ? resolve(process.env.BREED_PROFILES_PATH)
-  : DEFAULT_PROFILES_PATH;
+  : defaultProfilesPath;
 
 // ── JSON fallback (transition mechanism) ──────────────────────────────────────
 // Loaded once at module init with readFileSync so the loader is usable in
@@ -85,14 +85,14 @@ const PROFILES_PATH = process.env.BREED_PROFILES_PATH
 // gait+temperament+category subset — NO color genetics. When the DB cache is
 // populated (preloadBreedProfiles has run), the cache wins; this JSON is the
 // safety net for boot-order races and tests that don't preload.
-let PROFILES_BY_NAME = {};
-let JSON_LOAD_ERROR = null;
+let profilesByName = {};
+let jsonLoadError = null;
 try {
-  PROFILES_BY_NAME = JSON.parse(readFileSync(PROFILES_PATH, 'utf8'));
+  profilesByName = JSON.parse(readFileSync(profilesPath, 'utf8'));
 } catch (err) {
-  JSON_LOAD_ERROR = err;
+  jsonLoadError = err;
   logger.error(
-    `[breedProfileLoader] Failed to load breedProfiles.json (${PROFILES_PATH}): ${err.message}. ` +
+    `[breedProfileLoader] Failed to load breedProfiles.json (${profilesPath}): ${err.message}. ` +
       'Calls to getBreedProfile() will require preloadBreedProfiles(prisma) to have succeeded.',
   );
 }
@@ -101,7 +101,7 @@ try {
 // Map<breedName, profile> populated by preloadBreedProfiles(). null when the
 // cache has not been loaded yet (server.mjs boot before the await; bare test
 // invocations).
-let DB_CACHE = null;
+let dbCache = null;
 
 /**
  * Populate the in-memory cache from `breeds.breedGeneticProfile`.
@@ -144,7 +144,7 @@ export async function preloadBreedProfiles(prisma) {
       next.set(r.name, p);
     }
   }
-  DB_CACHE = next;
+  dbCache = next;
   logger.info(`[breedProfileLoader] DB cache preloaded: ${next.size} breed profiles`);
   return next.size;
 }
@@ -156,7 +156,7 @@ export async function preloadBreedProfiles(prisma) {
  * without polluting cache state across test files.
  */
 export function _clearBreedProfileCache() {
-  DB_CACHE = null;
+  dbCache = null;
 }
 
 /**
@@ -193,31 +193,31 @@ export function getBreedProfile(breedName) {
   }
 
   // Resolve from each source independently, then merge.
-  const fromDb = DB_CACHE ? (DB_CACHE.get(breedName) ?? null) : null;
-  const fromJson = PROFILES_BY_NAME[breedName] ?? null;
+  const fromDb = dbCache ? (dbCache.get(breedName) ?? null) : null;
+  const fromJson = profilesByName[breedName] ?? null;
 
   if (!fromDb && !fromJson) {
     // Surface a different error message depending on which subsystem(s)
     // are actually broken so the operator can act precisely.
-    if (DB_CACHE && JSON_LOAD_ERROR) {
+    if (dbCache && jsonLoadError) {
       throw new Error(
         `No DB row for breed "${breedName}" AND breedProfiles.json failed to load — ` +
-          `${JSON_LOAD_ERROR.message}`,
-        { cause: JSON_LOAD_ERROR },
+          `${jsonLoadError.message}`,
+        { cause: jsonLoadError },
       );
     }
-    if (DB_CACHE) {
+    if (dbCache) {
       throw new Error(
         `No profile for breed "${breedName}" — absent from both the DB cache ` +
-          `(${DB_CACHE.size} breeds loaded) and breedProfiles.json. ` +
+          `(${dbCache.size} breeds loaded) and breedProfiles.json. ` +
           'Run `npm run seed:breeds` from backend/ to re-import, ' +
           'or confirm the breed name spelling.',
       );
     }
-    if (JSON_LOAD_ERROR) {
+    if (jsonLoadError) {
       throw new Error(
-        `breedProfiles.json failed to load AND DB cache is empty — ${JSON_LOAD_ERROR.message}`,
-        { cause: JSON_LOAD_ERROR },
+        `breedProfiles.json failed to load AND DB cache is empty — ${jsonLoadError.message}`,
+        { cause: jsonLoadError },
       );
     }
     throw new Error(
@@ -255,8 +255,8 @@ export function getBreedProfile(breedName) {
  * @returns {number}
  */
 export function countLoadedBreedProfiles() {
-  if (DB_CACHE) {
-    return DB_CACHE.size;
+  if (dbCache) {
+    return dbCache.size;
   }
-  return Object.keys(PROFILES_BY_NAME).length;
+  return Object.keys(profilesByName).length;
 }

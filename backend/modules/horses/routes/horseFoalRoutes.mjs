@@ -52,7 +52,7 @@ function stripClientOwnerFields(req, _res, next) {
  * Validation middleware for foal creation.
  *
  * The chain stays inline (rather than moving wholesale to `_validators.mjs`)
- * because the `isValidHorseSex` / `HORSE_SEX_VALUES` imports are dynamic —
+ * because the `isValidHorseSex` / `horseSexValues` imports are dynamic —
  * moving them would force every other validator in that file to load the schema
  * constants for no gain. The `name` rule alone IS imported from
  * `_validators.mjs` (Equoria-qkgfh.1), because a horse name must obey one policy
@@ -102,8 +102,8 @@ const validateFoalCreation = [
     .custom(async value => {
       const { isValidHorseSex } = await import('../../../constants/schema.mjs');
       if (value && !isValidHorseSex(value)) {
-        const { horseSexValues: HORSE_SEX_VALUES } = await import('../../../constants/schema.mjs');
-        throw new Error(`Sex must be one of: ${HORSE_SEX_VALUES.join(', ')}`);
+        const { horseSexValues } = await import('../../../constants/schema.mjs');
+        throw new Error(`Sex must be one of: ${horseSexValues.join(', ')}`);
       }
       return true;
     }),

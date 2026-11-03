@@ -7,7 +7,7 @@ import {
   clampScore,
   calculateOverallConformation,
   generateConformationScores,
-  CONFORMATION_REGIONS,
+  conformationRegions,
 } from '../services/conformationService.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
@@ -16,7 +16,7 @@ import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 describe('generateConformationScores', () => {
   test('produces all 8 conformation regions', () => {
     const scores = generateConformationScores('Thoroughbred'); // Thoroughbred
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(scores).toHaveProperty(region);
     }
   });
@@ -38,7 +38,7 @@ describe('generateConformationScores', () => {
     // Run multiple times to increase confidence
     for (let i = 0; i < 50; i++) {
       const scores = generateConformationScores('Thoroughbred');
-      for (const region of CONFORMATION_REGIONS) {
+      for (const region of conformationRegions) {
         expect(Number.isInteger(scores[region])).toBe(true);
         expect(scores[region]).toBeGreaterThanOrEqual(0);
         expect(scores[region]).toBeLessThanOrEqual(100);
@@ -57,7 +57,7 @@ describe('generateConformationScores', () => {
 
   // === Task 3.5: All breeds produce valid scores ===
 
-  const ALL_BREED_NAMES = [
+  const allBreedNames = [
     'Thoroughbred',
     'Arabian',
     'American Saddlebred',
@@ -72,9 +72,9 @@ describe('generateConformationScores', () => {
     'Paint Horse',
   ];
 
-  test.each(ALL_BREED_NAMES)('breed %s produces valid conformation scores', breedName => {
+  test.each(allBreedNames)('breed %s produces valid conformation scores', breedName => {
     const scores = generateConformationScores(breedName);
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
       expect(scores[region]).toBeLessThanOrEqual(100);
@@ -290,7 +290,7 @@ describe('Statistical validation - normal distribution verification', () => {
     }
 
     // Check each region independently
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       const regionMean = conformation[region].mean;
       const regionStdDev = conformation[region].stdDev;
       const lowerBound = regionMean - 2 * regionStdDev;

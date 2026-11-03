@@ -14,20 +14,20 @@ import {
   validateConformationScores,
   generateConformationScores,
   generateInheritedConformationScores,
-  CONFORMATION_REGIONS,
+  conformationRegions,
 } from '../services/conformationService.mjs';
 
 // ---------------------------------------------------------------------------
-// CONFORMATION_REGIONS
+// conformationRegions
 // ---------------------------------------------------------------------------
-describe('CONFORMATION_REGIONS', () => {
+describe('conformationRegions', () => {
   it('has exactly 8 regions', () => {
-    expect(CONFORMATION_REGIONS).toHaveLength(8);
+    expect(conformationRegions).toHaveLength(8);
   });
 
   it('includes all expected region names', () => {
     for (const region of ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves', 'topline']) {
-      expect(CONFORMATION_REGIONS).toContain(region);
+      expect(conformationRegions).toContain(region);
     }
   });
 });
@@ -89,7 +89,7 @@ describe('calculateOverallConformation', () => {
 
   it('returns 80 when all 8 regions are 80', () => {
     const scores = {};
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       scores[r] = 80;
     }
     expect(calculateOverallConformation(scores)).toBe(80);
@@ -98,7 +98,7 @@ describe('calculateOverallConformation', () => {
   it('averages all 8 regions correctly', () => {
     const scores = {};
     // 4 regions at 60, 4 regions at 100 → avg = 80
-    CONFORMATION_REGIONS.forEach((r, i) => {
+    conformationRegions.forEach((r, i) => {
       scores[r] = i < 4 ? 60 : 100;
     });
     expect(calculateOverallConformation(scores)).toBe(80);
@@ -106,7 +106,7 @@ describe('calculateOverallConformation', () => {
 
   it('ignores extra keys beyond the 8 regions', () => {
     const scores = {};
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       scores[r] = 70;
     }
     scores.extraKey = 9999;
@@ -141,7 +141,7 @@ describe('hasValidConformationScores', () => {
 
   it('returns true when all regions are present', () => {
     const scores = {};
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       scores[r] = 65;
     }
     expect(hasValidConformationScores(scores)).toBe(true);
@@ -158,7 +158,7 @@ describe('hasValidConformationScores', () => {
 describe('validateConformationScores', () => {
   it('returns neutral 50 defaults for null input', () => {
     const result = validateConformationScores(null);
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       expect(result[r]).toBe(50);
     }
     expect(result.overallConformation).toBe(50);
@@ -171,18 +171,18 @@ describe('validateConformationScores', () => {
 
   it('preserves valid integer region scores', () => {
     const scores = {};
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       scores[r] = 80;
     }
     const result = validateConformationScores(scores);
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       expect(result[r]).toBe(80);
     }
   });
 
   it('clamps out-of-range values', () => {
     const scores = { head: -5, neck: 120 };
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       if (!scores[r]) {
         scores[r] = 70;
       }
@@ -194,14 +194,14 @@ describe('validateConformationScores', () => {
 
   it('replaces missing regions with 50', () => {
     const result = validateConformationScores({});
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       expect(result[r]).toBe(50);
     }
   });
 
   it('sets overallConformation from region values', () => {
     const scores = {};
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       scores[r] = 60;
     }
     const result = validateConformationScores(scores);
@@ -215,7 +215,7 @@ describe('validateConformationScores', () => {
 describe('generateConformationScores', () => {
   it('returns scores with all 8 regions for a valid breed', () => {
     const result = generateConformationScores('Thoroughbred');
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       expect(typeof result[r]).toBe('number');
       expect(result[r]).toBeGreaterThanOrEqual(0);
       expect(result[r]).toBeLessThanOrEqual(100);
@@ -241,7 +241,7 @@ describe('generateConformationScores', () => {
 
   it('scores are integers (clampScore rounds)', () => {
     const result = generateConformationScores('American Quarter Horse');
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       expect(Number.isInteger(result[r])).toBe(true);
     }
   });
@@ -274,7 +274,7 @@ describe('generateInheritedConformationScores', () => {
 
   it('returns scores with all 8 regions', () => {
     const result = generateInheritedConformationScores('Thoroughbred', sireScores, damScores);
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       expect(typeof result[r]).toBe('number');
     }
   });
@@ -291,7 +291,7 @@ describe('generateInheritedConformationScores', () => {
 
   it('all region scores are integers in [0, 100]', () => {
     const result = generateInheritedConformationScores('Arabian', sireScores, damScores);
-    for (const r of CONFORMATION_REGIONS) {
+    for (const r of conformationRegions) {
       expect(Number.isInteger(result[r])).toBe(true);
       expect(result[r]).toBeGreaterThanOrEqual(0);
       expect(result[r]).toBeLessThanOrEqual(100);

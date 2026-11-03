@@ -28,7 +28,7 @@ import { randomBytes } from 'node:crypto';
 
 import app from '../../../app.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
-import { CONFORMATION_REGIONS } from '../services/conformationService.mjs';
+import { conformationRegions } from '../services/conformationService.mjs';
 
 // ── Fixtures ───────────────────────────────────────────────────────────────
 let ownerA;
@@ -38,11 +38,11 @@ let horseWithConformation;
 let legacyHorse;
 let horseOwnedByB;
 
-const FIXTURE_PREFIX = 'TestFixture-conformation-http';
+const fixturePrefix = 'TestFixture-conformation-http';
 
 /** Build a uniform 8-region conformation-scores object. */
 function makeScores(value) {
-  const out = Object.fromEntries(CONFORMATION_REGIONS.map(r => [r, value]));
+  const out = Object.fromEntries(conformationRegions.map(r => [r, value]));
   out.overallConformation = value;
   return out;
 }
@@ -52,15 +52,15 @@ beforeAll(async () => {
 
   // Two users: A (owner) and B (foreign user attempting IDOR).
   const a = await createTestUser({
-    username: `${FIXTURE_PREFIX}-A-${tag}`,
-    email: `${FIXTURE_PREFIX}-A-${tag}@example.com`,
+    username: `${fixturePrefix}-A-${tag}`,
+    email: `${fixturePrefix}-A-${tag}@example.com`,
   });
   ownerA = a.user;
   tokenA = a.token;
 
   const b = await createTestUser({
-    username: `${FIXTURE_PREFIX}-B-${tag}`,
-    email: `${FIXTURE_PREFIX}-B-${tag}@example.com`,
+    username: `${fixturePrefix}-B-${tag}`,
+    email: `${fixturePrefix}-B-${tag}@example.com`,
   });
   ownerB = b.user;
   // tokenB intentionally not captured — IDOR test exercises A's token against
@@ -68,21 +68,21 @@ beforeAll(async () => {
 
   // Horse with real conformation scores, owned by A.
   horseWithConformation = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-Scored-${tag}`,
+    name: `${fixturePrefix}-Scored-${tag}`,
     userId: ownerA.id,
     conformationScores: makeScores(75),
   });
 
   // Legacy horse (no conformation scores), owned by A.
   legacyHorse = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-Legacy-${tag}`,
+    name: `${fixturePrefix}-Legacy-${tag}`,
     userId: ownerA.id,
     conformationScores: null,
   });
 
   // Horse owned by B — used to assert the IDOR / existence-disclosure contract.
   horseOwnedByB = await createTestHorse({
-    name: `${FIXTURE_PREFIX}-OwnerB-${tag}`,
+    name: `${fixturePrefix}-OwnerB-${tag}`,
     userId: ownerB.id,
     conformationScores: makeScores(60),
   });
@@ -112,7 +112,7 @@ describe('GET /api/v1/horses/:id/conformation (HTTP chain)', () => {
     expect(res.body.data.horseName).toBe(horseWithConformation.name);
 
     const scores = res.body.data.conformationScores;
-    for (const region of CONFORMATION_REGIONS) {
+    for (const region of conformationRegions) {
       expect(scores).toHaveProperty(region);
       expect(typeof scores[region]).toBe('number');
     }

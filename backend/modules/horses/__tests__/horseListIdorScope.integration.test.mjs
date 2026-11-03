@@ -30,7 +30,7 @@ import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/c
 import config from '../../../config/config.mjs';
 import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-idor-scope';
+const fixturePrefix = 'TestFixture-idor-scope';
 
 // Fixture state
 let attackerUser;
@@ -53,8 +53,8 @@ async function makeUser(suffix, role = 'user') {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${FIXTURE_PREFIX}-${suffix}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${suffix}-${tag}@example.com`,
+      username: `${fixturePrefix}-${suffix}-${tag}`,
+      email: `${fixturePrefix}-${suffix}-${tag}@example.com`,
       password: pw,
       firstName: 'IDORTest',
       lastName: suffix,
@@ -84,7 +84,7 @@ beforeAll(async () => {
   attackerHorse = await createTestHorse(
     prisma,
     {
-      name: `${FIXTURE_PREFIX}-attacker-horse`,
+      name: `${fixturePrefix}-attacker-horse`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
       userId: attackerUser.id,
@@ -95,7 +95,7 @@ beforeAll(async () => {
   victimHorse = await createTestHorse(
     prisma,
     {
-      name: `${FIXTURE_PREFIX}-victim-horse`,
+      name: `${fixturePrefix}-victim-horse`,
       sex: 'Stallion',
       dateOfBirth: new Date('2019-06-15'),
       userId: victimUser.id,

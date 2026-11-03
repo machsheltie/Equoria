@@ -4,8 +4,8 @@ import { AppError, ValidationError, NotFoundError, DatabaseError } from '../../.
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
 
 // Cache TTL constants (seconds)
-const BREED_LIST_TTL = 600; // 10 minutes — breed list rarely changes
-const BREED_DETAIL_TTL = 600; // 10 minutes — breed detail rarely changes
+const breedListTtl = 600; // 10 minutes — breed list rarely changes
+const breedDetailTtl = 600; // 10 minutes — breed detail rarely changes
 // Cache keys carry the profile shape version: v2 = camelCase profile keys
 // (migration 20261022130000). Entries cached before that deploy hold the old
 // snake_case shape and must not be served to the new frontend.
@@ -92,7 +92,7 @@ export async function getAllBreeds(req, res, next) {
           orderBy: { name: 'asc' },
           select: { id: true, name: true, description: true },
         }),
-      BREED_LIST_TTL,
+      breedListTtl,
     );
 
     logger.info(`Retrieved ${breeds.length} breeds`);
@@ -111,7 +111,7 @@ export async function getAllBreeds(req, res, next) {
 }
 
 // Get a single breed by ID
-const CONFORMATION_REGIONS = [
+const conformationRegions = [
   'head',
   'neck',
   'shoulders',
@@ -152,7 +152,7 @@ export async function getConformationAverages(req, res, next) {
     });
 
     // Compute per-region averages from real data; return 0 when no horses exist
-    const totals = Object.fromEntries(CONFORMATION_REGIONS.map(r => [r, 0]));
+    const totals = Object.fromEntries(conformationRegions.map(r => [r, 0]));
     let count = 0;
 
     for (const horse of horses) {
@@ -160,7 +160,7 @@ export async function getConformationAverages(req, res, next) {
       if (!scores || typeof scores !== 'object') {
         continue;
       }
-      CONFORMATION_REGIONS.forEach(region => {
+      conformationRegions.forEach(region => {
         const val = scores[region];
         if (typeof val === 'number') {
           totals[region] += val;
@@ -170,7 +170,7 @@ export async function getConformationAverages(req, res, next) {
     }
 
     const averages = Object.fromEntries(
-      CONFORMATION_REGIONS.map(region => [
+      conformationRegions.map(region => [
         region,
         count > 0 ? Math.round((totals[region] / count) * 10) / 10 : 0,
       ]),
@@ -213,7 +213,7 @@ export async function getBreedById(req, res, next) {
     const breed = await getCachedQuery(
       `breeds:${breedCacheVersion}:detail:${breedId}`,
       () => prisma.breed.findUnique({ where: { id: breedId } }),
-      BREED_DETAIL_TTL,
+      breedDetailTtl,
     );
 
     if (!breed) {

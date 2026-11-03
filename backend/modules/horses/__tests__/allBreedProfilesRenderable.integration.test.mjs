@@ -5,7 +5,7 @@
  * reads every row from the canonical breeds table and asserts the engine can
  * fully render it:
  *   - breedGeneticProfile is valid JSONB (object, not null/array/string)
- *   - generateGenotype(profile) yields a genotype covering all CORE_LOCI
+ *   - generateGenotype(profile) yields a genotype covering all coreLoci
  *   - calculatePhenotype(genotype, profile.shadeBias) returns a known,
  *     non-'Unknown' colorName
  *   - when the rendered colorName has a shadeBias entry, the returned shade is
@@ -23,7 +23,7 @@
 
 import { describe, test, expect, beforeAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { CORE_LOCI, generateGenotype } from '../services/genotypeGenerationService.mjs';
+import { coreLoci, generateGenotype } from '../services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
 
 // JSONB type guard (CONTRIBUTING §1).
@@ -86,7 +86,7 @@ describe('All imported breed profiles are engine-renderable (Equoria-26qjf.4)', 
         continue;
       }
 
-      for (const locus of CORE_LOCI) {
+      for (const locus of coreLoci) {
         if (typeof genotype[locus] !== 'string' || genotype[locus].length === 0) {
           failures.push(`${breed.name}: genotype missing/empty locus ${locus}`);
         }

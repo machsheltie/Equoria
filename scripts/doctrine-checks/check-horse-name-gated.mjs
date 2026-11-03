@@ -23,7 +23,7 @@
 //   that writes `horses.name` imports the policy module (so its author met the
 //   rule) or is explicitly allow-listed with a reason. It does NOT prove every
 //   write inside such a file is clamped or validated — e.g. `foalingService`
-//   writes the shared birth name `UNNAMED_HORSE_NAME` while deliberately passing
+//   writes the shared birth name `unnamedHorseName` while deliberately passing
 //   an already-validated `options.name` through untouched.
 //
 // WHAT IT CANNOT SEE (stated, not implied)
@@ -550,7 +550,7 @@ if (violations.length > 0 || staleEntries.length > 0 || contractViolations.lengt
     console.error(
       '\nFix (preferred): validate the name through' +
         '\n  backend/modules/horses/services/horseNamePolicy.mjs' +
-        '\n  (horseNameRejectionReason for a supplied name; UNNAMED_HORSE_NAME for a newborn foal),' +
+        '\n  (horseNameRejectionReason for a supplied name; unnamedHorseName for a newborn foal),' +
         '\n  or import the shared rule via routes/_validators.mjs on a request path.' +
         '\nIf the divergence is deliberate and owner-approved, add the file to' +
         `\n  ${path.relative(REPO_ROOT, ALLOWLIST_PATH).split(path.sep).join('/')}` +

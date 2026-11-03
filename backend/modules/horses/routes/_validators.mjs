@@ -177,7 +177,7 @@ export const rejectPollutedRequest = (req, res, next) => {
  *   403-closed (Equoria-9tque) and never touched `name`.
  *
  * Writing `horses.name` WITHOUT a player string: `foalingService`'s birth name
- * `UNNAMED_HORSE_NAME` ('unnamed', Equoria-4fnro) and its compensation restore
+ * `unnamedHorseName` ('unnamed', Equoria-4fnro) and its compensation restore
  * of an already-validated `pendingFoalName`, `onboardingService`'s
  * `<username>'s First Horse` and `marketplaceController`'s store horses
  * (`gdprAccountService`'s lineage anonymization went with account erasure,
@@ -223,9 +223,9 @@ export const rejectPollutedRequest = (req, res, next) => {
  * old string has zero references in backend, frontend, e2e or packages.
  */
 export {
-  HORSE_NAME_MIN_LENGTH,
+  horseNameMinLength,
   horseNameMaxLength,
-  UNNAMED_HORSE_NAME,
+  unnamedHorseName,
   horseNameRejectionReason,
   horseNameRejectionMessage,
   // Equoria-zalyb: the onboarding controller lives in another module, so it

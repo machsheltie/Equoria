@@ -22,7 +22,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { runFoalingJob, createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
-import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
+import { coreLoci } from '../services/genotypeGenerationService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
@@ -590,9 +590,9 @@ describe('runFoalingJob (B5)', () => {
   });
 
   // 31E-1a/31E-2 follow-up (Equoria-e8zj): foaling job must wire color genetics
-  // into the foal. AC1+AC2: foal.colorGenotype is non-null with all 19 CORE_LOCI
+  // into the foal. AC1+AC2: foal.colorGenotype is non-null with all 19 coreLoci
   // and foal.phenotype includes colorName + markings.
-  it('color genetics: foal has non-null colorGenotype (all 19 CORE_LOCI) and phenotype with colorName', async () => {
+  it('color genetics: foal has non-null colorGenotype (all 19 coreLoci) and phenotype with colorName', async () => {
     const user = await createUser('colorgen');
     createdUserIds.push(user.id);
 
@@ -610,10 +610,10 @@ describe('runFoalingJob (B5)', () => {
     expect(foals.length).toBe(1);
     const foal = foals[0];
 
-    // AC1: colorGenotype non-null with all 19 CORE_LOCI
+    // AC1: colorGenotype non-null with all 19 coreLoci
     expect(foal.colorGenotype).toBeTruthy();
     expect(typeof foal.colorGenotype).toBe('object');
-    for (const locus of CORE_LOCI) {
+    for (const locus of coreLoci) {
       expect(foal.colorGenotype[locus]).toBeTruthy();
       expect(typeof foal.colorGenotype[locus]).toBe('string');
     }

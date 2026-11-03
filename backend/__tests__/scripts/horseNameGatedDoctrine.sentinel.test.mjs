@@ -197,7 +197,7 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
   it('importing the policy module directly still gates (unchanged contract)', () => {
     plantFile(
       `horses/routes/${PLANT_TOKEN}direct_${RUN_ID}.mjs`,
-      `${PRISMA_FROM_HORSE_ROUTES}import { UNNAMED_HORSE_NAME } from '../services/horseNamePolicy.mjs';\n${WRITER}`,
+      `${PRISMA_FROM_HORSE_ROUTES}import { unnamedHorseName } from '../services/horseNamePolicy.mjs';\n${WRITER}`,
     );
     const res = runCheck();
     expect(res.status).toBe(0);
