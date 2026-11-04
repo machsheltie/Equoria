@@ -250,6 +250,54 @@ describe('tackInventory — decorative items (merged from legacy backend/tests, 
     expect(item).toBeDefined();
     expect(item.seasonalTag).toBe('winter');
   });
+
+  it('glitter-spray is limited to 3 uses', () => {
+    expect(decorativeItems.find(i => i.id === 'glitter-spray').limitedUse).toBe(3);
+  });
+});
+
+// Catalogue shape (merged from the marketplace tack catalogue unit suites, Equoria-k1vly).
+describe('tackInventory — catalogue shape', () => {
+  it('is an array of at least 10 items, each with a non-empty string id', () => {
+    expect(Array.isArray(tackInventory)).toBe(true);
+    expect(tackInventory.length).toBeGreaterThanOrEqual(10);
+    for (const item of tackInventory) {
+      expect(typeof item.id).toBe('string');
+      expect(item.id.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('gives every non-legacy item a category, and every category is a non-empty string', () => {
+    for (const item of tackInventory) {
+      if (!item.isLegacyAlias) {
+        expect(typeof item.category).toBe('string');
+      }
+      if (item.category !== undefined) {
+        expect(typeof item.category).toBe('string');
+        expect(item.category.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('includes at least one saddle, one bridle and one decorative item', () => {
+    expect(tackInventory.some(i => i.category === 'saddle' && !i.isLegacyAlias)).toBe(true);
+    expect(tackInventory.some(i => i.category === 'bridle')).toBe(true);
+    expect(tackInventory.some(i => i.category === 'decorative')).toBe(true);
+  });
+
+  // numericBonus retired (Equoria-lsudd, owner decision A, 2026-10-23): the item in the slot decides the tack points.
+  it('no item carries a numericBonus', () => {
+    for (const item of tackInventory) {
+      expect(item).not.toHaveProperty('numericBonus');
+    }
+  });
+
+  it('keeps the known saddle, bridle and decoration ids', () => {
+    const ids = new Set(tackInventory.map(i => i.id));
+    ['dressage-saddle', 'all-purpose-saddle', 'all-purpose-bridle', 'show-ribbon'].forEach(id => {
+      expect(ids.has(id)).toBe(true);
+    });
+  });
 });
 
 describe('purchaseTackItem / unequipDecoration — controller-direct decorative behavior (merged from legacy backend/tests, Equoria-wvuin)', () => {
