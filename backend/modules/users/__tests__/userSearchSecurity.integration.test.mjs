@@ -22,21 +22,23 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 
 const ORIGIN = 'http://localhost:3000';
 
-// Unique, unambiguous suffix so our fixture user won't collide with prod data.
-// The username is: TestFixture-search-XXXX<suffix>
-// We choose a suffix that sits firmly in the MIDDLE of the name so that a
-// "middle" query (2 chars from the centre) cannot accidentally be a prefix too.
+// Unique, unambiguous suffix so our fixture user won't collide with prod data
+// or with TestFixture users other suites leave in the shared test DB.
+// The username is: TestFixture-<suffix>-search
 const SUFFIX = randomBytes(4).toString('hex'); // e.g. "a1b2c3d4"
-// Full username: e.g. "TestFixture-search-a1b2c3d4"
-const testUsername = `TestFixture-search-${SUFFIX}`;
+// Full username: e.g. "TestFixture-a1b2c3d4-search"
+const testUsername = `TestFixture-${SUFFIX}-search`;
+
+// A prefix query unique to this run: "TestFixture-<suffix>" (a strict prefix,
+// shorter than the username). Search returns a capped page ordered by
+// username, so a prefix shared with other suites' leftover users ("TestFixture")
+// could push our fixture user off the page (Equoria-a6o5g).
+const prefixQuery = `TestFixture-${SUFFIX}`;
 
 // A 2-char substring that appears ONLY in the middle of the username (never at
-// the start).  We take chars from position 14 onward (after "TestFixture-sea")
-// to ensure it is never also a prefix.
-const middleQuery = testUsername.slice(14, 16); // e.g. "rc" from "search-…"
-
-// A prefix query: the first 11 chars ("TestFixture").  Must match from position 0.
-const prefixQuery = testUsername.slice(0, 11); // "TestFixture"
+// the start): the "se" of the trailing "-search". The username starts with
+// "Te", so this can never also be a prefix.
+const middleQuery = testUsername.slice(prefixQuery.length + 1, prefixQuery.length + 3); // "se"
 
 let fixtureUser;
 let token;
@@ -89,7 +91,7 @@ describe('GET /api/v1/users/search — security sentinel (Equoria-o7c0x L3)', ()
   // (b) Substring-only queries must return ZERO matches (prefix-only semantics)
   // ──────────────────────────────────────────────────────────────────────────
   it('(b) a query matching only the MIDDLE of a username returns no results', async () => {
-    // middleQuery is chars 14-15 of testUsername — they appear in the
+    // middleQuery is the "se" of the trailing "-search" — it appears in the
     // middle, never at position 0, so startsWith must return nothing for our
     // fixture user.  We verify our fixture user is NOT in the result set.
     const res = await request(app)
