@@ -17,7 +17,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { calendarDateDayIndex, gameDateKey, startOfGameDayIndex } from './gameTime.mjs';
 import { applyPersonalityEffectsToMilestone } from './personalityModifierEngine.mjs';
-import { getHorseAgeDays, getHorseAgeYears } from './horseAge.mjs';
+import { gameYearsFromDays, getHorseAgeDays, getHorseAgeYears } from './horseAge.mjs';
 import { minActiveAgeYears } from '../constants/horseAgePolicy.mjs';
 
 // Milestone types and their developmental windows
@@ -73,6 +73,21 @@ export const milestoneTraitPools = {
   },
 };
 
+/**
+ * Owner ruling 2026-11-03 (q352): each stretch is scored the night after it
+ * ends, so all of its grooming counts. A stretch is due once the foal's age in
+ * Eastern game days is past its last day. Only stretches that begin before
+ * game age 3 are ever scored, the same set the in-stretch scoring reached
+ * (days 22-28 begin at age 3 and never were).
+ *
+ * @param {{start:number,end:number}} window - Developmental window in days
+ * @param {number} ageInDays - The foal's age in Eastern game days
+ * @returns {boolean}
+ */
+export function isStretchDueForScoring(window, ageInDays) {
+  return ageInDays > window.end && gameYearsFromDays(window.start) < minActiveAgeYears;
+}
+
 /** A random entry of `pool`, or null when the pool is empty. */
 function pickFrom(pool) {
   return pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
@@ -113,19 +128,32 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
   // Calculate horse age in days
   const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
-  // Only evaluate horses under game age 3 (Equoria-xggat, owner ruling
-  // 2026-10-19: the game age the player sees, 21 days, not 1095 elapsed days)
-  if (getHorseAgeYears(horse.dateOfBirth) >= minActiveAgeYears) {
+  // Get developmental window for this milestone
+  const window = developmentalWindows[milestoneType];
+
+  if (options.stretchEnded) {
+    // q352: the nightly job scores a stretch after it ends. The last stretch
+    // (days 15-21) ends at age 3, so the age gate is the stretch's start.
+    if (!isStretchDueForScoring(window, ageInDays)) {
+      return {
+        success: false,
+        reason:
+          ageInDays > window.end
+            ? 'Horse too old for milestone evaluation'
+            : 'Stretch has not ended yet for this milestone',
+        ageInDays,
+        window,
+      };
+    }
+  } else if (getHorseAgeYears(horse.dateOfBirth) >= minActiveAgeYears) {
+    // Only evaluate horses under game age 3 (Equoria-xggat, owner ruling
+    // 2026-10-19: the game age the player sees, 21 days, not 1095 elapsed days)
     return {
       success: false,
       reason: 'Horse too old for milestone evaluation',
       ageInDays,
     };
-  }
-
-  // Get developmental window for this milestone
-  const window = developmentalWindows[milestoneType];
-  if (ageInDays < window.start || ageInDays > window.end) {
+  } else if (ageInDays < window.start || ageInDays > window.end) {
     return {
       success: false,
       reason: 'Horse not in appropriate age window for this milestone',

@@ -355,7 +355,10 @@ describe('checkForMilestones() — Equoria-bvddn.16 age-2/3 dead path removal', 
         ...fixtureColor(),
         name: `TestFixture-BV16-${ts}`,
         sex: 'Filly',
-        dateOfBirth: gameCalendarDate(new Date(), -14),
+        // Day 15: the curiosity/play stretch (days 8-14) has ended and is due
+        // (owner ruling q352, Equoria-gveno: scored the night after it ends;
+        // this was day 14 while stretches were scored inside the window).
+        dateOfBirth: gameCalendarDate(new Date(), -15),
         age: 2,
         userId: bvUser.id,
       }),
@@ -389,7 +392,7 @@ describe('checkForMilestones() — Equoria-bvddn.16 age-2/3 dead path removal', 
     expect(result.milestonesTriggered).not.toContain('age_3_milestone_checked');
   });
 
-  it('real coverage: the equivalent developmental window (8-14 real-time days = age-2) is evaluated by processFoalMilestoneEvaluations and persists a MilestoneTraitLog row', async () => {
+  it('real coverage: the equivalent developmental window (8-14 real-time days = age-2) is evaluated by processFoalMilestoneEvaluations, once it has ended, and persists a MilestoneTraitLog row', async () => {
     const result = await processFoalMilestoneEvaluations({ specificHorseId: bvHorse.id });
 
     expect(result.errors).toBe(0);

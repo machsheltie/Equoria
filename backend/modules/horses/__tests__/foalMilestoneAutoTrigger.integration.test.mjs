@@ -7,8 +7,10 @@
  * called the evaluate endpoint. The cron only ran processHorseBirthdays.
  *
  * Post-fix:
- *   - A foal whose age (in days) falls inside a developmentalWindows range
- *     gets a MilestoneTraitLog row written for the matching milestoneType.
+ *   - A foal whose developmentalWindows range has ended gets a
+ *     MilestoneTraitLog row written for the matching milestoneType the night
+ *     after (owner ruling 2026-11-03, q352, Equoria-gveno; it was written on
+ *     the window's first day before that ruling).
  *   - Re-running the pass does NOT create duplicate rows.
  *   - A horse older than 1095 days (past the foal window cap) is skipped.
  *
@@ -23,6 +25,7 @@ import { developmentalWindows, milestoneTypes } from '../../../utils/enhancedMil
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 // Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
 // fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -31,19 +34,18 @@ import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 const TAG = `3yxz-${randomBytes(4).toString('hex')}`;
 
 /**
- * Build a dateOfBirth that places a foal at exactly `ageInDays` old.
+ * Build a dateOfBirth that places a foal at exactly `ageInDays` Eastern game
+ * days old (the job's day model), whatever the hour the test runs.
  */
 function dobForAge(ageInDays) {
-  const d = new Date();
-  d.setDate(d.getDate() - ageInDays);
-  return d;
+  return gameCalendarDate(new Date(), -ageInDays);
 }
 
 describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTraitLog', () => {
   const cleanup = createCleanupTracker();
   let user;
-  let socializationFoal; // age 3 → SOCIALIZATION window (1-7)
-  let trustHandlingFoal; // age 18 → trustHandling window (15-21)
+  let socializationFoal; // day 8 → SOCIALIZATION window (1-7) has just ended
+  let trustHandlingFoal; // day 22 → trustHandling window (15-21) has just ended
   let agedHorse; // age 1200d → past the 1095-day cap, must be skipped
 
   beforeAll(async () => {
@@ -76,7 +78,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
         ...fixtureColor(),
         name: `${TAG}-SocializationFoal`,
         sex: 'colt',
-        dateOfBirth: dobForAge(3),
+        dateOfBirth: dobForAge(8),
         age: 0,
         bondScore: 50,
         userId: user.id,
@@ -88,7 +90,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
         ...fixtureColor(),
         name: `${TAG}-TrustHandlingFoal`,
         sex: 'filly',
-        dateOfBirth: dobForAge(18),
+        dateOfBirth: dobForAge(22),
         age: 0,
         bondScore: 50,
         userId: user.id,
@@ -110,7 +112,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
 
   afterAll(() => cleanup.run(), 30000);
 
-  it('writes MilestoneTraitLog for each foal currently inside a developmental window', async () => {
+  it('writes MilestoneTraitLog for each foal whose developmental window has just ended', async () => {
     // Sanity: no rows exist beforehand.
     const pre = await prisma.milestoneTraitLog.count({
       where: { horseId: { in: [socializationFoal.id, trustHandlingFoal.id] } },
@@ -127,12 +129,11 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
       where: { horseId: socializationFoal.id },
     });
     expect(socializationLogs.length).toBeGreaterThanOrEqual(1);
-    // age 3d → SOCIALIZATION window (1-7d)
+    // day 8 → SOCIALIZATION window (1-7d) ended last night
     const expectedSocialization = milestoneTypes.SOCIALIZATION;
     expect(socializationLogs.map(l => l.milestoneType)).toContain(expectedSocialization);
     const window = developmentalWindows[expectedSocialization];
-    expect(window.start).toBeLessThanOrEqual(3);
-    expect(window.end).toBeGreaterThanOrEqual(3);
+    expect(window.end).toBe(7);
 
     const trustLogs = await prisma.milestoneTraitLog.findMany({
       where: { horseId: trustHandlingFoal.id },

@@ -30,6 +30,7 @@ import logger from './logger.mjs';
 import {
   evaluateEnhancedMilestone,
   developmentalWindows,
+  isStretchDueForScoring,
   milestoneTypes,
 } from './enhancedMilestoneEvaluationSystem.mjs';
 import { getHorseAgeDays } from './horseAge.mjs';
@@ -446,8 +447,12 @@ export async function processHorseBirthdays(options = {}) {
 
 /**
  * Equoria-3yxz: Daily cron pass that fires MilestoneTraitLog writes for
- * every foal that has just entered (and not yet been evaluated for) a
+ * every foal that has just finished (and not yet been evaluated for) a
  * developmental window from enhancedMilestoneEvaluationSystem.developmentalWindows.
+ *
+ * Owner ruling 2026-11-03 (q352, Equoria-gveno): a stretch is scored the night
+ * after it ends, so all of its grooming counts. It used to be scored on its
+ * first day, before most of that care had happened.
  *
  * Without this, the system relies on the manual POST /api/v1/milestones/evaluate-milestone
  * endpoint — meaning a foal's developmental milestones never trigger organically
@@ -456,8 +461,9 @@ export async function processHorseBirthdays(options = {}) {
  * Algorithm:
  *   1. Find horses born within the last 30 days (covers all five windows
  *      0-28d with a small safety margin).
- *   2. For each, compute ageInDays and identify any window whose [start,end]
- *      includes that day.
+ *   2. For each, compute ageInDays and identify any window that has ended
+ *      (ageInDays > end) and began before game age 3 (isStretchDueForScoring).
+ *      A night the job missed is caught up on its next run.
  *   3. For each matching window: if no existing MilestoneTraitLog row exists
  *      for (horseId, milestoneType), call evaluateEnhancedMilestone — which
  *      writes the row (or returns a 'already evaluated' / 'window mismatch'
@@ -496,7 +502,7 @@ export async function processFoalMilestoneEvaluations(options = {}) {
 
     for (const milestoneType of Object.values(milestoneTypes)) {
       const window = developmentalWindows[milestoneType];
-      if (!window || ageInDays < window.start || ageInDays > window.end) {
+      if (!window || !isStretchDueForScoring(window, ageInDays)) {
         continue;
       }
 
@@ -518,7 +524,9 @@ export async function processFoalMilestoneEvaluations(options = {}) {
           continue;
         }
 
-        const result = await evaluateEnhancedMilestone(foal.id, milestoneType);
+        const result = await evaluateEnhancedMilestone(foal.id, milestoneType, {
+          stretchEnded: true,
+        });
         if (result?.success === false) {
           milestonesSkipped++;
           logger.info(

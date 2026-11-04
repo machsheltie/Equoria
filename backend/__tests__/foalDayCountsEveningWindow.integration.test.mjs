@@ -11,7 +11,9 @@
  *     engine was deleted with no caller left, Equoria-1vep2.)
  *   - horseAgingSystem.processFoalMilestoneEvaluations aged a foal as
  *     floor((Date.now() - dob) / day), one day too old in that window, so
- *     milestone windows opened a day early and closed a day early.
+ *     milestone windows opened a day early and closed a day early. Since
+ *     owner ruling q352 (2026-11-03, Equoria-gveno) a window is scored the
+ *     night after it ends, so a day-ahead read would score it a day early.
  *   - horseAgingSystem.calculateAgeFromBirth (behind updateHorseAge, which
  *     writes Horse.age in game-years) was the same millisecond delta, so a
  *     6-game-day-old foal was written 1 game-year old in the evening.
@@ -113,22 +115,23 @@ afterAll(async () => {
 }, 120000);
 
 describe.each(EVENINGS)('Eastern day counts for foals (%s) — Equoria-kha18', (_label, now) => {
-  it('the milestone pass reads a foal born today (Eastern) as day 0: imprinting only', async () => {
-    const foal = await makeHorse(gameCalendarDate(now));
+  it('the milestone pass reads a foal born yesterday (Eastern) as day 1: no window has ended yet', async () => {
+    const foal = await makeHorse(gameCalendarDate(now, -1));
 
     const result = await at(now, () => processFoalMilestoneEvaluations({ dryRun: true, specificHorseId: foal.id }));
 
-    // Day 0 is inside imprinting (0-1) only; day 1 would also open socialization (1-7).
-    expect(result).toMatchObject({ totalProcessed: 1, milestonesEvaluated: 1, errors: 0 });
+    // Day 1 is still inside imprinting (0-1); read as day 2 it would score imprinting.
+    expect(result).toMatchObject({ totalProcessed: 1, milestonesEvaluated: 0, errors: 0 });
   });
 
-  it('the milestone pass reads a foal born 28 game days ago as day 28: confidence window still open', async () => {
-    const foal = await makeHorse(gameCalendarDate(now, -28));
+  it('the milestone pass reads a foal born 21 game days ago as day 21: trust window still open', async () => {
+    const foal = await makeHorse(gameCalendarDate(now, -21));
 
     const result = await at(now, () => processFoalMilestoneEvaluations({ dryRun: true, specificHorseId: foal.id }));
 
-    // Day 28 is the last day of confidence/reactivity (22-28); day 29 is in no window.
-    expect(result).toMatchObject({ totalProcessed: 1, milestonesEvaluated: 1, errors: 0 });
+    // Day 21 is the last day of trust/handling (15-21): imprinting, socialization
+    // and curiosity/play have ended; read as day 22 trust/handling would be a fourth.
+    expect(result).toMatchObject({ totalProcessed: 1, milestonesEvaluated: 3, errors: 0 });
   });
 
   it('the aging pass keeps a foal born 6 game days ago at 0 game-years and ages one born 7 days ago to 1', async () => {
