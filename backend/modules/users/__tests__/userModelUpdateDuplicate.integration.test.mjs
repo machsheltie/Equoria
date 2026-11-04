@@ -18,7 +18,7 @@
  * model layer (not via HTTP) so this test does not touch the users
  * controller/routes (owned by a parallel agent). The HTTP 400/409 mapping of a
  * P2002 `.code` is independently proven by the global errorHandler tests
- * (backend/tests/middleware/errorHandler.test.mjs,
+ * (backend/__tests__/errorHandler.test.mjs,
  * backend/modules/services/__tests__/errorHandler.test.mjs); this test proves
  * the model now hands that handler the `.code` it needs.
  */
