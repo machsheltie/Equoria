@@ -23,6 +23,8 @@ import { equoriaSkippedTestsPlugin } from './eslint-plugins/no-skipped-tests.mjs
 // comments without bd issue tracking rot silently and produce false confidence.
 // See the plugin file's doc-comment for the full rationale.
 import { equoriaForwardReferencesPlugin } from './eslint-plugins/no-forward-reference-comments.mjs';
+// Equoria-pjvp8.9: camelCase names (owner ruling q351), exemptions from the naming check's allow-list.
+import { camelcaseRule } from './eslint-plugins/camelcase-naming-rule.mjs';
 
 // ---------------------------------------------------------------------------
 // Equoria-v8l96.4 — module public-API barrel boundary enforcement.
@@ -230,6 +232,8 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
+
+      camelcase: camelcaseRule,
 
       // Code Quality
       'no-unused-vars': [

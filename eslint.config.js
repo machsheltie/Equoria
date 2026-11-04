@@ -13,6 +13,8 @@ import tseslint from 'typescript-eslint';
 import { equoriaTestFixturePlugin } from './backend/eslint-plugins/no-raw-test-horse-create.mjs';
 import { equoriaSkippedTestsPlugin } from './backend/eslint-plugins/no-skipped-tests.mjs';
 import { equoriaForwardReferencesPlugin } from './backend/eslint-plugins/no-forward-reference-comments.mjs';
+// Equoria-pjvp8.9: camelCase names (owner ruling q351), exemptions from the naming check's allow-list.
+import { camelcaseRule } from './backend/eslint-plugins/camelcase-naming-rule.mjs';
 
 export default [
   js.configs.recommended,
@@ -91,6 +93,7 @@ export default [
       ],
       'no-console': 'off',
       'no-undef': 'off',
+      camelcase: camelcaseRule,
     },
     plugins: { prettier: (await import('eslint-plugin-prettier')).default },
   },
