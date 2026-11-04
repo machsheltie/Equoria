@@ -23,7 +23,7 @@ import logger from '../../../utils/logger.mjs';
  * Update synergy between groom and horse
  * @param {number} groomId - ID of the groom
  * @param {number} horseId - ID of the horse
- * @param {string} action - Action type (milestone_completed, trait_shaped, rare_trait_influenced, reassigned_early)
+ * @param {string} action - Action type (milestoneCompleted, traitShaped, rareTraitInfluenced, reassignedEarly)
  * @param {number} sessions - Number of sessions to add
  * @param {object} [client] - Prisma client or interactive-transaction client.
  *   Pass a `tx` to enlist this write in the caller's transaction (Equoria-po1fl);
@@ -31,7 +31,7 @@ import logger from '../../../utils/logger.mjs';
  * @returns {Object} Result with synergy changes
  */
 /** The action a grooming session reports (camelCase name for new callers, Equoria-pjvp8). */
-export const interactionCompletedAction = 'interaction_completed';
+export const interactionCompletedAction = 'interactionCompleted';
 
 export async function updateGroomSynergy(groomId, horseId, action, sessions = 1, client = prisma) {
   try {
@@ -41,13 +41,13 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1,
 
     // Synergy gain amounts based on action
     const synergyGains = {
-      milestone_completed: 1,
-      trait_shaped: 2,
-      rare_trait_influenced: 3,
-      reassigned_early: -5,
+      milestoneCompleted: 1,
+      traitShaped: 2,
+      rareTraitInfluenced: 3,
+      reassignedEarly: -5,
       // Equoria-5v6g: generic interactions track sessions every time, with a small
       // synergyScore delta every 4th session (handled inline via sessionsTogether modulo).
-      interaction_completed: 0,
+      interactionCompleted: 0,
     };
 
     let synergyGain = synergyGains[action] || 0;

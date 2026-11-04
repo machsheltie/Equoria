@@ -90,7 +90,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         speciality: 'foalCare',
         experience: 5,
         skillLevel: 'intermediate',
-        personality: groomPersonalityTypes.CALM,
+        personality: groomPersonalityTypes.calm,
         sessionRate: 20.0,
         userId: testUser.id,
         isActive: true,
@@ -140,7 +140,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     it('should correctly identify compatible personality-temperament pairs', () => {
       // Test CALM groom with SPIRITED foal (should be compatible)
       const compatibility = calculatePersonalityCompatibility(
-        groomPersonalityTypes.CALM,
+        groomPersonalityTypes.calm,
         foalTemperamentTypes.SPIRITED,
         65,
       );
@@ -155,7 +155,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       // Test RESERVED groom with DRIVEN foal (should be incompatible).
       // Owner ruling 2026-10-21: the Playful temperament is now Driven (old: PLAYFUL foal).
       const compatibility = calculatePersonalityCompatibility(
-        groomPersonalityTypes.RESERVED,
+        groomPersonalityTypes.reserved,
         foalTemperamentTypes.DRIVEN,
         40,
       );
@@ -169,7 +169,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     it('should handle regular matches without high bond', () => {
       // Test ENERGETIC groom with LAZY foal (compatible but low bond)
       const compatibility = calculatePersonalityCompatibility(
-        groomPersonalityTypes.ENERGETIC,
+        groomPersonalityTypes.energetic,
         foalTemperamentTypes.LAZY,
         45, // Below 60 threshold
       );
@@ -184,7 +184,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
   describe('Personality Modifier Engine', () => {
     it('should apply personality effects to milestone evaluation', () => {
       const effects = applyPersonalityEffectsToMilestone({
-        groomPersonality: groomPersonalityTypes.CALM,
+        groomPersonality: groomPersonalityTypes.calm,
         foalTemperament: foalTemperamentTypes.SPIRITED,
         bondScore: 70,
         baseMilestoneScore: 1,
@@ -252,10 +252,10 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     it('should return all compatible grooms for a temperament', () => {
       const compatibleGrooms = getCompatibleGroomsForTemperament(foalTemperamentTypes.SPIRITED);
 
-      expect(compatibleGrooms).toHaveLength(3); // CALM, SOFT_SPOKEN, RESERVED
-      expect(compatibleGrooms.some(g => g.personality === groomPersonalityTypes.CALM)).toBe(true);
-      expect(compatibleGrooms.some(g => g.personality === groomPersonalityTypes.SOFT_SPOKEN)).toBe(true);
-      expect(compatibleGrooms.some(g => g.personality === groomPersonalityTypes.RESERVED)).toBe(true);
+      expect(compatibleGrooms).toHaveLength(3); // CALM, softSpoken, RESERVED
+      expect(compatibleGrooms.some(g => g.personality === groomPersonalityTypes.calm)).toBe(true);
+      expect(compatibleGrooms.some(g => g.personality === groomPersonalityTypes.softSpoken)).toBe(true);
+      expect(compatibleGrooms.some(g => g.personality === groomPersonalityTypes.reserved)).toBe(true);
     });
 
     it('should return empty array for unknown temperament', () => {
@@ -276,7 +276,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         expect(response.body.success).toBe(true);
         expect(response.body.groom).toBeDefined();
         expect(response.body.groom.id).toBe(testGroom.id);
-        expect(response.body.groom.personality).toBe(groomPersonalityTypes.CALM);
+        expect(response.body.groom.personality).toBe(groomPersonalityTypes.calm);
         expect(response.body.groom.personalityCompatibility).toBeDefined();
       });
 

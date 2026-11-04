@@ -45,7 +45,7 @@ export const legMarkingDefaults = {
 
 /** Base probabilities for advanced markings (before breed multiplier). */
 export const advancedMarkingBaseRates = {
-  bloody_shoulder: 0.02,
+  bloodyShoulder: 0.02,
   snowflake: 0.03,
   frost: 0.03,
 };
@@ -206,7 +206,7 @@ export function generateAdvancedMarkings(advancedMarkingsBias, rng, hasAppaloosa
   const frMultiplier = advancedMarkingsBias?.frostProbabilityMultiplier ?? 1.0;
 
   // D-1: Math.max(0, ...) clamps negative multipliers to 0 probability
-  const bsProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.bloody_shoulder * bsMultiplier));
+  const bsProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.bloodyShoulder * bsMultiplier));
   const swProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.snowflake * swMultiplier));
   const frProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.frost * frMultiplier));
 
@@ -433,7 +433,7 @@ export function inheritMarkings(
   const bsMult = advancedBias?.bloodyShoulderProbabilityMultiplier ?? 1.0;
   const swMult = advancedBias?.snowflakeProbabilityMultiplier ?? 1.0;
   const frMult = advancedBias?.frostProbabilityMultiplier ?? 1.0;
-  const bsProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.bloody_shoulder * bsMult));
+  const bsProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.bloodyShoulder * bsMult));
   const swProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.snowflake * swMult));
   const frProb = Math.min(1, Math.max(0, advancedMarkingBaseRates.frost * frMult));
 

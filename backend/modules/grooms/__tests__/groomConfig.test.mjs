@@ -16,17 +16,17 @@ describe('groomConfig structure', () => {
     expect(typeof groomConfig).toBe('object');
   });
 
-  it('has BOND_SCORE_MAX of 100', () => {
-    expect(groomConfig.BOND_SCORE_MAX).toBe(100);
+  it('has bondScoreMax of 100', () => {
+    expect(groomConfig.bondScoreMax).toBe(100);
   });
 
-  it('has BOND_SCORE_START of 0', () => {
-    expect(groomConfig.BOND_SCORE_START).toBe(0);
+  it('has bondScoreStart of 0', () => {
+    expect(groomConfig.bondScoreStart).toBe(0);
   });
 
-  it('has positive DAILY_BOND_GAIN', () => {
-    expect(typeof groomConfig.DAILY_BOND_GAIN).toBe('number');
-    expect(groomConfig.DAILY_BOND_GAIN).toBeGreaterThan(0);
+  it('has positive dailyBondGain', () => {
+    expect(typeof groomConfig.dailyBondGain).toBe('number');
+    expect(groomConfig.dailyBondGain).toBeGreaterThan(0);
   });
 });
 
@@ -40,7 +40,7 @@ describe('groomConfig structure', () => {
 // BURNOUT_RESET_GRACE_DAYS 2 and BURNOUT_STATUS {NONE, AT_RISK, IMMUNE}.
 // Owner ruling 2026-10-23 (Equoria-0gl9o): there is no burnout, so the grooming
 // burnout immunity label and Horse.burnoutStatus are gone.
-// The care-streak grace period lives on as FOAL_STREAK_GRACE_DAYS (below).
+// The care-streak grace period lives on as foalStreakGraceDays (below).
 // ---------------------------------------------------------------------------
 describe('groomConfig has no burnout settings', () => {
   it('carries no burnout immunity threshold, burnout grace period or burnout status', () => {
@@ -52,22 +52,22 @@ describe('groomConfig has no burnout settings', () => {
 // Task arrays
 // ---------------------------------------------------------------------------
 describe('groomConfig task arrays', () => {
-  it('ELIGIBLE_FOAL_ENRICHMENT_TASKS is a non-empty array', () => {
-    expect(Array.isArray(groomConfig.ELIGIBLE_FOAL_ENRICHMENT_TASKS)).toBe(true);
-    expect(groomConfig.ELIGIBLE_FOAL_ENRICHMENT_TASKS.length).toBeGreaterThan(0);
+  it('eligibleFoalEnrichmentTasks is a non-empty array', () => {
+    expect(Array.isArray(groomConfig.eligibleFoalEnrichmentTasks)).toBe(true);
+    expect(groomConfig.eligibleFoalEnrichmentTasks.length).toBeGreaterThan(0);
   });
 
-  it('ELIGIBLE_FOAL_ENRICHMENT_TASKS includes desensitization', () => {
-    expect(groomConfig.ELIGIBLE_FOAL_ENRICHMENT_TASKS).toContain('desensitization');
+  it('eligibleFoalEnrichmentTasks includes desensitization', () => {
+    expect(groomConfig.eligibleFoalEnrichmentTasks).toContain('desensitization');
   });
 
-  it('ELIGIBLE_FOAL_GROOMING_TASKS is a non-empty array', () => {
-    expect(Array.isArray(groomConfig.ELIGIBLE_FOAL_GROOMING_TASKS)).toBe(true);
-    expect(groomConfig.ELIGIBLE_FOAL_GROOMING_TASKS.length).toBeGreaterThan(0);
+  it('eligibleFoalGroomingTasks is a non-empty array', () => {
+    expect(Array.isArray(groomConfig.eligibleFoalGroomingTasks)).toBe(true);
+    expect(groomConfig.eligibleFoalGroomingTasks.length).toBeGreaterThan(0);
   });
 
-  it('ELIGIBLE_FOAL_GROOMING_TASKS includes hoofHandling', () => {
-    expect(groomConfig.ELIGIBLE_FOAL_GROOMING_TASKS).toContain('hoofHandling');
+  it('eligibleFoalGroomingTasks includes hoofHandling', () => {
+    expect(groomConfig.eligibleFoalGroomingTasks).toContain('hoofHandling');
   });
 });
 
@@ -75,8 +75,8 @@ describe('groomConfig task arrays', () => {
 // Streak config
 // ---------------------------------------------------------------------------
 describe('groomConfig streak config', () => {
-  it('FOAL_STREAK_GRACE_DAYS is 2', () => {
-    expect(groomConfig.FOAL_STREAK_GRACE_DAYS).toBe(2);
+  it('foalStreakGraceDays is 2', () => {
+    expect(groomConfig.foalStreakGraceDays).toBe(2);
   });
 });
 
@@ -84,12 +84,12 @@ describe('groomConfig streak config', () => {
 // Named exports
 // ---------------------------------------------------------------------------
 describe('named exports', () => {
-  it('ELIGIBLE_FOAL_ENRICHMENT_TASKS export equals groomConfig value', () => {
-    expect(eligibleFoalEnrichmentTasks).toEqual(groomConfig.ELIGIBLE_FOAL_ENRICHMENT_TASKS);
+  it('eligibleFoalEnrichmentTasks export equals groomConfig value', () => {
+    expect(eligibleFoalEnrichmentTasks).toEqual(groomConfig.eligibleFoalEnrichmentTasks);
   });
 
-  it('foalGroomingTasks export equals groomConfig.ELIGIBLE_FOAL_GROOMING_TASKS', () => {
-    expect(foalGroomingTasks).toEqual(groomConfig.ELIGIBLE_FOAL_GROOMING_TASKS);
+  it('foalGroomingTasks export equals groomConfig.eligibleFoalGroomingTasks', () => {
+    expect(foalGroomingTasks).toEqual(groomConfig.eligibleFoalGroomingTasks);
   });
 });
 
@@ -97,7 +97,7 @@ describe('named exports', () => {
 // Exact task lists/counts and category-separation/uniqueness invariants. The
 // age-eligibility cases went with the age thresholds (Equoria-czpa5).
 describe('groomConfig — task category invariants & age eligibility (merged from legacy backend/tests, Equoria-wvuin)', () => {
-  it('ELIGIBLE_FOAL_ENRICHMENT_TASKS is the exact expected list of 7', () => {
+  it('eligibleFoalEnrichmentTasks is the exact expected list of 7', () => {
     expect(eligibleFoalEnrichmentTasks).toEqual([
       'desensitization',
       'trustBuilding',
@@ -128,7 +128,7 @@ describe('groomConfig — task category invariants & age eligibility (merged fro
   });
 
   // Owner ruling 2026-10-26 (q87) replaced the old +2: each daily groom adds +5.
-  it('DAILY_BOND_GAIN is exactly 5', () => {
-    expect(groomConfig.DAILY_BOND_GAIN).toBe(5);
+  it('dailyBondGain is exactly 5', () => {
+    expect(groomConfig.dailyBondGain).toBe(5);
   });
 });

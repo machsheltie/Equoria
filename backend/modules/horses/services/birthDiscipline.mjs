@@ -29,7 +29,7 @@ import { isGaitedBreedProfile } from '../../../utils/gaitedBreed.mjs';
 /** The trained value a horse is born with in its birth discipline. */
 export const birthDisciplineTrainedValue = 5;
 
-const gaitedDiscipline = DISCIPLINES.GAITED;
+const gaitedDiscipline = DISCIPLINES.gaited;
 const knownDisciplines = new Set(Object.values(DISCIPLINES));
 
 // The one gaited-breed rule (Equoria-uszhf); re-exported for existing callers.

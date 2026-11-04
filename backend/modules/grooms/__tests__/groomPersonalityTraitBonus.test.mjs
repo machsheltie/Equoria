@@ -24,9 +24,9 @@ describe('groomPersonalityTypes', () => {
   });
 
   it('has CALM, ENERGETIC, ASSERTIVE', () => {
-    expect(groomPersonalityTypes.CALM).toBe('Calm');
-    expect(groomPersonalityTypes.ENERGETIC).toBe('Energetic');
-    expect(groomPersonalityTypes.ASSERTIVE).toBe('Assertive');
+    expect(groomPersonalityTypes.calm).toBe('Calm');
+    expect(groomPersonalityTypes.energetic).toBe('Energetic');
+    expect(groomPersonalityTypes.assertive).toBe('Assertive');
   });
 });
 

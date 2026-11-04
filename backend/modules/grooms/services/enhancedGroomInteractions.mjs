@@ -17,7 +17,7 @@ import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 // Enhanced interaction types with contextual variations
 export const enhancedInteractions = {
   // Basic care interactions
-  DAILY_CARE: {
+  dailyCare: {
     id: 'dailyCare',
     name: 'Daily Care',
     category: 'care',
@@ -30,7 +30,7 @@ export const enhancedInteractions = {
   },
 
   // Enrichment interactions
-  ENRICHMENT: {
+  enrichment: {
     id: 'enrichment',
     name: 'Enrichment Activity',
     category: 'enrichment',
@@ -43,7 +43,7 @@ export const enhancedInteractions = {
   },
 
   // Training support interactions
-  TRAINING_SUPPORT: {
+  trainingSupport: {
     id: 'trainingSupport',
     name: 'Training Support',
     category: 'training',
@@ -56,7 +56,7 @@ export const enhancedInteractions = {
   },
 
   // Medical and health interactions
-  HEALTH_CHECK: {
+  healthCheck: {
     id: 'healthCheck',
     name: 'Health Assessment',
     category: 'medical',
@@ -69,7 +69,7 @@ export const enhancedInteractions = {
   },
 
   // Special bonding interactions
-  BONDING_TIME: {
+  bondingTime: {
     id: 'bondingTime',
     name: 'Quality Time',
     category: 'bonding',
@@ -95,39 +95,39 @@ export const relationshipLevels = {
 
 // Special events that can occur during interactions
 export const specialEvents = {
-  BREAKTHROUGH: {
+  breakthrough: {
     id: 'breakthrough',
     name: 'Breakthrough Moment',
     probability: 0.05, // 5% chance
-    conditions: ['relationship_level >= 2'],
+    conditions: ['relationshipLevel >= 2'],
     effects: { bonding: 15, memory: true },
   },
 
-  PERFECT_HARMONY: {
+  perfectHarmony: {
     id: 'perfectHarmony',
     name: 'Perfect Harmony',
     probability: 0.03, // 3% chance
-    conditions: ['relationship_level >= 4', 'groom_specialty_match'],
+    conditions: ['relationshipLevel >= 4', 'groomSpecialtyMatch'],
     effects: { bonding: 20, memory: true },
   },
 
-  LEARNING_MOMENT: {
+  learningMoment: {
     id: 'learningMoment',
     name: 'Learning Moment',
     probability: 0.08, // 8% chance
     // Equoria-yny4: horse.age is game-years (post Equoria-son6). 3 game-years
     // is the foal-care upper bound (was 1095 days pre-migration).
-    conditions: ['horse_age < 3'], // Under 3 game-years
+    conditions: ['horseAge < 3'], // Under 3 game-years
     effects: { bonding: 8, development: 5 },
   },
 
-  PLAYFUL_INTERACTION: {
+  playfulInteraction: {
     id: 'playfulInteraction',
     name: 'Playful Moment',
     probability: 0.1, // 10% chance
     // Equoria-yny4: horse.age is game-years (post Equoria-son6). 2 game-years
     // is the playful-foal upper bound (was 730 days pre-migration).
-    conditions: ['horse_age < 2'], // Under 2 game-years
+    conditions: ['horseAge < 2'], // Under 2 game-years
     effects: { bonding: 10, joy: 5 },
   },
 };
@@ -247,18 +247,18 @@ function evaluateCondition(condition, context) {
   const { groom, horse, relationshipLevel } = context;
 
   // Simple condition evaluation (could be expanded)
-  if (condition.includes('relationship_level >=')) {
+  if (condition.includes('relationshipLevel >=')) {
     const threshold = parseInt(condition.split('>=')[1].trim());
     return relationshipLevel.level >= threshold;
   }
 
-  if (condition.includes('horse_age <')) {
+  if (condition.includes('horseAge <')) {
     const threshold = parseInt(condition.split('<')[1].trim());
     // Equoria-66qkj: the live Eastern age (a pending birthday counts).
     return liveHorseAgeYears(horse) < threshold;
   }
 
-  if (condition === 'groom_specialty_match') {
+  if (condition === 'groomSpecialtyMatch') {
     // Equoria-yny4: horse.age is game-years (post Equoria-son6). Foal-care
     // window = 0-3 game-years (was 1095 days pre-migration).
     return groom.speciality === 'foalCare' && liveHorseAgeYears(horse) < 3;

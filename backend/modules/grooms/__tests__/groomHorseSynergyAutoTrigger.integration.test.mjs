@@ -6,7 +6,7 @@
  *
  * Pre-fix behavior: synergy row stays absent (or unchanged) after generic
  * brushing/grooming sessions. Only updateGroomSynergy callers tied to
- * milestone_completed / trait_shaped / rare_trait_influenced events touch it.
+ * milestoneCompleted / traitShaped / rareTraitInfluenced events touch it.
  *
  * Post-fix behavior: each interaction increments sessionsTogether by 1; the
  * synergyScore gains +1 every 4th session crossed (small relative to

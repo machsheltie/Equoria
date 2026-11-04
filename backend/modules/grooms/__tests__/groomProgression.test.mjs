@@ -131,7 +131,7 @@ describe('Groom Progression System', () => {
 
   describe('Groom-Horse Synergy System', () => {
     test('Should create synergy record for new groom-horse pair', async () => {
-      const result = await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 1);
+      const result = await updateGroomSynergy(testGroom.id, testHorse.id, 'milestoneCompleted', 1);
 
       expect(result.success).toBe(true);
       expect(result.synergyGained).toBe(1);
@@ -141,29 +141,29 @@ describe('Groom Progression System', () => {
 
     test('Should award correct synergy for different actions', async () => {
       // Test milestone completion (+1)
-      await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 1);
+      await updateGroomSynergy(testGroom.id, testHorse.id, 'milestoneCompleted', 1);
 
       // Test trait shaped (+2)
-      const traitResult = await updateGroomSynergy(testGroom.id, testHorse.id, 'trait_shaped', 1);
+      const traitResult = await updateGroomSynergy(testGroom.id, testHorse.id, 'traitShaped', 1);
       expect(traitResult.newSynergyScore).toBe(3); // 1 + 2
 
       // Test rare trait influenced (+3)
-      const rareResult = await updateGroomSynergy(testGroom.id, testHorse.id, 'rare_trait_influenced', 1);
+      const rareResult = await updateGroomSynergy(testGroom.id, testHorse.id, 'rareTraitInfluenced', 1);
       expect(rareResult.newSynergyScore).toBe(6); // 3 + 3
     });
 
     test('Should penalize synergy for reassignment', async () => {
       // Build up some synergy first
-      await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 5);
+      await updateGroomSynergy(testGroom.id, testHorse.id, 'milestoneCompleted', 5);
 
       // Test reassignment penalty (-5)
-      const result = await updateGroomSynergy(testGroom.id, testHorse.id, 'reassigned_early', 1);
+      const result = await updateGroomSynergy(testGroom.id, testHorse.id, 'reassignedEarly', 1);
       expect(result.newSynergyScore).toBe(0); // 5 - 5, minimum 0
     });
 
     test('Should track sessions together', async () => {
-      await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 1);
-      await updateGroomSynergy(testGroom.id, testHorse.id, 'trait_shaped', 1);
+      await updateGroomSynergy(testGroom.id, testHorse.id, 'milestoneCompleted', 1);
+      await updateGroomSynergy(testGroom.id, testHorse.id, 'traitShaped', 1);
 
       const synergy = await prisma.groomHorseSynergy.findFirst({
         where: { groomId: testGroom.id, horseId: testHorse.id },
@@ -208,7 +208,7 @@ describe('Groom Progression System', () => {
       // a groom's experience/level are generated, never earned (old contract:
       // awardGroomXP(150) raised it to level 2), so set them as generation would.
       await prisma.groom.update({ where: { id: testGroom.id }, data: { experience: 150, starLevel: 'novice' } });
-      await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 3);
+      await updateGroomSynergy(testGroom.id, testHorse.id, 'milestoneCompleted', 3);
       await logGroomAssignment(testGroom.id, testHorse.id, 'assigned');
 
       const profile = await getGroomProfile(testGroom.id);
@@ -227,9 +227,9 @@ describe('Groom Progression System', () => {
 
     test('Should include synergy effects in profile', async () => {
       // Build synergy to trigger effects - need to call multiple times to reach 25
-      // milestone_completed gives +1 each time, so call 25 times
+      // milestoneCompleted gives +1 each time, so call 25 times
       for (let i = 0; i < 25; i++) {
-        await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed');
+        await updateGroomSynergy(testGroom.id, testHorse.id, 'milestoneCompleted');
       }
 
       const profile = await getGroomProfile(testGroom.id);

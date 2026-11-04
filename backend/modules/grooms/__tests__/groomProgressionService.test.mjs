@@ -176,16 +176,16 @@ describe('updateGroomSynergy — branch coverage (Equoria-jkht)', () => {
   });
 
   it('updates existing synergy record on second call (existing-record branch)', async () => {
-    const result = await updateGroomSynergy(sgGroom.id, sgHorse.id, 'milestone_completed');
+    const result = await updateGroomSynergy(sgGroom.id, sgHorse.id, 'milestoneCompleted');
     expect(result.success).toBe(true);
     expect(result.synergyGained).toBe(1);
     expect(result.newSynergyScore).toBe(1);
     expect(result.sessionsTogether).toBe(2);
   });
 
-  it('reassigned_early clamps synergy to 0 via Math.max (negative-gain branch)', async () => {
+  it('reassignedEarly clamps synergy to 0 via Math.max (negative-gain branch)', async () => {
     // Current score=1, synergyGain=-5 → Math.max(0, 1-5) = 0
-    const result = await updateGroomSynergy(sgGroom.id, sgHorse.id, 'reassigned_early');
+    const result = await updateGroomSynergy(sgGroom.id, sgHorse.id, 'reassignedEarly');
     expect(result.success).toBe(true);
     expect(result.synergyGained).toBe(-5);
     expect(result.newSynergyScore).toBe(0);

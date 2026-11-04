@@ -15,14 +15,14 @@ import logger from './logger.mjs';
  * Each groom has a single personality drawn from this enum set
  */
 export const groomPersonalityTypes = {
-  CALM: 'Calm',
-  ENERGETIC: 'Energetic',
-  SOFT_SPOKEN: 'Soft-Spoken',
-  ASSERTIVE: 'Assertive',
-  PLAYFUL: 'Playful',
-  METHODICAL: 'Methodical',
-  AFFECTIONATE: 'Affectionate',
-  RESERVED: 'Reserved',
+  calm: 'Calm',
+  energetic: 'Energetic',
+  softSpoken: 'Soft-Spoken',
+  assertive: 'Assertive',
+  playful: 'Playful',
+  methodical: 'Methodical',
+  affectionate: 'Affectionate',
+  reserved: 'Reserved',
 };
 
 /**
@@ -60,7 +60,7 @@ export const foalTemperamentTypes = {
  * }
  */
 export const personalityTemperamentCompatibility = {
-  [groomPersonalityTypes.CALM]: {
+  [groomPersonalityTypes.calm]: {
     idealMatches: [
       foalTemperamentTypes.REACTIVE,
       foalTemperamentTypes.SPIRITED,
@@ -71,7 +71,7 @@ export const personalityTemperamentCompatibility = {
     description: 'Excels with reactive, spirited, and nervous foals, providing calming influence',
   },
 
-  [groomPersonalityTypes.ENERGETIC]: {
+  [groomPersonalityTypes.energetic]: {
     idealMatches: [
       foalTemperamentTypes.LAZY,
       foalTemperamentTypes.DRIVEN,
@@ -83,7 +83,7 @@ export const personalityTemperamentCompatibility = {
     description: 'Motivates lazy foals, matches energy with driven and bold ones',
   },
 
-  [groomPersonalityTypes.SOFT_SPOKEN]: {
+  [groomPersonalityTypes.softSpoken]: {
     idealMatches: [
       foalTemperamentTypes.AGGRESSIVE,
       foalTemperamentTypes.SPIRITED,
@@ -96,7 +96,7 @@ export const personalityTemperamentCompatibility = {
       'Gentle approach helps aggressive, spirited, nervous, and willing foals feel secure',
   },
 
-  [groomPersonalityTypes.ASSERTIVE]: {
+  [groomPersonalityTypes.assertive]: {
     idealMatches: [
       foalTemperamentTypes.STUBBORN,
       foalTemperamentTypes.AGGRESSIVE,
@@ -107,14 +107,14 @@ export const personalityTemperamentCompatibility = {
     description: 'Firm guidance works well with stubborn, aggressive, and bold personalities',
   },
 
-  [groomPersonalityTypes.PLAYFUL]: {
+  [groomPersonalityTypes.playful]: {
     idealMatches: [foalTemperamentTypes.DRIVEN, foalTemperamentTypes.LAZY],
     traitDevBonus: 1,
     bondModifier: 10,
     description: 'Creates engaging experiences for driven foals and motivates lazy ones',
   },
 
-  [groomPersonalityTypes.METHODICAL]: {
+  [groomPersonalityTypes.methodical]: {
     idealMatches: [
       foalTemperamentTypes.REACTIVE,
       foalTemperamentTypes.STUBBORN,
@@ -126,7 +126,7 @@ export const personalityTemperamentCompatibility = {
     description: 'Consistent approach helps reactive, stubborn, nervous, and independent foals',
   },
 
-  [groomPersonalityTypes.AFFECTIONATE]: {
+  [groomPersonalityTypes.affectionate]: {
     idealMatches: [
       foalTemperamentTypes.STEADY,
       foalTemperamentTypes.LAZY,
@@ -137,7 +137,7 @@ export const personalityTemperamentCompatibility = {
     description: 'Nurturing care suits steady and willing foals and encourages lazy ones',
   },
 
-  [groomPersonalityTypes.RESERVED]: {
+  [groomPersonalityTypes.reserved]: {
     idealMatches: [
       foalTemperamentTypes.SPIRITED,
       foalTemperamentTypes.REACTIVE,

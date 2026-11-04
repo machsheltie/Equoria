@@ -27,7 +27,7 @@ import logger from '../../../utils/logger.mjs';
 
 /**
  * Decimal multipliers applied to daily bond gain during grooming sessions.
- * Values per PRD-03 §7.6. Applied as: DAILY_BOND_GAIN * (1 + synergyModifier).
+ * Values per PRD-03 §7.6. Applied as: dailyBondGain * (1 + synergyModifier).
  * Calm and Steady use `_any` key for universal matching with any personality.
  * Owner ruling 2026-10-21: Driven keeps Playful's energetic +0.15; Willing
  * (eager to please) bonds best with gentle and patient grooms.

@@ -39,12 +39,12 @@ export const careStreakGraceDays = 2;
 
 export const groomConfig = {
   // Bonding mechanics
-  BOND_SCORE_START: 0,
-  BOND_SCORE_MAX: bondScoreMax,
-  DAILY_BOND_GAIN: dailyBondGain,
+  bondScoreStart: 0,
+  bondScoreMax,
+  dailyBondGain,
 
   // Tasks used for foal bonding, epigenetics, and enrichment (ages 0-2)
-  ELIGIBLE_FOAL_ENRICHMENT_TASKS: [
+  eligibleFoalEnrichmentTasks: [
     'desensitization',
     'trustBuilding',
     'showgroundExposure',
@@ -55,7 +55,7 @@ export const groomConfig = {
   ],
 
   // Tasks used for grooming behavior and presentation prep (ages 1-3)
-  ELIGIBLE_FOAL_GROOMING_TASKS: [
+  eligibleFoalGroomingTasks: [
     'hoofHandling',
     'tyingPractice',
     'spongeBath',
@@ -66,11 +66,11 @@ export const groomConfig = {
   // Streak tracking
   // Days a care streak (Horse.daysGroomedInARow) survives without grooming
   // before it resets (Equoria-0gl9o: formerly also BURNOUT_RESET_GRACE_DAYS).
-  FOAL_STREAK_GRACE_DAYS: careStreakGraceDays,
+  foalStreakGraceDays: careStreakGraceDays,
 };
 
 // Named exports for foal task categories
-export const { ELIGIBLE_FOAL_ENRICHMENT_TASKS: eligibleFoalEnrichmentTasks } = groomConfig;
-export const foalGroomingTasks = groomConfig.ELIGIBLE_FOAL_GROOMING_TASKS;
+export const { eligibleFoalEnrichmentTasks } = groomConfig;
+export const foalGroomingTasks = groomConfig.eligibleFoalGroomingTasks;
 
 export default groomConfig;

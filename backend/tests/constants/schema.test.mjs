@@ -120,11 +120,11 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
 
   describe('Competition Disciplines', () => {
     it('should have all major disciplines', () => {
-      expect(DISCIPLINES.RACING).toBe('Racing');
-      expect(DISCIPLINES.SHOW_JUMPING).toBe('Show Jumping');
-      expect(DISCIPLINES.DRESSAGE).toBe('Dressage');
-      expect(DISCIPLINES.CROSS_COUNTRY).toBe('Cross Country');
-      expect(DISCIPLINES.WESTERN_PLEASURE).toBe('Western Pleasure');
+      expect(DISCIPLINES.racing).toBe('Racing');
+      expect(DISCIPLINES.showJumping).toBe('Show Jumping');
+      expect(DISCIPLINES.dressage).toBe('Dressage');
+      expect(DISCIPLINES.crossCountry).toBe('Cross Country');
+      expect(DISCIPLINES.westernPleasure).toBe('Western Pleasure');
     });
 
     it('should validate disciplines correctly', () => {
