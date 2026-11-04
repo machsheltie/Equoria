@@ -23,10 +23,10 @@ package-lock.json
 # config (e.g. components/GroomAssignmentManager.js has unwrapped adjacent
 # JSX siblings). Ignored from prettier-check; treated as archive.
 /components/
-hooks/
-navigation/
-screens/
-__mocks__/
+/hooks/
+/navigation/
+/screens/
+/__mocks__/
 
 # impeccable design-hook cache (generated)
 .impeccable/
