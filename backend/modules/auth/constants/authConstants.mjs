@@ -4,14 +4,14 @@
  * Extracted from authController.mjs (Equoria-vhv3i) so that:
  *   - settingsValidation.mjs (users/services) does NOT have to import from a
  *     controller, breaking a cross-module-boundary smell.
- *   - The backfill script can import data without dragging the controller's
- *     prisma / bcrypt / jwt / mfa deps into a one-shot migration.
+ *   - One-shot scripts can import data without dragging the controller's
+ *     prisma / bcrypt / jwt / mfa deps.
  *
  * Test-locking contracts (do NOT silently change values without owners):
  *   - starterKitInventory: backend/modules/auth/__tests__/starterKitInventory.test.mjs
  *     (Equoria-oroi).
  *   - starterCraftingMaterials: backend/modules/auth/__tests__/buildStarterSettings.test.mjs
- *     and backfillCraftingMaterials.integration.test.mjs (Equoria-aazk).
+ *     (Equoria-aazk).
  *   - allowedPreferenceKeys: backend/modules/auth/__tests__/preferencesRoutes.integration.test.mjs
  *     and users/services/settingsValidation.mjs (cross-module consumer).
  */
