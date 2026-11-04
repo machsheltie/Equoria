@@ -1,6 +1,7 @@
 import { expect, type APIResponse, type Page } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
+import { openVerificationLinkInBrowser } from '../../helpers/emailConfirmation';
 import { skipGuidedTourAfterWizard } from '../../helpers/guidedTour';
 
 const bannedHeaders = [
@@ -108,15 +109,7 @@ export async function registerAndCompleteOnboarding(
   const verificationEmail = await latestCapturedEmail('verification', email);
   expect(verificationEmail.preview).toContain('/verify-email');
   expect(verificationEmail.preview).toContain('token=');
-  const verifyResponse = page.waitForResponse(
-    (response) =>
-      response.url().includes('/api/v1/auth/verify-email') && response.request().method() === 'GET'
-  );
-  await page.goto(verificationEmail.preview, { waitUntil: 'domcontentloaded' });
-  expect((await verifyResponse).status()).toBe(200);
-  // React StrictMode (dev server) runs the page's verify effect twice; the
-  // second call meets a used token and the page shows "Already Verified".
-  await expect(page.locator('body')).toContainText(/Email Verified|Already Verified/);
+  await openVerificationLinkInBrowser(page, verificationEmail.preview);
   await page.getByRole('button', { name: /Enter the Realm|Continue to Home/ }).click();
 
   await page.waitForURL(/\/onboarding$/);

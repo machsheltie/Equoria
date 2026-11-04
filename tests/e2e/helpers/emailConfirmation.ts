@@ -21,7 +21,7 @@
  */
 
 import fs from 'fs';
-import { expect, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type Page, type Response } from '@playwright/test';
 
 interface CapturedEmail {
   kind: string;
@@ -98,6 +98,48 @@ export async function confirmEmailViaApi(
 }
 
 /**
+ * Open an emailed verification link in the browser and wait until the page has
+ * verified it. React StrictMode (dev server) runs the page's verify effect
+ * twice, so two GETs for the same token race: one verifies (200) and the other
+ * meets a used token (400, the page shows "Already Verified"). Either can
+ * finish first, so this waits for the token's 200 rather than the first
+ * response, and checks the token verified exactly once (Equoria-r9drt).
+ */
+export async function openVerificationLinkInBrowser(page: Page, link: string): Promise<void> {
+  const token = new URL(link).searchParams.get('token');
+  expect(token, 'the emailed verification link must carry a token').toBeTruthy();
+  const isThisTokensVerify = (response: Response) =>
+    response.request().method() === 'GET' &&
+    response.url().includes('/api/v1/auth/verify-email') &&
+    new URL(response.url()).searchParams.get('token') === token;
+  const statuses: number[] = [];
+  const record = (response: Response) => {
+    if (isThisTokensVerify(response)) {
+      statuses.push(response.status());
+    }
+  };
+  page.on('response', record);
+  try {
+    const verified = page.waitForResponse(
+      (response) => isThisTokensVerify(response) && response.status() === 200
+    );
+    await page.goto(link, { waitUntil: 'domcontentloaded' });
+    expect((await verified).status()).toBe(200);
+    await expect(page.locator('body')).toContainText(/Email Verified|Already Verified/);
+  } finally {
+    page.off('response', record);
+  }
+  expect(
+    statuses.filter((status) => status === 200),
+    'the token verifies exactly once'
+  ).toHaveLength(1);
+  expect(
+    statuses.every((status) => status === 200 || status === 400),
+    `every other verify call meets the used token (got ${statuses.join(', ')})`
+  ).toBe(true);
+}
+
+/**
  * Confirm a player who registered through the /register page: she is held on
  * /verify-email, opens the emailed link, and enters the realm. Afterwards the
  * page is on /onboarding (a new player) or / (an onboarded one).
@@ -107,15 +149,7 @@ export async function confirmEmailInBrowser(page: Page, email: string): Promise<
   const mail = await latestCapturedEmail('verification', email);
   expect(mail.preview).toContain('/verify-email');
   expect(mail.preview).toContain('token=');
-  const verifyResponse = page.waitForResponse(
-    (response) =>
-      response.url().includes('/api/v1/auth/verify-email') && response.request().method() === 'GET'
-  );
-  await page.goto(mail.preview, { waitUntil: 'domcontentloaded' });
-  expect((await verifyResponse).status()).toBe(200);
-  // React StrictMode (dev server) runs the page's verify effect twice; the
-  // second call meets a used token and the page shows "Already Verified".
-  await expect(page.locator('body')).toContainText(/Email Verified|Already Verified/);
+  await openVerificationLinkInBrowser(page, mail.preview);
   await page.getByRole('button', { name: /Enter the Realm|Continue to Home/ }).click();
   await page.waitForURL(/\/(onboarding)?$/, { timeout: 30000 });
 }
