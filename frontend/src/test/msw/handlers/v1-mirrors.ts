@@ -235,28 +235,9 @@ export const v1MirrorHandlers = [
     });
   }),
 
-  // Advanced Horse Analysis (mirrors /api/horses/:id/{environmental-analysis,
-  // developmental-timeline, forecast})
-  http.get(`${base}/api/v1/horses/:id/environmental-analysis`, () =>
-    HttpResponse.json({
-      success: true,
-      data: { factors: [], summary: 'Normal environment' },
-    })
-  ),
-  http.get(`${base}/api/v1/horses/:id/developmental-timeline`, () =>
-    HttpResponse.json({ success: true, data: { milestones: [] } })
-  ),
+  // Forecast mirror. environmental-analysis, developmental-timeline and /flags/*
+  // were removed with their backend routes (Equoria-a7f1p, Equoria-6fwro).
   http.get(`${base}/api/v1/horses/:id/forecast`, () =>
     HttpResponse.json({ success: true, data: { forecasts: [] } })
-  ),
-
-  // Flag care patterns and definitions. GET /flags/horses/:id/flags and
-  // /horses/:id/trait-interactions showed the old epigeneticFlags store and were
-  // removed with it (owner ruling 2026-10-29, q300, Equoria-efs4j).
-  http.get(`${base}/api/v1/flags/horses/:id/care-patterns`, () =>
-    HttpResponse.json({ success: true, data: { eligible: false, patterns: {} } })
-  ),
-  http.get(`${base}/api/v1/flags/definitions`, () =>
-    HttpResponse.json({ success: true, data: { count: 0, flags: [] } })
   ),
 ];
