@@ -90,6 +90,41 @@ describe('Cache Helper', () => {
     });
   });
 
+  describe('getCachedQuery() - hit/miss isolation', () => {
+    it('keeps different keys as independent cache entries', async () => {
+      const suffix = randomBytes(8).toString('hex');
+      const keyA = generateCacheKey('test', 'keyA', suffix);
+      const keyB = generateCacheKey('test', 'keyB', suffix);
+      let countA = 0;
+      let countB = 0;
+      const fnA = async () => ({ from: 'A', n: ++countA });
+      const fnB = async () => ({ from: 'B', n: ++countB });
+
+      await getCachedQuery(keyA, fnA, 60);
+      await getCachedQuery(keyB, fnB, 60);
+      const a2 = await getCachedQuery(keyA, fnA, 60);
+      const b2 = await getCachedQuery(keyB, fnB, 60);
+
+      expect(a2.from).toBe('A');
+      expect(b2.from).toBe('B');
+      expect(countA).toBe(1);
+      expect(countB).toBe(1);
+    });
+
+    it('does NOT cache a null result, so queryFn runs on every call', async () => {
+      const key = `test:null-uncached:${randomBytes(8).toString('hex')}`;
+      let callCount = 0;
+      const queryFn = async () => {
+        callCount++;
+        return null;
+      };
+
+      expect(await getCachedQuery(key, queryFn, 60)).toBeNull();
+      expect(await getCachedQuery(key, queryFn, 60)).toBeNull();
+      expect(callCount).toBe(2);
+    });
+  });
+
   describe('invalidateCache()', () => {
     it('should remove items from cache', async () => {
       const cacheKey = `test:invalidate:${randomBytes(8).toString('hex')}`;
@@ -129,6 +164,47 @@ describe('Cache Helper', () => {
       expect(count).toBe(0);
     });
 
+    it('makes the invalidated keys cache misses so queryFn re-executes', async () => {
+      const prefix = `test:pattern-refetch:${randomBytes(4).toString('hex')}`;
+      await getCachedQuery(`${prefix}:a`, async () => 'va', 60);
+      await getCachedQuery(`${prefix}:b`, async () => 'vb', 60);
+
+      await invalidateCachePattern(`${prefix}:*`);
+
+      let calls = 0;
+      const queryFn = async () => {
+        calls++;
+        return 'fresh';
+      };
+      await getCachedQuery(`${prefix}:a`, queryFn, 60);
+      await getCachedQuery(`${prefix}:b`, queryFn, 60);
+      expect(calls).toBe(2);
+    });
+
+    it('does not delete non-matching local keys', async () => {
+      const keepKey = `test:pattern-keep:${randomBytes(4).toString('hex')}:keep`;
+      await getCachedQuery(keepKey, async () => 'keeper', 60);
+
+      await invalidateCachePattern(`test:pattern-nope:${randomBytes(4).toString('hex')}:*`);
+
+      let calls = 0;
+      await getCachedQuery(
+        keepKey,
+        async () => {
+          calls++;
+          return 'keeper';
+        },
+        60,
+      );
+      expect(calls).toBe(0);
+    });
+
+    it('does not increment cacheStats.invalidations when nothing matched', async () => {
+      resetCacheStatistics();
+      await invalidateCachePattern(`test:no-match-stat:${randomBytes(8).toString('hex')}:*`);
+      expect(cacheStats.invalidations).toBe(0);
+    });
+
     it('increments cacheStats.invalidations when keys are deleted', async () => {
       const prefix = `test:inval-stats:${randomBytes(4).toString('hex')}`;
       await getCachedQuery(`${prefix}:x`, makeAsyncTracked('x'));
@@ -148,6 +224,10 @@ describe('Cache Helper', () => {
       const result = await invalidateCacheMultiple([]);
       expect(result).toBe(0);
     });
+
+    it('resolves to 0 for an arbitrary larger key array', async () => {
+      await expect(invalidateCacheMultiple(['k1', 'k2', 'k3', 'k4', 'k5'])).resolves.toBe(0);
+    });
   });
 
   describe('clearAllCache()', () => {
@@ -165,6 +245,13 @@ describe('Cache Helper', () => {
       expect(stats.redisConnected).toBe(false);
       expect(typeof stats.hits).toBe('number');
       expect(typeof stats.misses).toBe('number');
+      expect(typeof stats.errors).toBe('number');
+      expect(typeof stats.invalidations).toBe('number');
+    });
+
+    it('does not include a redis key when Redis is unavailable', async () => {
+      const stats = await getCacheStatistics();
+      expect(stats.redis).toBeUndefined();
     });
 
     it('hitRate is 0 when no hits or misses', async () => {
@@ -188,6 +275,11 @@ describe('Cache Helper', () => {
   describe('closeRedisConnection()', () => {
     it('is a no-op in test mode (no Redis client)', async () => {
       // Should not throw when redisClient is null
+      await expect(closeRedisConnection()).resolves.toBeUndefined();
+    });
+
+    it('is idempotent: calling twice does not throw', async () => {
+      await expect(closeRedisConnection()).resolves.toBeUndefined();
       await expect(closeRedisConnection()).resolves.toBeUndefined();
     });
   });
@@ -230,6 +322,30 @@ describe('Cache Helper', () => {
     it('cacheInvalidation.competitions() delegates to invalidateCachePattern', async () => {
       const result = await cacheInvalidation.competitions();
       expect(typeof result).toBe('number');
+    });
+
+    it('cacheInvalidation.competition(id) resolves to a number', async () => {
+      const result = await cacheInvalidation.competition(99);
+      expect(typeof result).toBe('number');
+    });
+
+    it('cacheInvalidation.horse(id) invalidates only that horse key from the local cache', async () => {
+      const horseId = 1001;
+      const k = `horse:${horseId}`;
+      await getCachedQuery(k, async () => ({ id: horseId }), 60);
+
+      let calls = 0;
+      const queryFn = async () => {
+        calls++;
+        return { id: horseId };
+      };
+      await getCachedQuery(k, queryFn, 60);
+      expect(calls).toBe(0); // was cached
+
+      await cacheInvalidation.horse(horseId);
+
+      await getCachedQuery(k, queryFn, 60);
+      expect(calls).toBe(1); // cache was cleared
     });
 
     it('cacheInvalidation.users() delegates to invalidateCachePattern', async () => {

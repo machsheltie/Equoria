@@ -380,6 +380,45 @@ describe('validateEnvironment()', () => {
     });
   });
 
+  describe('Deployable environment acceptance (merged from validate-environment.test.mjs)', () => {
+    const strongEnv = nodeEnv => {
+      process.env.DATABASE_URL = 'postgresql://user:StrongP@ss@localhost:5432/dbname';
+      process.env.JWT_SECRET = 'StrongSecretWithNumbers1234567890ABCDE';
+      process.env.JWT_REFRESH_SECRET = 'RefreshSecretWithNumbers1234567890AB';
+      process.env.NODE_ENV = nodeEnv;
+      process.env.PORT = '3000';
+    };
+
+    it('accepts NODE_ENV=beta with strong secrets (Story 21S-3)', () => {
+      strongEnv('beta');
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('reports errors for production with weak JWT secrets and HTTP origins', () => {
+      process.env.DATABASE_URL = 'postgresql://user:password@localhost/db';
+      process.env.JWT_SECRET = 'your-super-secret';
+      process.env.JWT_REFRESH_SECRET = 'your-super-secret-refresh-value';
+      process.env.NODE_ENV = 'production';
+      process.env.PORT = '80';
+      process.env.ALLOWED_ORIGINS = 'http://example.com';
+
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.length).toBeGreaterThan(0);
+    });
+
+    it('beta-readiness with test-only secrets reports no errors at all', () => {
+      process.env.DATABASE_URL = 'postgresql://user:strongpass123@localhost:5432/equoria';
+      process.env.PORT = '3001';
+      process.env.JWT_SECRET = 'StrongSecret1234567890ABCDEFGHIJK';
+      process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing-only-32chars';
+      process.env.NODE_ENV = 'beta-readiness';
+
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
+    });
+  });
+
   describe('Multiple errors', () => {
     it('should report all validation errors at once', () => {
       process.env.DATABASE_URL = 'short'; // Too short

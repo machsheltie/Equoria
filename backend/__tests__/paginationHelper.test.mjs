@@ -56,6 +56,16 @@ describe('parsePaginationParams', () => {
     expect(result.page).toBe(1);
   });
 
+  it('falls back to default on a negative page', () => {
+    const result = parsePaginationParams(makeReq({ page: '-5' }));
+    expect(result.page).toBe(paginationDefaults.defaultPage);
+  });
+
+  it('falls back to defaultLimit when limit is zero', () => {
+    const result = parsePaginationParams(makeReq({ limit: '0' }));
+    expect(result.limit).toBe(paginationDefaults.defaultLimit);
+  });
+
   it('falls back to default on invalid limit string', () => {
     const result = parsePaginationParams(makeReq({ limit: 'bad' }));
     expect(result.limit).toBe(20);
@@ -128,6 +138,36 @@ describe('buildPaginationMetadata', () => {
     const meta = buildPaginationMetadata(2, 20, 35);
     expect(meta.totalPages).toBe(2);
     expect(meta.endRecord).toBe(35);
+  });
+
+  it('builds correct metadata for a middle page (both neighbours present)', () => {
+    const meta = buildPaginationMetadata(3, 10, 100);
+    expect(meta.currentPage).toBe(3);
+    expect(meta.pageSize).toBe(10);
+    expect(meta.totalRecords).toBe(100);
+    expect(meta.totalPages).toBe(10);
+    expect(meta.hasNextPage).toBe(true);
+    expect(meta.hasPrevPage).toBe(true);
+    expect(meta.nextPage).toBe(4);
+    expect(meta.prevPage).toBe(2);
+  });
+
+  it('calculates startRecord and endRecord for a full middle page', () => {
+    const meta = buildPaginationMetadata(2, 10, 25);
+    expect(meta.startRecord).toBe(11);
+    expect(meta.endRecord).toBe(20);
+  });
+
+  it('startRecord and endRecord on a final partial page do not exceed the total', () => {
+    const meta = buildPaginationMetadata(3, 10, 25);
+    expect(meta.startRecord).toBe(21);
+    expect(meta.endRecord).toBe(25);
+  });
+
+  it('empty result set reports zero totalRecords and no previous page', () => {
+    const meta = buildPaginationMetadata(1, 20, 0);
+    expect(meta.totalRecords).toBe(0);
+    expect(meta.hasPrevPage).toBe(false);
   });
 
   it('single page result', () => {
