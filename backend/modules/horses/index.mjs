@@ -11,6 +11,8 @@
 
 export { preloadBreedProfiles } from './data/breedProfileLoader.mjs';
 export { getFoalDevelopment } from './models/foalModel.mjs';
+// Equoria-9rhf6: grooms' "groom horse" records a foal's bond milestones inside its own transaction.
+export { detectAndRecordFoalMilestonesCore } from './services/foalMilestoneService.mjs';
 // Production since WS4 S6 (Equoria-q4uem.4): competition's conformationShowScoring.mjs reads the
 // overall conformation score through this barrel.
 export { calculateOverallConformation } from './services/conformationService.mjs';

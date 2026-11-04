@@ -22,6 +22,7 @@ import { gameDayBounds, gameDayIndex } from '../../../utils/gameTime.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { checkGroomMayWork } from '../../../utils/groomWorkRules.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { detectAndRecordFoalMilestonesCore } from '../../horses/index.mjs';
 import { interactionCompletedAction, updateGroomSynergy } from './groomProgressionService.mjs';
 import { foalActivityLabel, foalCareToday } from './foalCareSchedule.mjs';
 
@@ -224,8 +225,8 @@ function chooseInteractionType(horse, foalCare, activity) {
  * staff rows; no User row is written because care is free), and today's
  * interaction is re-read under that lock, so two presses in flight groom the
  * horse once. The GroomInteraction row, the horse's bond / last groomed /
- * streak / task log, the FoalActivity row and the groom-horse synergy row all
- * commit together or not at all.
+ * streak / task log, a foal's newly reached bond milestones, the FoalActivity
+ * row and the groom-horse synergy row all commit together or not at all.
  *
  * @param {{horseId:number, activity?:string|null, now?:Date}} input
  * @returns {Promise<object>} the horse's care status after grooming
@@ -271,6 +272,11 @@ export async function groomHorse({ horseId, activity, now = new Date() }) {
           taskLog,
         },
       });
+      // A foal's bond milestones are recorded when grooming earns them, in this
+      // transaction (Equoria-9rhf6). Idempotent; a grown horse has none.
+      if (foalCare) {
+        await detectAndRecordFoalMilestonesCore(tx, horseId, { now });
+      }
       await tx.groomInteraction.create({
         data: {
           foalId: horseId,
