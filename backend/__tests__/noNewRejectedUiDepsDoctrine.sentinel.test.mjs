@@ -169,7 +169,8 @@ describe('check-no-new-rejected-ui-deps.mjs manifest entries (Equoria-jl20x)', (
 
   /** The live frontend manifest with extra entries merged in, in a scratch file. */
   function manifestWith(section, extra) {
-    scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jl20x-rejected-ui-PLANTED-'));
+    // Reuse a scratch dir a planted baseline already made, so afterEach removes both.
+    scratchDir = scratchDir ?? fs.mkdtempSync(path.join(os.tmpdir(), 'jl20x-rejected-ui-PLANTED-'));
     const file = path.join(scratchDir, 'package.json');
     const real = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
     real[section] = { ...(real[section] ?? {}), ...extra };
@@ -193,7 +194,11 @@ describe('check-no-new-rejected-ui-deps.mjs manifest entries (Equoria-jl20x)', (
   });
 
   it('does not flag a rejected package that is still imported', () => {
-    const res = runCheck([BASELINE, manifestWith('dependencies', { [SONNER]: '^2.0.7' })]);
+    // The live tree no longer imports sonner (Equoria-7i4cw, owner ruling q173),
+    // so the still-imported case is planted rather than borrowed from live code.
+    plantFile([`import { Toaster } from '${SONNER}';`, 'export const el = Toaster;']);
+    const baseline = baselineWithPlant({ [SONNER]: 1 });
+    const res = runCheck([baseline, manifestWith('dependencies', { [SONNER]: '^2.0.7' })]);
     expect(res.stderr).toBe('');
     expect(res.status).toBe(0);
   });

@@ -30,7 +30,7 @@ import {
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
 import AssignGroomModal from './AssignGroomModal';
-import { SkeletonBase, ErrorState } from '@/components/ui/state';
+import { SkeletonBase, ErrorState, InlineError } from '@/components/ui/state';
 import GroomReleaseButton from './groom/GroomReleaseButton';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
 import GroomPersonalityDisplay from './groom/GroomPersonalityDisplay';
@@ -549,33 +549,40 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 ) : (
                   <div className="space-y-3">
                     {groomAssignments.map((assignment) => (
-                      <Surface
-                        variant="subtle"
-                        key={assignment.id}
-                        className="flex items-center justify-between p-3"
-                      >
-                        <div className="flex-1">
-                          <p className="text-sm font-bold text-[var(--text-primary)]">
-                            Horse ID: {assignment.horseId}
-                          </p>
-                          <p className="text-[10px] type-label text-[var(--text-muted)]">
-                            {/* Equoria-2dnd2: shared util (guard + canonical format). */}
-                            {formatDate(assignment.startDate)}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleUnassignClick(assignment.id)}
-                          disabled={unassignMutation.isPending}
-                          className="text-[var(--role-danger-text)] hover:bg-[var(--role-danger-bg)] hover:no-underline rounded-full"
-                          title="Unassign Groom"
-                          aria-label="Unassign Groom"
-                        >
-                          <Trash2 className="w-4 h-4" aria-hidden="true" />
-                        </Button>
-                      </Surface>
+                      <div key={assignment.id}>
+                        <Surface variant="subtle" className="flex items-center justify-between p-3">
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-[var(--text-primary)]">
+                              Horse ID: {assignment.horseId}
+                            </p>
+                            <p className="text-[10px] type-label text-[var(--text-muted)]">
+                              {/* Equoria-2dnd2: shared util (guard + canonical format). */}
+                              {formatDate(assignment.startDate)}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleUnassignClick(assignment.id)}
+                            disabled={unassignMutation.isPending}
+                            className="text-[var(--role-danger-text)] hover:bg-[var(--role-danger-bg)] hover:no-underline rounded-full"
+                            title="Unassign Groom"
+                            aria-label="Unassign Groom"
+                          >
+                            <Trash2 className="w-4 h-4" aria-hidden="true" />
+                          </Button>
+                        </Surface>
+                        {/* q173: a failed unassign shows beside the assignment it was for. */}
+                        {unassignMutation.isError &&
+                          unassignMutation.variables === assignment.id && (
+                            <div className="mt-1">
+                              <InlineError
+                                message={`Could not unassign the groom. ${userMessageFor(unassignMutation.error).message}`}
+                              />
+                            </div>
+                          )}
+                      </div>
                     ))}
                   </div>
                 )}

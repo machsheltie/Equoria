@@ -13,12 +13,12 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { toast } from 'sonner';
-import { AlertCircle, CheckCircle, Filter } from 'lucide-react';
+import { CheckCircle, Filter } from 'lucide-react';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/form';
 import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
 import type { TackItem } from '@/hooks/api/useTackShop';
 import { TackItemCard } from './TackItemCard';
@@ -36,16 +36,20 @@ export const ShopTab: React.FC = () => {
       { itemId: item.id },
       {
         onSuccess: (result) => {
-          const msg = `Bought ${result.item.name}; it is in your inventory, ready to equip.`;
-          setPurchaseSuccess(msg);
-          toast.success(msg);
-        },
-        onError: () => {
-          toast.error('Purchase failed. Please try again.');
+          setPurchaseSuccess(
+            `Bought ${result.item.name}; it is in your inventory, ready to equip.`
+          );
         },
       }
     );
   };
+
+  // Owner ruling q173: a failed purchase shows under the Buy button that failed,
+  // in mapped words (never the server's own message). No pop-up.
+  const purchaseErrorFor = (item: TackItem): string | null =>
+    purchaseMutation.isError && purchaseMutation.variables?.itemId === item.id
+      ? `Purchase failed. ${userMessageFor(purchaseMutation.error).message}`
+      : null;
 
   // Filter functional items by discipline (excludes decorative category)
   const filteredCategories = useMemo(() => {
@@ -129,17 +133,6 @@ export const ShopTab: React.FC = () => {
         </div>
       )}
 
-      {/* Purchase error banner */}
-      {purchaseMutation.isError && (
-        <div
-          className="flex items-center gap-2 p-3 rounded-[var(--radius-md)] bg-[var(--role-danger-bg)] border border-[var(--role-danger-border)] text-[var(--role-danger-text)] text-sm"
-          role="alert"
-        >
-          <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-          {(purchaseMutation.error as { message?: string })?.message ?? 'Purchase failed.'}
-        </div>
-      )}
-
       {/* Dynamic category sections */}
       {Object.entries(filteredCategories).map(([categoryKey, items]) => (
         <section key={categoryKey}>
@@ -153,6 +146,7 @@ export const ShopTab: React.FC = () => {
                 item={item}
                 onPurchase={handlePurchase}
                 isPurchasing={purchaseMutation.isPending}
+                errorMessage={purchaseErrorFor(item)}
               />
             ))}
           </CardGrid>
@@ -185,6 +179,7 @@ export const ShopTab: React.FC = () => {
                     item={item}
                     onPurchase={handlePurchase}
                     isPurchasing={purchaseMutation.isPending}
+                    errorMessage={purchaseErrorFor(item)}
                   />
                 ))}
               </CardGrid>
@@ -204,6 +199,7 @@ export const ShopTab: React.FC = () => {
                     item={item}
                     onPurchase={handlePurchase}
                     isPurchasing={purchaseMutation.isPending}
+                    errorMessage={purchaseErrorFor(item)}
                   />
                 ))}
               </CardGrid>

@@ -27,7 +27,6 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router';
-import { toast } from 'sonner';
 import { gameDateKey } from '@/lib/gameTime';
 import { formatHealth } from '@/lib/healthWords';
 import { Award, Backpack, Dumbbell, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
@@ -89,24 +88,11 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         : null;
 
   const handleFeed = () => {
-    feedHorseMutation.mutate(undefined, {
-      onSuccess: (result) => {
-        if (result.skipped === 'retired') {
-          toast.info(`${horse.name} is retired and doesn't need to be fed.`);
-          return;
-        }
-        const feedName = result.feed?.name ?? 'feed';
-        const remaining = result.remainingUnits ?? 0;
-        const statSuffix = result.statBoost
-          ? ` +1 ${result.statBoost.stat.charAt(0).toUpperCase() + result.statBoost.stat.slice(1)}!`
-          : '';
-        toast.success(
-          `Fed ${result.horse.name} with ${feedName}. ${remaining} units left.${statSuffix}`,
-          { duration: result.statBoost ? 5000 : 3000 }
-        );
-      },
-      // A refusal is shown beside the Feed button (q161; Equoria-c1sg6).
-    });
+    // Owner ruling q173: success is the page changing (the hunger level and the
+    // Feed button's "Fed today" state come back with the response; a stat gain
+    // arrives as a game notification). No pop-up. A refusal is shown beside the
+    // Feed button (q161; Equoria-c1sg6).
+    feedHorseMutation.mutate();
   };
 
   return (

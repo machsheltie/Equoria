@@ -14,11 +14,16 @@
  * mirroring the unassign confirm UX in RiderAssignmentCard (window.confirm was
  * replaced per Equoria-o5hub.13, DECISIONS.md §8). Destructive confirm buttons
  * use the red `destructive` variant, never gold (DECISIONS.md §5).
+ *
+ * Feedback is surface-owned (owner ruling q173): success is the card leaving the
+ * roster; a failure arrives as `errorMessage` and shows as an announced
+ * InlineError at this control. There is no toast. Mirrors TrainerDismissControl.
  */
 
 import React, { useState } from 'react';
 import { UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { InlineError } from '@/components/ui/state';
 import {
   GameDialog,
   GameDialogContent,
@@ -33,6 +38,8 @@ interface RiderDismissControlProps {
   riderName: string;
   onDismiss: (_riderId: number) => void;
   isDismissing?: boolean;
+  /** User-safe failure copy for the last dismissal attempt on this rider, if it failed. */
+  errorMessage?: string | null;
 }
 
 const RiderDismissControl: React.FC<RiderDismissControlProps> = ({
@@ -40,6 +47,7 @@ const RiderDismissControl: React.FC<RiderDismissControlProps> = ({
   riderName,
   onDismiss,
   isDismissing = false,
+  errorMessage = null,
 }) => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -61,6 +69,12 @@ const RiderDismissControl: React.FC<RiderDismissControlProps> = ({
         <UserMinus className="w-3.5 h-3.5" aria-hidden="true" />
         <span>{isDismissing ? 'Dismissing…' : 'Dismiss Rider'}</span>
       </button>
+
+      {errorMessage && (
+        <div className="mt-1 flex justify-center">
+          <InlineError message={errorMessage} />
+        </div>
+      )}
 
       {/* Dismiss confirmation — destructive action, never gold (DECISIONS.md §5) */}
       <GameDialog

@@ -8,21 +8,20 @@
  *   3. localStorage 'equoria-theme'
  *   4. Default: celestial (true)
  *
- * Welcome toast: shown once to users with no prior theme preference (pre-Epic-22
- * players). Tracked via localStorage key 'equoria-theme-welcome-shown'.
+ * There is no welcome announcement. The pre-Epic-22 "new look" toast was removed
+ * with the toast layer (owner ruling q173: the page itself changes, no pop-ups);
+ * the new look is its own announcement.
  *
  * Implementation note: The body class is applied via useLayoutEffect (not useEffect)
  * so it fires synchronously before the first paint. This prevents a flash of unstyled
  * content (FOUC) where glass panels briefly render without their frosted-glass blur.
- * Side effects (URL cleanup, localStorage writes, toast) remain in useEffect.
+ * Side effects (URL cleanup, localStorage writes) remain in useEffect.
  */
 
 import { useEffect, useLayoutEffect } from 'react';
 import { useSearchParams } from 'react-router';
-import { toast } from 'sonner';
 
 const themeKey = 'equoria-theme';
-const welcomeShownKey = 'equoria-theme-welcome-shown';
 
 /**
  * Read a localStorage value safely — returns null on access error
@@ -65,7 +64,7 @@ export function CelestialThemeProvider() {
     }
   }, [themeParam]);
 
-  // Side effects: localStorage writes, URL cleanup, welcome toast
+  // Side effects: localStorage writes, URL cleanup
   useEffect(() => {
     if (themeParam === 'celestial') {
       try {
@@ -85,23 +84,6 @@ export function CelestialThemeProvider() {
       const next = new URLSearchParams(searchParams);
       next.delete('theme');
       setSearchParams(next, { replace: true });
-    } else {
-      const stored = safeLocalStorageGet(themeKey);
-
-      // First-time visitor with no stored preference — show welcome toast once.
-      // Order: toast first, then mark as shown. If toast() throws (unlikely),
-      // the "shown" flag isn't prematurely set and the toast retries next visit.
-      if (stored === null) {
-        const alreadyShown = safeLocalStorageGet(welcomeShownKey);
-        if (!alreadyShown) {
-          toast('Equoria has a new look! Use ?theme=default in the URL to revert.');
-          try {
-            localStorage.setItem(welcomeShownKey, 'true');
-          } catch {
-            // Storage write failure is non-fatal — toast may re-appear on next visit
-          }
-        }
-      }
     }
   }, [themeParam, searchParams, setSearchParams]);
 

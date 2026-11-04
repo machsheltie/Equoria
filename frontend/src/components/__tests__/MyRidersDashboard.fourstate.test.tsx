@@ -18,13 +18,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
 import { server } from '@/test/msw/server';
-import { Toaster } from '@/components/ui/sonner';
 import MyRidersDashboard from '../MyRidersDashboard';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -78,8 +77,6 @@ function renderDashboard() {
   return render(
     <QueryClientProvider client={qc}>
       <BrowserRouter>
-        {/* Real sonner sink so mutation-error toasts render into the DOM. */}
-        <Toaster />
         <MyRidersDashboard userId={userId} onBrowseMarketplace={() => {}} />
       </BrowserRouter>
     </QueryClientProvider>
@@ -157,7 +154,7 @@ describe('MyRidersDashboard — four-state doctrine (Equoria-5urmo)', () => {
 });
 
 describe('MyRidersDashboard — silent-mutation feedback (Equoria-5urmo)', () => {
-  it('a failed unassign surfaces a visible error toast (no raw server leak)', async () => {
+  it('a failed unassign shows an announced error beside the control (no raw server leak)', async () => {
     server.use(
       http.get(ridersPath, () => HttpResponse.json(oneRider)),
       http.get(assignmentsPath, () => HttpResponse.json(oneAssignment)),
@@ -176,13 +173,40 @@ describe('MyRidersDashboard — silent-mutation feedback (Equoria-5urmo)', () =>
     // Confirm in the dialog (destructive button text is "Remove Rider").
     await user.click(await screen.findByRole('button', { name: /remove rider/i }));
 
-    // Visible failure feedback surfaces via the real sonner Toaster …
-    expect(await screen.findByText(/could not unassign the rider/i)).toBeInTheDocument();
+    // Visible failure feedback shows inline as an announced alert (q173) …
+    expect(
+      (await screen.findByText(/could not unassign the rider/i)).closest('[role="alert"]')
+    ).not.toBeNull();
     // … and the raw server body text is not leaked.
     expect(screen.queryByText(/delete boom leak/i)).not.toBeInTheDocument();
   });
 
-  it('a failed assign surfaces a visible error toast (no raw server leak)', async () => {
+  // Old contract: a failed dismissal popped "Could not dismiss the rider" as a
+  // toast. New ruling q173: it shows at the rider's Dismiss control.
+  it('a failed dismissal shows an announced error at that rider (no raw server leak)', async () => {
+    server.use(
+      http.get(ridersPath, () => HttpResponse.json(oneRider)),
+      http.get(assignmentsPath, () => HttpResponse.json([])),
+      http.delete(`${base}/api/v1/riders/:id/dismiss`, () =>
+        HttpResponse.json({ success: false, message: 'dismiss boom leak' }, { status: 500 })
+      )
+    );
+
+    const user = userEvent.setup();
+    renderDashboard();
+
+    await screen.findByTestId('rider-grid');
+    await user.click(await screen.findByTestId('dismiss-button-501'));
+    const confirm = await screen.findByTestId('dismiss-rider-confirm-501');
+    await user.click(within(confirm).getByRole('button', { name: /dismiss rider/i }));
+
+    expect(
+      (await screen.findByText(/could not dismiss the rider/i)).closest('[role="alert"]')
+    ).not.toBeNull();
+    expect(screen.queryByText(/dismiss boom leak/i)).not.toBeInTheDocument();
+  });
+
+  it('a failed assign shows an announced error beside the control (no raw server leak)', async () => {
     server.use(
       http.get(ridersPath, () => HttpResponse.json(oneRider)),
       http.get(assignmentsPath, () => HttpResponse.json([])),
@@ -201,8 +225,10 @@ describe('MyRidersDashboard — silent-mutation feedback (Equoria-5urmo)', () =>
     await user.click(await screen.findByTestId('assign-button-501'));
     await user.click(await screen.findByRole('button', { name: /storm runner/i }));
 
-    // Visible failure feedback surfaces …
-    expect(await screen.findByText(/could not assign the rider/i)).toBeInTheDocument();
+    // Visible failure feedback shows inline as an announced alert (q173) …
+    expect(
+      (await screen.findByText(/could not assign the rider/i)).closest('[role="alert"]')
+    ).not.toBeNull();
     // … and the raw server body text is not leaked.
     expect(screen.queryByText(/assign boom leak/i)).not.toBeInTheDocument();
   });

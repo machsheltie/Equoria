@@ -9,7 +9,6 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { craftingApi } from '@/lib/api-client';
 
 /**
@@ -36,7 +35,9 @@ export function useCraftingRecipes() {
 
 /**
  * Mutation to craft an item from a recipe.
- * On success: invalidates materials + inventory queries and shows a toast.
+ * On success: invalidates materials + inventory queries. The workshop's material
+ * counts and the coin balance changing are the feedback (owner ruling q173: no
+ * pop-up); a refusal shows on the recipe card (CraftingPage).
  */
 export function useCraftItem() {
   const queryClient = useQueryClient();
@@ -55,7 +56,6 @@ export function useCraftItem() {
       queryClient.invalidateQueries({ queryKey: ['crafting', 'recipes'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast.success(`You crafted ${data?.item?.name ?? 'an item'}!`);
     },
   });
 }

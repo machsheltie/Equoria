@@ -18,12 +18,11 @@
 import { actionMessageFor, equipRefused } from '@/lib/http/actionMessage';
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
-import { toast } from 'sonner';
 import { Loader2, AlertCircle, ArrowLeft, Wrench, Star } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Surface } from '@/components/ui/Surface';
-import { SectionLoading } from '@/components/ui/state';
+import { SectionLoading, InlineError } from '@/components/ui/state';
 import { Button } from '@/components/ui/button';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
@@ -103,7 +102,18 @@ const HorseEquipPage: React.FC = () => {
     );
   }
 
-  const currentlyEquippedFeed = data.feed.find((f) => f.isCurrentlyEquippedToThisHorse);
+  // Owner ruling q173: success is the page itself changing (the gold star and the
+  // Equip/Unequip button move); a refusal shows in plain words under the button
+  // that failed. No pop-up.
+  const withError = (button: React.ReactNode, error: unknown) =>
+    error ? (
+      <div className="flex flex-col gap-1">
+        {button}
+        <InlineError message={actionMessageFor(error, equipRefused)} />
+      </div>
+    ) : (
+      button
+    );
 
   return (
     /* PageContainer wide + PageHeader (D-01): operational management subview —
@@ -145,19 +155,20 @@ const HorseEquipPage: React.FC = () => {
                   (equipItem.isPending && equipItem.variables?.inventoryItemId === item.id) ||
                   (unequipItem.isPending && unequipItem.variables?.inventoryItemId === item.id);
                 const description = item.bonus ?? (item.comingSoon ? 'Coming soon' : undefined);
+                // q173: a refused equip/unequip shows under this card's button.
+                const tackError =
+                  equipItem.isError && equipItem.variables?.inventoryItemId === item.id
+                    ? equipItem.error
+                    : unequipItem.isError && unequipItem.variables?.inventoryItemId === item.id
+                      ? unequipItem.error
+                      : null;
 
-                const action = isEquipped ? (
+                const button = isEquipped ? (
                   <Button
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      unequipItem.mutate(
-                        { inventoryItemId: item.id },
-                        {
-                          onSuccess: () => toast.success(`Unequipped ${item.name}.`),
-                          onError: (err) => toast.error(actionMessageFor(err, equipRefused)),
-                        }
-                      );
+                      unequipItem.mutate({ inventoryItemId: item.id });
                     }}
                     disabled={pendingThisItem}
                     data-testid={`unequip-tack-${item.id}`}
@@ -170,13 +181,7 @@ const HorseEquipPage: React.FC = () => {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      equipItem.mutate(
-                        { inventoryItemId: item.id, horseId },
-                        {
-                          onSuccess: () => toast.success(`Equipped ${item.name}.`),
-                          onError: (err) => toast.error(actionMessageFor(err, equipRefused)),
-                        }
-                      );
+                      equipItem.mutate({ inventoryItemId: item.id, horseId });
                     }}
                     disabled={pendingThisItem}
                     data-testid={`equip-tack-${item.id}`}
@@ -185,6 +190,7 @@ const HorseEquipPage: React.FC = () => {
                     {pendingThisItem ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Equip'}
                   </Button>
                 );
+                const action = withError(button, tackError);
 
                 return (
                   <ItemCard
@@ -246,16 +252,20 @@ const HorseEquipPage: React.FC = () => {
                 const tierId = f.feedType as FeedItem['id'];
                 const feedMeta = catalogById[tierId];
                 const description = feedMeta?.description;
+                // q173: a refused equip/unequip shows under this card's button.
+                const feedError =
+                  equipFeed.isError && equipFeed.variables === tierId
+                    ? equipFeed.error
+                    : isEquipped && unequipFeed.isError
+                      ? unequipFeed.error
+                      : null;
 
-                const action = isEquipped ? (
+                const button = isEquipped ? (
                   <Button
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      unequipFeed.mutate(undefined, {
-                        onSuccess: () => toast.success('Unequipped.'),
-                        onError: (err) => toast.error(actionMessageFor(err, equipRefused)),
-                      });
+                      unequipFeed.mutate();
                     }}
                     disabled={unequipFeed.isPending}
                     data-testid="unequip-feed-button"
@@ -272,13 +282,7 @@ const HorseEquipPage: React.FC = () => {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      equipFeed.mutate(tierId, {
-                        onSuccess: () =>
-                          toast.success(
-                            currentlyEquippedFeed ? `Switched to ${f.name}.` : `Equipped ${f.name}.`
-                          ),
-                        onError: (err) => toast.error(actionMessageFor(err, equipRefused)),
-                      });
+                      equipFeed.mutate(tierId);
                     }}
                     disabled={equipFeed.isPending}
                     data-testid={`equip-feed-${f.feedType}`}
@@ -287,6 +291,7 @@ const HorseEquipPage: React.FC = () => {
                     Equip
                   </Button>
                 );
+                const action = withError(button, feedError);
 
                 return (
                   <ItemCard

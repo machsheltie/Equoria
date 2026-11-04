@@ -32,6 +32,8 @@ export interface AccountSectionProps {
   onUsernameChange: (_value: string) => void;
   onSaveAccount: () => void;
   isSavingAccount: boolean;
+  /** True when there is nothing to save, so Save Changes cannot be pressed (q173). */
+  saveAccountDisabled?: boolean;
   /** Authored copy for a refused account save, shown at Save Changes (q161). */
   saveAccountError?: string;
 
@@ -55,6 +57,7 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
   onUsernameChange,
   onSaveAccount,
   isSavingAccount,
+  saveAccountDisabled = false,
   saveAccountError,
   showPasswordForm,
   onShowPasswordForm,
@@ -89,6 +92,7 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
         type="button"
         onClick={onSaveAccount}
         pending={isSavingAccount}
+        disabled={saveAccountDisabled}
         data-testid="settings-save-account"
       >
         Save Changes

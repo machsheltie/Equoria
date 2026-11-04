@@ -23,7 +23,6 @@ import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
 import { server } from '@/test/msw/server';
-import { Toaster } from '@/components/ui/sonner';
 import MyGroomsDashboard from '../MyGroomsDashboard';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -55,8 +54,6 @@ function renderDashboard() {
   return render(
     <QueryClientProvider client={qc}>
       <BrowserRouter>
-        {/* Real sonner sink so mutation-error toasts render into the DOM. */}
-        <Toaster />
         <MyGroomsDashboard userId={userId} onBrowseMarketplace={() => {}} />
       </BrowserRouter>
     </QueryClientProvider>
@@ -125,7 +122,7 @@ describe('MyGroomsDashboard — four-state doctrine (Equoria-mljz9)', () => {
 });
 
 describe('MyGroomsDashboard — silent-mutation feedback (Equoria-mljz9)', () => {
-  it('a failed unassign surfaces a visible error toast (no raw server leak)', async () => {
+  it('a failed unassign shows an announced error beside the control (no raw server leak)', async () => {
     // Default handlers → one groom (id 10) with one active assignment (groomId 10).
     server.use(
       http.delete(`${base}/api/v1/groom-assignments/:id`, () =>
@@ -142,8 +139,10 @@ describe('MyGroomsDashboard — silent-mutation feedback (Equoria-mljz9)', () =>
     // unassigns — there is no confirm dialog (owner ruling 2026-10-26, Equoria-wmjc0).
     await user.click(await screen.findByRole('button', { name: /unassign groom/i }));
 
-    // Visible failure feedback surfaces via the real sonner Toaster …
-    expect(await screen.findByText(/could not unassign the groom/i)).toBeInTheDocument();
+    // Visible failure feedback shows inline as an announced alert (q173) …
+    expect(
+      (await screen.findByText(/could not unassign the groom/i)).closest('[role="alert"]')
+    ).not.toBeNull();
     // … and the raw server body text is not leaked.
     expect(screen.queryByText(/delete boom leak/i)).not.toBeInTheDocument();
   });

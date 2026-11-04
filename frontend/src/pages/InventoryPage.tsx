@@ -18,7 +18,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { Package, Shield, Leaf, Sparkles, Wrench, Star } from 'lucide-react';
 import { useInventory, useUnequipItem } from '@/hooks/api/useInventory';
 import { useFeedCatalog } from '@/hooks/api/useFeedShop';
@@ -217,8 +216,9 @@ const InventoryPage: React.FC = () => {
     unequipMutation.mutate(
       { inventoryItemId: item.id },
       {
+        // q173: success is the card itself changing (the star and Unequip go
+        // once the inventory refetches). No pop-up.
         onSuccess: () => {
-          toast.success(`${item.name} unequipped`);
           setUnequippingId(null);
         },
         // A refusal is shown on this item's card (q161; Equoria-c1sg6).

@@ -27,7 +27,6 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router';
-import { toast } from 'sonner';
 import { Leaf } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -59,14 +58,10 @@ const FeedShopPage: React.FC = () => {
 
   const handlePurchase = (tier: FeedItem) => {
     const packs = packsByTier[tier.id] ?? 1;
-    purchase.mutate(
-      { feedTier: tier.id, packs },
-      {
-        onSuccess: () => toast.success(`Purchased ${100 * packs} units of ${tier.name}.`),
-        // A refusal is shown under this tier's Buy button (owner ruling 2026-10-28,
-        // q161; Equoria-c1sg6), never the server's own message.
-      }
-    );
+    // Success is the coin balance in the header dropping (owner ruling q173: the
+    // page itself changes, no pop-up). A refusal is shown under this tier's Buy
+    // button (q161; Equoria-c1sg6), never the server's own message.
+    purchase.mutate({ feedTier: tier.id, packs });
   };
 
   return (

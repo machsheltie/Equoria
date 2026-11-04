@@ -47,7 +47,6 @@ vi.mock('@/components/layout/PageBackground', () => ({
   usePageBackground: () => ({}),
   default: () => null,
 }));
-vi.mock('@/components/ui/sonner', () => ({ Toaster: () => null }));
 vi.mock('@/components/ui/tooltip', () => ({
   TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,

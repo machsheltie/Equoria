@@ -106,4 +106,25 @@ describe('TackShopPage (Equoria-dslww)', () => {
     expect(screen.queryByText(/Remaining balance/i)).not.toBeInTheDocument();
     expect(body).toEqual({ itemId: 'dressage-saddle' });
   });
+
+  // Old contract: a failed purchase popped a "Purchase failed" toast and printed
+  // the server's own message in a banner above the catalogue. New ruling q173: the
+  // failure shows under the Buy button that failed, in mapped words.
+  it("a failed purchase shows under that item's Buy button, never the server text", async () => {
+    stubCatalogue();
+    server.use(
+      http.post(PURCHASE, () =>
+        HttpResponse.json({ success: false, message: 'RAW-SERVER-TEXT' }, { status: 500 })
+      )
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const card = await screen.findByTestId('tack-item-dressage-saddle');
+    await user.click(within(card).getByRole('button', { name: 'Buy' }));
+
+    const alert = await within(card).findByRole('alert');
+    expect(alert).toHaveTextContent(/purchase failed/i);
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.queryByText(/RAW-SERVER-TEXT/)).not.toBeInTheDocument();
+  });
 });

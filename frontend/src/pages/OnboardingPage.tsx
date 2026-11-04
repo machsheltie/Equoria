@@ -17,7 +17,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authApi } from '@/lib/api-client';
@@ -323,7 +322,7 @@ const OnboardingPage: React.FC = () => {
       } catch {
         /* noop */
       }
-      toast.success('Welcome to Equoria!');
+      // q173: arriving at the stable, with the guided tour, is the welcome. No pop-up.
       navigate('/stable', { replace: true });
     },
     onError: (error) => {

@@ -13,7 +13,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { horseMarketplaceApi, MarketplaceSearchFilters } from '@/lib/api-client';
-import { toast } from 'sonner';
 import { refreshOnConflict } from '@/lib/http/conflict';
 
 export function useMarketplaceSearch(filters: MarketplaceSearchFilters) {
@@ -56,8 +55,8 @@ export function useListHorse() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { horseId: number; price: number }) => horseMarketplaceApi.listHorse(data),
-    onSuccess: (_data, vars) => {
-      toast.success(`Your horse is now listed for ${vars.price.toLocaleString()} coins`);
+    // q173: success is the page changing (the horse shows as for sale); no pop-up.
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['marketplace'] });
       qc.invalidateQueries({ queryKey: ['horses'] });
     },
@@ -68,8 +67,8 @@ export function useDelistHorse() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (horseId: number) => horseMarketplaceApi.delistHorse(horseId),
+    // q173: success is the page changing (the listing goes); no pop-up.
     onSuccess: () => {
-      toast.success('Listing removed');
       qc.invalidateQueries({ queryKey: ['marketplace'] });
       qc.invalidateQueries({ queryKey: ['horses'] });
     },

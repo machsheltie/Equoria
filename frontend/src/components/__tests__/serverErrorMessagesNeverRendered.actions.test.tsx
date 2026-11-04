@@ -19,7 +19,6 @@ import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { server } from '@/test/msw/server';
-import { Toaster } from '@/components/ui/sonner';
 import { userMessageFor } from '@/lib/http/userMessage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import FarrierPage from '@/pages/FarrierPage';
@@ -40,10 +39,7 @@ function renderWith(ui: React.ReactElement, entries: string[] = ['/']) {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={entries}>
-        <Toaster />
-        {ui}
-      </MemoryRouter>
+      <MemoryRouter initialEntries={entries}>{ui}</MemoryRouter>
     </QueryClientProvider>
   );
 }

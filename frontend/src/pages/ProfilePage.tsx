@@ -210,7 +210,8 @@ const ProfilePage: React.FC = () => {
               <p className="text-xs text-role-secondary">{uiText.profile.subtitle}</p>
             </div>
 
-            {/* Success and error feedback handled via toast notifications (AC-5, AC-6) */}
+            {/* Owner ruling q173: success is the page showing the saved values; a
+                refusal shows under the Save button. No pop-up. */}
 
             {/* The stable's own name (Equoria-kgush): this page is the stable's page */}
             <Surface variant="subtle" className="px-3 py-2" data-testid="profile-stable-row">

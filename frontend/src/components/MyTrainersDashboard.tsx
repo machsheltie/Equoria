@@ -44,6 +44,7 @@ import Currency from '@/components/ui/Currency';
 // Equoria-8cnzr — single error-taxonomy mapping point. Turns a thrown transport
 // error into user-safe copy so a raw server body message is never rendered (§3).
 import { userMessageFor } from '@/lib/http/userMessage';
+import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
 import StaffLevelStars from '@/components/common/StaffLevelStars';
 import { disciplineLabel } from '@/lib/utils/training-utils';
 
@@ -202,6 +203,8 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ userId }) => 
   };
 
   const handleAssignClick = (trainerId: number) => {
+    // A refusal from an earlier picker visit must not greet the next one.
+    assignMutation.reset();
     setSelectedTrainerIdForAssign(trainerId);
   };
 
@@ -346,12 +349,21 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ userId }) => 
                 ) : (
                   <div className="space-y-2">
                     {trainerAssignments.map((a) => (
-                      <TrainerAssignmentCard
-                        key={a.id}
-                        assignment={a}
-                        onUnassign={handleUnassign}
-                        isUnassigning={unassignMutation.isPending}
-                      />
+                      <div key={a.id}>
+                        <TrainerAssignmentCard
+                          assignment={a}
+                          onUnassign={handleUnassign}
+                          isUnassigning={unassignMutation.isPending}
+                        />
+                        {/* q173: a failed unassign shows beside the assignment it was for. */}
+                        {unassignMutation.isError && unassignMutation.variables === a.id && (
+                          <div className="mt-1">
+                            <InlineError
+                              message={`Could not unassign the trainer. ${userMessageFor(unassignMutation.error).message}`}
+                            />
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -468,6 +480,14 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ userId }) => 
                 </Button>
               ))}
             </div>
+            {/* q173: a refused assign shows here, beside the horse list, in plain words. */}
+            {assignMutation.isError && (
+              <div className="mt-3">
+                <InlineError
+                  message={`Could not assign the trainer. ${actionMessageFor(assignMutation.error, {}, assignStaffRefusalCodes)}`}
+                />
+              </div>
+            )}
             <Button
               type="button"
               variant="secondary"

@@ -10,7 +10,6 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import {
   groomsApi,
   ApiError,
@@ -21,9 +20,6 @@ import {
   MarketplaceData,
   SalarySummary,
 } from '@/lib/api-client';
-// Equoria-8cnzr — single error-taxonomy mapping point. Used for mutation
-// failure toasts so a raw server body message is never surfaced (§3).
-import { userMessageFor } from '@/lib/http/userMessage';
 // Equoria-oey96.6 — talent-tree selection shape (backend is source of truth).
 import type { TalentSelections } from '@/types/groomTalent';
 
@@ -257,13 +253,8 @@ export function useDeleteAssignment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groomKeys.assignments() });
     },
-    // Equoria-mljz9 — visible failure feedback (§2). The unassign confirm
-    // dialog closes on click, so without this a failed unassign was silent.
-    // userMessageFor keeps the raw server body off the screen (§3).
-    onError: (error) => {
-      toast.error('Could not unassign the groom', {
-        description: userMessageFor(error).message,
-      });
-    },
+    // NO hook onError on purpose: MyGroomsDashboard shows a failed unassign
+    // beside the assignment it was for (owner ruling q173: no pop-ups; doctrine
+    // §2: one feedback per mutation). Old contract: a floating toast.
   });
 }

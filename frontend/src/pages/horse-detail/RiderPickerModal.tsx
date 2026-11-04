@@ -8,13 +8,17 @@
  * replaced by the canonical GameDialog. Rider rows render through
  * Surface(interactive); close is prevented while the assign mutation
  * is pending (pending-close rule, handoff §6.6).
+ *
+ * Feedback (owner ruling q173): success is the dialog closing and the horse's
+ * Care Team line naming the rider; a refusal shows inside the dialog, under the
+ * rider list, in mapped words. No pop-up.
  */
 
 import React from 'react';
 import { Link } from 'react-router';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
+import { InlineError } from '@/components/ui/state';
 import {
   GameDialog,
   GameDialogContent,
@@ -44,6 +48,11 @@ const RiderPickerModal: React.FC<RiderPickerModalProps> = ({
   isLoading,
 }) => {
   const assignRiderMutation = useAssignRider();
+  // A refusal from an earlier visit must not greet the next opening.
+  const { reset: resetAssign } = assignRiderMutation;
+  React.useEffect(() => {
+    if (!isOpen) resetAssign();
+  }, [isOpen, resetAssign]);
 
   // Render nothing while closed (parity with the pre-migration overlay):
   // children of the dialog are evaluated eagerly during this component's
@@ -87,19 +96,7 @@ const RiderPickerModal: React.FC<RiderPickerModalProps> = ({
               onClick={() => {
                 assignRiderMutation.mutate(
                   { riderId: rider.id, horseId },
-                  {
-                    onSuccess: () => {
-                      onClose();
-                      toast.success(
-                        `${rider.firstName} ${rider.lastName} assigned to ${horseName}`
-                      );
-                    },
-                    onError: (error) => {
-                      toast.error('Failed to assign rider.', {
-                        description: actionMessageFor(error, {}, assignStaffRefusalCodes),
-                      });
-                    },
-                  }
+                  { onSuccess: () => onClose() }
                 );
               }}
               className="w-full text-left disabled:opacity-50"
@@ -113,6 +110,13 @@ const RiderPickerModal: React.FC<RiderPickerModalProps> = ({
             </Surface>
           ))}
         </div>
+        {assignRiderMutation.isError && (
+          <div className="mt-3">
+            <InlineError
+              message={`Failed to assign rider. ${actionMessageFor(assignRiderMutation.error, {}, assignStaffRefusalCodes)}`}
+            />
+          </div>
+        )}
         <Button
           type="button"
           variant="secondary"

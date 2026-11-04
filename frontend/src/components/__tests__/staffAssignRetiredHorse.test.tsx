@@ -16,7 +16,6 @@ import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
 import { server } from '@/test/msw/server';
-import { Toaster } from '@/components/ui/sonner';
 import MyRidersDashboard from '../MyRidersDashboard';
 import MyTrainersDashboard from '../MyTrainersDashboard';
 import AssignGroomModal from '../AssignGroomModal';
@@ -95,7 +94,6 @@ describe('a retired horse refused for staff (Equoria-70gu6)', () => {
     render(
       <QueryClientProvider client={queryClient()}>
         <BrowserRouter>
-          <Toaster />
           <MyRidersDashboard userId="user-70gu6" onBrowseMarketplace={() => {}} />
         </BrowserRouter>
       </QueryClientProvider>
@@ -128,7 +126,6 @@ describe('a retired horse refused for staff (Equoria-70gu6)', () => {
     render(
       <QueryClientProvider client={queryClient()}>
         <BrowserRouter>
-          <Toaster />
           <MyTrainersDashboard userId="user-70gu6" />
         </BrowserRouter>
       </QueryClientProvider>
@@ -169,7 +166,6 @@ describe('a retired horse refused for staff (Equoria-70gu6)', () => {
     render(
       <QueryClientProvider client={queryClient()}>
         <BrowserRouter>
-          <Toaster />
           <RiderPickerModal
             isOpen
             onClose={() => {}}

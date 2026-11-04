@@ -10,13 +10,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { MemoryRouter, useSearchParams } from '@/test/utils';
 import { CelestialThemeProvider } from '../CelestialThemeProvider';
 
-// Mock sonner so toast calls don't blow up in jsdom
-vi.mock('sonner', () => ({
-  toast: vi.fn(),
-}));
-
-import { toast } from 'sonner';
-
 describe('CelestialThemeProvider', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -89,45 +82,18 @@ describe('CelestialThemeProvider', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('shows welcome toast once when no prior theme is stored', () => {
-    // No THEME_KEY, no welcomeShownKey in localStorage
-    render(
+  // Old contract: a first visit with no stored theme popped a one-time "Equoria has
+  // a new look" toast and recorded it under 'equoria-theme-welcome-shown'. New
+  // ruling q173: no pop-ups; the new look is its own announcement.
+  it('a first visit applies the new look with no announcement', () => {
+    const { container } = render(
       <MemoryRouter initialEntries={['/']}>
         <CelestialThemeProvider />
       </MemoryRouter>
     );
-    expect(toast).toHaveBeenCalledTimes(1);
-    expect(toast).toHaveBeenCalledWith(expect.stringContaining('Equoria has a new look'));
-    expect(localStorage.getItem('equoria-theme-welcome-shown')).toBe('true');
-  });
-
-  it('does not show welcome toast a second time', () => {
-    localStorage.setItem('equoria-theme-welcome-shown', 'true');
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <CelestialThemeProvider />
-      </MemoryRouter>
-    );
-    expect(toast).not.toHaveBeenCalled();
-  });
-
-  it('does not show welcome toast when theme is explicitly set to celestial', () => {
-    localStorage.setItem('equoria-theme', 'celestial');
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <CelestialThemeProvider />
-      </MemoryRouter>
-    );
-    expect(toast).not.toHaveBeenCalled();
-  });
-
-  it('does not show welcome toast when ?theme=celestial param is used', () => {
-    render(
-      <MemoryRouter initialEntries={['/?theme=celestial']}>
-        <CelestialThemeProvider />
-      </MemoryRouter>
-    );
-    expect(toast).not.toHaveBeenCalled();
+    expect(document.body.classList.contains('celestial')).toBe(true);
+    expect(container.innerHTML).toBe('');
+    expect(localStorage.getItem('equoria-theme-welcome-shown')).toBeNull();
   });
 
   // Gap 1 — URL param cleanup verified (TEA:TA audit 2026-04-10)
@@ -164,20 +130,22 @@ describe('CelestialThemeProvider', () => {
     expect(document.body.classList.contains('celestial')).toBe(true);
   });
 
-  // Gap 3 — welcomeShownKey write failing silently (TEA:TA audit 2026-04-10)
-  it('does not crash and fires toast when localStorage.setItem throws for welcomeShownKey', async () => {
+  // Gap 3 — a localStorage write failing silently (TEA:TA audit 2026-04-10). Old
+  // contract exercised the welcome-toast flag write; that write is gone (q173), so
+  // the theme-preference write is the one that must fail without crashing.
+  it('does not crash when localStorage.setItem throws', async () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });
 
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={['/?theme=celestial']}>
         <CelestialThemeProvider />
       </MemoryRouter>
     );
 
     await act(async () => {});
 
-    expect(toast).toHaveBeenCalledWith(expect.stringContaining('Equoria has a new look'));
+    expect(document.body.classList.contains('celestial')).toBe(true);
   });
 });

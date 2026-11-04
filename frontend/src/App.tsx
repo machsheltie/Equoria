@@ -1,5 +1,4 @@
 import { lazy, Suspense } from 'react';
-import { Toaster as Sonner } from '@/components/ui/sonner';
 import { GameTooltipProvider as TooltipProvider } from '@/components/ui/game';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createAppQueryClient } from './lib/queryClient';
@@ -62,7 +61,6 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <Sonner />
           {/* RewardToast trigger layer — meaningful-progress toasts queued
               globally (Equoria-vcar, Spec 11.3.10). */}
           <RewardToastProvider>

@@ -7,7 +7,6 @@
 
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { authApi, ApiError } from '../lib/api-client';
 import type {
   EmailChangeConfirmResult,
@@ -173,7 +172,8 @@ export function useUpdateProfile() {
       queryClient.setQueryData<{ user: User } | undefined>(['profile'], (old) =>
         old?.user ? { ...old, user: { ...old.user, ...data.user } } : data
       );
-      toast.success('Profile updated successfully.');
+      // q173: the saved values on the page are the feedback; no pop-up. Each
+      // consumer shows a refusal beside its own Save button.
     },
   });
 }

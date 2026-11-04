@@ -507,6 +507,34 @@ describe('Refused feed, inventory and Settings actions show at the control (Equo
     expect(refreshCalls, 'a wrong password is not an ended session').toBe(0);
   });
 
+  // Old contract: a password form filled in wrongly popped a toast ("New password
+  // and confirmation do not match."). New ruling q173: it is explained at the
+  // password form, and nothing is sent.
+  it('a mismatched new password is explained at the password form and never sent', async () => {
+    stubProfile();
+    let changeCalls = 0;
+    server.use(
+      http.post(`${base}/api/v1/auth/change-password`, () => {
+        changeCalls += 1;
+        return HttpResponse.json({ success: true });
+      })
+    );
+    const user = userEvent.setup();
+    renderSettingsWith(client());
+
+    await user.click(await screen.findByTestId('settings-show-password-form'));
+    await user.type(screen.getByLabelText('Current Password'), 'MyOldPassword1!');
+    await user.type(screen.getByLabelText(/New Password \(min 12/), 'BrandNewPassword9!');
+    await user.type(screen.getByLabelText('Confirm New Password'), 'DifferentPassword9!');
+    await user.click(screen.getByTestId('settings-submit-password'));
+
+    const form = screen.getByTestId('settings-password-form');
+    expect(await within(form).findByRole('alert')).toHaveTextContent(
+      'New password and confirmation do not match.'
+    );
+    expect(changeCalls, 'a form that fails its own checks sends nothing').toBe(0);
+  });
+
   it('a refused display switch save shows beside that switch', async () => {
     stubProfile();
     server.use(

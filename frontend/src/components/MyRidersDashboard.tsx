@@ -12,8 +12,6 @@
 
 import React, { useState } from 'react';
 import { Users, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { toast } from 'sonner';
-
 import { userMessageFor } from '@/lib/http/userMessage';
 import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
@@ -177,27 +175,21 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
   const slotsUsed = finalRiders.length;
 
   const handleAssignClick = (riderId: number) => {
+    // A refusal from an earlier picker visit must not greet the next one.
+    assignMutation.reset();
     setSelectedRiderIdForAssign(riderId);
   };
 
+  // Owner ruling q173: success is the page changing (the assignment or the rider
+  // card leaves once the hook refetches); a failure shows beside the control that
+  // failed, read from the mutation's own state. userMessageFor / actionMessageFor
+  // keep the raw server body off the screen (§3).
   const handleUnassign = (assignmentId: number) => {
-    unassignMutation.mutate(assignmentId, {
-      // §2 — visible failure feedback; the confirm dialog has already closed on
-      // click, so without this a failed unassign was silent. Call-site (not hook)
-      // keeps the feedback beside the existing dismiss handler; userMessageFor
-      // keeps the raw server body off the screen (§3).
-      onError: (error) =>
-        toast.error('Could not unassign the rider', {
-          description: userMessageFor(error).message,
-        }),
-    });
+    unassignMutation.mutate(assignmentId);
   };
 
   const handleDismiss = (riderId: number) => {
-    dismissMutation.mutate(riderId, {
-      onSuccess: () => toast.success('Rider dismissed'),
-      onError: () => toast.error('Could not dismiss the rider. Please try again.'),
-    });
+    dismissMutation.mutate(riderId);
   };
 
   return (
@@ -293,12 +285,20 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                 ) : (
                   <div className="space-y-2">
                     {assignments.map((a) => (
-                      <RiderAssignmentCard
-                        key={a.id}
-                        assignment={a}
-                        onUnassign={handleUnassign}
-                        isUnassigning={unassignMutation.isPending}
-                      />
+                      <div key={a.id}>
+                        <RiderAssignmentCard
+                          assignment={a}
+                          onUnassign={handleUnassign}
+                          isUnassigning={unassignMutation.isPending}
+                        />
+                        {unassignMutation.isError && unassignMutation.variables === a.id && (
+                          <div className="mt-1">
+                            <InlineError
+                              message={`Could not unassign the rider. ${userMessageFor(unassignMutation.error).message}`}
+                            />
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -321,6 +321,11 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                 riderName={`${rider.firstName} ${rider.lastName}`}
                 onDismiss={handleDismiss}
                 isDismissing={dismissMutation.isPending}
+                errorMessage={
+                  dismissMutation.isError && dismissMutation.variables === rider.id
+                    ? `Could not dismiss the rider. ${userMessageFor(dismissMutation.error).message}`
+                    : null
+                }
               />
 
               {/* Expand Career / Discovery */}
@@ -429,19 +434,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                   onClick={() => {
                     assignMutation.mutate(
                       { riderId: selectedRiderIdForAssign, horseId: horse.id },
-                      {
-                        onSuccess: () => setSelectedRiderIdForAssign(null),
-                        // §2 — visible failure feedback; the assign was silent on
-                        // failure. Call-site (not hook) on purpose: useAssignRider
-                        // has other consumers (RiderPickerModal) that already
-                        // surface their own onError, so a hook toast would
-                        // double-feed them (one-feedback rule). userMessageFor
-                        // keeps the raw server body off the screen (§3).
-                        onError: (error) =>
-                          toast.error('Could not assign the rider', {
-                            description: actionMessageFor(error, {}, assignStaffRefusalCodes),
-                          }),
-                      }
+                      { onSuccess: () => setSelectedRiderIdForAssign(null) }
                     );
                   }}
                   disabled={assignMutation.isPending}
@@ -456,6 +449,16 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                 </Button>
               ))}
             </div>
+            {/* q173: a refused assign shows here, beside the horse list, in plain words.
+                Call-site (not hook): useAssignRider's other consumer (RiderPickerModal)
+                shows its own refusal (one-feedback rule). */}
+            {assignMutation.isError && (
+              <div className="mt-3">
+                <InlineError
+                  message={`Could not assign the rider. ${actionMessageFor(assignMutation.error, {}, assignStaffRefusalCodes)}`}
+                />
+              </div>
+            )}
             <Button
               type="button"
               variant="secondary"

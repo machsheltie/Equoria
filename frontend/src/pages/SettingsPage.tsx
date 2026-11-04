@@ -31,7 +31,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronRight, Settings } from 'lucide-react';
-import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -94,24 +93,17 @@ const SettingsPage: React.FC = () => {
     };
   }, [user]);
 
+  // Owner ruling q173 (no pop-ups): with nothing changed, Save Changes is
+  // disabled rather than answering with a "No changes to save" message.
+  const accountUnchanged = !user || !username.trim() || username === user.username;
+
   const handleSaveAccount = () => {
-    if (!user) return;
-    const updates: { username?: string } = {};
-    if (username.trim() && username !== user.username) updates.username = username.trim();
-    if (Object.keys(updates).length === 0) {
-      toast.info('No changes to save.');
-      return;
-    }
-    updateProfile.mutate(updates, {
-      // Equoria-ocn9 review fix: surface a success toast. The original
-      // implementation only handled onError, leaving users with no
-      // confirmation that the save worked.
-      onSuccess: () => {
-        toast.success('Account changes saved.');
-      },
-      // A refusal is shown at Save Changes by AccountSection (owner ruling
-      // 2026-10-28, q161), never the server's own message.
-    });
+    if (!user || accountUnchanged) return;
+    // Success is the page itself: the saved username stays in the field and the
+    // button goes back to disabled. A refusal is shown at Save Changes by
+    // AccountSection (owner ruling 2026-10-28, q161), never the server's own
+    // message.
+    updateProfile.mutate({ username: username.trim() });
   };
 
   // -------- Password change form state --------
@@ -119,39 +111,42 @@ const SettingsPage: React.FC = () => {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  // A form the player has not filled in correctly is explained at the password
+  // form itself (owner ruling q173: errors beside the action, no pop-ups).
+  const [passwordFormError, setPasswordFormError] = useState<string | null>(null);
 
   const resetPasswordForm = () => {
     setOldPassword('');
     setNewPassword('');
     setConfirmPassword('');
+    setPasswordFormError(null);
     setShowPasswordForm(false);
+  };
+
+  const passwordProblem = (): string | null => {
+    if (!oldPassword || !newPassword || !confirmPassword)
+      return 'All password fields are required.';
+    if (newPassword.length < 12) return 'New password must be at least 12 characters.';
+    if (newPassword !== confirmPassword) return 'New password and confirmation do not match.';
+    if (newPassword === oldPassword) return 'New password must differ from the current password.';
+    return null;
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      toast.error('All password fields are required.');
-      return;
-    }
-    if (newPassword.length < 12) {
-      toast.error('New password must be at least 12 characters.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error('New password and confirmation do not match.');
-      return;
-    }
-    if (newPassword === oldPassword) {
-      toast.error('New password must differ from the current password.');
+    const problem = passwordProblem();
+    setPasswordFormError(problem);
+    if (problem) {
+      // An earlier server refusal must not sit beside the new explanation.
+      changePassword.reset();
       return;
     }
     changePassword.mutate(
       { oldPassword, newPassword },
       {
+        // Success is the page itself: the player is signed out and taken to
+        // the login page (below). No pop-up.
         onSuccess: () => {
-          toast.success(
-            'Password changed. You will be signed out — please log in with your new password.'
-          );
           resetPasswordForm();
           // Code-review chunk-A fix: cross-tab cache invalidation. The server
           // invalidates all sessions on password change, but other tabs in
@@ -284,6 +279,7 @@ const SettingsPage: React.FC = () => {
                 onUsernameChange={setUsername}
                 onSaveAccount={handleSaveAccount}
                 isSavingAccount={updateProfile.isPending}
+                saveAccountDisabled={accountUnchanged}
                 saveAccountError={
                   updateProfile.isError
                     ? actionMessageFor(updateProfile.error, saveProfileRefused)
@@ -301,9 +297,10 @@ const SettingsPage: React.FC = () => {
                 onResetPasswordForm={resetPasswordForm}
                 isChangingPassword={changePassword.isPending}
                 changePasswordError={
-                  changePassword.isError
+                  passwordFormError ??
+                  (changePassword.isError
                     ? changePasswordMessageFor(changePassword.error)
-                    : undefined
+                    : undefined)
                 }
               />
             )}

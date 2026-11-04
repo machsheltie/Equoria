@@ -1,6 +1,6 @@
 {
   "frontend/src/components/hub/WhileYouWereGone.tsx": 2,
-  "frontend/src/components/theme/CelestialThemeProvider.tsx": 4,
+  "frontend/src/components/theme/CelestialThemeProvider.tsx": 3,
   "frontend/src/components/ui/dialogPresence.ts": 1,
   "frontend/src/hooks/useSound.ts": 1,
   "frontend/src/lib/activity-utils.ts": 1,

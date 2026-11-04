@@ -12,7 +12,6 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import {
   trainersApi,
   ApiError,
@@ -21,10 +20,6 @@ import {
   MarketplaceTrainer,
   TrainerMarketplaceData,
 } from '@/lib/api-client';
-// Equoria-8cnzr — single error-taxonomy mapping point. Used for mutation
-// failure toasts so a raw server body message is never surfaced (§3).
-import { userMessageFor } from '@/lib/http/userMessage';
-import { actionMessageFor, assignStaffRefusalCodes } from '@/lib/http/actionMessage';
 
 // Re-export types for convenience
 export type { TrainerEntry, TrainerAssignmentEntry, MarketplaceTrainer, TrainerMarketplaceData };
@@ -157,15 +152,10 @@ export function useAssignTrainer() {
       queryClient.invalidateQueries({ queryKey: trainerKeys.assignments() });
       queryClient.invalidateQueries({ queryKey: trainerKeys.all });
     },
-    // Equoria-u96fm — visible failure feedback (§2). The call site (the
-    // MyTrainersDashboard horse picker) only wired onSuccess (to close the
-    // modal), so a failed assign was silent. This hook is the single feedback
-    // per mutation; userMessageFor keeps the raw server body off screen (§3).
-    onError: (error) => {
-      toast.error('Could not assign the trainer', {
-        description: actionMessageFor(error, {}, assignStaffRefusalCodes),
-      });
-    },
+    // NO hook onError on purpose: each consumer (MyTrainersDashboard's horse
+    // picker, TrainerPage's assign dialog) shows the refusal beside the control
+    // that failed (owner ruling q173: no pop-ups; doctrine §2: one feedback per
+    // mutation). Old contract: a floating toast (Equoria-u96fm).
   });
 }
 
@@ -177,15 +167,9 @@ export function useDeleteTrainerAssignment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: trainerKeys.assignments() });
     },
-    // Equoria-u96fm — visible failure feedback (§2). The unassign confirm dialog
-    // closes on click and the call site wires no callbacks, so without this a
-    // failed unassign was silent. userMessageFor keeps the raw server body off
-    // screen (§3).
-    onError: (error) => {
-      toast.error('Could not unassign the trainer', {
-        description: userMessageFor(error).message,
-      });
-    },
+    // NO hook onError on purpose: MyTrainersDashboard shows a failed unassign
+    // beside the assignment it was for (owner ruling q173: no pop-ups). Old
+    // contract: a floating toast (Equoria-u96fm).
   });
 }
 

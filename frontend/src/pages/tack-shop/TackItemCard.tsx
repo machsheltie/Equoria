@@ -15,6 +15,7 @@ import React from 'react';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
+import { InlineError } from '@/components/ui/state';
 import type { TackItem } from '@/hooks/api/useTackShop';
 import { categoryIcons, tierColors } from './constants';
 
@@ -22,9 +23,16 @@ interface TackItemCardProps {
   item: TackItem;
   onPurchase: (_item: TackItem) => void;
   isPurchasing: boolean;
+  /** Mapped copy for this item's failed purchase, shown under its Buy button (q173). */
+  errorMessage?: string | null;
 }
 
-export const TackItemCard: React.FC<TackItemCardProps> = ({ item, onPurchase, isPurchasing }) => {
+export const TackItemCard: React.FC<TackItemCardProps> = ({
+  item,
+  onPurchase,
+  isPurchasing,
+  errorMessage = null,
+}) => {
   const tierStyle = tierColors[item.tier] ?? tierColors.basic;
 
   const media = item.image ? (
@@ -66,7 +74,7 @@ export const TackItemCard: React.FC<TackItemCardProps> = ({ item, onPurchase, is
     </>
   );
 
-  const action = (
+  const button = (
     <Button
       type="button"
       variant="secondary"
@@ -79,6 +87,14 @@ export const TackItemCard: React.FC<TackItemCardProps> = ({ item, onPurchase, is
     >
       Buy
     </Button>
+  );
+  const action = errorMessage ? (
+    <div className="flex flex-col gap-1">
+      {button}
+      <InlineError message={errorMessage} />
+    </div>
+  ) : (
+    button
   );
 
   return (

@@ -23,7 +23,6 @@ import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
 import { server } from '@/test/msw/server';
-import { Toaster } from '@/components/ui/sonner';
 import MyTrainersDashboard from '../MyTrainersDashboard';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -69,8 +68,6 @@ function renderDashboard() {
   return render(
     <QueryClientProvider client={qc}>
       <BrowserRouter>
-        {/* Real sonner sink so mutation-error toasts render into the DOM. */}
-        <Toaster />
         <MyTrainersDashboard userId={userId} />
       </BrowserRouter>
     </QueryClientProvider>
@@ -167,7 +164,7 @@ describe('MyTrainersDashboard — four-state doctrine (Equoria-u96fm)', () => {
 });
 
 describe('MyTrainersDashboard — silent-mutation feedback (Equoria-u96fm)', () => {
-  it('a failed unassign surfaces a visible error toast (no raw server leak)', async () => {
+  it('a failed unassign shows an announced error beside the control (no raw server leak)', async () => {
     server.use(
       http.get(trainersPath, () => HttpResponse.json({ success: true, data: oneTrainer })),
       http.get(assignmentsPath, () =>
@@ -188,13 +185,15 @@ describe('MyTrainersDashboard — silent-mutation feedback (Equoria-u96fm)', () 
     // Confirm in the dialog (destructive button text is "Remove Trainer").
     await user.click(await screen.findByRole('button', { name: /remove trainer/i }));
 
-    // Visible failure feedback surfaces via the real sonner Toaster …
-    expect(await screen.findByText(/could not unassign the trainer/i)).toBeInTheDocument();
+    // Visible failure feedback shows inline as an announced alert (q173) …
+    expect(
+      (await screen.findByText(/could not unassign the trainer/i)).closest('[role="alert"]')
+    ).not.toBeNull();
     // … and the raw server body text is not leaked.
     expect(screen.queryByText(/delete boom leak/i)).not.toBeInTheDocument();
   });
 
-  it('a failed assign surfaces a visible error toast (no raw server leak)', async () => {
+  it('a failed assign shows an announced error beside the control (no raw server leak)', async () => {
     server.use(
       http.get(trainersPath, () => HttpResponse.json({ success: true, data: oneTrainer })),
       http.get(assignmentsPath, () => HttpResponse.json({ success: true, data: [] })),
@@ -219,8 +218,10 @@ describe('MyTrainersDashboard — silent-mutation feedback (Equoria-u96fm)', () 
     await user.click(await screen.findByTestId('assign-button-10'));
     await user.click(await screen.findByRole('button', { name: /test horse/i }));
 
-    // Visible failure feedback surfaces via the real sonner Toaster …
-    expect(await screen.findByText(/could not assign the trainer/i)).toBeInTheDocument();
+    // Visible failure feedback shows inline as an announced alert (q173) …
+    expect(
+      (await screen.findByText(/could not assign the trainer/i)).closest('[role="alert"]')
+    ).not.toBeNull();
     // … and the raw server body text is not leaked.
     expect(screen.queryByText(/assign boom leak/i)).not.toBeInTheDocument();
   });
