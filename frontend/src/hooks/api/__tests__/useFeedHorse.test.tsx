@@ -7,11 +7,12 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '@/test/msw/server';
 import { http, HttpResponse } from 'msw';
 import { useFeedHorse } from '../useFeedHorse';
+import { useHorse } from '../useHorses';
 import type { FeedHorseResponse } from '@/lib/api-client';
 import React from 'react';
 
@@ -92,5 +93,37 @@ describe('useFeedHorse — mutation fires', () => {
     // Cache must NOT be overwritten when skipped
     const cached = qc.getQueryData<{ lastFedDate: string | null }>(['horses', 42]);
     expect(cached?.lastFedDate).toBe('2026-01-01');
+  });
+});
+
+describe('useFeedHorse — stat gain shows without reopening the page (Equoria-du3ye)', () => {
+  it('refetches the horse after a feed that rolled a stat boost', async () => {
+    let speed = 50;
+    server.use(
+      http.get('/api/v1/horses/42', () =>
+        HttpResponse.json({ success: true, data: { id: 42, name: 'Comet', stats: { speed } } })
+      ),
+      http.post('/api/v1/horses/42/feed', () => {
+        speed = 51;
+        return HttpResponse.json({
+          ...mockFeedResponse,
+          statBoost: { stat: 'speed', amount: 1 },
+        });
+      })
+    );
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => ({ horse: useHorse(42), feed: useFeedHorse(42) }), {
+      wrapper: wrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.horse.data).toBeDefined());
+    expect(JSON.stringify(result.current.horse.data)).toContain('"speed":50');
+
+    await act(async () => {
+      result.current.feed.mutate();
+    });
+
+    await waitFor(() => expect(JSON.stringify(result.current.horse.data)).toContain('"speed":51'));
   });
 });

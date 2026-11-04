@@ -37,6 +37,12 @@ export function useFeedHorse(horseId: number) {
               }
             : prev
         );
+        // A stat roll changes numbers the POST response does not carry, so
+        // refetch the horse now (the POST has committed) instead of leaving it
+        // stale until the page is reopened (Equoria-du3ye).
+        if (data.statBoost) {
+          void queryClient.refetchQueries({ queryKey: ['horses', data.horse.id], exact: true });
+        }
       }
     },
     onSettled: () => {
