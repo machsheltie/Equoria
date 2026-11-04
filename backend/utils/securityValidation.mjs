@@ -64,28 +64,28 @@ export const validateHorseData = (horseData, isUpdate = false) => {
   }
 
   // Financial validation
-  if (sanitized.total_earnings !== undefined) {
-    const earnings = parseFloat(sanitized.total_earnings);
+  if (sanitized.totalEarnings !== undefined) {
+    const earnings = parseFloat(sanitized.totalEarnings);
     if (isNaN(earnings) || earnings < 0 || earnings > 10000000) {
       errors.push('Total earnings must be between 0 and 10,000,000');
     }
-    sanitized.total_earnings = earnings;
+    sanitized.totalEarnings = earnings;
   }
 
-  if (sanitized.stud_fee !== undefined) {
-    const fee = parseFloat(sanitized.stud_fee);
+  if (sanitized.studFee !== undefined) {
+    const fee = parseFloat(sanitized.studFee);
     if (isNaN(fee) || fee < 0 || fee > 1000000) {
       errors.push('Stud fee must be between 0 and 1,000,000');
     }
-    sanitized.stud_fee = fee;
+    sanitized.studFee = fee;
   }
 
-  if (sanitized.sale_price !== undefined) {
-    const price = parseFloat(sanitized.sale_price);
+  if (sanitized.salePrice !== undefined) {
+    const price = parseFloat(sanitized.salePrice);
     if (isNaN(price) || price < 0 || price > 10000000) {
       errors.push('Sale price must be between 0 and 10,000,000');
     }
-    sanitized.sale_price = price;
+    sanitized.salePrice = price;
   }
 
   // Prevent direct modification of protected fields in updates

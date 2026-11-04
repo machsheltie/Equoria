@@ -69,7 +69,7 @@ describe('Equoria-bvddn.7 — the player-built groom hire is retired', () => {
     const res = await authed(request(app).post('/api/v1/grooms/hire')).send({
       name: `${fixturePrefix}-built-${randomBytes(3).toString('hex')}`,
       speciality: 'foalCare',
-      skill_level: 'master',
+      skillLevel: 'master',
       personality: 'gentle',
       experience: 20,
     });

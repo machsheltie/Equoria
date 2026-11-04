@@ -377,18 +377,18 @@ describe('validateHorseData — additional branches', () => {
     expect(isValid).toBe(true);
   });
 
-  it('rejects total_earnings above max', () => {
-    const { isValid } = validateHorseData({ total_earnings: 10_000_001 });
+  it('rejects totalEarnings above max', () => {
+    const { isValid } = validateHorseData({ totalEarnings: 10_000_001 });
     expect(isValid).toBe(false);
   });
 
-  it('rejects stud_fee above max', () => {
-    const { isValid } = validateHorseData({ stud_fee: 1_000_001 });
+  it('rejects studFee above max', () => {
+    const { isValid } = validateHorseData({ studFee: 1_000_001 });
     expect(isValid).toBe(false);
   });
 
-  it('rejects sale_price above max', () => {
-    const { isValid } = validateHorseData({ sale_price: 10_000_001 });
+  it('rejects salePrice above max', () => {
+    const { isValid } = validateHorseData({ salePrice: 10_000_001 });
     expect(isValid).toBe(false);
   });
 
@@ -631,18 +631,18 @@ describe('validateHorseData — NaN and financial branches', () => {
     expect(errors.some(e => e.includes('speed'))).toBe(true);
   });
 
-  it('NaN total_earnings exercises isNaN(earnings) true-branch', () => {
-    const { isValid } = validateHorseData({ total_earnings: 'lots' });
+  it('NaN totalEarnings exercises isNaN(earnings) true-branch', () => {
+    const { isValid } = validateHorseData({ totalEarnings: 'lots' });
     expect(isValid).toBe(false);
   });
 
-  it('NaN stud_fee exercises isNaN(fee) true-branch', () => {
-    const { isValid } = validateHorseData({ stud_fee: 'free' });
+  it('NaN studFee exercises isNaN(fee) true-branch', () => {
+    const { isValid } = validateHorseData({ studFee: 'free' });
     expect(isValid).toBe(false);
   });
 
-  it('NaN sale_price exercises isNaN(price) true-branch', () => {
-    const { isValid } = validateHorseData({ sale_price: 'priceless' });
+  it('NaN salePrice exercises isNaN(price) true-branch', () => {
+    const { isValid } = validateHorseData({ salePrice: 'priceless' });
     expect(isValid).toBe(false);
   });
 });
@@ -730,20 +730,20 @@ describe('validateTrainingData — missing discipline branch (line 243)', () => 
 // because no prior test passes a valid value for these fields.
 // ---------------------------------------------------------------------------
 describe('validateHorseData — financial field valid-value FALSE branches (lines 68, 76, 84)', () => {
-  it('valid total_earnings skips error and is accepted (line 68 FALSE branch)', () => {
-    const result = validateHorseData({ total_earnings: 500 });
+  it('valid totalEarnings skips error and is accepted (line 68 FALSE branch)', () => {
+    const result = validateHorseData({ totalEarnings: 500 });
     expect(result.isValid).toBe(true);
     expect(result.errors.some(e => e.toLowerCase().includes('earnings'))).toBe(false);
   });
 
-  it('valid stud_fee skips error and is accepted (line 76 FALSE branch)', () => {
-    const result = validateHorseData({ stud_fee: 1000 });
+  it('valid studFee skips error and is accepted (line 76 FALSE branch)', () => {
+    const result = validateHorseData({ studFee: 1000 });
     expect(result.isValid).toBe(true);
     expect(result.errors.some(e => e.toLowerCase().includes('fee'))).toBe(false);
   });
 
-  it('valid sale_price skips error and is accepted (line 84 FALSE branch)', () => {
-    const result = validateHorseData({ sale_price: 5000 });
+  it('valid salePrice skips error and is accepted (line 84 FALSE branch)', () => {
+    const result = validateHorseData({ salePrice: 5000 });
     expect(result.isValid).toBe(true);
     expect(result.errors.some(e => e.toLowerCase().includes('price'))).toBe(false);
   });

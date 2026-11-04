@@ -350,7 +350,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
             precision: 100,
             strength: 100,
             speed: 100,
-            total_earnings: 999999,
+            totalEarnings: 999999,
           });
 
         // Should reject or ignore protected field modifications
