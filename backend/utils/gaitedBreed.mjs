@@ -11,7 +11,7 @@
 
 import { DISCIPLINES } from '../constants/schema.mjs';
 
-const gaitedDiscipline = DISCIPLINES.GAITED;
+const gaitedDiscipline = DISCIPLINES.gaited;
 
 /**
  * @param {unknown} breedGeneticProfile - breeds.breedGeneticProfile (JSONB).
