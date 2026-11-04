@@ -10,7 +10,7 @@
  * skipped name that git tracks is an R2 violation (fail closed without git).
  *
  * Why a separate suite from moduleDependencyGraphDoctrine.sentinel.test.mjs: that suite crossed the
- * 800-line cap, and these arms plant only FOREIGN-token names (`_v8l96_sentinel_*`), which every
+ * 800-line cap, and these arms plant only FOREIGN-token names (`_v8l96Sentinel*`), which every
  * gate run skips. The core suite's own-token (`_ws4graphplant_`) violation plants are visible to
  * ANY gate run, so if the two suites land in different lanes the core may be mid-arm while this one
  * runs the gate. Every assertion here is therefore about THIS suite's plant only — the WARN line
@@ -52,9 +52,9 @@ afterAll(() => {
 });
 
 describe('check-module-dependency-graph.mjs versus foreign sentinel plants (Equoria-rfv9j)', () => {
-  it('F2: a FOREIGN sentinel plant (reserved `_v8l96_sentinel` name) carrying a cross-module deep import is skipped with a WARN, never judged', () => {
+  it('F2: a FOREIGN sentinel plant (reserved `_v8l96Sentinel` name) carrying a cross-module deep import is skipped with a WARN, never judged', () => {
     const plant = plantFile(
-      `competition/_v8l96_sentinel_ws4race_${runId}.mjs`,
+      `competition/_v8l96SentinelWs4race${runId}.mjs`,
       "import { x } from '../horses/services/horseService.mjs';\nexport const y = x;\n",
     );
     const rel = relPosix(plant);
@@ -65,7 +65,7 @@ describe('check-module-dependency-graph.mjs versus foreign sentinel plants (Equo
   });
 
   it('M2: a FOREIGN plant directory that contains an index.mjs is skipped whole — never judged as a module (its `export *` would be R3)', () => {
-    const barrel = plantFile(`_v8l96_sentinel_moddir_${runId}/index.mjs`, "export * from './services/x.mjs';\n");
+    const barrel = plantFile(`_v8l96SentinelModdir${runId}/index.mjs`, "export * from './services/x.mjs';\n");
     const dir = relPosix(path.dirname(barrel));
     const res = runCheck();
     expect(res.out).not.toMatch(new RegExp(`R3 ${esc(dir)}`)); // never judged as a barrel
@@ -75,9 +75,9 @@ describe('check-module-dependency-graph.mjs versus foreign sentinel plants (Equo
 
   it('M1: a TRACKED file whose name carries a reserved scratch-plant token is a violation — the skip never hides committed source', () => {
     // Simulated with an intent-to-add index entry (unstaged in `finally`); the file is an ordinary plant.
-    const plant = plantFile(`competition/_v8l96_sentinel_tracked_${runId}.mjs`, 'export const y = 1;\n');
+    const plant = plantFile(`competition/_v8l96SentinelTracked${runId}.mjs`, 'export const y = 1;\n');
     const rel = relPosix(plant);
-    expect(gitInRepo(['ls-files', '--', 'backend/modules']).stdout).not.toMatch(/_v8l96_sentinel_tracked_/); // no leftover from a crashed run
+    expect(gitInRepo(['ls-files', '--', 'backend/modules']).stdout).not.toMatch(/_v8l96SentinelTracked/); // no leftover from a crashed run
     expect(gitInRepo(['add', '-N', '--', rel]).status).toBe(0);
     try {
       expect(gitInRepo(['ls-files', '--', rel]).stdout.trim()).toBe(rel);
@@ -105,7 +105,7 @@ describe('check-module-dependency-graph.mjs versus foreign sentinel plants (Equo
       GIT_INDEX_FILE: path.join(elsewhere, 'index'),
     };
     const plantSuffix = `${process.pid}x${Date.now()}`;
-    const plant = plantFile(`competition/_v8l96_sentinel_hookenv_${plantSuffix}.mjs`, 'export const y = 1;\n');
+    const plant = plantFile(`competition/_v8l96SentinelHookenv${plantSuffix}.mjs`, 'export const y = 1;\n');
     const rel = relPosix(plant);
     expect(gitInRepo(['add', '-N', '--', rel], hookEnv).status).toBe(0);
     try {

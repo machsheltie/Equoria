@@ -50,7 +50,7 @@ const targetDirs = [
   path.join(backendRoot, 'tests'),
   path.join(backendRoot, 'modules'),
 ];
-const plantDir = path.join(backendRoot, '__tests__', '_deep_prisma_import_sentinel_scratch');
+const plantDir = path.join(backendRoot, '__tests__', '_deepPrismaImportSentinelScratch');
 
 // Assembled via array-join so neither the self-scan nor the no-useless-concat
 // lint rule fires on this line. Matches both forms the regression could take:

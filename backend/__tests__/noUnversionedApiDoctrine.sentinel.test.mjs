@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(HERE, '..', '..');
 const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-unversioned-api.mjs');
-const plantDir = path.join(repoRoot, 'frontend/src/_no_unversioned_api_doctrine_sentinel');
+const plantDir = path.join(repoRoot, 'frontend/src/_noUnversionedApiDoctrineSentinel');
 
 afterEach(() => {
   try {

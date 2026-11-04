@@ -23,8 +23,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.resolve(HERE, '..');
 
-const plantControllerDir = path.join(backendRoot, 'modules/horses/controllers/_max_lines_doctrine_sentinel_plant');
-const plantRouteDir = path.join(backendRoot, 'modules/horses/routes/_max_lines_doctrine_sentinel_plant');
+const plantControllerDir = path.join(backendRoot, 'modules/horses/controllers/_maxLinesDoctrineSentinelPlant');
+const plantRouteDir = path.join(backendRoot, 'modules/horses/routes/_maxLinesDoctrineSentinelPlant');
 
 afterEach(() => {
   for (const dir of [plantControllerDir, plantRouteDir]) {
@@ -70,7 +70,7 @@ describe('ESLint max-lines doctrine — controllers + routes (Equoria-xod8b / y8
     // 803 effective non-blank non-comment lines — just past the 800 cap.
     fs.writeFileSync(planted, buildOversizeSource(803));
 
-    const res = runLint('modules/horses/controllers/_max_lines_doctrine_sentinel_plant/plantedController.mjs');
+    const res = runLint('modules/horses/controllers/_maxLinesDoctrineSentinelPlant/plantedController.mjs');
 
     // ESLint exits non-zero when a rule of severity `error` fires.
     expect(res.status).not.toBe(0);
@@ -87,7 +87,7 @@ describe('ESLint max-lines doctrine — controllers + routes (Equoria-xod8b / y8
     const planted = path.join(plantRouteDir, 'plantedRoutes.mjs');
     fs.writeFileSync(planted, buildOversizeSource(803));
 
-    const res = runLint('modules/horses/routes/_max_lines_doctrine_sentinel_plant/plantedRoutes.mjs');
+    const res = runLint('modules/horses/routes/_maxLinesDoctrineSentinelPlant/plantedRoutes.mjs');
 
     expect(res.status).not.toBe(0);
     const out = `${res.stdout}\n${res.stderr}`;
@@ -99,7 +99,7 @@ describe('ESLint max-lines doctrine — controllers + routes (Equoria-xod8b / y8
     const planted = path.join(plantControllerDir, 'plantedSmallController.mjs');
     fs.writeFileSync(planted, buildOversizeSource(100));
 
-    const res = runLint('modules/horses/controllers/_max_lines_doctrine_sentinel_plant/plantedSmallController.mjs');
+    const res = runLint('modules/horses/controllers/_maxLinesDoctrineSentinelPlant/plantedSmallController.mjs');
 
     // It's possible other unrelated rules fire on the synthetic source; the
     // contract here is narrower: max-lines must NOT be among them. We assert

@@ -153,7 +153,7 @@ function dropGitIgnored(files) {
 // OTHER reserved scratch/plant name belongs to a sibling sentinel that creates and
 // deletes it mid-run. Those are not Equoria's names, and scanning them raced the
 // sibling (a "skipped vanished file" notice on a concurrent CI run).
-const ownPlantTokens = [['', '', 'camelcase', 'sentinel', 'plant'].join('_')];
+const ownPlantTokens = ['__camelcaseSentinelPlant'];
 const isForeignPlant = (name) => isReservedScratchPlantPathSegment(name, ownPlantTokens);
 
 function listFiles() {

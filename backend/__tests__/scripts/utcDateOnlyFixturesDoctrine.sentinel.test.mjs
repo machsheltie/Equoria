@@ -10,8 +10,8 @@
  * literal dates, the game-clock helpers and a name re-bound to a helper, and
  * that the tree is clean once the plants are gone.
  *
- * Plants carry the reserved `__1lk00_utcdob_plant_` token
- * (RESERVED_SCRATCH_PLANT_TOKENS in scripts/lib/doctrine-scan-patterns.mjs), so
+ * Plants carry the reserved `__1lk00UtcdobPlant_` token
+ * (reservedScratchPlantTokens in scripts/lib/doctrine-scan-patterns.mjs), so
  * foreign tree scanners and the gate's one-time test discovery skip them; the
  * check under test walks through walkFiles(), which does not consult that
  * list, so it still sees them. Each plant is removed after its test.
@@ -30,7 +30,7 @@ const __filename = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(__filename), '..', '..', '..');
 const CHECK = path.join(repoRoot, 'scripts', 'doctrine-checks', 'check-no-utc-date-only-fixtures.mjs');
 const plantDir = path.join(repoRoot, 'backend', '__tests__');
-const TOKEN = '__1lk00_utcdob_plant_';
+const TOKEN = '__1lk00UtcdobPlant_';
 
 function runCheck() {
   try {

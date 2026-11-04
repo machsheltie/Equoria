@@ -213,7 +213,7 @@ function walkInto(dir, out, skipDir, includeFile, includePlantArtifacts) {
 // -----------------------------------------------------------------------------
 //
 // During a concurrent jest run, sentinel suites plant and delete temp files
-// (e.g. backend/__tests__/__doctrine_jest_plant_DO_NOT_COMMIT__.test.mjs).
+// (e.g. backend/__tests__/__doctrineJestPlant_DO_NOT_COMMIT__.test.mjs).
 // A doctrine check that enumerated such a file and then readFileSync'd it
 // after deletion crashed with ENOENT (the Equoria-q7lqz incident, at
 // check-no-new-silent-cleanup-catch.mjs countSilentCatches → main).
@@ -256,9 +256,6 @@ export function isPlantArtifactBasename(name) {
   return name.includes('DO_NOT_COMMIT') || name.includes('PLANTED');
 }
 
-/** A sibling sentinel's plant-directory name: a leading underscore, then the parts. */
-const plantDirToken = (...parts) => ['', ...parts].join('_');
-
 // -----------------------------------------------------------------------------
 // Reserved scratch / plant basename tokens used by sibling scripts-dir sentinels
 // (Equoria-27lqy)
@@ -269,11 +266,11 @@ const plantDirToken = (...parts) => ['', ...parts].join('_');
 // fixtures into the REAL backend tree under NON-marker, lowercase scratch names
 // (so their own detection proofs run on production-realistically-named files):
 //
-//   - moduleBarrelBoundaryEslint.sentinel.test.mjs → `_v8l96_sentinel_*.mjs`
+//   - moduleBarrelBoundaryEslint.sentinel.test.mjs → `_v8l96Sentinel*.mjs`
 //     under backend/modules/**
-//   - doctrineScanPatterns.sentinel.test.mjs       → `__doctrine_jest_plant_*`
+//   - doctrineScanPatterns.sentinel.test.mjs       → `__doctrineJestPlant_*`
 //     under backend/** (and frontend/, tests/)
-//   - doctrineScanVanishedFile.sentinel.test.mjs   → `_q7lqz_vanished_scan_scratch/`
+//   - doctrineScanVanishedFile.sentinel.test.mjs   → `_q7lqzVanishedScanScratch/`
 //     under backend/__tests__/
 //   - checkNoPlaceholderTests.sentinel.test.mjs    → `__planted_*_fefh2_*` under
 //     backend/__tests__/
@@ -310,35 +307,35 @@ const plantDirToken = (...parts) => ['', ...parts].join('_');
 // inventions), so the exclusion cannot hide a genuine CommonJS / db-index
 // violation in a committed file.
 const reservedScratchPlantTokens = [
-  '__doctrine_jest_plant', // doctrineScanPatterns.sentinel.test.mjs
-  '_v8l96_sentinel', // moduleBarrelBoundaryEslint.sentinel.test.mjs
-  '_q7lqz_vanished_scan_scratch', // doctrineScanVanishedFile.sentinel.test.mjs (dir name)
+  '__doctrineJestPlant', // doctrineScanPatterns.sentinel.test.mjs
+  '_v8l96Sentinel', // moduleBarrelBoundaryEslint.sentinel.test.mjs
+  '_q7lqzVanishedScanScratch', // doctrineScanVanishedFile.sentinel.test.mjs (dir name)
   '__planted_', // checkNoPlaceholderTests.sentinel.test.mjs
-  '_sentinel_plant', // generic convention reservation
+  'SentinelPlant', // generic convention reservation (any camelCase ...SentinelPlant name)
   '_ws4graphplant_', // moduleDependencyGraphDoctrine.sentinel.test.mjs (its own gate exempts it via ownTokens)
   '_ws4hnplant_', // horseNameGatedDoctrine.sentinel.test.mjs (its gate walks via walkFiles: unaffected)
   // Equoria-rfv9j: the remaining in-tree planters' scratch names, so foreign scanners
   // and the gate runner's one-time discovery skip them. None of these planters' own
   // checks consults this predicate (their checks use walkFiles/isPlantArtifactBasename
   // or their own walks), so each planter still sees its own plant.
-  '_silent_catch_doctrine_sentinel', // silentCleanupCatchDoctrine.sentinel.test.mjs (dir)
-  '_console_log_sentinel_scratch', // noConsoleLogInTestsDirs.sentinel.test.mjs (dir)
-  '_deep_prisma_import_sentinel_scratch', // noDeepPrismaClientImportInTests.sentinel.test.mjs (dir)
-  '_file_size_doctrine_sentinel', // fileSizeThresholdDoctrine.sentinel.test.mjs (dirs)
-  '__ml7jj_inscope_70pb9__', // doctrineScanPatterns.sentinel.test.mjs
-  '__ml7jj_oos_70pb9__', // doctrineScanPatterns.sentinel.test.mjs
-  '__1lk00_utcdob_plant_', // utcDateOnlyFixturesDoctrine.sentinel.test.mjs (its check walks via walkFiles: unaffected)
+  '_silentCatchDoctrineSentinel', // silentCleanupCatchDoctrine.sentinel.test.mjs (dir)
+  '_consoleLogSentinelScratch', // noConsoleLogInTestsDirs.sentinel.test.mjs (dir)
+  '_deepPrismaImportSentinelScratch', // noDeepPrismaClientImportInTests.sentinel.test.mjs (dir)
+  '_fileSizeDoctrineSentinel', // fileSizeThresholdDoctrine.sentinel.test.mjs (dirs)
+  '__ml7jjInscope70pb9__', // doctrineScanPatterns.sentinel.test.mjs
+  '__ml7jjOos70pb9__', // doctrineScanPatterns.sentinel.test.mjs
+  '__1lk00UtcdobPlant_', // utcDateOnlyFixturesDoctrine.sentinel.test.mjs (its check walks via walkFiles: unaffected)
   // Quality Gate run 40798452605: the camelCase check walked into
-  // frontend/src/_frontend_swallowed_catch_sentinel/ while that suite deleted it
+  // frontend/src/_frontendSwallowedCatchSentinel/ while that suite deleted it
   // ("skipped vanished file"). These in-tree plant directories were never listed;
   // none of their own checks consults this predicate, so each still sees its plant.
-  // Each is the directory name, assembled from parts so this file stays camelCase.
-  plantDirToken('frontend', 'swallowed', 'catch', 'sentinel'), // frontendSwallowedCatchDoctrine.sentinel.test.mjs
-  plantDirToken('no', 'new', 'rejected', 'ui', 'deps', 'sentinel'), // noNewRejectedUiDepsDoctrine.sentinel.test.mjs
-  plantDirToken('no', 'radix', 'imports', 'doctrine', 'sentinel'), // noRadixImportsDoctrine.sentinel.test.mjs
-  plantDirToken('no', 'unversioned', 'api', 'doctrine', 'sentinel'), // noUnversionedApiDoctrine.sentinel.test.mjs
-  plantDirToken('becrm', 'doctrine', 'sentinel'), // noPrismaInRoutesDoctrine.sentinel.test.mjs
-  plantDirToken('jzu4l', 'doctrine', 'sentinel'), // noUnsafeRawSqlDoctrine.sentinel.test.mjs
+  // Each is the directory name (camelCase since Equoria-pjvp8.9).
+  '_frontendSwallowedCatchSentinel', // frontendSwallowedCatchDoctrine.sentinel.test.mjs
+  '_noNewRejectedUiDepsSentinel', // noNewRejectedUiDepsDoctrine.sentinel.test.mjs
+  '_noRadixImportsDoctrineSentinel', // noRadixImportsDoctrine.sentinel.test.mjs
+  '_noUnversionedApiDoctrineSentinel', // noUnversionedApiDoctrine.sentinel.test.mjs
+  '_becrmDoctrineSentinel', // noPrismaInRoutesDoctrine.sentinel.test.mjs
+  '_jzu4lDoctrineSentinel', // noUnsafeRawSqlDoctrine.sentinel.test.mjs
 ];
 
 export function isReservedScratchPlantPathSegment(name, ownTokens = []) {

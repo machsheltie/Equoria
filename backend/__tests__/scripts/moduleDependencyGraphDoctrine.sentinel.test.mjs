@@ -708,7 +708,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
 
   // Equoria-rfv9j (found in the S6 push window): under the two-lane sharded gate, sibling
   // scripts-dir sentinels plant and delete files under backend/modules while THIS suite's gate is
-  // reading the tree. Observed: moduleBarrelBoundaryEslint's `_v8l96_sentinel_*` plants vanished
+  // reading the tree. Observed: moduleBarrelBoundaryEslint's `_v8l96Sentinel*` plants vanished
   // between the gate's directory walk and its read -> ENOENT crash -> three arms here failed.
   // The gate now (F1) tolerates ONLY ENOENT at the walk/read/stat and reports vanished entries as
   // WARNs, and (F2) skips the reserved scratch names of OTHER suites while keeping its OWN
@@ -745,7 +745,7 @@ describe('check-module-dependency-graph.mjs (Equoria-q4uem.4, WS4 S5)', () => {
     const own = `${plantToken}x_${runId}.mjs`;
     expect(isReservedScratchPlantPathSegment(own)).toBe(true); // noCommonJsInMjs / noDeprecatedDbIndexImport skip my plants
     expect(isReservedScratchPlantPathSegment(own, [plantToken])).toBe(false); // my gate names its own token
-    expect(isReservedScratchPlantPathSegment('_v8l96_sentinel_cross_deep.mjs', [plantToken])).toBe(true);
+    expect(isReservedScratchPlantPathSegment('_v8l96SentinelCrossDeep.mjs', [plantToken])).toBe(true);
     expect(isReservedScratchPlantPathSegment('horseService.mjs', [plantToken])).toBe(false);
     expect(fs.readFileSync(CHECK, 'utf8')).toMatch(/ownPlantTokens = \[\s*'_ws4graphplant_'/);
     // End to end: an own plant IS still seen by the gate (the R2 arm above would be vacuous otherwise).

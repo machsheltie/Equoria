@@ -15,7 +15,7 @@
  *
  * 2. Per-batch discovery. Each `--shard=i/n` invocation discovered the test
  *    files itself, at its own start. Planters write *.test.mjs files (e.g.
- *    planted.test.mjs, __doctrine_jest_plant_70pb9__.test.mjs), so a shard
+ *    planted.test.mjs, __doctrineJestPlant_70pb9__.test.mjs), so a shard
  *    starting while a plant existed saw a different sorted list and different
  *    slice boundaries: a boundary suite ran twice (gate equoria-shard-nwrKX9:
  *    traitRevelationAnalytics in batch-2 AND batch-3) or not at all. Fix: the

@@ -26,9 +26,9 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(HERE, '..', '..');
 const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-new-rejected-ui-deps.mjs');
 const BASELINE = path.join(HERE, '..', '..', 'scripts/doctrine-checks/rejected-ui-deps-baseline.json');
-const plantDir = path.join(repoRoot, 'frontend/src/_no_new_rejected_ui_deps_sentinel');
-const plantKey = 'frontend/src/_no_new_rejected_ui_deps_sentinel/planted.tsx';
-const plantFolder = path.join(HERE, '..', '..', 'frontend/src/_no_new_rejected_ui_deps_sentinel');
+const plantDir = path.join(repoRoot, 'frontend/src/_noNewRejectedUiDepsSentinel');
+const plantKey = 'frontend/src/_noNewRejectedUiDepsSentinel/planted.tsx';
+const plantFolder = path.join(HERE, '..', '..', 'frontend/src/_noNewRejectedUiDepsSentinel');
 
 let scratchDir;
 
@@ -111,7 +111,7 @@ describe('check-no-new-rejected-ui-deps.mjs (Equoria-h1oi6)', () => {
       const res = runCheck();
       expect(res.status).toBe(1);
       expect(res.stderr).toMatch(/no-new-rejected-ui-deps.*FAIL/);
-      expect(res.stderr).toContain('_no_new_rejected_ui_deps_sentinel/planted.tsx');
+      expect(res.stderr).toContain('_noNewRejectedUiDepsSentinel/planted.tsx');
       // The failure must NAME the package, not just report "a banned import".
       expect(res.stderr).toContain(c.pkg.split('/')[0]);
     });

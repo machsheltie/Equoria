@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(HERE, '..', '..');
 const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-new-rethrow-after-log.mjs');
-const plantDir = path.join(repoRoot, 'backend/services/_rethrow_doctrine_sentinel_plant');
+const plantDir = path.join(repoRoot, 'backend/services/_rethrowDoctrineSentinelPlant');
 
 afterEach(() => {
   try {

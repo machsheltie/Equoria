@@ -32,8 +32,8 @@
  *   its verdict to the PLANT'S OWN PATH — the check's own output must not name
  *   the plant file — in addition to the exit code.
  *
- * The plant directory name carries the repo's `_sentinel_plant` reserved
- * scratch marker (see RESERVED_SCRATCH_PLANT_TOKENS in
+ * The plant directory name carries the repo's `SentinelPlant` reserved
+ * scratch marker (see reservedScratchPlantTokens in
  * scripts/lib/doctrine-scan-patterns.mjs) and the plant FILE's basename carries
  * the uppercase `PLANTED` marker, so that (a) sibling tree-walking sentinels
  * which check `isReservedScratchPlantPathSegment` recognize this plant as a
@@ -68,7 +68,7 @@ import {
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(HERE, '..', '..');
 const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-retirement-schedule-leak.mjs');
-const plantDir = path.join(repoRoot, 'backend/modules/_sg79g_sentinel_plant/services');
+const plantDir = path.join(repoRoot, 'backend/modules/_sg79gSentinelPlant/services');
 // Uppercase PLANTED marker: excluded from every shared-walk consumer by default
 // (isPlantArtifactBasename), still visible to the check's own local walk.
 const plantBasename = 'PLANTED_groomRead.mjs';

@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.resolve(HERE, '..'); // .../backend
 const targetDirs = [path.join(backendRoot, 'tests'), path.join(backendRoot, '__tests__')];
-const plantDir = path.join(backendRoot, '__tests__', '_console_log_sentinel_scratch');
+const plantDir = path.join(backendRoot, '__tests__', '_consoleLogSentinelScratch');
 
 // Build the trigger string at runtime so THIS file's own source does not
 // match the scan against backend/__tests__/. Assembled via array-join (not

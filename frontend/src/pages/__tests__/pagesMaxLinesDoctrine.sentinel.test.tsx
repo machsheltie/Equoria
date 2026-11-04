@@ -12,7 +12,7 @@
  * thing the HorseDetailPage split decomposed) silently re-emerge and no test
  * would notice.
  *
- * Plant path: `frontend/src/pages/_pagesMaxLines_sentinel_plant.tsx`. It is
+ * Plant path: `frontend/src/pages/_pagesMaxLinesSentinelPlant.tsx`. It is
  * covered by the rule glob `frontend/src/pages/**` *.tsx and is NOT under
  * `__tests__`, so the cap applies. The plant file does not exist in the tree at
  * rest and is removed in afterEach — the real page modules are never mutated.
@@ -33,7 +33,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(HERE, '..', '..', '..', '..');
 const frontendRoot = path.resolve(HERE, '..', '..', '..');
 
-const plantRel = 'frontend/src/pages/_pagesMaxLines_sentinel_plant.tsx';
+const plantRel = 'frontend/src/pages/_pagesMaxLinesSentinelPlant.tsx';
 const plantAbs = path.join(repoRoot, plantRel);
 
 afterEach(() => {

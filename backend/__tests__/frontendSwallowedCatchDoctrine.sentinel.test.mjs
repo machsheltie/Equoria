@@ -30,8 +30,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(HERE, '..', '..');
 const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-frontend-swallowed-catch.mjs');
 const BASELINE = path.join(repoRoot, 'scripts/doctrine-checks/frontend-swallowed-catch-baseline.json');
-const plantDir = path.join(repoRoot, 'frontend/src/_frontend_swallowed_catch_sentinel');
-const plantKey = 'frontend/src/_frontend_swallowed_catch_sentinel/planted.tsx';
+const plantDir = path.join(repoRoot, 'frontend/src/_frontendSwallowedCatchSentinel');
+const plantKey = 'frontend/src/_frontendSwallowedCatchSentinel/planted.tsx';
 
 let scratchDir;
 
@@ -102,7 +102,7 @@ describe('check-frontend-swallowed-catch.mjs (Equoria-axl7d)', () => {
     const res = runCheck();
     expect(res.status).toBe(1);
     expect(res.stderr).toMatch(/frontend-swallowed-catch.*FAIL/);
-    expect(res.stderr).toContain('_frontend_swallowed_catch_sentinel/planted.tsx');
+    expect(res.stderr).toContain('_frontendSwallowedCatchSentinel/planted.tsx');
   });
 
   it('a blessed-class marker exempts a marked storage guard', () => {
@@ -116,7 +116,7 @@ describe('check-frontend-swallowed-catch.mjs (Equoria-axl7d)', () => {
     plant(markedCatch('because-i-said-so'));
     const res = runCheck();
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain('_frontend_swallowed_catch_sentinel/planted.tsx');
+    expect(res.stderr).toContain('_frontendSwallowedCatchSentinel/planted.tsx');
   });
 
   it('SENTINEL: fails on baseline growth (more swallows than recorded)', () => {

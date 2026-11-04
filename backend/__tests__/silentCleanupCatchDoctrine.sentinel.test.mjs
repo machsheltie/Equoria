@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(HERE, '..', '..');
 const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-new-silent-cleanup-catch.mjs');
-const plantDir = path.join(repoRoot, 'backend/__tests__/_silent_catch_doctrine_sentinel');
+const plantDir = path.join(repoRoot, 'backend/__tests__/_silentCatchDoctrineSentinel');
 
 afterEach(() => {
   // Best-effort cleanup of the planted scaffold so a test crash doesn't poison

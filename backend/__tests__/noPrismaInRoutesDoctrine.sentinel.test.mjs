@@ -20,7 +20,7 @@ const repoRoot = path.resolve(HERE, '..', '..');
 const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-prisma-in-routes.mjs');
 // The planted file lives directly in modules/_doctrine_sentinel/routes/
 // so the scan picks it up via the `modules/<x>/routes/*.mjs` walk.
-const plantDir = path.join(repoRoot, 'backend/modules/_becrm_doctrine_sentinel/routes');
+const plantDir = path.join(repoRoot, 'backend/modules/_becrmDoctrineSentinel/routes');
 
 afterEach(() => {
   // Best-effort cleanup so a test crash doesn't poison subsequent runs.

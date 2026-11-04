@@ -83,27 +83,27 @@ function runEslint(absFile) {
 const PROBES = {
   // ARM 1 — cross-module deep import: MUST fire.
   crossDeep: {
-    abs: path.join(BACKEND, 'modules', 'competition', '_v8l96_sentinel_cross_deep.mjs'),
+    abs: path.join(BACKEND, 'modules', 'competition', '_v8l96SentinelCrossDeep.mjs'),
     src: "import { x } from '../../horses/services/horseService.mjs';\nexport const y = x;\n",
   },
   // ARM 2 — same-module deep import: MUST NOT fire.
   sameDeep: {
-    abs: path.join(BACKEND, 'modules', 'horses', 'controllers', '_v8l96_sentinel_same_deep.mjs'),
+    abs: path.join(BACKEND, 'modules', 'horses', 'controllers', '_v8l96SentinelSameDeep.mjs'),
     src: "import { x } from '../services/horseService.mjs';\nexport const y = x;\n",
   },
   // ARM 3 — cross-module BARREL import: MUST NOT fire.
   crossBarrel: {
-    abs: path.join(BACKEND, 'modules', 'competition', '_v8l96_sentinel_cross_barrel.mjs'),
+    abs: path.join(BACKEND, 'modules', 'competition', '_v8l96SentinelCrossBarrel.mjs'),
     src: "import { x } from '../../horses/index.mjs';\nexport const y = x;\n",
   },
   // ARM 4 — economy intra-module sub-domain import: MUST NOT fire.
   economyIntra: {
-    abs: path.join(BACKEND, 'modules', 'economy', 'inventory', 'controllers', '_v8l96_sentinel_econ_intra.mjs'),
+    abs: path.join(BACKEND, 'modules', 'economy', 'inventory', 'controllers', '_v8l96SentinelEconIntra.mjs'),
     src: "import { x } from '../../tackShop/controllers/tackShopController.mjs';\nexport const y = x;\n",
   },
   // ARM 5 — module TEST file cross-module deep import: MUST fire.
   testCrossDeep: {
-    abs: path.join(BACKEND, 'modules', 'horses', '__tests__', '_v8l96_sentinel_test_cross.test.mjs'),
+    abs: path.join(BACKEND, 'modules', 'horses', '__tests__', '_v8l96SentinelTestCross.test.mjs'),
     src: "import { x } from '../../breeding/services/foalingService.mjs';\nexport const y = x;\n",
   },
 };

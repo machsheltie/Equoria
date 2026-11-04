@@ -12,7 +12,7 @@
  *
  * Planted snake tokens are assembled from parts so this file's own source
  * stays camelCase (the check scans tests too). Plants live in a directory
- * whose name carries the reserved `_sentinel_plant` token and are removed in
+ * whose name carries the reserved `SentinelPlant` token and are removed in
  * afterEach. Alternate baselines live in os.tmpdir().
  */
 
@@ -45,9 +45,9 @@ const hookEnv = () => {
 };
 const canonicalBaseline = path.join(checkDir, 'camelcase-naming-baseline.json');
 const us = '_';
-// The directory name must carry the reserved `_sentinel_plant` scratch token
-// (scripts/lib/doctrine-scan-patterns.mjs), which is itself snake_case.
-const plantDirName = ['', '', 'camelcase', 'sentinel', 'plant'].join(us);
+// The directory name must carry the reserved `SentinelPlant` scratch token
+// (scripts/lib/doctrine-scan-patterns.mjs).
+const plantDirName = '__camelcaseSentinelPlant';
 const plantDir = path.join(repoRoot, 'backend', 'services', plantDirName);
 const plantRel = `backend/services/${plantDirName}`;
 

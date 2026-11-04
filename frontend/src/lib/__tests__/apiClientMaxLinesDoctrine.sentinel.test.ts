@@ -10,7 +10,7 @@
  * re-emerge and no test would notice.
  *
  * Why a separate plant path: the rule glob ALSO lists
- * `api-client._max_lines_doctrine_sentinel_plant.ts`, so this test can plant an
+ * `api-client._maxLinesDoctrineSentinelPlant.ts`, so this test can plant an
  * oversize file there and assert the rule fires WITHOUT ever mutating the real
  * `api-client.ts`. The plant file does not exist in the tree at rest and is
  * removed in afterEach.
@@ -31,7 +31,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(HERE, '..', '..', '..', '..');
 const frontendRoot = path.resolve(HERE, '..', '..', '..');
 
-const plantRel = 'frontend/src/lib/api-client._max_lines_doctrine_sentinel_plant.ts';
+const plantRel = 'frontend/src/lib/api-client._maxLinesDoctrineSentinelPlant.ts';
 const plantAbs = path.join(repoRoot, plantRel);
 
 afterEach(() => {

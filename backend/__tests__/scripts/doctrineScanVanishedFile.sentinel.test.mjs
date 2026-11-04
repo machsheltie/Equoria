@@ -2,7 +2,7 @@
  * Equoria-q7lqz — doctrine scans must tolerate files that vanish mid-scan.
  *
  * Incident: during a concurrent jest run, sentinel suites plant + delete
- * temp test files (e.g. backend/__tests__/__doctrine_jest_plant_DO_NOT_COMMIT__.test.mjs).
+ * temp test files (e.g. backend/__tests__/__doctrineJestPlant_DO_NOT_COMMIT__.test.mjs).
  * check-no-new-silent-cleanup-catch.mjs enumerated such a file in walk(),
  * the sentinel deleted it, and the subsequent readFileSync in
  * countSilentCatches() crashed the whole check with ENOENT.
@@ -49,7 +49,7 @@ const checkDir = path.join(repoRoot, 'scripts', 'doctrine-checks');
 const silentCatchCheck = path.join(checkDir, 'check-no-new-silent-cleanup-catch.mjs');
 // Scratch dir INSIDE the silent-cleanup-catch check's scan scope (backend/**)
 // so end-to-end plants are actually walked by the real check.
-const scratchDir = path.join(repoRoot, 'backend', '__tests__', '_q7lqz_vanished_scan_scratch');
+const scratchDir = path.join(repoRoot, 'backend', '__tests__', '_q7lqzVanishedScanScratch');
 
 // Build the forbidden silent-catch literal by concatenation so the SOURCE of
 // THIS sentinel file never contains the bare pattern (which would trip the
@@ -76,7 +76,7 @@ function runSilentCatchCheck() {
 
 describe('isPlantArtifactBasename (Equoria-q7lqz)', () => {
   it('matches the UPPERCASE plant-artifact markers', () => {
-    expect(isPlantArtifactBasename('__doctrine_jest_plant_DO_NOT_COMMIT__.test.mjs')).toBe(true);
+    expect(isPlantArtifactBasename('__doctrineJestPlant_DO_NOT_COMMIT__.test.mjs')).toBe(true);
     expect(isPlantArtifactBasename('q7lqz_PLANTED_artifact.test.mjs')).toBe(true);
   });
 

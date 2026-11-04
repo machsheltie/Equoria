@@ -39,8 +39,8 @@ const BASELINE = path.join(repoRoot, 'scripts/doctrine-checks/file-size-baseline
 // Plant dirs use a non-marker basename so the WALKER collects the planted file
 // (isPlantArtifactBasename excludes DO_NOT_COMMIT / PLANTED basenames). The
 // planted FILE basename is what the walker sees, so it must be a normal name.
-const plantSrcDir = path.join(repoRoot, 'backend/modules/horses/services/_file_size_doctrine_sentinel');
-const plantTestDir = path.join(repoRoot, 'backend/__tests__/_file_size_doctrine_sentinel');
+const plantSrcDir = path.join(repoRoot, 'backend/modules/horses/services/_fileSizeDoctrineSentinel');
+const plantTestDir = path.join(repoRoot, 'backend/__tests__/_fileSizeDoctrineSentinel');
 
 let scratchDir;
 

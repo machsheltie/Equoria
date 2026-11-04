@@ -458,18 +458,18 @@ describe('tree-touching suites run in one serial stream (Equoria-rfv9j)', () => 
     it('discovery drops transient plants, and only them', () => {
       expect(rels.filter(isPlantedTestPath)).toEqual([]); // no real suite carries a plant name
       for (const planted of [
-        '__tests__/__doctrine_jest_plant_70pb9__.test.mjs',
-        'modules/horses/__tests__/__doctrine_jest_plant_70pb9__.test.mjs',
+        '__tests__/__doctrineJestPlant_70pb9__.test.mjs',
+        'modules/horses/__tests__/__doctrineJestPlant_70pb9__.test.mjs',
         '__tests__/__planted_placeholder_fefh2_sentinel_tmp__.test.mjs',
         '__tests__/__placeholder_artifact_DO_NOT_COMMIT__.test.mjs',
-        'modules/horses/__tests__/_v8l96_sentinel_test_cross.test.mjs',
-        '__tests__/_q7lqz_vanished_scan_scratch/planted.test.mjs',
-        '__tests__/_silent_catch_doctrine_sentinel/planted.test.mjs',
-        '__tests__/_console_log_sentinel_scratch/planted.test.mjs',
-        '__tests__/_deep_prisma_import_sentinel_scratch/planted.test.mjs',
-        '__tests__/_file_size_doctrine_sentinel/plantedThing.test.mjs',
-        '__tests__/__ml7jj_inscope_70pb9__.test.mjs',
-        'routes/__ml7jj_oos_70pb9__.test.mjs',
+        'modules/horses/__tests__/_v8l96SentinelTestCross.test.mjs',
+        '__tests__/_q7lqzVanishedScanScratch/planted.test.mjs',
+        '__tests__/_silentCatchDoctrineSentinel/planted.test.mjs',
+        '__tests__/_consoleLogSentinelScratch/planted.test.mjs',
+        '__tests__/_deepPrismaImportSentinelScratch/planted.test.mjs',
+        '__tests__/_fileSizeDoctrineSentinel/plantedThing.test.mjs',
+        '__tests__/__ml7jjInscope70pb9__.test.mjs',
+        'routes/__ml7jjOos70pb9__.test.mjs',
       ]) {
         expect(isPlantedTestPath(planted)).toBe(true);
       }

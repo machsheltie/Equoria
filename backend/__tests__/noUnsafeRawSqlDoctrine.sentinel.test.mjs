@@ -27,7 +27,7 @@ const CHECK = path.join(repoRoot, 'scripts/doctrine-checks/check-no-unsafe-raw-s
 // Plant inside backend/modules/<x>/ so the scan picks it up via the
 // `modules/**` walk. The sentinel module name is unmistakably synthetic so a
 // stray file can never be mistaken for real domain code.
-const plantModule = path.join(repoRoot, 'backend/modules/_jzu4l_doctrine_sentinel');
+const plantModule = path.join(repoRoot, 'backend/modules/_jzu4lDoctrineSentinel');
 const plantDir = path.join(plantModule, 'services');
 
 afterEach(() => {

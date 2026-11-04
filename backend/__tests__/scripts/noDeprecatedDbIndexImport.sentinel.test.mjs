@@ -73,8 +73,8 @@ const selfTestPath = path.normalize('backend/__tests__/scripts/noDeprecatedDbInd
  *
  * Equoria-27lqy: also skips reserved scratch/plant path segments that sibling
  * scripts-dir sentinels plant + delete into the real backend tree mid-run
- * (e.g. `_v8l96_sentinel_*.mjs`, `__doctrine_jest_plant_*`,
- * `_q7lqz_vanished_scan_scratch/`). A foreign transient on disk at the instant
+ * (e.g. `_v8l96Sentinel*.mjs`, `__doctrineJestPlant_*`,
+ * `_q7lqzVanishedScanScratch/`). A foreign transient on disk at the instant
  * of THIS walk is not a defect in the repo's tracked source — reading it (or
  * racing its deletion) produced a ~50% concurrency flake. Excluding the
  * reserved basenames keeps the zero-violation assertion attributed to tracked
