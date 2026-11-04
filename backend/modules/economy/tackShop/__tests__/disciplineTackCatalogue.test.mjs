@@ -90,15 +90,18 @@ describe('the four hallucinated crafted items are gone (q05)', () => {
 });
 
 describe('tack that does not score is Coming soon with no effect text (q32)', () => {
-  const scoringOrDecorative = ['saddle', 'bridle', 'decorative'];
+  // Decorations were exempt until Equoria-dqnz1 (owner q32/q23): they score
+  // only in parades, which are Coming soon, so they are non-scoring too.
+  const scoring = ['saddle', 'bridle'];
 
   it('marks every non-scoring shop item comingSoon and strips effect fields', () => {
-    const items = allTackItems().filter(item => !scoringOrDecorative.includes(item.category));
+    const items = allTackItems().filter(item => !scoring.includes(item.category));
     expect(items.length).toBeGreaterThan(0);
     for (const item of items) {
       expect(item.comingSoon).toBe(true);
       expect(item.bonus).toBeUndefined();
       expect(item.numericBonus).toBeUndefined();
+      expect(item.presenceBonus).toBeUndefined();
     }
   });
 

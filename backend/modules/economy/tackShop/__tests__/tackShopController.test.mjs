@@ -231,13 +231,16 @@ describe('tackInventory — decorative items (merged from legacy backend/tests, 
     });
   });
 
-  it('every decorative item is cosmetic with a presenceBonus 1–10 (no numericBonus, Equoria-lsudd: numericBonus retired (owner decision A, 2026-10-23: the item in the slot decides the tack points).)', () => {
+  // Old contract: each decoration carried a presenceBonus 1–10. Owner q32/q23
+  // (2026-10-23, Equoria-dqnz1): keep the items, strip what they claim to do;
+  // parades are Coming soon.
+  it('every decorative item is cosmetic, Coming soon, with no bonus, presenceBonus or numericBonus (Equoria-lsudd, Equoria-dqnz1)', () => {
     for (const item of decorativeItems) {
       expect(item.isCosmetic).toBe(true);
+      expect(item.comingSoon).toBe(true);
       expect(item).not.toHaveProperty('numericBonus');
-      expect(typeof item.presenceBonus).toBe('number');
-      expect(item.presenceBonus).toBeGreaterThanOrEqual(1);
-      expect(item.presenceBonus).toBeLessThanOrEqual(10);
+      expect(item).not.toHaveProperty('presenceBonus');
+      expect(item).not.toHaveProperty('bonus');
     }
   });
 

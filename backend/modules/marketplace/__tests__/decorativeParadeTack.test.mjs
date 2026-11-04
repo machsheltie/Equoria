@@ -24,11 +24,14 @@ describe('tackInventory — decorative items', () => {
     expect(decorative.length).toBeGreaterThanOrEqual(5);
   });
 
-  it('every decorative item has isCosmetic: true and presenceBonus >= 1', () => {
+  // Old contract: presenceBonus >= 1. Owner q32/q23 (2026-10-23,
+  // Equoria-dqnz1): decorations claim nothing until parades score.
+  it('every decorative item has isCosmetic: true, comingSoon: true and no presence bonus', () => {
     for (const item of decorative) {
       expect(item.isCosmetic).toBe(true);
-      expect(typeof item.presenceBonus).toBe('number');
-      expect(item.presenceBonus).toBeGreaterThanOrEqual(1);
+      expect(item.comingSoon).toBe(true);
+      expect(item).not.toHaveProperty('presenceBonus');
+      expect(item).not.toHaveProperty('bonus');
     }
   });
 

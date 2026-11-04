@@ -101,7 +101,7 @@ function returnDecorationToInventory(inventory, horseId, itemId) {
       itemId,
       category: 'decorative',
       name: definition?.name ?? itemId,
-      bonus: definition?.bonus ?? null,
+      ...tackEffectFields(definition),
       quantity: 1,
       equippedToHorseId: null,
       equippedToHorseName: null,

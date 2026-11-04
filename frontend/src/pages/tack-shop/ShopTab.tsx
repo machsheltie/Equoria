@@ -172,8 +172,7 @@ export const ShopTab: React.FC = () => {
             ✨ Decorative &amp; Parade
           </h2>
           <p className="text-xs text-[var(--text-muted)] mb-4">
-            Cosmetic items that boost parade presentation scores. No effect on regular competition
-            scoring.
+            Decorations for parades, which are coming soon. They do nothing in other shows.
           </p>
 
           {/* Regular decorative items */}

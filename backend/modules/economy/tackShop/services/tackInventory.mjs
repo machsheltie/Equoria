@@ -19,6 +19,9 @@
  *     constants/schema.mjs, the one discipline list.
  *   - Tack that does not score is kept in the game marked `comingSoon`, with no
  *     effect text.
+ *   - Decorations count only in parade presentation, and parades are Coming
+ *     soon (q32/q23, Equoria-dqnz1): they are sold marked `comingSoon` with no
+ *     bonus label and no presentation number until parade scoring is built.
  *   - A new discipline item has no art yet: it carries no `image`, so the client
  *     shows its image fallback. Do not invent art.
  */
@@ -381,15 +384,14 @@ export const tackInventory = [
     ageRestriction: 2,
   },
 
-  // ── Decorative & Parade Tack ─────────────────────────────────────────────
+  // ── Decorative & Parade Tack (Coming soon until parades score) ──────────
   {
     id: 'show-ribbon',
     category: 'decorative',
+    comingSoon: true,
     name: 'Show Ribbon',
     description: 'A silk ribbon braided into the mane. Adds elegance and charm to parade shows.',
     cost: tackPrice,
-    bonus: '+3 presentation',
-    presenceBonus: 3,
     tier: 'basic',
     disciplines: ['Parade'],
     isCosmetic: true,
@@ -397,12 +399,10 @@ export const tackInventory = [
   {
     id: 'braided-mane-wrap',
     category: 'decorative',
+    comingSoon: true,
     name: 'Braided Mane Wrap',
-    description:
-      'Intricate braided mane styling with gold thread accents. A staple for high-scoring parade entries.',
+    description: 'Intricate braided mane styling with gold thread accents.',
     cost: tackPrice,
-    bonus: '+4 presentation',
-    presenceBonus: 4,
     tier: 'basic',
     disciplines: ['Parade'],
     isCosmetic: true,
@@ -410,12 +410,11 @@ export const tackInventory = [
   {
     id: 'parade-blanket',
     category: 'decorative',
+    comingSoon: true,
     name: 'Parade Blanket',
     description:
       'Embroidered ceremonial blanket draped over the hindquarters. Impressive at full presentation speed.',
     cost: tackPrice,
-    bonus: '+5 presentation',
-    presenceBonus: 5,
     tier: 'quality',
     disciplines: ['Parade'],
     isCosmetic: true,
@@ -423,11 +422,10 @@ export const tackInventory = [
   {
     id: 'glitter-spray',
     category: 'decorative',
+    comingSoon: true,
     name: 'Glitter Spray',
     description: 'Shimmering coat spray for that extra sparkle. Limited use — 3 applications.',
     cost: tackPrice,
-    bonus: '+2 presentation',
-    presenceBonus: 2,
     tier: 'basic',
     disciplines: ['Parade'],
     isCosmetic: true,
@@ -436,12 +434,11 @@ export const tackInventory = [
   {
     id: 'floral-browband',
     category: 'decorative',
+    comingSoon: true,
     name: 'Floral Browband',
     description:
       'Fresh flowers woven into the browband. A classic touch of nature for summer parade classes.',
     cost: tackPrice,
-    bonus: '+3 presentation',
-    presenceBonus: 3,
     tier: 'basic',
     disciplines: ['Parade'],
     isCosmetic: true,
@@ -450,12 +447,11 @@ export const tackInventory = [
   {
     id: 'snowflake-parade-tack',
     category: 'decorative',
+    comingSoon: true,
     name: 'Snowflake Parade Tack',
     description:
       'A limited winter set with silver snowflake embroidery. Available during the frost season.',
     cost: tackPrice,
-    bonus: '+6 presentation',
-    presenceBonus: 6,
     tier: 'premium',
     disciplines: ['Parade'],
     isCosmetic: true,

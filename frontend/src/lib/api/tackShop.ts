@@ -27,14 +27,12 @@ export interface TackItem {
   bonus?: string;
   /** True for tack that does not score yet (owner ruling 2026-10-23). */
   comingSoon?: boolean;
-  /** Presence bonus for parade shows (decorative items only) */
-  presenceBonus?: number;
   tier: 'basic' | 'quality' | 'premium';
   disciplines: string[];
   icon?: string;
   image?: string;
   ageRestriction?: number;
-  /** True for decorative/cosmetic items that affect parade presentation only */
+  /** True for decorative items (parades only; Coming soon until parades score) */
   isCosmetic?: boolean;
   /** Limited-use count (e.g. Glitter Spray has 3 applications) */
   limitedUse?: number;

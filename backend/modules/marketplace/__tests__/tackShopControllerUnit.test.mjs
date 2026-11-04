@@ -54,9 +54,14 @@ describe('tackInventory', () => {
     }
   });
 
-  it('decorative items have presenceBonus', () => {
-    for (const item of tackInventory.filter(i => i.category === 'decorative')) {
-      expect(typeof item.presenceBonus).toBe('number');
+  // Old contract: decorations carried a presenceBonus. Owner q32/q23
+  // (2026-10-23, Equoria-dqnz1): no claim until parades score.
+  it('decorative items are Coming soon with no presenceBonus', () => {
+    const decorative = tackInventory.filter(i => i.category === 'decorative');
+    expect(decorative.length).toBeGreaterThan(0);
+    for (const item of decorative) {
+      expect(item.comingSoon).toBe(true);
+      expect(item).not.toHaveProperty('presenceBonus');
     }
   });
 
