@@ -56,7 +56,7 @@ describe('🏪 Groom Marketplace System', () => {
       expect(groom.experience).toBeLessThanOrEqual(20);
       expect(groom.sessionRate).toBeGreaterThan(0);
       expect(groom.availability).toBe(true);
-      expect(groom.marketplaceId).toMatch(/^mkt_[a-f0-9-]+$/);
+      expect(groom.marketplaceId).toMatch(/^mkt-[a-f0-9-]+$/);
     });
 
     it('should generate experience within skill level ranges', () => {

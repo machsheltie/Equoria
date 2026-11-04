@@ -72,7 +72,7 @@ describe('staff reads send authored words, never hidden fields', () => {
   const hiredGroomIds = [];
   const cleanup = createCleanupTracker();
   const suffix = randomBytes(6).toString('hex');
-  const groomOfferId = `mkt_groom_${fixturePrefix}-${suffix}`;
+  const groomOfferId = `mkt-groom-${fixturePrefix}-${suffix}`;
 
   beforeAll(async () => {
     // Children before parents.
@@ -167,7 +167,7 @@ describe('staff reads send authored words, never hidden fields', () => {
               weeklyRate: 100,
               startAge: 19,
               knownAffinities: [],
-              marketplaceId: `mkt_rider_${suffix}`,
+              marketplaceId: `mkt-rider-${suffix}`,
             },
           ],
         },
@@ -183,7 +183,7 @@ describe('staff reads send authored words, never hidden fields', () => {
               starLevel: 'expert',
               personality: 'technical',
               speciality: 'Eventing',
-              marketplaceId: `mkt_trainer_${suffix}`,
+              marketplaceId: `mkt-trainer-${suffix}`,
             },
           ],
         },
@@ -269,7 +269,7 @@ describe('staff reads send authored words, never hidden fields', () => {
       expect(offer).not.toHaveProperty(hiddenOfferField);
       expect(offer).not.toHaveProperty('startAge');
       expect(labelsOf(offer)).toEqual(labels);
-      expect(offer.marketplaceId).toMatch(/^mkt_/);
+      expect(offer.marketplaceId).toMatch(/^mkt-/);
     },
   );
 

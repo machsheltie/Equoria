@@ -274,7 +274,7 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
         select: { name: true, age: true },
       });
       logger.info('[horseAgingSystem.checkForMilestones] Retirement milestone reached', {
-        event: 'horse_retirement',
+        event: 'horseRetirement',
         horseId,
         name: retiree?.name ?? 'unknown',
         age: retiree?.age ?? Math.floor(newAge / daysPerGameYear),

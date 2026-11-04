@@ -20,7 +20,7 @@
  *   3) First-byte distribution passes a chi-square uniformity check — a weak
  *      base36 PRNG cannot produce byte-level uniformity.
  *   4) The resourceManagement middleware populates `req.resources.id` with a
- *      `req_<ts>_<32hex... actually 16hex>` shape whose random tail is
+ *      `req-<ts>-<16hex>` shape whose random tail is
  *      fixed-length hex (the Math.random tail was [0-9a-z]{1,9}).
  *   5) Source sentinel: neither security-critical generator line uses
  *      `Math.random` any more. This is the planted-violation guard — if a
@@ -86,7 +86,7 @@ describe('generateRequestId — crypto entropy (Equoria-dew6i)', () => {
 });
 
 describe('resourceManagement requestId fallback — crypto entropy (Equoria-dew6i)', () => {
-  it('generates a req_<ts>_<hex> id with a fixed-length hex random tail', async () => {
+  it('generates a req-<ts>-<hex> id with a fixed-length hex random tail', async () => {
     const app = express();
     let capturedId;
     app.use(createResourceManagementMiddleware());
@@ -99,9 +99,10 @@ describe('resourceManagement requestId fallback — crypto entropy (Equoria-dew6
     await request(app).get('/test').expect(200);
 
     expect(typeof capturedId).toBe('string');
-    // Shape: req_<digits>_<16 lowercase hex>. The Math.random tail was
+    // Shape: req-<digits>-<16 lowercase hex> (camelCase ruling: the prefix
+    // carries no underscore). The Math.random tail was
     // [0-9a-z]{1,9} (variable length, includes g-z), which this rejects.
-    expect(capturedId).toMatch(/^req_\d+_[0-9a-f]{16}$/);
+    expect(capturedId).toMatch(/^req-\d+-[0-9a-f]{16}$/);
   });
 
   it('produces unique fallback ids across many requests', async () => {

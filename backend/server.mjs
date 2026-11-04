@@ -136,13 +136,13 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 // Handle uncaught exceptions
 process.on('uncaughtException', error => {
   logger.error('Uncaught Exception:', error);
-  shutdown('UNCAUGHT_EXCEPTION');
+  shutdown('uncaughtException');
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  shutdown('UNHANDLED_REJECTION');
+  shutdown('unhandledRejection');
 });
 
 export default server;

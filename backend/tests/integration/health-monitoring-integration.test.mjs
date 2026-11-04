@@ -93,7 +93,7 @@ const createTestApp = () => {
     } catch (error) {
       res.status(503).json({
         success: false,
-        status: 'not_ready',
+        status: 'notReady',
         message: 'Server is not ready - database unavailable',
         error: error.message,
         timestamp: new Date().toISOString(),

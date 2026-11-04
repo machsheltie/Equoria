@@ -395,7 +395,7 @@ paths:
       const health = docService.getHealthReport();
 
       expect(health.status).toBeDefined();
-      expect(['healthy', 'needs_attention']).toContain(health.status);
+      expect(['healthy', 'needsAttention']).toContain(health.status);
       expect(health.metrics).toBeDefined();
       expect(health.validation).toBeDefined();
       expect(health.recommendations).toBeDefined();

@@ -262,7 +262,7 @@ describe('Horse Temperament Analysis', () => {
 
       expect(temperament).toBeDefined();
       expect(temperament.primaryTemperament).toBe('developing');
-      expect(temperament.dataSource).toBe('basic_stats'); // No interactions, so uses basic stats
+      expect(temperament.dataSource).toBe('basicStats'); // No interactions, so uses basic stats
       expect(temperament.reliabilityScore).toBeLessThan(0.7); // Lower reliability without interaction data
     });
   });

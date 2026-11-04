@@ -77,9 +77,9 @@ describe('generateRandomTrainer', () => {
     expect(trainer).toHaveProperty('availability');
   });
 
-  it('marketplaceId starts with mkt_trainer_', () => {
+  it('marketplaceId starts with mkt-trainer-', () => {
     const trainer = generateRandomTrainer();
-    expect(trainer.marketplaceId).toMatch(/^mkt_trainer_/);
+    expect(trainer.marketplaceId).toMatch(/^mkt-trainer-/);
   });
 
   it('skillLevel is one of the defined levels', () => {

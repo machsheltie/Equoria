@@ -127,7 +127,7 @@ export function generateRandomRider() {
   const lastName = generateLastName();
 
   return {
-    marketplaceId: `mkt_rider_${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`}`,
+    marketplaceId: `mkt-rider-${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`}`,
     firstName,
     lastName,
     starLevel,
@@ -145,7 +145,7 @@ function generateStarterRider() {
   const firstName = generateFirstName();
 
   return {
-    marketplaceId: `mkt_rider_${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`}`,
+    marketplaceId: `mkt-rider-${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`}`,
     firstName,
     lastName: generateLastName(),
     starLevel: 'rookie',

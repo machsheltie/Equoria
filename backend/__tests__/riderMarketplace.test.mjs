@@ -79,9 +79,9 @@ describe('generateRandomRider', () => {
     expect(rider).not.toHaveProperty('speciality');
   });
 
-  it('marketplaceId starts with mkt_rider_', () => {
+  it('marketplaceId starts with mkt-rider-', () => {
     const rider = generateRandomRider();
-    expect(rider.marketplaceId).toMatch(/^mkt_rider_/);
+    expect(rider.marketplaceId).toMatch(/^mkt-rider-/);
   });
 
   it('personality is one of the 4 valid personalities', () => {

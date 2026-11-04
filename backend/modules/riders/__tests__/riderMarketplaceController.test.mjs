@@ -119,7 +119,7 @@ describe('riderMarketplaceController (real DB)', () => {
       expect(typeof body.data.refreshCost).toBe('number');
       expect(typeof body.data.canRefreshFree).toBe('boolean');
       expect(body.data.riders[0]).toMatchObject({
-        marketplaceId: expect.stringMatching(/^mkt_rider_/),
+        marketplaceId: expect.stringMatching(/^mkt-rider-/),
         firstName: expect.any(String),
         lastName: expect.any(String),
         // q282: a rider's only level is its star level.
@@ -232,7 +232,7 @@ describe('riderMarketplaceController (real DB)', () => {
 
     it('returns 404 when no marketplace has been generated for user', async () => {
       const user = await createUser();
-      const h = makeReqRes(user.id, { body: { marketplaceId: 'mkt_rider_nonexistent' } });
+      const h = makeReqRes(user.id, { body: { marketplaceId: 'mkt-rider-nonexistent' } });
       await hireRiderFromMarketplace(h.req, h.res);
 
       expect(h.res.statusValue).toBe(404);

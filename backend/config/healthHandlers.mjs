@@ -98,7 +98,7 @@ export const createReadyHandler =
     res.setHeader('Cache-Control', 'no-store');
     res.status(statusCode).json({
       success: statusCode === 200,
-      status: statusCode === 200 ? 'ready' : 'not_ready',
+      status: statusCode === 200 ? 'ready' : 'notReady',
       message: statusCode === 200 ? 'Server is ready' : 'Database unreachable',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),

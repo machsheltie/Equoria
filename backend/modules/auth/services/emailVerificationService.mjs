@@ -51,14 +51,14 @@ export const maxPendingVerificationTokens = emailConfig.maxPendingTokens;
  * Purposes a verification token may serve (Equoria-6p398.5, Finding 5).
  *
  * `signup` proves control of the address ALREADY stored on the account.
- * `email_change` proves control of a STAGED replacement recovery address.
+ * `emailChange` proves control of a STAGED replacement recovery address.
  * The two must never be interchangeable: a signup-verification token must not
  * be able to move the recovery identity, and an email-change token must not be
  * redeemable at `GET /auth/verify-email`.
  */
 export const verificationTokenPurpose = Object.freeze({
   SIGNUP: 'signup',
-  emailChange: 'email_change',
+  emailChange: 'emailChange',
 });
 
 /**

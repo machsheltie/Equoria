@@ -134,7 +134,7 @@ export function generateRandomTrainer() {
   const lastName = generateLastName();
 
   return {
-    marketplaceId: `mkt_trainer_${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`}`,
+    marketplaceId: `mkt-trainer-${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`}`,
     firstName,
     lastName,
     skillLevel,
@@ -152,7 +152,7 @@ function generateStarterTrainer() {
   const specialty = 'Dressage';
 
   return {
-    marketplaceId: `mkt_trainer_${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`}`,
+    marketplaceId: `mkt-trainer-${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`}`,
     firstName,
     lastName: generateLastName(),
     skillLevel: 'novice',

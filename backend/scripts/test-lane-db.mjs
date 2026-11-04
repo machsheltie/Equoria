@@ -190,7 +190,7 @@ const outputTailBytes = 64 * 1024;
  * killed through spawn()'s own `signal` option. No registry polling, no
  * larger timeouts.
  */
-export const provisioningCancelled = 'PROVISIONING_CANCELLED';
+export const provisioningCancelled = 'provisioningCancelled';
 
 function cancellationError(where, signal) {
   const why =

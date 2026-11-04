@@ -42,7 +42,7 @@ export function createResourceManagementMiddleware(options = {}) {
     // ID lets an attacker spoof/correlate against another request's trail.
     // `crypto.randomBytes` yields an unpredictable, fixed-length hex token.
     const requestId =
-      req.headers['x-request-id'] || `req_${Date.now()}_${randomBytes(8).toString('hex')}`;
+      req.headers['x-request-id'] || `req-${Date.now()}-${randomBytes(8).toString('hex')}`;
     const startTime = performance.now();
     const startMemory = config.trackMemoryUsage ? process.memoryUsage() : null;
 

@@ -291,14 +291,14 @@ function generateRandomBio(firstName, skillLevel, specialty, experience) {
 function generateMarketplaceId() {
   // Use crypto.randomUUID if available, otherwise fallback to timestamp + random
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return `mkt_${crypto.randomUUID()}`;
+    return `mkt-${crypto.randomUUID()}`;
   }
 
   // Fallback for environments without crypto.randomUUID
   const timestamp = Date.now();
   const random1 = Math.floor(Math.random() * 1000000);
   const random2 = Math.floor(Math.random() * 1000000);
-  return `mkt_${timestamp}_${random1}_${random2}`;
+  return `mkt-${timestamp}-${random1}-${random2}`;
 }
 
 /**

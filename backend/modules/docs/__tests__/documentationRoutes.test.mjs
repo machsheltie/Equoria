@@ -107,7 +107,7 @@ describe('Documentation Routes', () => {
       expect(response.body.message).toContain('health');
       expect(response.body.data).toBeDefined();
       expect(response.body.data.status).toBeDefined();
-      expect(['healthy', 'needs_attention']).toContain(response.body.data.status);
+      expect(['healthy', 'needsAttention']).toContain(response.body.data.status);
       expect(response.body.data.metrics).toBeDefined();
       expect(response.body.data.validation).toBeDefined();
       expect(response.body.data.recommendations).toBeDefined();
@@ -161,7 +161,7 @@ describe('Documentation Routes', () => {
 
       const { analytics } = response.body.data;
       expect(['A', 'B', 'C', 'D', 'F']).toContain(analytics.coverageGrade);
-      expect(['complete', 'mostly_complete', 'in_progress', 'incomplete']).toContain(analytics.completionStatus);
+      expect(['complete', 'mostlyComplete', 'inProgress', 'incomplete']).toContain(analytics.completionStatus);
       expect(analytics.qualityScore).toBeGreaterThanOrEqual(0);
       expect(analytics.qualityScore).toBeLessThanOrEqual(100);
     });
@@ -282,7 +282,7 @@ describe('Documentation Routes', () => {
       expect(summary.documentedEndpoints).toBeDefined();
       expect(summary.coverage).toBeDefined();
       expect(summary.qualityScore).toBeDefined();
-      expect(['healthy', 'needs_attention']).toContain(summary.healthStatus);
+      expect(['healthy', 'needsAttention']).toContain(summary.healthStatus);
 
       const { trends } = response.body.data;
       expect(trends.timeframe).toBe('30d');

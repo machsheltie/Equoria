@@ -24,7 +24,7 @@
  */
 export function checkGroomMayWork(groom) {
   if (!groom) {
-    return { allowed: false, reason: 'Groom not found', code: 'not_found' };
+    return { allowed: false, reason: 'Groom not found', code: 'notFound' };
   }
   if (groom.retired) {
     return {

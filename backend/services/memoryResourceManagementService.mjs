@@ -166,7 +166,7 @@ class MemoryResourceManager extends EventEmitter {
 
     if (current.heapUsed > alertThreshold) {
       const alert = {
-        type: 'memory_threshold',
+        type: 'memoryThreshold',
         severity: current.heapUsed > this.options.memoryThreshold ? 'critical' : 'warning',
         timestamp: Date.now(),
         data: {
@@ -200,7 +200,7 @@ class MemoryResourceManager extends EventEmitter {
     if (trend.slope > 1024 * 1024 && trend.correlation > 0.8) {
       // 1MB/sample with high correlation
       const alert = {
-        type: 'memory_leak_detected',
+        type: 'memoryLeakDetected',
         severity: 'warning',
         timestamp: Date.now(),
         data: {

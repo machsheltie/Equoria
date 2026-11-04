@@ -138,7 +138,7 @@ export async function analyzeHorseTemperament(horseId) {
     reliabilityScore = Math.min(1.0, interactions.length / 20); // Max reliability at 20+ interactions
   } else {
     // Use basic stats only
-    dataSource = 'basic_stats';
+    dataSource = 'basicStats';
     reliabilityScore = 0.3;
   }
 
@@ -178,8 +178,8 @@ export async function analyzeBehavioralTrends(horseId) {
 
   if (interactions.length < 3) {
     return {
-      bondingTrend: 'insufficient_data',
-      qualityTrend: 'insufficient_data',
+      bondingTrend: 'insufficientData',
+      qualityTrend: 'insufficientData',
       overallDirection: 'unknown',
       trendStrength: 0,
       dataPoints: interactions.length,
@@ -322,7 +322,7 @@ export async function detectTemperamentChanges(horseId) {
   if (interactions.length < 6) {
     return {
       changeDetected: false,
-      changeDirection: 'insufficient_data',
+      changeDirection: 'insufficientData',
       changeStrength: 0,
       timeframe: 'unknown',
       contributingFactors: [],
@@ -360,12 +360,10 @@ export async function detectTemperamentChanges(horseId) {
   // Identify contributing factors
   const contributingFactors = [];
   if (Math.abs(bondingChange) > 0.5) {
-    contributingFactors.push(bondingChange > 0 ? 'improved_bonding' : 'declining_bonding');
+    contributingFactors.push(bondingChange > 0 ? 'improvedBonding' : 'decliningBonding');
   }
   if (Math.abs(qualityChange) > 0.3) {
-    contributingFactors.push(
-      qualityChange > 0 ? 'improved_care_quality' : 'declining_care_quality',
-    );
+    contributingFactors.push(qualityChange > 0 ? 'improvedCareQuality' : 'decliningCareQuality');
   }
 
   // Determine timeframe
@@ -373,7 +371,7 @@ export async function detectTemperamentChanges(horseId) {
     (interactions[interactions.length - 1].createdAt - interactions[0].createdAt) /
       (1000 * 60 * 60 * 24),
   );
-  const timeframe = totalDays > 30 ? 'long_term' : totalDays > 14 ? 'medium_term' : 'short_term';
+  const timeframe = totalDays > 30 ? 'longTerm' : totalDays > 14 ? 'mediumTerm' : 'shortTerm';
 
   return {
     changeDetected,
@@ -458,7 +456,7 @@ function analyzeFromInteractions(horse, interactions) {
  */
 function calculateTrend(values) {
   if (values.length < 3) {
-    return { direction: 'insufficient_data', score: 0, strength: 0 };
+    return { direction: 'insufficientData', score: 0, strength: 0 };
   }
 
   // Simple linear regression

@@ -483,7 +483,7 @@ class ApiDocumentationService {
     const validation = this.validateSpecification();
 
     return {
-      status: validation.valid && metrics.coverage > 80 ? 'healthy' : 'needs_attention',
+      status: validation.valid && metrics.coverage > 80 ? 'healthy' : 'needsAttention',
       metrics,
       validation,
       recommendations: this.generateRecommendations(metrics, validation),

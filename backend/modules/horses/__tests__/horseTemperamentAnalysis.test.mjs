@@ -9,7 +9,7 @@
  * flags and fewer than 5 interactions took a 'flags_and_stats' path, the result
  * carried flagCount, and classifyTemperamentFromFlags was exported. New
  * contract: no flag path, no flagCount, no classifier. A flagless horse (every
- * real horse) takes the same basic_stats or interactions path as before.
+ * real horse) takes the same basicStats or interactions path as before.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -87,16 +87,16 @@ describe('analyzeHorseTemperament', () => {
     expect(result).not.toHaveProperty('flagCount');
   });
 
-  it('uses basic_stats data source for horse with no interactions', async () => {
+  it('uses basicStats data source for horse with no interactions', async () => {
     const result = await analyzeHorseTemperament(horse.id);
-    expect(result.dataSource).toBe('basic_stats');
+    expect(result.dataSource).toBe('basicStats');
     expect(result.reliabilityScore).toBe(0.3);
     expect(result.interactionCount).toBe(0);
   });
 
   // Old contract: this horse carried two flags and took 'flags_and_stats' with
   // flagCount 2. There is no flag path now (Equoria-efs4j).
-  it('has no flags_and_stats path: a second horse with no interactions also uses basic_stats', async () => {
+  it('has no flags_and_stats path: a second horse with no interactions also uses basicStats', async () => {
     const secondHorse = await prisma.horse.create({
       data: await testHorseData(prisma, {
         ...fixtureColor(),
@@ -113,7 +113,7 @@ describe('analyzeHorseTemperament', () => {
     // needed here. Routing a delete through finally would mask a test-body
     // assertion failure, so it is intentionally omitted.
     const result = await analyzeHorseTemperament(secondHorse.id);
-    expect(result.dataSource).toBe('basic_stats');
+    expect(result.dataSource).toBe('basicStats');
     expect(result.primaryTemperament).toBe('developing');
     expect(result.reliabilityScore).toBe(0.3);
   });
@@ -122,20 +122,20 @@ describe('analyzeHorseTemperament', () => {
 // ── analyzeBehavioralTrends ───────────────────────────────────────────────────
 
 describe('analyzeBehavioralTrends', () => {
-  it('returns insufficient_data for horse with no interactions', async () => {
+  it('returns insufficientData for horse with no interactions', async () => {
     const result = await analyzeBehavioralTrends(horse.id);
 
     expect(result).toBeDefined();
-    expect(result.bondingTrend).toBe('insufficient_data');
-    expect(result.qualityTrend).toBe('insufficient_data');
+    expect(result.bondingTrend).toBe('insufficientData');
+    expect(result.qualityTrend).toBe('insufficientData');
     expect(result.overallDirection).toBe('unknown');
     expect(result.trendStrength).toBe(0);
     expect(result.dataPoints).toBe(0);
   });
 
-  it('returns insufficient_data for unknown horseId', async () => {
+  it('returns insufficientData for unknown horseId', async () => {
     const result = await analyzeBehavioralTrends(999999999);
-    expect(result.bondingTrend).toBe('insufficient_data');
+    expect(result.bondingTrend).toBe('insufficientData');
     expect(result.dataPoints).toBe(0);
   });
 });
@@ -167,22 +167,22 @@ describe('analyzeBondingPreferences', () => {
 // ── detectTemperamentChanges ──────────────────────────────────────────────────
 
 describe('detectTemperamentChanges', () => {
-  it('returns insufficient_data for horse with no interactions', async () => {
+  it('returns insufficientData for horse with no interactions', async () => {
     const result = await detectTemperamentChanges(horse.id);
 
     expect(result).toBeDefined();
     expect(result.changeDetected).toBe(false);
-    expect(result.changeDirection).toBe('insufficient_data');
+    expect(result.changeDirection).toBe('insufficientData');
     expect(result.changeStrength).toBe(0);
     expect(result.timeframe).toBe('unknown');
     expect(Array.isArray(result.contributingFactors)).toBe(true);
     expect(result.dataPoints).toBe(0);
   });
 
-  it('returns insufficient_data for unknown horseId', async () => {
+  it('returns insufficientData for unknown horseId', async () => {
     const result = await detectTemperamentChanges(999999999);
     expect(result.changeDetected).toBe(false);
-    expect(result.changeDirection).toBe('insufficient_data');
+    expect(result.changeDirection).toBe('insufficientData');
   });
 });
 
@@ -305,7 +305,7 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
     expect(result.changeDirection).toBe('positive');
     expect(result.dataPoints).toBeGreaterThanOrEqual(6);
     expect(Array.isArray(result.contributingFactors)).toBe(true);
-    expect(result.contributingFactors).toContain('improved_bonding');
+    expect(result.contributingFactors).toContain('improvedBonding');
   });
 });
 
@@ -482,7 +482,7 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
 
     // worseningHorse: early 3 excellent with bondingChange=5;
     //   recent 3 poor with bondingChange=1 →
-    //   bondingChange metric=-4 (<-0.5) → 'declining_bonding'
+    //   bondingChange metric=-4 (<-0.5) → 'decliningBonding'
     //   overallChange=(-4-3)/2=-3.5<-0.5 → 'negative' changeDirection (line 550)
     worseningHorse = await prisma.horse.create({
       data: await testHorseData(prisma, {
@@ -547,10 +547,10 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     expect(result.changeDetected).toBe(false);
   });
 
-  it('detectTemperamentChanges: negative direction + declining_bonding (line 550)', async () => {
+  it('detectTemperamentChanges: negative direction + decliningBonding (line 550)', async () => {
     const result = await detectTemperamentChanges(worseningHorse.id);
     expect(result.changeDirection).toBe('negative');
     expect(result.changeDetected).toBe(true);
-    expect(result.contributingFactors).toContain('declining_bonding');
+    expect(result.contributingFactors).toContain('decliningBonding');
   });
 });

@@ -308,10 +308,10 @@ function getCompletionStatus(metrics) {
     return 'complete';
   }
   if (metrics.coverage >= 80) {
-    return 'mostly_complete';
+    return 'mostlyComplete';
   }
   if (metrics.coverage >= 50) {
-    return 'in_progress';
+    return 'inProgress';
   }
   return 'incomplete';
 }
@@ -471,7 +471,7 @@ function generateImprovements(metrics, _health) {
 function generatePriorities(metrics, health) {
   const priorities = [];
 
-  if (health.status === 'needs_attention') {
+  if (health.status === 'needsAttention') {
     priorities.push('Address documentation health issues');
   }
 

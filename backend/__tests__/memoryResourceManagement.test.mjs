@@ -265,7 +265,7 @@ describe('Memory and Resource Management System', () => {
       let alertEmitted = false;
 
       memoryManager.on('alert', alert => {
-        if (alert.type === 'memory_leak_detected') {
+        if (alert.type === 'memoryLeakDetected') {
           alertEmitted = true;
         }
       });
@@ -293,7 +293,7 @@ describe('Memory and Resource Management System', () => {
       let alertEmitted = false;
 
       memoryManager.on('alert', alert => {
-        if (alert.type === 'memory_threshold') {
+        if (alert.type === 'memoryThreshold') {
           alertEmitted = true;
         }
       });

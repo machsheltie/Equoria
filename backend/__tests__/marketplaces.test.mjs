@@ -81,9 +81,9 @@ describe('generateRandomGroom', () => {
     expect(typeof g.marketplaceId).toBe('string');
   });
 
-  it('marketplaceId starts with mkt_', () => {
+  it('marketplaceId starts with mkt-', () => {
     const g = generateRandomGroom();
-    expect(g.marketplaceId.startsWith('mkt_')).toBe(true);
+    expect(g.marketplaceId.startsWith('mkt-')).toBe(true);
   });
 
   it('skillLevel is one of known levels', () => {
@@ -238,9 +238,9 @@ describe('generateRandomRider', () => {
     expect(r).not.toHaveProperty('knownAffinities');
   });
 
-  it('marketplaceId starts with mkt_rider_', () => {
+  it('marketplaceId starts with mkt-rider-', () => {
     const r = generateRandomRider();
-    expect(r.marketplaceId.startsWith('mkt_rider_')).toBe(true);
+    expect(r.marketplaceId.startsWith('mkt-rider-')).toBe(true);
   });
 
   // OLD CONTRACT: a random rate inside a per-skill range. OWNER RULING 2026-10-28
@@ -353,9 +353,9 @@ describe('generateRandomTrainer', () => {
     expect(t.availability).toBe(true);
   });
 
-  it('marketplaceId starts with mkt_trainer_', () => {
+  it('marketplaceId starts with mkt-trainer-', () => {
     const t = generateRandomTrainer();
-    expect(t.marketplaceId.startsWith('mkt_trainer_')).toBe(true);
+    expect(t.marketplaceId.startsWith('mkt-trainer-')).toBe(true);
   });
 
   // OLD CONTRACT: a random rate inside a per-skill range. OWNER RULING 2026-10-28

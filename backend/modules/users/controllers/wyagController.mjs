@@ -86,7 +86,7 @@ export async function getWhileYouWereGone(req, res) {
       logger.warn('WYAGController: competitionResult query failed', {
         error: err.message,
       });
-      dataWarnings.push('competition_results_unavailable');
+      dataWarnings.push('competitionResultsUnavailable');
     }
 
     // 2. Unread messages
@@ -116,7 +116,7 @@ export async function getWhileYouWereGone(req, res) {
       logger.warn('WYAGController: directMessage query failed', {
         error: err.message,
       });
-      dataWarnings.push('messages_unavailable');
+      dataWarnings.push('messagesUnavailable');
     }
 
     // 3. Foal development milestones (bond level increases)
@@ -159,7 +159,7 @@ export async function getWhileYouWereGone(req, res) {
       logger.warn('WYAGController: foalDevelopment query failed', {
         error: err.message,
       });
-      dataWarnings.push('foal_milestones_unavailable');
+      dataWarnings.push('foalMilestonesUnavailable');
     }
 
     // 4. Club activity — new members joining the player's clubs + club
@@ -222,7 +222,7 @@ export async function getWhileYouWereGone(req, res) {
       logger.warn('WYAGController: club activity query failed', {
         error: err.message,
       });
-      dataWarnings.push('club_activity_unavailable');
+      dataWarnings.push('clubActivityUnavailable');
     }
 
     // 5. Training completions — the player's horses whose training cooldown
@@ -259,7 +259,7 @@ export async function getWhileYouWereGone(req, res) {
       logger.warn('WYAGController: training completions query failed', {
         error: err.message,
       });
-      dataWarnings.push('training_completions_unavailable');
+      dataWarnings.push('trainingCompletionsUnavailable');
     }
 
     // 6. Market sales — horses the player SOLD while away (HorseSale rows where
@@ -291,7 +291,7 @@ export async function getWhileYouWereGone(req, res) {
       logger.warn('WYAGController: market sales query failed', {
         error: err.message,
       });
-      dataWarnings.push('market_sales_unavailable');
+      dataWarnings.push('marketSalesUnavailable');
     }
 
     // Sort by priority then by timestamp (newest first within same priority)

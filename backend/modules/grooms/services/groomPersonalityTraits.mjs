@@ -475,7 +475,7 @@ function getCompatibilityLevel(score) {
   if (score >= 0.2) {
     return 'poor';
   }
-  return 'very_poor';
+  return 'veryPoor';
 }
 
 /**

@@ -59,7 +59,7 @@ describe('groomMarketplace — generateRandomGroom', () => {
     expect(typeof groom.sessionRate).toBe('number');
     expect(typeof groom.bio).toBe('string');
     expect(groom.availability).toBe(true);
-    expect(groom.marketplaceId).toMatch(/^mkt_/);
+    expect(groom.marketplaceId).toMatch(/^mkt-/);
   });
 
   it('skillLevel is one of the defined quality distribution keys', () => {
@@ -204,7 +204,7 @@ describe('trainerMarketplace — generateRandomTrainer', () => {
     expect(trainer).toHaveProperty('speciality');
     expect(typeof trainer.sessionRate).toBe('number');
     expect(trainer.availability).toBe(true);
-    expect(trainer.marketplaceId).toMatch(/^mkt_trainer_/);
+    expect(trainer.marketplaceId).toMatch(/^mkt-trainer-/);
   });
 });
 

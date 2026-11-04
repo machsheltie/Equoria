@@ -305,9 +305,9 @@ describe('getDocumentationHealth', () => {
     expect(health).toHaveProperty('timestamp');
   });
 
-  it('status is either "healthy" or "needs_attention"', () => {
+  it('status is either "healthy" or "needsAttention"', () => {
     const { status } = getDocumentationHealth();
-    expect(['healthy', 'needs_attention']).toContain(status);
+    expect(['healthy', 'needsAttention']).toContain(status);
   });
 
   it('recommendations is an array', () => {

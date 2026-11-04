@@ -99,7 +99,7 @@ function collectActiveTraits(modifiers) {
 }
 
 /** Error code thrown when the guarded pregnancy claim matches no row. */
-export const pregnancyNotClaimable = 'PREGNANCY_NOT_CLAIMABLE';
+export const pregnancyNotClaimable = 'pregnancyNotClaimable';
 
 function pickFirstUnused(pool, existing) {
   for (const trait of pool) {
