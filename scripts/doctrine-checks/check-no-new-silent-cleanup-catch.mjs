@@ -38,8 +38,8 @@
  *
  * ── GOVERNANCE / BURN-DOWN (Equoria-fefh2.11) ──────────────────────────────
  * Owning burn-down issue: Equoria-1ohys.
- * Current baseline: 6 silent cleanup catches across 4 files (2026-06-10),
- * all 6 documented as intentional keeps on Equoria-1ohys.
+ * Current baseline: 3 silent cleanup catches across 2 files (2026-11-04),
+ * all 3 documented as intentional keeps on Equoria-1ohys.
  * Target: 0 undocumented occurrences — every remaining entry must either be
  * migrated to a loud handler or carry an explicit per-site keep decision
  * recorded on Equoria-1ohys. The baseline may ONLY shrink, never grow.
