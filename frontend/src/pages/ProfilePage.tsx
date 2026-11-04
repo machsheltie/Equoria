@@ -147,7 +147,7 @@ const ProfilePage: React.FC = () => {
   const activities: Activity[] = activityItems.map((activity) => {
     const type = Object.values(ActivityType).includes(activity.type as ActivityType)
       ? (activity.type as ActivityType)
-      : ActivityType.ACHIEVEMENT;
+      : ActivityType.achievement;
     return {
       id: String(activity.id),
       type,
@@ -275,7 +275,7 @@ const ProfilePage: React.FC = () => {
                 <StatisticsCard
                   value={progressData?.totalHorses ?? 0}
                   label="Horses Owned"
-                  type={StatisticType.HORSES_OWNED}
+                  type={StatisticType.horsesOwned}
                   size="sm"
                   isLoading={progressPending}
                 />
@@ -296,7 +296,7 @@ const ProfilePage: React.FC = () => {
                   <StatisticsCard
                     value={competitionStats?.totalWins ?? 0}
                     label="Competitions Won"
-                    type={StatisticType.COMPETITIONS_WON}
+                    type={StatisticType.competitionsWon}
                     size="sm"
                     isLoading={isWinsLoading}
                   />
@@ -304,14 +304,14 @@ const ProfilePage: React.FC = () => {
                 <StatisticsCard
                   value={breedingCount}
                   label="Breeding Count"
-                  type={StatisticType.BREEDING_COUNT}
+                  type={StatisticType.breedingCount}
                   size="sm"
                   isLoading={progressPending}
                 />
                 <StatisticsCard
                   value={winRate}
                   label="Win Rate"
-                  type={StatisticType.WIN_RATE}
+                  type={StatisticType.winRate}
                   size="sm"
                   isLoading={progressPending}
                 />

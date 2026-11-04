@@ -28,19 +28,19 @@ describe('ActivityFeed', () => {
   const mockActivities: Activity[] = [
     {
       id: '1',
-      type: ActivityType.TRAINING,
+      type: ActivityType.training,
       timestamp: new Date('2025-01-15T11:00:00Z'),
       data: { horseName: 'Thunder', skill: 'Speed', level: 5 },
     },
     {
       id: '2',
-      type: ActivityType.BREEDING,
+      type: ActivityType.breeding,
       timestamp: new Date('2025-01-15T10:00:00Z'),
       data: { horseName: 'Storm', foalName: 'Lightning' },
     },
     {
       id: '3',
-      type: ActivityType.COMPETITION,
+      type: ActivityType.competition,
       timestamp: new Date('2025-01-15T09:00:00Z'),
       data: { horseName: 'Blaze', competitionName: 'Derby', placement: 1 },
     },
@@ -149,13 +149,13 @@ describe('ActivityFeed', () => {
 
   describe('Filter by Type', () => {
     it('should filter activities by type', () => {
-      render(<ActivityFeed activities={mockActivities} filterType={ActivityType.TRAINING} />);
+      render(<ActivityFeed activities={mockActivities} filterType={ActivityType.training} />);
       expect(screen.getAllByTestId('activity-feed-item')).toHaveLength(1);
       expect(screen.getByText(/Thunder/)).toBeInTheDocument();
     });
 
     it('should show empty state when filter returns no results', () => {
-      render(<ActivityFeed activities={mockActivities} filterType={ActivityType.SALE} />);
+      render(<ActivityFeed activities={mockActivities} filterType={ActivityType.sale} />);
       expect(screen.getByTestId('activity-feed-empty')).toBeInTheDocument();
     });
 
@@ -231,7 +231,7 @@ describe('ActivityFeed', () => {
       const activitiesWithStringTimestamps = [
         {
           id: '1',
-          type: ActivityType.TRAINING,
+          type: ActivityType.training,
           timestamp: '2025-01-15T11:00:00Z',
           data: { horseName: 'Thunder', skill: 'Speed', level: 5 },
         },

@@ -62,15 +62,15 @@ const getIconComponent = (
   // Otherwise, use type-based icon
   if (type) {
     switch (type) {
-      case StatisticType.HORSES_OWNED:
+      case StatisticType.horsesOwned:
         return iconMap.horse;
-      case StatisticType.COMPETITIONS_WON:
+      case StatisticType.competitionsWon:
         return iconMap.trophy;
-      case StatisticType.BREEDING_COUNT:
+      case StatisticType.breedingCount:
         return iconMap.heart;
-      case StatisticType.TOTAL_EARNINGS:
+      case StatisticType.totalEarnings:
         return iconMap.coins;
-      case StatisticType.WIN_RATE:
+      case StatisticType.winRate:
         return iconMap.chart;
       default:
         return null;
@@ -166,7 +166,7 @@ const StatisticsCard: React.FC<StatisticsCardProps> = ({
     if (typeof value !== 'number' || Number.isNaN(value)) return '—';
 
     // WIN_RATE displays as percentage
-    if (type === StatisticType.WIN_RATE) {
+    if (type === StatisticType.winRate) {
       return formatPercentage(value);
     }
 

@@ -55,14 +55,14 @@ describe('StatisticsCard', () => {
     });
 
     it('should display horse icon for HORSES_OWNED type', () => {
-      render(<StatisticsCard value={5} label="Horses Owned" type={StatisticType.HORSES_OWNED} />);
+      render(<StatisticsCard value={5} label="Horses Owned" type={StatisticType.horsesOwned} />);
       const icon = screen.getByTestId('stat-icon');
       expect(icon).toHaveAttribute('data-icon', 'horse');
     });
 
     it('should display trophy icon for COMPETITIONS_WON type', () => {
       render(
-        <StatisticsCard value={10} label="Competitions Won" type={StatisticType.COMPETITIONS_WON} />
+        <StatisticsCard value={10} label="Competitions Won" type={StatisticType.competitionsWon} />
       );
       const icon = screen.getByTestId('stat-icon');
       expect(icon).toHaveAttribute('data-icon', 'trophy');
@@ -70,7 +70,7 @@ describe('StatisticsCard', () => {
 
     it('should display heart icon for BREEDING_COUNT type', () => {
       render(
-        <StatisticsCard value={3} label="Breeding Count" type={StatisticType.BREEDING_COUNT} />
+        <StatisticsCard value={3} label="Breeding Count" type={StatisticType.breedingCount} />
       );
       const icon = screen.getByTestId('stat-icon');
       expect(icon).toHaveAttribute('data-icon', 'heart');
@@ -78,14 +78,14 @@ describe('StatisticsCard', () => {
 
     it('should display coin icon for TOTAL_EARNINGS type', () => {
       render(
-        <StatisticsCard value={5000} label="Total Earnings" type={StatisticType.TOTAL_EARNINGS} />
+        <StatisticsCard value={5000} label="Total Earnings" type={StatisticType.totalEarnings} />
       );
       const icon = screen.getByTestId('stat-icon');
       expect(icon).toHaveAttribute('data-icon', 'coins');
     });
 
     it('should display chart icon for WIN_RATE type', () => {
-      render(<StatisticsCard value={75} label="Win Rate" type={StatisticType.WIN_RATE} />);
+      render(<StatisticsCard value={75} label="Win Rate" type={StatisticType.winRate} />);
       const icon = screen.getByTestId('stat-icon');
       expect(icon).toHaveAttribute('data-icon', 'chart');
     });
@@ -284,17 +284,17 @@ describe('StatisticsCard', () => {
 
   describe('Percentage Display (WIN_RATE)', () => {
     it('should display value as percentage for WIN_RATE type', () => {
-      render(<StatisticsCard value={75} label="Win Rate" type={StatisticType.WIN_RATE} />);
+      render(<StatisticsCard value={75} label="Win Rate" type={StatisticType.winRate} />);
       expect(screen.getByText('75%')).toBeInTheDocument();
     });
 
     it('should format decimal percentages', () => {
-      render(<StatisticsCard value={33.3} label="Win Rate" type={StatisticType.WIN_RATE} />);
+      render(<StatisticsCard value={33.3} label="Win Rate" type={StatisticType.winRate} />);
       expect(screen.getByText('33.3%')).toBeInTheDocument();
     });
 
     it('should display 0% for zero win rate', () => {
-      render(<StatisticsCard value={0} label="Win Rate" type={StatisticType.WIN_RATE} />);
+      render(<StatisticsCard value={0} label="Win Rate" type={StatisticType.winRate} />);
       expect(screen.getByText('0%')).toBeInTheDocument();
     });
   });

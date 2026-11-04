@@ -57,19 +57,19 @@ function buildMilestones(careerWeeks: number, totalSessions: number) {
       reached: true,
     },
     {
-      id: 'first_session',
+      id: 'firstSession',
       label: 'First Training Session',
       description: 'Completed at least 1 training session',
       reached: totalSessions >= 1,
     },
     {
-      id: 'weeks_12',
+      id: 'weeks12',
       label: '12 Weeks Service',
       description: 'Three months on the payroll',
       reached: careerWeeks >= 12,
     },
     {
-      id: 'sessions_50',
+      id: 'sessions50',
       label: '50 Training Sessions',
       description: 'Seasoned veteran trainer',
       reached: totalSessions >= 50,

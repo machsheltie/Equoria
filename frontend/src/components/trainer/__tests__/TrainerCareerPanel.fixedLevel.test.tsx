@@ -36,7 +36,7 @@ describe('TrainerCareerPanel (Equoria-dea06, q229)', () => {
     for (const id of ['level3', 'level6', 'level9']) {
       expect(screen.queryByTestId(`milestone-${id}`)).not.toBeInTheDocument();
     }
-    expect(screen.getByTestId('milestone-first_session')).toBeInTheDocument();
+    expect(screen.getByTestId('milestone-firstSession')).toBeInTheDocument();
   });
 
   it('the legacy badge follows the stars: Advanced and up, not Novice', () => {

@@ -11,13 +11,13 @@
  * Activity types representing different user actions
  */
 export enum ActivityType {
-  BREEDING = 'breeding',
-  TRAINING = 'training',
-  COMPETITION = 'competition',
-  PURCHASE = 'purchase',
-  ACHIEVEMENT = 'achievement',
-  LEVEL_UP = 'levelUp',
-  SALE = 'sale',
+  breeding = 'breeding',
+  training = 'training',
+  competition = 'competition',
+  purchase = 'purchase',
+  achievement = 'achievement',
+  levelUp = 'levelUp',
+  sale = 'sale',
 }
 
 /**
@@ -121,13 +121,13 @@ export function formatRelativeTime(timestamp: Date | string | number): string {
  * Icon name mapping for each activity type
  */
 const activityIcons: Record<ActivityType, string> = {
-  [ActivityType.BREEDING]: 'heart',
-  [ActivityType.TRAINING]: 'dumbbell',
-  [ActivityType.COMPETITION]: 'trophy',
-  [ActivityType.PURCHASE]: 'shopping-cart',
-  [ActivityType.ACHIEVEMENT]: 'star',
-  [ActivityType.LEVEL_UP]: 'arrow-up',
-  [ActivityType.SALE]: 'coins',
+  [ActivityType.breeding]: 'heart',
+  [ActivityType.training]: 'dumbbell',
+  [ActivityType.competition]: 'trophy',
+  [ActivityType.purchase]: 'shopping-cart',
+  [ActivityType.achievement]: 'star',
+  [ActivityType.levelUp]: 'arrow-up',
+  [ActivityType.sale]: 'coins',
 };
 
 /**
@@ -144,13 +144,13 @@ export function getActivityIcon(type: ActivityType): string {
  * Label mapping for each activity type
  */
 const activityLabels: Record<ActivityType, string> = {
-  [ActivityType.BREEDING]: 'Breeding',
-  [ActivityType.TRAINING]: 'Training',
-  [ActivityType.COMPETITION]: 'Competition',
-  [ActivityType.PURCHASE]: 'Purchase',
-  [ActivityType.ACHIEVEMENT]: 'Achievement',
-  [ActivityType.LEVEL_UP]: 'Level Up',
-  [ActivityType.SALE]: 'Sale',
+  [ActivityType.breeding]: 'Breeding',
+  [ActivityType.training]: 'Training',
+  [ActivityType.competition]: 'Competition',
+  [ActivityType.purchase]: 'Purchase',
+  [ActivityType.achievement]: 'Achievement',
+  [ActivityType.levelUp]: 'Level Up',
+  [ActivityType.sale]: 'Sale',
 };
 
 /**
@@ -195,7 +195,7 @@ export function getActivityDescription(activity: Activity): string {
   }
 
   switch (type) {
-    case ActivityType.BREEDING: {
+    case ActivityType.breeding: {
       const horseName = data.horseName as string;
       const foalName = data.foalName as string;
       if (horseName && foalName) {
@@ -204,7 +204,7 @@ export function getActivityDescription(activity: Activity): string {
       return 'Completed breeding activity';
     }
 
-    case ActivityType.TRAINING: {
+    case ActivityType.training: {
       const horseName = data.horseName as string;
       const skill = data.skill as string;
       const level = data.level as number;
@@ -214,7 +214,7 @@ export function getActivityDescription(activity: Activity): string {
       return 'Completed training activity';
     }
 
-    case ActivityType.COMPETITION: {
+    case ActivityType.competition: {
       const horseName = data.horseName as string;
       const competitionName = data.competitionName as string;
       const placement = data.placement as number;
@@ -224,7 +224,7 @@ export function getActivityDescription(activity: Activity): string {
       return 'Completed competition activity';
     }
 
-    case ActivityType.PURCHASE: {
+    case ActivityType.purchase: {
       const horseName = data.horseName as string;
       const price = data.price as number;
       if (horseName && price) {
@@ -233,7 +233,7 @@ export function getActivityDescription(activity: Activity): string {
       return 'Completed purchase activity';
     }
 
-    case ActivityType.ACHIEVEMENT: {
+    case ActivityType.achievement: {
       const achievementName = data.achievementName as string;
       if (achievementName) {
         return `Unlocked achievement: ${achievementName}`;
@@ -241,7 +241,7 @@ export function getActivityDescription(activity: Activity): string {
       return 'Completed achievement activity';
     }
 
-    case ActivityType.LEVEL_UP: {
+    case ActivityType.levelUp: {
       const newLevel = data.newLevel as number;
       if (newLevel) {
         return `Reached level ${newLevel}`;
@@ -249,7 +249,7 @@ export function getActivityDescription(activity: Activity): string {
       return 'Completed level up activity';
     }
 
-    case ActivityType.SALE: {
+    case ActivityType.sale: {
       const horseName = data.horseName as string;
       const price = data.price as number;
       if (horseName && price) {

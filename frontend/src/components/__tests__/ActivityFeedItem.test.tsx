@@ -28,7 +28,7 @@ describe('ActivityFeedItem', () => {
 
   const mockActivity: Activity = {
     id: '1',
-    type: ActivityType.TRAINING,
+    type: ActivityType.training,
     timestamp: new Date('2025-01-15T11:00:00Z'), // 1 hour ago
     data: { horseName: 'Thunder', skill: 'Speed', level: 5 },
   };
@@ -59,7 +59,7 @@ describe('ActivityFeedItem', () => {
     it('should display icon for BREEDING type', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.BREEDING,
+        type: ActivityType.breeding,
         timestamp: new Date(),
         data: { horseName: 'Storm', foalName: 'Lightning' },
       };
@@ -75,7 +75,7 @@ describe('ActivityFeedItem', () => {
     it('should display icon for COMPETITION type', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.COMPETITION,
+        type: ActivityType.competition,
         timestamp: new Date(),
         data: { horseName: 'Blaze', competitionName: 'Derby', placement: 1 },
       };
@@ -86,7 +86,7 @@ describe('ActivityFeedItem', () => {
     it('should display icon for PURCHASE type', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.PURCHASE,
+        type: ActivityType.purchase,
         timestamp: new Date(),
         data: { horseName: 'Star', price: 5000 },
       };
@@ -97,7 +97,7 @@ describe('ActivityFeedItem', () => {
     it('should display icon for ACHIEVEMENT type', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.ACHIEVEMENT,
+        type: ActivityType.achievement,
         timestamp: new Date(),
         data: { achievementName: 'First Win' },
       };
@@ -108,7 +108,7 @@ describe('ActivityFeedItem', () => {
     it('should display icon for LEVEL_UP type', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.LEVEL_UP,
+        type: ActivityType.levelUp,
         timestamp: new Date(),
         data: { newLevel: 10 },
       };
@@ -119,7 +119,7 @@ describe('ActivityFeedItem', () => {
     it('should display icon for SALE type', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.SALE,
+        type: ActivityType.sale,
         timestamp: new Date(),
         data: { horseName: 'Comet', price: 3000 },
       };
@@ -298,7 +298,7 @@ describe('ActivityFeedItem', () => {
     it('should handle activity with empty data', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.TRAINING,
+        type: ActivityType.training,
         timestamp: new Date(),
         data: {},
       };

@@ -49,16 +49,16 @@ export interface RiderCareerMilestone {
 
 /** Career constants for riders */
 export const riderCareerConstants = {
-  LEVEL_CAP: 10,
-  LEGACY_CONTRACT_PRESTIGE_THRESHOLD: 80,
-  LEGACY_CONTRACT_WINS_THRESHOLD: 50,
+  levelCap: 10,
+  legacyContractPrestigeThreshold: 80,
+  legacyContractWinsThreshold: 50,
   // Display mirror of the CANONICAL backend roster cap
   // (backend/modules/riders/config/riderConfig.mjs →
-  // RIDER_ROSTER_CAP_BY_STABLE_LEVEL, Equoria-oey96.8). The backend enforces
+  // riderRosterCapByStableLevel, Equoria-oey96.8). The backend enforces
   // this cap at hire time (fast-path + in-tx re-count of non-retired riders);
   // this constant is for UI display only. Keep the two in lockstep — the
   // backend config is the source of truth if they ever diverge.
-  SLOT_CAP_BY_STABLE_LEVEL: {
+  slotCapByStableLevel: {
     1: 2,
     2: 3,
     3: 4,
@@ -72,10 +72,7 @@ export const riderCareerConstants = {
  * about when a rider retires (that is hidden, Equoria-or2ua).
  */
 export function isRiderLegacyContractEligible(totalWins: number, prestige: number): boolean {
-  const {
-    LEGACY_CONTRACT_PRESTIGE_THRESHOLD: legacyContractPrestigeThreshold,
-    LEGACY_CONTRACT_WINS_THRESHOLD: legacyContractWinsThreshold,
-  } = riderCareerConstants;
+  const { legacyContractPrestigeThreshold, legacyContractWinsThreshold } = riderCareerConstants;
   return prestige >= legacyContractPrestigeThreshold || totalWins >= legacyContractWinsThreshold;
 }
 
@@ -97,25 +94,25 @@ export function buildRiderCareerMilestones(
       reached: true,
     },
     {
-      id: 'first_win',
+      id: 'firstWin',
       label: 'First Win',
       description: 'Won their first competition',
       reached: totalWins >= 1,
     },
     {
-      id: 'ten_wins',
+      id: 'tenWins',
       label: '10 Wins',
       description: 'Accumulated 10 competition victories',
       reached: totalWins >= 10,
     },
     {
-      id: 'one_year',
+      id: 'oneYear',
       label: 'One Year',
       description: 'Served for 52+ career weeks',
       reached: careerWeeks >= 52,
     },
     {
-      id: 'fifty_wins',
+      id: 'fiftyWins',
       label: 'Legendary (50 Wins)',
       description: 'Achieved legendary status with 50+ victories',
       reached: totalWins >= 50,

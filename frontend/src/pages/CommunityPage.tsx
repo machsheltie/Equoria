@@ -175,10 +175,10 @@ const CommunityPageContent: React.FC = () => {
 
   const activityData = activityQuery.data ?? [];
   const activities: Activity[] = activityData.map((act) => {
-    let type = ActivityType.ACHIEVEMENT;
+    let type = ActivityType.achievement;
     // forumPost and clubCreated read as achievements (the default).
     if (act.type === 'competitionWin') {
-      type = ActivityType.COMPETITION;
+      type = ActivityType.competition;
     }
 
     return {

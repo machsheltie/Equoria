@@ -12,7 +12,7 @@
  * enforcement drift).
  *
  * This map is the CANONICAL source; the frontend display map
- * `RIDER_CAREER_CONSTANTS.SLOT_CAP_BY_STABLE_LEVEL` (frontend/src/types/
+ * `riderCareerConstants.slotCapByStableLevel` (frontend/src/types/
  * riderCareer.ts) mirrors these values for UI purposes only.
  */
 
@@ -24,7 +24,7 @@ export const maxHorsesPerRider = 20;
 
 /**
  * Maximum NON-retired riders a user may hold, keyed by stable level (1–5).
- * Adopts the (previously orphaned) frontend SLOT_CAP_BY_STABLE_LEVEL map.
+ * Adopts the (previously orphaned) frontend slotCapByStableLevel map.
  */
 export const riderRosterCapByStableLevel = Object.freeze({
   1: 2,

@@ -190,23 +190,23 @@ describe('statistics-utils', () => {
 
   describe('StatisticType enum', () => {
     it('should have HORSES_OWNED type', () => {
-      expect(StatisticType.HORSES_OWNED).toBe('horses_owned');
+      expect(StatisticType.horsesOwned).toBe('horsesOwned');
     });
 
     it('should have COMPETITIONS_WON type', () => {
-      expect(StatisticType.COMPETITIONS_WON).toBe('competitions_won');
+      expect(StatisticType.competitionsWon).toBe('competitionsWon');
     });
 
     it('should have BREEDING_COUNT type', () => {
-      expect(StatisticType.BREEDING_COUNT).toBe('breeding_count');
+      expect(StatisticType.breedingCount).toBe('breedingCount');
     });
 
     it('should have TOTAL_EARNINGS type', () => {
-      expect(StatisticType.TOTAL_EARNINGS).toBe('total_earnings');
+      expect(StatisticType.totalEarnings).toBe('totalEarnings');
     });
 
     it('should have WIN_RATE type', () => {
-      expect(StatisticType.WIN_RATE).toBe('win_rate');
+      expect(StatisticType.winRate).toBe('winRate');
     });
   });
 

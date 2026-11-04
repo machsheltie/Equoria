@@ -24,31 +24,31 @@ import {
 describe('activity-utils', () => {
   describe('ActivityType enum', () => {
     it('should have BREEDING type', () => {
-      expect(ActivityType.BREEDING).toBe('breeding');
+      expect(ActivityType.breeding).toBe('breeding');
     });
 
     it('should have TRAINING type', () => {
-      expect(ActivityType.TRAINING).toBe('training');
+      expect(ActivityType.training).toBe('training');
     });
 
     it('should have COMPETITION type', () => {
-      expect(ActivityType.COMPETITION).toBe('competition');
+      expect(ActivityType.competition).toBe('competition');
     });
 
     it('should have PURCHASE type', () => {
-      expect(ActivityType.PURCHASE).toBe('purchase');
+      expect(ActivityType.purchase).toBe('purchase');
     });
 
     it('should have ACHIEVEMENT type', () => {
-      expect(ActivityType.ACHIEVEMENT).toBe('achievement');
+      expect(ActivityType.achievement).toBe('achievement');
     });
 
     it('should have LEVEL_UP type', () => {
-      expect(ActivityType.LEVEL_UP).toBe('levelUp');
+      expect(ActivityType.levelUp).toBe('levelUp');
     });
 
     it('should have SALE type', () => {
-      expect(ActivityType.SALE).toBe('sale');
+      expect(ActivityType.sale).toBe('sale');
     });
   });
 
@@ -154,31 +154,31 @@ describe('activity-utils', () => {
 
   describe('getActivityIcon (AC-6)', () => {
     it('should return heart icon for BREEDING', () => {
-      expect(getActivityIcon(ActivityType.BREEDING)).toBe('heart');
+      expect(getActivityIcon(ActivityType.breeding)).toBe('heart');
     });
 
     it('should return dumbbell icon for TRAINING', () => {
-      expect(getActivityIcon(ActivityType.TRAINING)).toBe('dumbbell');
+      expect(getActivityIcon(ActivityType.training)).toBe('dumbbell');
     });
 
     it('should return trophy icon for COMPETITION', () => {
-      expect(getActivityIcon(ActivityType.COMPETITION)).toBe('trophy');
+      expect(getActivityIcon(ActivityType.competition)).toBe('trophy');
     });
 
     it('should return shopping-cart icon for PURCHASE', () => {
-      expect(getActivityIcon(ActivityType.PURCHASE)).toBe('shopping-cart');
+      expect(getActivityIcon(ActivityType.purchase)).toBe('shopping-cart');
     });
 
     it('should return star icon for ACHIEVEMENT', () => {
-      expect(getActivityIcon(ActivityType.ACHIEVEMENT)).toBe('star');
+      expect(getActivityIcon(ActivityType.achievement)).toBe('star');
     });
 
     it('should return arrow-up icon for LEVEL_UP', () => {
-      expect(getActivityIcon(ActivityType.LEVEL_UP)).toBe('arrow-up');
+      expect(getActivityIcon(ActivityType.levelUp)).toBe('arrow-up');
     });
 
     it('should return coins icon for SALE', () => {
-      expect(getActivityIcon(ActivityType.SALE)).toBe('coins');
+      expect(getActivityIcon(ActivityType.sale)).toBe('coins');
     });
 
     it('should return default icon for unknown type', () => {
@@ -188,31 +188,31 @@ describe('activity-utils', () => {
 
   describe('getActivityLabel (AC-2)', () => {
     it('should return label for BREEDING', () => {
-      expect(getActivityLabel(ActivityType.BREEDING)).toBe('Breeding');
+      expect(getActivityLabel(ActivityType.breeding)).toBe('Breeding');
     });
 
     it('should return label for TRAINING', () => {
-      expect(getActivityLabel(ActivityType.TRAINING)).toBe('Training');
+      expect(getActivityLabel(ActivityType.training)).toBe('Training');
     });
 
     it('should return label for COMPETITION', () => {
-      expect(getActivityLabel(ActivityType.COMPETITION)).toBe('Competition');
+      expect(getActivityLabel(ActivityType.competition)).toBe('Competition');
     });
 
     it('should return label for PURCHASE', () => {
-      expect(getActivityLabel(ActivityType.PURCHASE)).toBe('Purchase');
+      expect(getActivityLabel(ActivityType.purchase)).toBe('Purchase');
     });
 
     it('should return label for ACHIEVEMENT', () => {
-      expect(getActivityLabel(ActivityType.ACHIEVEMENT)).toBe('Achievement');
+      expect(getActivityLabel(ActivityType.achievement)).toBe('Achievement');
     });
 
     it('should return label for LEVEL_UP', () => {
-      expect(getActivityLabel(ActivityType.LEVEL_UP)).toBe('Level Up');
+      expect(getActivityLabel(ActivityType.levelUp)).toBe('Level Up');
     });
 
     it('should return label for SALE', () => {
-      expect(getActivityLabel(ActivityType.SALE)).toBe('Sale');
+      expect(getActivityLabel(ActivityType.sale)).toBe('Sale');
     });
 
     it('should return Activity for unknown type', () => {
@@ -224,7 +224,7 @@ describe('activity-utils', () => {
     it('should generate description for BREEDING', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.BREEDING,
+        type: ActivityType.breeding,
         timestamp: new Date(),
         data: { horseName: 'Thunder', foalName: 'Lightning' },
       };
@@ -234,7 +234,7 @@ describe('activity-utils', () => {
     it('should generate description for TRAINING', () => {
       const activity: Activity = {
         id: '2',
-        type: ActivityType.TRAINING,
+        type: ActivityType.training,
         timestamp: new Date(),
         data: { horseName: 'Storm', skill: 'Speed', level: 5 },
       };
@@ -244,7 +244,7 @@ describe('activity-utils', () => {
     it('should generate description for COMPETITION', () => {
       const activity: Activity = {
         id: '3',
-        type: ActivityType.COMPETITION,
+        type: ActivityType.competition,
         timestamp: new Date(),
         data: { horseName: 'Blaze', competitionName: 'Derby Cup', placement: 1 },
       };
@@ -254,7 +254,7 @@ describe('activity-utils', () => {
     it('should generate description for PURCHASE', () => {
       const activity: Activity = {
         id: '4',
-        type: ActivityType.PURCHASE,
+        type: ActivityType.purchase,
         timestamp: new Date(),
         data: { horseName: 'Star', price: 5000 },
       };
@@ -264,7 +264,7 @@ describe('activity-utils', () => {
     it('should generate description for ACHIEVEMENT', () => {
       const activity: Activity = {
         id: '5',
-        type: ActivityType.ACHIEVEMENT,
+        type: ActivityType.achievement,
         timestamp: new Date(),
         data: { achievementName: 'First Win' },
       };
@@ -274,7 +274,7 @@ describe('activity-utils', () => {
     it('should generate description for LEVEL_UP', () => {
       const activity: Activity = {
         id: '6',
-        type: ActivityType.LEVEL_UP,
+        type: ActivityType.levelUp,
         timestamp: new Date(),
         data: { newLevel: 10 },
       };
@@ -285,7 +285,7 @@ describe('activity-utils', () => {
     it('says "level up" in words when a LEVEL_UP has no new level', () => {
       const activity: Activity = {
         id: '6b',
-        type: ActivityType.LEVEL_UP,
+        type: ActivityType.levelUp,
         timestamp: new Date(),
         data: { horseName: 'Storm' },
       };
@@ -295,7 +295,7 @@ describe('activity-utils', () => {
     it('should generate description for SALE', () => {
       const activity: Activity = {
         id: '7',
-        type: ActivityType.SALE,
+        type: ActivityType.sale,
         timestamp: new Date(),
         data: { horseName: 'Comet', price: 3000 },
       };
@@ -305,7 +305,7 @@ describe('activity-utils', () => {
     it('should handle missing data gracefully', () => {
       const activity: Activity = {
         id: '8',
-        type: ActivityType.BREEDING,
+        type: ActivityType.breeding,
         timestamp: new Date(),
         data: {},
       };
@@ -326,7 +326,7 @@ describe('activity-utils', () => {
     it('should return true for activity within 24 hours', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.TRAINING,
+        type: ActivityType.training,
         timestamp: new Date('2025-01-15T10:00:00Z'), // 2 hours ago
         data: {},
       };
@@ -336,7 +336,7 @@ describe('activity-utils', () => {
     it('should return true for activity exactly 24 hours ago', () => {
       const activity: Activity = {
         id: '2',
-        type: ActivityType.TRAINING,
+        type: ActivityType.training,
         timestamp: new Date('2025-01-14T12:00:00Z'), // 24 hours ago
         data: {},
       };
@@ -346,7 +346,7 @@ describe('activity-utils', () => {
     it('should return false for activity older than threshold', () => {
       const activity: Activity = {
         id: '3',
-        type: ActivityType.TRAINING,
+        type: ActivityType.training,
         timestamp: new Date('2025-01-14T11:00:00Z'), // 25 hours ago
         data: {},
       };
@@ -356,7 +356,7 @@ describe('activity-utils', () => {
     it('should use custom threshold in hours', () => {
       const activity: Activity = {
         id: '4',
-        type: ActivityType.TRAINING,
+        type: ActivityType.training,
         timestamp: new Date('2025-01-08T12:00:00Z'), // 7 days ago
         data: {},
       };
@@ -368,9 +368,9 @@ describe('activity-utils', () => {
   describe('sortActivitiesByDate', () => {
     it('should sort activities by timestamp descending (newest first)', () => {
       const activities: Activity[] = [
-        { id: '1', type: ActivityType.TRAINING, timestamp: new Date('2025-01-13'), data: {} },
-        { id: '2', type: ActivityType.BREEDING, timestamp: new Date('2025-01-15'), data: {} },
-        { id: '3', type: ActivityType.COMPETITION, timestamp: new Date('2025-01-14'), data: {} },
+        { id: '1', type: ActivityType.training, timestamp: new Date('2025-01-13'), data: {} },
+        { id: '2', type: ActivityType.breeding, timestamp: new Date('2025-01-15'), data: {} },
+        { id: '3', type: ActivityType.competition, timestamp: new Date('2025-01-14'), data: {} },
       ];
       const sorted = sortActivitiesByDate(activities);
       expect(sorted[0].id).toBe('2');
@@ -380,9 +380,9 @@ describe('activity-utils', () => {
 
     it('should sort activities ascending when specified', () => {
       const activities: Activity[] = [
-        { id: '1', type: ActivityType.TRAINING, timestamp: new Date('2025-01-13'), data: {} },
-        { id: '2', type: ActivityType.BREEDING, timestamp: new Date('2025-01-15'), data: {} },
-        { id: '3', type: ActivityType.COMPETITION, timestamp: new Date('2025-01-14'), data: {} },
+        { id: '1', type: ActivityType.training, timestamp: new Date('2025-01-13'), data: {} },
+        { id: '2', type: ActivityType.breeding, timestamp: new Date('2025-01-15'), data: {} },
+        { id: '3', type: ActivityType.competition, timestamp: new Date('2025-01-14'), data: {} },
       ];
       const sorted = sortActivitiesByDate(activities, 'asc');
       expect(sorted[0].id).toBe('1');
@@ -396,15 +396,15 @@ describe('activity-utils', () => {
 
     it('should handle single item', () => {
       const activities: Activity[] = [
-        { id: '1', type: ActivityType.TRAINING, timestamp: new Date(), data: {} },
+        { id: '1', type: ActivityType.training, timestamp: new Date(), data: {} },
       ];
       expect(sortActivitiesByDate(activities)).toHaveLength(1);
     });
 
     it('should not mutate original array', () => {
       const activities: Activity[] = [
-        { id: '1', type: ActivityType.TRAINING, timestamp: new Date('2025-01-13'), data: {} },
-        { id: '2', type: ActivityType.BREEDING, timestamp: new Date('2025-01-15'), data: {} },
+        { id: '1', type: ActivityType.training, timestamp: new Date('2025-01-13'), data: {} },
+        { id: '2', type: ActivityType.breeding, timestamp: new Date('2025-01-15'), data: {} },
       ];
       const original = [...activities];
       sortActivitiesByDate(activities);
@@ -416,7 +416,7 @@ describe('activity-utils', () => {
     it('should handle Date object timestamps', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.TRAINING,
+        type: ActivityType.training,
         timestamp: new Date('2025-01-15T12:00:00Z'),
         data: {},
       };
@@ -426,7 +426,7 @@ describe('activity-utils', () => {
     it('should handle string timestamps', () => {
       const activity = {
         id: '1',
-        type: ActivityType.TRAINING,
+        type: ActivityType.training,
         timestamp: '2025-01-15T12:00:00Z',
         data: {},
       };
@@ -436,7 +436,7 @@ describe('activity-utils', () => {
     it('should handle null data object', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.TRAINING,
+        type: ActivityType.training,
         timestamp: new Date(),
         data: null as unknown as Record<string, unknown>,
       };
@@ -446,7 +446,7 @@ describe('activity-utils', () => {
     it('should format large placement numbers', () => {
       const activity: Activity = {
         id: '1',
-        type: ActivityType.COMPETITION,
+        type: ActivityType.competition,
         timestamp: new Date(),
         data: { horseName: 'Storm', competitionName: 'Race', placement: 23 },
       };

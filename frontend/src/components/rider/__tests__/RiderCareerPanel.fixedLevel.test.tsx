@@ -36,7 +36,7 @@ describe('RiderCareerPanel (Equoria-dea06, q229)', () => {
     expect(screen.queryByText(/\bLevel\s*\d/)).not.toBeInTheDocument();
     expect(screen.queryByTestId('milestone-level_5')).not.toBeInTheDocument();
     expect(screen.queryByTestId('milestone-level_10')).not.toBeInTheDocument();
-    expect(screen.getByTestId('milestone-first_win')).toBeInTheDocument();
+    expect(screen.getByTestId('milestone-firstWin')).toBeInTheDocument();
   });
 
   it('shows no XP progress for a staff member', () => {

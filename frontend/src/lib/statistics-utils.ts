@@ -9,11 +9,11 @@
  * Types of statistics tracked in the game
  */
 export enum StatisticType {
-  HORSES_OWNED = 'horses_owned',
-  COMPETITIONS_WON = 'competitions_won',
-  BREEDING_COUNT = 'breeding_count',
-  TOTAL_EARNINGS = 'total_earnings',
-  WIN_RATE = 'win_rate',
+  horsesOwned = 'horsesOwned',
+  competitionsWon = 'competitionsWon',
+  breedingCount = 'breedingCount',
+  totalEarnings = 'totalEarnings',
+  winRate = 'winRate',
 }
 
 /**
