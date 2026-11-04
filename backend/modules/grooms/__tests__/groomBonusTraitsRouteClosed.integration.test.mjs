@@ -135,6 +135,33 @@ describe('🔒 REGRESSION: PUT /api/v1/grooms/:id/bonus-traits is closed (Equori
     });
   });
 
+  // Folded from groomBonusTraits.test.mjs (Equoria-k1vly B): a body the old
+  // validator would have refused (0.35 > the 0.3 per-trait cap) still gets 410,
+  // so the route closes before validation runs.
+  it('refuses an owner PUT with 410 even for a constraint-violating body', async () => {
+    const response = await request(app)
+      .put(`/api/v1/grooms/${testGroom.id}/bonus-traits`)
+      .set('Authorization', authToken)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({ bonusTraits: { trait1: 0.35 } });
+
+    expect(response.status).toBe(410);
+    expect(response.body.success).toBe(false);
+  });
+
+  // Folded from groomBonusTraits.test.mjs (Equoria-k1vly B): with no session and
+  // no CSRF token at all, the answer is still 401.
+  it('returns 401 for an anonymous PUT that carries no CSRF token', async () => {
+    const response = await request(app)
+      .put(`/api/v1/grooms/${testGroom.id}/bonus-traits`)
+      .set('Origin', 'http://localhost:3000');
+
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
+  });
+
   it('returns 401 for an anonymous PUT (no DB change)', async () => {
     const anonCsrf = await fetchCsrf(app);
 
