@@ -225,3 +225,17 @@
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Tab bar ───────────────────────────────────────────────────────── */
+
+/*
+ * The horse page's tab bar sits over a bright part of the stable painting,
+ * where the inactive tab labels fell short of 4.5:1 (Equoria-oey96.77). Owner
+ * ruling q348: darken the panel just behind this tab bar only, so the painting
+ * shows through a little less there. The muted grey and other pages are
+ * unchanged.
+ */
+.horse-detail-tabs {
+  background: var(--glass-surface-subtle-bg);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}

@@ -47,6 +47,8 @@ import { HorseVisitContext } from './horse-detail/horseVisitContext';
 import { normalizeHorseVisit } from './horse-detail/normalizeHorseVisit';
 // Canonical Radix-backed tabs (Equoria-o5hub.11, DECISIONS.md §6)
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
+// The tab bar's darker backing (Equoria-oey96.77, owner ruling q348)
+import '@/styles/horseCare.css';
 import ConformationTab from '../components/horse/ConformationTab';
 // Equoria-aa6b — walk/trot/canter/gallop + breed-specific gait scores tab
 import GaitsTab from '../components/horse/GaitsTab';
@@ -299,16 +301,22 @@ const HorseDetailPage: React.FC = () => {
                 if (next) setActiveTab(next.id);
               }}
             >
-              <TabsList aria-label="Horse details tabs">
-                {tabs.map((tab) => (
-                  <TabsTrigger key={tab.id} value={tab.id}>
-                    <span className="inline-flex items-center mr-2" aria-hidden="true">
-                      {tab.icon}
-                    </span>
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+              {/* Darker backing behind the tab bar only (Equoria-oey96.77, owner
+                ruling q348). It sits on this wrapper, not the list, because the
+                list's overflow edge-fade mask would fade a backing on the list
+                away at exactly the edge tabs it is meant to help. */}
+              <div className="horse-detail-tabs">
+                <TabsList aria-label="Horse details tabs">
+                  {tabs.map((tab) => (
+                    <TabsTrigger key={tab.id} value={tab.id}>
+                      <span className="inline-flex items-center mr-2" aria-hidden="true">
+                        {tab.icon}
+                      </span>
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
               <TabsContent value="overview" className="mt-0 p-6">
                 <OverviewTab
                   horse={horse}
