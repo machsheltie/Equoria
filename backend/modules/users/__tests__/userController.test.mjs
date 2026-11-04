@@ -1,7 +1,7 @@
 /**
  * userController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getUser, getUserProgressAPI, getUserCompetitionStats,
+ * Covers: getUser, getUserProgressAPI,
  * getGameNotifications, markGameNotificationsRead, getCommunityActivity.
  * All routes live under authRouter → real auth + real CSRF for PATCH.
  */
@@ -13,11 +13,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -213,169 +209,6 @@ describe('GET /api/v1/users/:id/progress', () => {
     const res = await request(app).get(`/api/v1/users/${user.id}/progress`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/v1/users/:userId/competition-stats ─────────────────────────────────
-
-describe('GET /api/v1/users/:userId/competition-stats', () => {
-  it('returns 200 with zero stats for a user with no competition history', async () => {
-    const res = await request(app)
-      .get(`/api/v1/users/${user.id}/competition-stats`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('userId');
-    expect(res.body.totalCompetitions).toBe(0);
-    expect(res.body.totalWins).toBe(0);
-  });
-
-  it('returns 400 for non-UUID userId', async () => {
-    const res = await request(app)
-      .get('/api/v1/users/notauuid/competition-stats')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(400);
-  });
-
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/users/${user.id}/competition-stats`).set('Origin', ORIGIN);
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── GET /api/v1/users/:userId/competition-stats — with real results ─────────────
-// (covers lines 580-660: aggregation logic, placementToNumber, recentCompetitions)
-
-describe('GET /api/v1/users/:userId/competition-stats — with results', () => {
-  let statsUser;
-  let statsToken;
-  let statsHorse;
-  let show;
-  const createdShowIds = [];
-  const createdResultIds = [];
-  // Local fail-loud, scoped cleanup tracker (Equoria-cu3t5) for this describe's
-  // fixtures; replaces the swallowed per-row cleanup catches.
-  const statsCleanup = createCleanupTracker();
-
-  beforeAll(async () => {
-    // FK order: competitionResults → shows → horse → user. Scoped by id.
-    statsCleanup.add(
-      () => prisma.competitionResult.deleteMany({ where: { id: { in: createdResultIds } } }),
-      'competitionResults',
-    );
-    statsCleanup.add(() => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }), 'shows');
-    statsCleanup.add(() => prisma.horse.delete({ where: { id: statsHorse.id } }), 'horse');
-    statsCleanup.add(() => prisma.user.delete({ where: { id: statsUser.id } }), 'user');
-    statsUser = await prisma.user.create({
-      data: {
-        emailVerified: true,
-        email: `stats-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
-        username: `stats${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
-        password: 'hash',
-        firstName: 'Stats',
-        lastName: 'Tester',
-        money: 0,
-      },
-    });
-    statsToken = generateTestToken({ id: statsUser.id, email: statsUser.email, role: 'user' });
-
-    statsHorse = await prisma.horse.create({
-      data: await testHorseData(prisma, {
-        ...fixtureColor(),
-        name: `TestFixture-StatsHorse-${Date.now()}`,
-        sex: 'Stallion',
-        dateOfBirth: new Date('2018-01-01'),
-        age: 7,
-        userId: statsUser.id,
-      }),
-    });
-
-    // Seed varied competition results to exercise placement branches.
-    // UNIQUE(showId, horseId) (migration 20260521120000) forbids a horse
-    // from having two results in the SAME show, so each result gets its own
-    // dedicated show. Aggregate stats are show-agnostic, so totals and
-    // placement-branch coverage are unchanged.
-    const placements = [
-      [1, 95],
-      [2, 90],
-      [3, 85],
-      [4, 80],
-      [null, 75], // null placement → placementToNumber → 0 branch
-    ];
-    for (let i = 0; i < placements.length; i++) {
-      const [placement, score] = placements[i];
-      const resultShow = await prisma.show.create({
-        data: {
-          name: `TestFixture-StatsShow-${Date.now()}-${i}`,
-          discipline: 'Dressage',
-          levelMin: 1,
-          levelMax: 10,
-          entryFee: 100,
-          prize: 1000,
-          runDate: new Date('2024-01-01'),
-          hostUserId: statsUser.id,
-        },
-      });
-      createdShowIds.push(resultShow.id);
-      if (!show) {
-        show = resultShow;
-      }
-      const r = await prisma.competitionResult.create({
-        data: {
-          horseId: statsHorse.id,
-          // Equoria-r9q06 (owner ruling q256): settlement records the entrant; here the owner entered.
-          entrantUserId: statsHorse.userId,
-          showId: resultShow.id,
-          showName: resultShow.name,
-          discipline: 'Dressage',
-          placement,
-          score: String(score),
-          prizeWon: placement === 1 ? 500 : placement === 2 ? 300 : 100,
-          runDate: new Date('2024-01-01'),
-        },
-      });
-      createdResultIds.push(r.id);
-    }
-  }, 60000);
-
-  afterAll(() => statsCleanup.run(), 30000);
-
-  it('returns aggregated stats with real competition results', async () => {
-    const res = await request(app)
-      .get(`/api/v1/users/${statsUser.id}/competition-stats`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${statsToken}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.totalCompetitions).toBeGreaterThanOrEqual(5);
-    expect(res.body.totalWins).toBeGreaterThanOrEqual(1);
-    expect(res.body.totalTop3).toBeGreaterThanOrEqual(3);
-    expect(res.body.bestPlacement).toBe(1);
-    expect(res.body.mostSuccessfulDiscipline).toBe('Dressage');
-    expect(Array.isArray(res.body.recentCompetitions)).toBe(true);
-    expect(res.body.recentCompetitions.length).toBeLessThanOrEqual(5);
-    expect(typeof res.body.winRate).toBe('number');
-    expect(res.body.totalPrizeMoney).toBeGreaterThan(0);
-  });
-
-  it('recentCompetitions entries have expected shape', async () => {
-    const res = await request(app)
-      .get(`/api/v1/users/${statsUser.id}/competition-stats`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${statsToken}`);
-
-    expect(res.status).toBe(200);
-    for (const r of res.body.recentCompetitions) {
-      expect(r).toHaveProperty('competitionId');
-      expect(r).toHaveProperty('discipline');
-      expect(r).toHaveProperty('placement');
-      expect(r).toHaveProperty('finalScore');
-      expect(r).toHaveProperty('prizeMoney');
-    }
   });
 });
 

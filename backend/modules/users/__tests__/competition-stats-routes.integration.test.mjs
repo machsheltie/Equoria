@@ -188,6 +188,15 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
         .set('Authorization', `Bearer ${emptyToken}`);
       expect(res.status).toBe(403);
     });
+
+    // Merged from userController.test.mjs (Equoria-k1vly).
+    it('returns 400 for a userId that is not a UUID', async () => {
+      const res = await request(app)
+        .get('/api/v1/users/notauuid/competition-stats')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${activeToken}`);
+      expect(res.status).toBe(400);
+    });
   });
 
   describe('Empty user (no horses, no results)', () => {
@@ -236,6 +245,76 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
       expect(Array.isArray(res.body.recentCompetitions)).toBe(true);
       expect(res.body.recentCompetitions.length).toBeGreaterThanOrEqual(1);
       expect(res.body.recentCompetitions.length).toBeLessThanOrEqual(5);
+    });
+
+    // Merged from userController.test.mjs (Equoria-k1vly).
+    it('gives every recent competition its id, discipline, placement, score and prize', async () => {
+      const res = await request(app)
+        .get(`/api/v1/users/${activeUser.id}/competition-stats`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${activeToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.recentCompetitions.length).toBeGreaterThanOrEqual(1);
+      for (const r of res.body.recentCompetitions) {
+        expect(r).toHaveProperty('competitionId');
+        expect(r).toHaveProperty('discipline');
+        expect(r).toHaveProperty('placement');
+        expect(r).toHaveProperty('finalScore');
+        expect(r).toHaveProperty('prizeMoney');
+      }
+    });
+
+    // Merged from userController.test.mjs (Equoria-k1vly): a 2nd-place, a 4th-place
+    // and an unplaced (null placement) result join the three seeded ones.
+    it('counts an unplaced result as a competition but never as a win or a top-3', async () => {
+      const ts = `${Date.now()}_${process.pid}`;
+      const extra = [
+        [2, 90],
+        [4, 80],
+        [null, 75],
+      ];
+      for (let i = 0; i < extra.length; i++) {
+        const [placement, score] = extra[i];
+        const show = await prisma.show.create({
+          data: {
+            name: `StatsExtraShow${i}_${ts}`,
+            discipline: 'Dressage',
+            levelMin: 1,
+            levelMax: 20,
+            entryFee: 100,
+            prize: 1000,
+            runDate: new Date(Date.now() - (4 + i) * 86400000),
+          },
+        });
+        createdShowIds.push(show.id);
+        const result = await prisma.competitionResult.create({
+          data: {
+            score,
+            placement,
+            discipline: 'Dressage',
+            runDate: new Date(Date.now() - (4 + i) * 86400000),
+            showName: show.name,
+            horseId,
+            entrantUserId: activeUser.id,
+            showId: show.id,
+            prizeWon: 0,
+          },
+        });
+        createdResultIds.push(result.id);
+      }
+
+      const res = await request(app)
+        .get(`/api/v1/users/${activeUser.id}/competition-stats`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${activeToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.totalCompetitions).toBe(6);
+      expect(res.body.totalWins).toBe(1);
+      expect(res.body.totalTop3).toBe(3); // 1st, 2nd, 3rd; the 4th and the unplaced do not count
+      expect(res.body.bestPlacement).toBe(1);
+      expect(typeof res.body.winRate).toBe('number');
     });
   });
 });
