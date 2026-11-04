@@ -98,6 +98,25 @@
     "private_key": "snake_case request field the logger must still redact",
     "credit_card": "snake_case request field the logger must still redact",
     "date_of_birth": "snake_case request field the logger must still redact",
-    "csrf_token": "snake_case request field the logger must still redact"
+    "csrf_token": "snake_case request field the logger must still redact",
+    "DATABASE_URL": "environment variable name (Prisma connection string; set per test lane by backend/scripts/run-suite-sharded.mjs)",
+    "EQUORIA_TEST_LANE": "environment variable name set per test lane by backend/scripts/run-suite-sharded.mjs",
+    "RATE_LIMIT_ENABLED": "environment variable name (backend/__tests__/config/test-helpers.mjs rate-limit bypass env)",
+    "GMAIL_OAUTH_URL": "environment variable name (backend/utils/gmailApiTransport.mjs endpoint override)",
+    "GMAIL_API_URL": "environment variable name (backend/utils/gmailApiTransport.mjs endpoint override)",
+    "NOT_FOUND": "Gmail API error status, mirrored by the fake Gmail server in emailServiceGmailApi.test.mjs",
+    "IS_REACT_ACT_ENVIRONMENT": "React global flag read by react-dom act() (frontend/src/test/shim.ts)",
+    "DOCUMENT_POSITION_FOLLOWING": "DOM Node.compareDocumentPosition constant",
+    "INTERLEAVING_TEST_SEAMS": "owner-only rule file name .claude/rules/INTERLEAVING_TEST_SEAMS.md, quoted by check-no-test-only-imports.mjs",
+    "replace_with": "placeholder text operators paste into secrets (replace_with_...), matched by backend/utils/runtimeSecretPolicy.mjs",
+    "replace_with_real": "placeholder secret text fed to runtimeSecretPolicy.mjs by its test",
+    "breed_genetic_profile": "Postgres column spelling in the breed seed SQL that sanitizeSql rewrites (populateBreedsFromSql test input)",
+    "default_trait": "Postgres column spelling in the breed seed SQL that sanitizeSql rewrites (populateBreedsFromSql test input)",
+    "updated_at": "Postgres column spelling in the breed seed SQL that sanitizeSql strips (populateBreedsFromSql test input)",
+    "UPDATED_AT": "Postgres column spelling in the breed seed SQL that sanitizeSql strips case-insensitively (populateBreedsFromSql test input)",
+    "barn_management": "deliberately snake_case unknown value proving groomSpecialtyLabel humanizes values it has never seen (test input)",
+    "advanced_showJumping": "deliberately mixed unknown value proving groomSpecialtyLabel humanizes values it has never seen (test input)",
+    "MOCK_HORSES": "planted input proving check-no-frontend-mocks.mjs still catches the MOCK_ prefix (doctrineScanPatterns sentinel)",
+    "key_with_colons": "generateCacheKey output: the Redis key sanitizer turns colons into underscores (cache-key data, not a name)"
   }
 }
