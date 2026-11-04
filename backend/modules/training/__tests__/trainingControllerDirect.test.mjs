@@ -1,34 +1,11 @@
 /**
- * 🧪 UNIT TEST: Training Controller - Horse Training Business Logic
+ * INTEGRATION TEST: Training controller functions against the real test database
+ * (canTrain, trainHorse, getTrainingStatus, getTrainableHorses, trainRouteHandler).
  *
- * This test validates the training controller's core business logic for horse
- * training eligibility, session execution, and progression tracking.
- *
- * 📋 BUSINESS RULES TESTED:
- * - Horses must be 3+ years old to train (age eligibility)
- * - Global 7-day training cooldown per horse (not per discipline)
- * - Training awards +5 XP to horse owner and triggers level-up checks
- * - Discipline scores increment with each training session
- * - Horse stats improve based on discipline focus (Speed for Racing, etc.)
- * - Training logs are properly recorded for cooldown tracking
- * - XP system integration with user progression
- * - Error handling for database failures and invalid inputs
- *
- * 🎯 FUNCTIONALITY TESTED:
- * 1. canTrain() - Training eligibility validation with age and cooldown checks
- * 2. trainHorse() - Complete training workflow with XP rewards and stat updates
- * 3. getTrainingStatus() - Detailed training status with cooldown calculations
- * 4. getTrainableHorses() - Horse filtering for training availability
- * 5. Edge cases: exact cooldown timing, database errors, invalid inputs
- *
- * 🔄 BALANCED MOCKING APPROACH:
- * ✅ REAL: Business logic for eligibility, cooldown calculations, XP distribution
- * ✅ REAL: Training progression rules, stat updates, validation logic
- * 🔧 MOCK: Database operations (training logs, horse lookups, user updates) - external dependencies
- * 🔧 MOCK: Model layer calls - focus on controller logic without database complexity
- *
- * 💡 TEST STRATEGY: Unit testing with comprehensive mocking to isolate controller
- *    business logic and ensure predictable test outcomes for complex training rules
+ * Rules covered: 3+ years to train; one global 7-day cooldown per horse (not per
+ * discipline); a successful session awards the player 5 XP, writes a training log and
+ * claims the cooldown; the status and trainable lists reflect age and cooldown.
+ * Nothing is mocked. trainRouteHandler is driven with a plain req/res pair.
  */
 
 import { jest, describe, beforeAll, beforeEach, afterAll, expect, it } from '@jest/globals';
@@ -38,7 +15,13 @@ import { birthDateForAge } from '../../../utils/horseAge.mjs';
 import { invalidateCache } from '../../../utils/cacheHelper.mjs';
 
 // Import the actual controller - no complex mocking
-import { canTrain, trainHorse, getTrainingStatus, getTrainableHorses } from '../controllers/trainingController.mjs';
+import {
+  canTrain,
+  trainHorse,
+  getTrainingStatus,
+  getTrainableHorses,
+  trainRouteHandler,
+} from '../controllers/trainingController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -62,6 +45,28 @@ let testHorseRecentTraining;
 // removes what it created (the old afterAll read testHorseAdult.id and threw before
 // deleting anything, leaking the TrainingTestBreed_* row and its first horse).
 const cleanup = createCleanupTracker();
+
+// A fresh 4 game-year-old horse with a trainer, owned by the suite's user. Tests that
+// need their own horse create it here and delete it when done.
+async function createFreshAdultHorse(name, sex = 'Stallion') {
+  const horse = await prisma.horse.create({
+    data: await testHorseData(prisma, {
+      ...fixtureColor(),
+      name,
+      dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
+      sex,
+      userId: testUser.id,
+      breedId: testBreedId,
+      speed: 50,
+      stamina: 50,
+      agility: 50,
+      healthStatus: 'Excellent',
+      lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
+    }),
+  });
+  await assignTestTrainer(horse);
+  return horse;
+}
 
 describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', () => {
   beforeAll(async () => {
@@ -98,13 +103,9 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     });
     testBreedId = testBreed.id;
 
-    // Game-year aging convention (Equoria-vdw5/ffsi): 1 game-year = 7 real
-    // days, so getHorseAge() == floor(realDays / 7). Back-date dateOfBirth in
-    // GAME-years (N * 7 days ago), not calendar years — otherwise a horse stored
-    // as age:4 would compute to ~208 game-years and break the horseAge assertions.
-    // dateOfBirth is date-only: birthDateForAge stores the Eastern game date, as
-    // production writers do, so the age holds at any hour (Equoria-4urzd).
-    // 4 game-years old: 28 days ago (eligible: age >= 3)
+    // Game-year aging (Equoria-vdw5/ffsi): 1 game-year = 7 real days, so dateOfBirth is
+    // back-dated in GAME-years; birthDateForAge stores the Eastern game date, so the age
+    // holds at any hour (Equoria-4urzd). 4 game-years old: eligible (age >= 3).
     const fourYearsAgo = birthDateForAge(4);
 
     testHorseEligible = await prisma.horse.create({
@@ -222,19 +223,14 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       },
     });
 
-    // Equoria-0ihyi: cooldown is now persisted atomically by trainHorse's gate
-    // (was previously a post-write update wrapped in a silent try/catch that
-    // could no-op, leaving these tests usable across describes). Reset
-    // trainingCooldown alongside the trainingLog purge so each test starts
-    // with a clean cooldown window.
+    // Equoria-0ihyi: trainHorse's gate persists the cooldown atomically; reset it alongside
+    // the trainingLog purge so each test starts with a clean cooldown window.
     await prisma.horse.updateMany({
       where: { id: { in: [testHorseEligible.id, testHorseAdult.id] } },
       data: { trainingCooldown: null },
     });
 
-    // ✅ FIX: Invalidate cache to prevent stale data from previous tests
-    // The cache has 5-minute TTL, so without this, tests running within 5 minutes
-    // would get cached results from previous tests causing intermittent failures
+    // The trainable list is cached for 5 minutes; drop it so no test reads a stale list.
     await invalidateCache(`user:trainable:${testUser.id}`);
   });
 
@@ -271,22 +267,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       const eightDaysAgo = new Date();
       eightDaysAgo.setDate(eightDaysAgo.getDate() - 8);
 
-      const oldTrainingHorse = await prisma.horse.create({
-        data: await testHorseData(prisma, {
-          ...fixtureColor(),
-          name: 'Old Training Horse',
-          dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
-          sex: 'Stallion',
-          userId: testUser.id,
-          breedId: testBreedId,
-          speed: 50,
-          stamina: 50,
-          agility: 50,
-          healthStatus: 'Excellent',
-          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-        }),
-      });
-      await assignTestTrainer(oldTrainingHorse);
+      const oldTrainingHorse = await createFreshAdultHorse('Old Training Horse', 'Stallion');
 
       await prisma.trainingLog.create({
         data: {
@@ -340,22 +321,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       // in the past regardless of test execution timing (avoids setDate/setSeconds drift)
       const exactlySevenDaysAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000 + 2000));
 
-      const edgeCaseHorse = await prisma.horse.create({
-        data: await testHorseData(prisma, {
-          ...fixtureColor(),
-          name: 'Edge Case Horse',
-          dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
-          sex: 'Mare',
-          userId: testUser.id,
-          breedId: testBreedId,
-          speed: 50,
-          stamina: 50,
-          agility: 50,
-          healthStatus: 'Excellent',
-          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-        }),
-      });
-      await assignTestTrainer(edgeCaseHorse);
+      const edgeCaseHorse = await createFreshAdultHorse('Edge Case Horse', 'Mare');
 
       await prisma.trainingLog.create({
         data: {
@@ -450,6 +416,64 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       });
       expect(userAfter.xp).toBe(userBefore.xp + 5);
     });
+
+    // Merged from the former controller business-logic suite (Equoria-k1vly).
+    it('should refuse a horse that does not exist', async () => {
+      const result = await trainHorse(999999999, 'Dressage');
+
+      expect(result).toEqual(
+        expect.objectContaining({ success: false, message: expect.stringContaining('Horse not found') }),
+      );
+    });
+
+    it('should throw when the discipline is empty', async () => {
+      await expect(trainHorse(testHorseEligible.id, '')).rejects.toThrow('Discipline is required');
+    });
+
+    it('should carry a horse through open status, training, log and cooldown status', async () => {
+      const before = await getTrainingStatus(testHorseEligible.id, 'Racing');
+      expect(before).toEqual(
+        expect.objectContaining({
+          eligible: true,
+          reason: null,
+          horseAge: expect.any(Number),
+          lastTrainingDate: null,
+          cooldown: null,
+        }),
+      );
+
+      const trained = await trainHorse(testHorseEligible.id, 'Racing');
+      expect(trained).toEqual(
+        expect.objectContaining({
+          success: true,
+          message: expect.any(String),
+          updatedHorse: expect.objectContaining({
+            id: testHorseEligible.id,
+            disciplineScores: expect.objectContaining({ Racing: expect.any(Number) }),
+          }),
+        }),
+      );
+
+      const log = await prisma.trainingLog.findFirst({
+        where: { horseId: testHorseEligible.id, discipline: 'Racing' },
+        orderBy: { trainedAt: 'desc' },
+      });
+      expect(log).not.toBeNull();
+      expect(log.discipline).toBe('Racing');
+      // Cross-VM-realm safe Date check: toBeInstanceOf(Date) fails with --experimental-vm-modules.
+      expect(Object.prototype.toString.call(log.trainedAt)).toBe('[object Date]');
+
+      const after = await getTrainingStatus(testHorseEligible.id, 'Racing');
+      expect(Object.prototype.toString.call(after.lastTrainingDate)).toBe('[object Date]');
+      expect(after).toEqual(
+        expect.objectContaining({
+          eligible: false,
+          reason: expect.any(String),
+          horseAge: expect.any(Number),
+          cooldown: expect.objectContaining({ active: true, remainingDays: expect.any(Number) }),
+        }),
+      );
+    });
   });
 
   describe('getTrainingStatus', () => {
@@ -494,22 +518,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       // Create a horse with training 8 days ago (expired cooldown)
       const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
 
-      const expiredCooldownHorse = await prisma.horse.create({
-        data: await testHorseData(prisma, {
-          ...fixtureColor(),
-          name: 'Expired Cooldown Horse',
-          dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
-          sex: 'Stallion',
-          userId: testUser.id,
-          breedId: testBreedId,
-          speed: 50,
-          stamina: 50,
-          agility: 50,
-          healthStatus: 'Excellent',
-          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-        }),
-      });
-      await assignTestTrainer(expiredCooldownHorse);
+      const expiredCooldownHorse = await createFreshAdultHorse('Expired Cooldown Horse', 'Stallion');
 
       await prisma.trainingLog.create({
         data: {
@@ -551,6 +560,27 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         cooldown: null,
       });
     });
+
+    // Merged from the former controller business-logic suite (Equoria-k1vly).
+    it('should report the last training date for a horse in cooldown in that same discipline', async () => {
+      const result = await getTrainingStatus(testHorseRecentTraining.id, 'Racing');
+
+      expect(Object.prototype.toString.call(result.lastTrainingDate)).toBe('[object Date]');
+      expect(result).toEqual(
+        expect.objectContaining({
+          eligible: false,
+          reason: expect.any(String),
+          horseAge: expect.any(Number),
+          cooldown: expect.objectContaining({ active: true, remainingDays: expect.any(Number) }),
+        }),
+      );
+    });
+
+    it('should report Horse not found for a horse that does not exist', async () => {
+      const result = await getTrainingStatus(999999999, 'Dressage');
+
+      expect(result).toEqual(expect.objectContaining({ eligible: false, reason: 'Horse not found' }));
+    });
   });
 
   describe('Integration scenarios', () => {
@@ -567,49 +597,6 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       expect(jumpingResult.eligible).toBe(false);
       expect(jumpingResult.reason).toBe('Training cooldown active for this horse');
-    });
-
-    it('should handle edge case of exactly 7 days cooldown', async () => {
-      // Create a horse with training just over 7 days ago (expired cooldown)
-      const justOverSevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 - 1000); // Just over 7 days
-
-      const expiredCooldownHorse = await prisma.horse.create({
-        data: await testHorseData(prisma, {
-          ...fixtureColor(),
-          name: 'Edge Case Horse',
-          dateOfBirth: birthDateForAge(4), // 4 game-years (28 days) — Equoria-vdw5/ffsi
-          sex: 'Stallion',
-          userId: testUser.id,
-          breedId: testBreedId,
-          speed: 50,
-          stamina: 50,
-          agility: 50,
-          healthStatus: 'Excellent',
-          lastFedDate: new Date(), // fed today: not in bad health (Equoria-0d4wa)
-        }),
-      });
-      await assignTestTrainer(expiredCooldownHorse);
-
-      await prisma.trainingLog.create({
-        data: {
-          horseId: expiredCooldownHorse.id,
-          discipline: 'Racing',
-          trainedAt: justOverSevenDaysAgo,
-        },
-      });
-
-      const result = await canTrain(expiredCooldownHorse.id, 'Racing');
-
-      expect(result.eligible).toBe(true);
-      expect(result.reason).toBe(null);
-
-      // Cleanup
-      await prisma.trainingLog.deleteMany({
-        where: { horseId: expiredCooldownHorse.id },
-      });
-      await prisma.horse.delete({
-        where: { id: expiredCooldownHorse.id },
-      });
     });
   });
 
@@ -714,18 +701,99 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       expect(adultHorse.nextEligibleAt).toBeNull();
     });
 
+    // Merged from the former controller business-logic suite (Equoria-k1vly).
+    it('should name each horse and give its age and its trainable disciplines', async () => {
+      const result = await getTrainableHorses(testUser.id);
+
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            horseId: testHorseAdult.id,
+            name: 'Adult Horse',
+            age: 3,
+            trainableDisciplines: expect.arrayContaining(['Racing', 'Dressage']),
+          }),
+        ]),
+      );
+    });
+
+    it('should set nextEligibleAt once trainHorse has trained the horse', async () => {
+      await trainHorse(testHorseAdult.id, 'Dressage');
+
+      const result = await getTrainableHorses(testUser.id);
+
+      const trained = result.find(h => h.horseId === testHorseAdult.id);
+      expect(trained).toBeDefined();
+      expect(trained.nextEligibleAt).not.toBeNull();
+      expect(new Date(trained.nextEligibleAt).getTime()).toBeGreaterThan(Date.now());
+    });
+
     it('should throw error for missing player ID', async () => {
       await expect(getTrainableHorses('')).rejects.toThrow('User ID is required'); // Fixed: match actual error message
       await expect(getTrainableHorses(null)).rejects.toThrow('User ID is required'); // Fixed: match actual error message
     });
   });
 
-  // NOTE (Equoria-fefh2.10): the placeholder-only tests that previously lived here
-  // (DB-error "graceful handling" stubs and the trainRouteHandler describe) asserted
-  // only expect(true).toBe(true) — zero signal. They were deleted; the behaviors they
-  // named are covered for real by:
-  //   - trainingController-business-logic.test.mjs (trainRouteHandler success /
-  //     ineligible / cooldown / non-existent / invalid-discipline responses)
-  //   - training-complete.test.mjs (HTTP end-to-end incl. auth protection)
-  //   - training.test.mjs (error handling + data integrity business rules)
+  // Merged from the former controller business-logic suite (Equoria-k1vly): the handler is driven with a
+  // plain req/res pair against the real database.
+  describe('trainRouteHandler', () => {
+    const createRes = () => ({
+      statusCode: 200,
+      body: undefined,
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data) {
+        this.body = data;
+        return this;
+      },
+    });
+    const callHandler = async (horseId, discipline) => {
+      const res = createRes();
+      await trainRouteHandler({ body: { horseId, discipline }, user: { id: testUser.id } }, res);
+      return res;
+    };
+
+    it('should answer a valid request with the trained discipline and the new score', async () => {
+      const res = await callHandler(testHorseAdult.id, 'Show Jumping');
+
+      expect(res.body).toMatchObject({
+        success: true,
+        message: expect.stringContaining('trained in Show Jumping'),
+        updatedScore: expect.any(Number),
+      });
+    });
+
+    it('should answer 400 for a horse that is under age', async () => {
+      const res = await callHandler(testHorseYoung.id, 'Dressage');
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toMatchObject({ success: false, message: expect.stringContaining('Horse is under age') });
+    });
+
+    it('should answer 400 for a horse in cooldown', async () => {
+      const res = await callHandler(testHorseRecentTraining.id, 'Dressage');
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toMatchObject({ success: false, message: expect.stringContaining('Training cooldown active') });
+    });
+
+    it('should answer 400 for a horse that does not exist', async () => {
+      const res = await callHandler(999999999, 'Dressage');
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toMatchObject({ success: false, message: expect.stringContaining('Horse not found') });
+    });
+
+    it('should answer 500 for an empty discipline', async () => {
+      const res = await callHandler(testHorseAdult.id, '');
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body).toMatchObject({ success: false, message: 'Failed to train horse' });
+    });
+  });
+
+  // NOTE (Equoria-fefh2.10): placeholder-only DB-error stubs that asserted expect(true) were deleted;
+  // training-complete.test.mjs and training.test.mjs cover the HTTP and data-integrity behavior.
 });

@@ -42,7 +42,7 @@ afterAll(() => cleanupTestTrainers(), 60000);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load test environment (mirrors trainingController-business-logic.test.mjs)
+// Load test environment (mirrors trainingControllerDirect.test.mjs)
 dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
 const { default: prisma } = await import(join(__dirname, '../../../../packages/database/prismaClient.mjs'));
@@ -53,7 +53,7 @@ const { trainHorse, trainRouteHandler } = await import(join(__dirname, '../contr
 
 /**
  * Minimal Express res double — captures statusCode + json body, same shape the
- * sibling business-logic suite uses to drive trainRouteHandler directly.
+ * trainingControllerDirect suite uses to drive trainRouteHandler directly.
  */
 function createRes() {
   return {
