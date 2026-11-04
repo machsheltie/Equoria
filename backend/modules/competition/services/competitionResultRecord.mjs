@@ -361,7 +361,7 @@ export function buildRiddenResultRow({ show, staged, prize, now }) {
 export async function recordProgressionOnResult(db, { showId, horseId }, progression) {
   const { awards, statGain, statGainApplied } = progression;
   await db.competitionResult.update({
-    where: { showId_horseId: { showId, horseId } },
+    where: { showIdHorseId: { showId, horseId } },
     data: {
       horsePointsAwarded: awards.horseXp,
       ...(statGainApplied && statGain

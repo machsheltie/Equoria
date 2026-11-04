@@ -57,14 +57,14 @@ const staffType = 'groom';
  */
 async function loadOrCreateMarketplace(userId) {
   const record = await prisma.staffMarketplaceState.findUnique({
-    where: { userId_staffType: { userId, staffType } },
+    where: { userIdStaffType: { userId, staffType } },
   });
 
   if (!record || needsRefresh(record.lastRefresh)) {
     const grooms = generateMarketplace();
     const refreshCount = (record?.refreshCount ?? 0) + 1;
     const updated = await prisma.staffMarketplaceState.upsert({
-      where: { userId_staffType: { userId, staffType } },
+      where: { userIdStaffType: { userId, staffType } },
       create: { userId, staffType, offers: grooms, refreshCount },
       update: { offers: grooms, lastRefresh: new Date(), refreshCount },
     });
@@ -133,7 +133,7 @@ export async function refreshMarketplace(req, res) {
     logger.info(`[groomMarketplace] Refreshing marketplace for user ${userId}, force: ${force}`);
 
     const record = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId, staffType } },
+      where: { userIdStaffType: { userId, staffType } },
     });
     const refreshCost = getRefreshCost(record?.lastRefresh ?? null);
 
@@ -207,7 +207,7 @@ export async function refreshMarketplace(req, res) {
             });
           }
           return tx.staffMarketplaceState.upsert({
-            where: { userId_staffType: { userId, staffType } },
+            where: { userIdStaffType: { userId, staffType } },
             create: { userId, staffType, offers: grooms, refreshCount },
             update: { offers: grooms, lastRefresh: new Date(), refreshCount },
           });
@@ -272,7 +272,7 @@ export async function hireFromMarketplace(req, res) {
     logger.info(`[groomMarketplace] User ${userId} attempting to hire groom ${marketplaceId}`);
 
     const record = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId, staffType } },
+      where: { userIdStaffType: { userId, staffType } },
     });
     if (!record) {
       return res.status(404).json({
@@ -513,7 +513,7 @@ export async function getMarketplaceStats(req, res) {
     const userId = req.user.id;
 
     const record = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId, staffType } },
+      where: { userIdStaffType: { userId, staffType } },
     });
 
     if (!record) {

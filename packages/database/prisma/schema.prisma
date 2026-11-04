@@ -997,7 +997,7 @@ model CompetitionResult {
   show       Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
   entrant    User?    @relation("CompetitionResultEntrant", fields: [entrantUserId], references: [id], onDelete: SetNull)
 
-  @@unique([showId, horseId])
+  @@unique([showId, horseId], name: "showIdHorseId")
   /// Equoria-r9q06: a player's results, newest first (stats, prize history, My Results).
   @@index([entrantUserId, runDate(sort: Desc)])
   @@index([horseId, score])
@@ -1118,7 +1118,7 @@ model FoalTrainingHistory {
   /// Anti-farming invariant: one enrichment activity per foal per derived day.
   /// completeEnrichmentActivity reserves this row first inside its transaction,
   /// so the database, not a pre-check, rejects a repeated or concurrent award.
-  @@unique([horseId, day, activity])
+  @@unique([horseId, day, activity], name: "horseIdDayActivity")
   @@index([horseId])
   @@index([day])
   @@index([timestamp])
@@ -1455,7 +1455,7 @@ model GroomHorseSynergy {
   groom Groom @relation(fields: [groomId], references: [id], onDelete: Cascade)
   horse Horse @relation(fields: [horseId], references: [id], onDelete: Cascade)
 
-  @@unique([groomId, horseId])
+  @@unique([groomId, horseId], name: "groomIdHorseId")
   @@index([horseId])
   @@index([synergyScore])
   @@map("groom_horse_synergies")
@@ -1797,7 +1797,7 @@ model Facility {
   lastMaintenance       DateTime?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
-  upgrades_history      FacilityUpgrade[]
+  upgradesHistory       FacilityUpgrade[]
 
   @@map("facilities")
 }
@@ -1934,7 +1934,7 @@ model ClubMembership {
   role     ClubRole @default(member)
   joinedAt DateTime @default(now())
 
-  @@unique([clubId, userId])
+  @@unique([clubId, userId], name: "clubIdUserId")
   /// Equoria-bvddn.23: the unique index above leads with clubId, so it cannot
   /// serve a by-user membership lookup; this FK index does.
   @@index([userId])
@@ -1976,7 +1976,7 @@ model ClubCandidate {
   /// Elections this candidacy won (Equoria-bvddn.22).
   electionsWon ClubElection[] @relation("ElectionWinner")
 
-  @@unique([electionId, userId])
+  @@unique([electionId, userId], name: "electionIdUserId")
 }
 
 model ClubBallot {
@@ -1988,7 +1988,7 @@ model ClubBallot {
   electionId  Int
   createdAt   DateTime      @default(now())
 
-  @@unique([electionId, voterId])
+  @@unique([electionId, voterId], name: "electionIdVoterId")
 }
 
 model HorseSale {
@@ -2058,7 +2058,7 @@ model ShowEntry {
   groomSnapshot Json?
   createdAt DateTime @default(now())
 
-  @@unique([showId, horseId])
+  @@unique([showId, horseId], name: "showIdHorseId")
   @@index([horseId])
   @@index([userId])
   @@index([groomId])
@@ -2079,7 +2079,7 @@ model StaffMarketplaceState {
   lastRefresh  DateTime @default(now())
   refreshCount Int      @default(0)
 
-  @@unique([userId, staffType])
+  @@unique([userId, staffType], name: "userIdStaffType")
   @@map("staff_marketplace_state")
 }
 
@@ -2481,7 +2481,7 @@ model LoginSighting {
   firstSeenAt DateTime @default(now())
   lastSeenAt  DateTime @default(now())
 
-  @@unique([userId, ipAddress, deviceHash])
+  @@unique([userId, ipAddress, deviceHash], name: "userIdIpAddressDeviceHash")
   @@index([userId, lastSeenAt(sort: Desc)])
   @@map("login_sightings")
 }
@@ -2499,7 +2499,7 @@ model ConductBlock {
   sourceUserId String?
   createdAt    DateTime @default(now())
 
-  @@unique([kind, value])
+  @@unique([kind, value], name: "kindValue")
   @@map("conduct_blocks")
 }
 
@@ -2530,7 +2530,7 @@ model PlayerMonthlyTotal {
   value    Int    @default(0)
   player   User   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
-  @@unique([month, category, playerId])
+  @@unique([month, category, playerId], name: "monthCategoryPlayerId")
   @@index([month, category, value(sort: Desc), playerId])
   @@index([playerId])
   @@map("player_monthly_totals")
@@ -2547,7 +2547,7 @@ model HorseMonthlyTotal {
   value    Int    @default(0)
   horse    Horse  @relation(fields: [horseId], references: [id], onDelete: Cascade)
 
-  @@unique([month, category, horseId])
+  @@unique([month, category, horseId], name: "monthCategoryHorseId")
   @@index([month, category, value(sort: Desc), horseId])
   @@index([horseId])
   @@map("horse_monthly_totals")
@@ -2616,7 +2616,7 @@ model HallOfFameCandidate {
   nomination   HallOfFameNomination @relation(fields: [nominationId], references: [id], onDelete: Cascade)
   votes        HallOfFameVote[]
 
-  @@unique([roundId, nominationId])
+  @@unique([roundId, nominationId], name: "roundIdNominationId")
   @@index([nominationId])
 }
 
@@ -2631,7 +2631,7 @@ model HallOfFameVote {
   voter       User                @relation("HallOfFameVotes", fields: [voterId], references: [id], onDelete: Cascade)
   createdAt   DateTime            @default(now())
 
-  @@unique([roundId, voterId])
+  @@unique([roundId, voterId], name: "roundIdVoterId")
   @@index([candidateId])
   @@index([voterId])
 }

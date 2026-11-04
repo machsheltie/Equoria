@@ -181,7 +181,7 @@ export async function joinClub(req, res) {
     }
 
     const existing = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId, userId } },
+      where: { clubIdUserId: { clubId, userId } },
     });
     if (existing) {
       return res.status(409).json({ success: false, message: 'Already a member' });
@@ -206,7 +206,7 @@ export async function leaveClub(req, res) {
   }
   try {
     const membership = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId, userId } },
+      where: { clubIdUserId: { clubId, userId } },
     });
     if (!membership) {
       return res.status(404).json({ success: false, message: 'Not a member' });
@@ -216,7 +216,7 @@ export async function leaveClub(req, res) {
         .status(400)
         .json({ success: false, message: 'President cannot leave — transfer leadership first' });
     }
-    await prisma.clubMembership.delete({ where: { clubId_userId: { clubId, userId } } });
+    await prisma.clubMembership.delete({ where: { clubIdUserId: { clubId, userId } } });
     return res.json({ success: true });
   } catch (error) {
     logger.error(`[clubController.leaveClub] ${error.message}`);
@@ -233,7 +233,7 @@ export async function getElections(req, res) {
   }
   try {
     const membership = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId, userId } },
+      where: { clubIdUserId: { clubId, userId } },
     });
     if (!membership) {
       return res.status(403).json({ success: false, message: 'Not a club member' });
@@ -330,7 +330,7 @@ export async function createElection(req, res) {
   }
   try {
     const membership = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId, userId } },
+      where: { clubIdUserId: { clubId, userId } },
     });
     if (!membership || !['officer', 'president'].includes(membership.role)) {
       return res
@@ -389,7 +389,7 @@ export async function nominate(req, res) {
     }
 
     const existing = await prisma.clubCandidate.findUnique({
-      where: { electionId_userId: { electionId, userId } },
+      where: { electionIdUserId: { electionId, userId } },
     });
     if (existing) {
       return res.status(409).json({ success: false, message: 'Already nominated' });
@@ -533,9 +533,9 @@ export async function transferLeadership(req, res) {
 
   try {
     const [currentMembership, targetMembership] = await Promise.all([
-      prisma.clubMembership.findUnique({ where: { clubId_userId: { clubId, userId } } }),
+      prisma.clubMembership.findUnique({ where: { clubIdUserId: { clubId, userId } } }),
       prisma.clubMembership.findUnique({
-        where: { clubId_userId: { clubId, userId: newPresidentId } },
+        where: { clubIdUserId: { clubId, userId: newPresidentId } },
       }),
     ]);
 
@@ -550,11 +550,11 @@ export async function transferLeadership(req, res) {
 
     await prisma.$transaction([
       prisma.clubMembership.update({
-        where: { clubId_userId: { clubId, userId } },
+        where: { clubIdUserId: { clubId, userId } },
         data: { role: 'member' },
       }),
       prisma.clubMembership.update({
-        where: { clubId_userId: { clubId, userId: newPresidentId } },
+        where: { clubIdUserId: { clubId, userId: newPresidentId } },
         data: { role: 'president' },
       }),
       prisma.club.update({

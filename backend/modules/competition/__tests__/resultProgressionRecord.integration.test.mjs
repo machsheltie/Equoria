@@ -180,7 +180,7 @@ describe('competition results record Horse Points and stat gains (R6)', () => {
     });
 
     const row = await prisma.competitionResult.findUnique({
-      where: { showId_horseId: { showId: show.id, horseId: horse.id } },
+      where: { showIdHorseId: { showId: show.id, horseId: horse.id } },
       select: { horsePointsAwarded: true, statGains: true },
     });
     expect(row).toEqual({
@@ -224,7 +224,7 @@ describe('competition results record Horse Points and stat gains (R6)', () => {
     });
 
     const row = await prisma.competitionResult.findUnique({
-      where: { showId_horseId: { showId: show.id, horseId: horse.id } },
+      where: { showIdHorseId: { showId: show.id, horseId: horse.id } },
       select: { horsePointsAwarded: true, statGains: true },
     });
     expect(row).toEqual({

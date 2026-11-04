@@ -97,7 +97,7 @@ beforeAll(async () => {
   ];
 
   const state = await prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId: user.id, staffType: 'rider' } },
+    where: { userIdStaffType: { userId: user.id, staffType: 'rider' } },
     create: { userId: user.id, staffType: 'rider', offers, refreshCount: 0 },
     update: { offers },
   });

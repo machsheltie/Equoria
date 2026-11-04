@@ -79,7 +79,7 @@ async function createUser(money) {
 async function seedRecentMarketplace(userId) {
   const offers = generateTrainerMarketplace();
   return prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId, staffType: 'trainer' } },
+    where: { userIdStaffType: { userId, staffType: 'trainer' } },
     create: {
       userId,
       staffType: 'trainer',
@@ -147,7 +147,7 @@ describe('refreshTrainerMarketplace — $transaction wrap (Equoria-t65fh)', () =
 
     // Offer list refreshed (refreshCount bumped, lastRefresh advanced).
     const stateAfter = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId: user.id, staffType: 'trainer' } },
+      where: { userIdStaffType: { userId: user.id, staffType: 'trainer' } },
     });
     expect(stateAfter.refreshCount).toBe(seeded.refreshCount + 1);
     expect(stateAfter.lastRefresh.getTime()).toBeGreaterThanOrEqual(seeded.lastRefresh.getTime());
@@ -175,7 +175,7 @@ describe('refreshTrainerMarketplace — $transaction wrap (Equoria-t65fh)', () =
 
     // Offer list UNCHANGED — same refreshCount, same lastRefresh.
     const stateAfter = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId: user.id, staffType: 'trainer' } },
+      where: { userIdStaffType: { userId: user.id, staffType: 'trainer' } },
     });
     expect(stateAfter.refreshCount).toBe(seeded.refreshCount);
     expect(stateAfter.lastRefresh.getTime()).toBe(seeded.lastRefresh.getTime());
@@ -198,7 +198,7 @@ describe('refreshTrainerMarketplace — $transaction wrap (Equoria-t65fh)', () =
     expect(after.money).toBe(10_000);
 
     const stateAfter = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId: user.id, staffType: 'trainer' } },
+      where: { userIdStaffType: { userId: user.id, staffType: 'trainer' } },
     });
     expect(stateAfter.refreshCount).toBe(seeded.refreshCount);
     expect(stateAfter.lastRefresh.getTime()).toBe(seeded.lastRefresh.getTime());

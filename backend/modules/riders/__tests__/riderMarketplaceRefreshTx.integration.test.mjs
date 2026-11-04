@@ -59,7 +59,7 @@ async function createUser(money) {
 async function seedRecentMarketplace(userId) {
   const offers = generateRiderMarketplace();
   return prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId, staffType: 'rider' } },
+    where: { userIdStaffType: { userId, staffType: 'rider' } },
     create: {
       userId,
       staffType: 'rider',
@@ -119,7 +119,7 @@ describe('refreshRiderMarketplace — $transaction wrap (Equoria-t65fh)', () => 
     expect(after.money).toBe(startingMoney - refreshCost);
 
     const stateAfter = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId: user.id, staffType: 'rider' } },
+      where: { userIdStaffType: { userId: user.id, staffType: 'rider' } },
     });
     expect(stateAfter.refreshCount).toBe(seeded.refreshCount + 1);
     expect(stateAfter.lastRefresh.getTime()).toBeGreaterThanOrEqual(seeded.lastRefresh.getTime());
@@ -144,7 +144,7 @@ describe('refreshRiderMarketplace — $transaction wrap (Equoria-t65fh)', () => 
     expect(after.money).toBe(startingMoney);
 
     const stateAfter = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId: user.id, staffType: 'rider' } },
+      where: { userIdStaffType: { userId: user.id, staffType: 'rider' } },
     });
     expect(stateAfter.refreshCount).toBe(seeded.refreshCount);
     expect(stateAfter.lastRefresh.getTime()).toBe(seeded.lastRefresh.getTime());
@@ -167,7 +167,7 @@ describe('refreshRiderMarketplace — $transaction wrap (Equoria-t65fh)', () => 
     expect(after.money).toBe(10_000);
 
     const stateAfter = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId: user.id, staffType: 'rider' } },
+      where: { userIdStaffType: { userId: user.id, staffType: 'rider' } },
     });
     expect(stateAfter.refreshCount).toBe(seeded.refreshCount);
     expect(stateAfter.lastRefresh.getTime()).toBe(seeded.lastRefresh.getTime());

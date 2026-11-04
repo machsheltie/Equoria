@@ -70,7 +70,7 @@ async function createUser(money = 9999) {
 async function seedMarketplaceState(userId, overrides = {}) {
   const offers = generateRiderMarketplace();
   return prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId, staffType: 'rider' } },
+    where: { userIdStaffType: { userId, staffType: 'rider' } },
     create: {
       userId,
       staffType: 'rider',

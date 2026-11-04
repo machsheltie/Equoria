@@ -92,7 +92,7 @@ async function seedMarketplace(userId, count) {
     bio: 'roster-cap fixture',
   }));
   await prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId, staffType: 'rider' } },
+    where: { userIdStaffType: { userId, staffType: 'rider' } },
     create: { userId, staffType: 'rider', offers, refreshCount: 0 },
     update: { offers },
   });

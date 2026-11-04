@@ -81,7 +81,7 @@ async function seedOfferState(userId) {
     },
   ];
   const state = await prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId, staffType: 'groom' } },
+    where: { userIdStaffType: { userId, staffType: 'groom' } },
     create: { userId, staffType: 'groom', offers, refreshCount: 0 },
     update: { offers },
   });

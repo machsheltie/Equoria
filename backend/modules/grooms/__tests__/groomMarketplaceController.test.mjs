@@ -99,7 +99,7 @@ describe('POST /api/groom-marketplace/refresh', () => {
   it('returns 400 when refresh costs money and force is not set', async () => {
     // Set lastRefresh to NOW so the free window hasn't expired → refresh costs money
     await prisma.staffMarketplaceState.upsert({
-      where: { userId_staffType: { userId: user.id, staffType: 'groom' } },
+      where: { userIdStaffType: { userId: user.id, staffType: 'groom' } },
       create: {
         userId: user.id,
         staffType: 'groom',
@@ -128,7 +128,7 @@ describe('POST /api/groom-marketplace/refresh', () => {
   it('returns 200 when free refresh is available', async () => {
     // Set lastRefresh to epoch so the free window has fully expired → refresh is free
     await prisma.staffMarketplaceState.upsert({
-      where: { userId_staffType: { userId: user.id, staffType: 'groom' } },
+      where: { userIdStaffType: { userId: user.id, staffType: 'groom' } },
       create: {
         userId: user.id,
         staffType: 'groom',

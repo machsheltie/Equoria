@@ -101,7 +101,7 @@ async function makeUser(money) {
  */
 async function seedPaidRefreshState(userId, refreshCount = 0) {
   return prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId, staffType } },
+    where: { userIdStaffType: { userId, staffType } },
     create: {
       userId,
       staffType,

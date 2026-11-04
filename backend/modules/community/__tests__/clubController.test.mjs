@@ -889,15 +889,15 @@ describe('clubController (real DB)', () => {
       // Authoritative post-condition: re-fetch the committed state by THIS
       // club's id (not global counts/order) and assert the full leadership
       // invariant — old president demoted, target promoted, club.leaderId
-      // points at target. Using clubId_userId (the composite unique) makes
+      // points at target. Using clubIdUserId (the composite unique) makes
       // each lookup target exactly one row this test created.
       const presMembership = await prisma.clubMembership.findUnique({
-        where: { clubId_userId: { clubId: club.id, userId: president.id } },
+        where: { clubIdUserId: { clubId: club.id, userId: president.id } },
       });
       expect(presMembership).not.toBeNull();
       expect(presMembership.role).toBe('member');
       const targetMembership = await prisma.clubMembership.findUnique({
-        where: { clubId_userId: { clubId: club.id, userId: target.id } },
+        where: { clubIdUserId: { clubId: club.id, userId: target.id } },
       });
       expect(targetMembership).not.toBeNull();
       expect(targetMembership.role).toBe('president');

@@ -108,7 +108,7 @@ async function makeSingleOfferMarketplace(userId) {
     },
   ];
   const state = await prisma.staffMarketplaceState.upsert({
-    where: { userId_staffType: { userId, staffType: 'rider' } },
+    where: { userIdStaffType: { userId, staffType: 'rider' } },
     create: { userId, staffType: 'rider', offers, refreshCount: 0 },
     update: { offers },
   });
@@ -187,7 +187,7 @@ describe('riderMarketplaceController.hireRiderFromMarketplace offer-removal race
     // The offer is gone from the persisted list — not resurrected by the
     // loser's stale-snapshot write.
     const state = await prisma.staffMarketplaceState.findUnique({
-      where: { userId_staffType: { userId: buyer.id, staffType: 'rider' } },
+      where: { userIdStaffType: { userId: buyer.id, staffType: 'rider' } },
     });
     const offers = Array.isArray(state?.offers) ? state.offers : [];
     expect(offers.find(o => o.marketplaceId === marketplaceId)).toBeUndefined();
