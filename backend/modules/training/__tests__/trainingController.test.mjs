@@ -22,12 +22,15 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // RED so leaked fixtures don't silently pollute the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { assignTestTrainer, cleanupTestTrainers } from '../../../tests/helpers/assignTrainer.mjs';
+import { birthDateForAge } from '../../../utils/horseAge.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
 let user;
 let token;
 let horse;
+let trainableHorse; // owns an assigned trainer, so a real train call can succeed
 const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
@@ -54,6 +57,19 @@ beforeAll(async () => {
       userId: user.id,
     }),
   });
+
+  trainableHorse = await prisma.horse.create({
+    data: await testHorseData(prisma, {
+      ...fixtureColor(),
+      name: `TestFixture-TrainableHorse-${Date.now()}`,
+      sex: 'Mare',
+      dateOfBirth: birthDateForAge(5),
+      age: 5,
+      userId: user.id,
+      lastFedDate: new Date(), // fed today: not in bad health
+    }),
+  });
+  await assignTestTrainer(trainableHorse);
 }, 30000);
 
 afterAll(async () => {
@@ -62,6 +78,8 @@ afterAll(async () => {
   // The two deletes previously carried silent no-op catch arms that masked
   // cleanup failures; they now fail loud through the tracker.
   cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.horse.delete({ where: { id: trainableHorse.id } }), 'trainableHorse');
+  cleanup.add(() => cleanupTestTrainers(), 'fixture trainers');
   cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   await cleanup.run();
 }, 30000);
@@ -175,6 +193,25 @@ describe('POST /api/v1/training/train', () => {
 
     expect(res.status).toBe(404);
     expect(res.body.success).toBe(false);
+    expect(res.body.message).toBeDefined();
+  });
+
+  // Merged from the former updated-user-model training suite (Equoria-k1vly).
+  it('trains an adult horse with a trainer: names the discipline, scores 5, gives the next eligible date', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .post('/api/v1/training/train')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: trainableHorse.id, discipline: 'Racing' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toContain('trained in Racing');
+    expect(res.body.updatedScore).toBe(5);
+    expect(res.body.nextEligibleDate).toBeDefined();
   });
 
   it('returns 200 or 400 when training owned horse in valid discipline', async () => {
@@ -217,6 +254,8 @@ describe('GET /api/v1/training/status/:horseId/:discipline', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
+    expect(res.body.data).toHaveProperty('eligible');
+    expect(res.body.data).toHaveProperty('reason');
   });
 
   it('returns 404 for horse not owned by user', async () => {
@@ -248,6 +287,8 @@ describe('GET /api/v1/training/status/:horseId', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
     expect(typeof res.body.data).toBe('object');
+    expect(res.body.data).toHaveProperty('Racing');
+    expect(res.body.data).toHaveProperty('Dressage');
   });
 
   it('returns 404 for horse not owned by user', async () => {
