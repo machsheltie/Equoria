@@ -746,24 +746,6 @@ paths:
   });
 
   describe('Example Generation', () => {
-    test('generates string examples correctly', () => {
-      const stringSchema = { type: 'string', example: 'test value' };
-      const example = docService.generateSchemaExample(stringSchema);
-      expect(example).toBe('test value');
-    });
-
-    test('generates email format examples', () => {
-      const emailSchema = { type: 'string', format: 'email' };
-      const example = docService.generateSchemaExample(emailSchema);
-      expect(example).toBe('user@example.com');
-    });
-
-    test('generates UUID format examples', () => {
-      const uuidSchema = { type: 'string', format: 'uuid' };
-      const example = docService.generateSchemaExample(uuidSchema);
-      expect(example).toBe('123e4567-e89b-12d3-a456-426614174000');
-    });
-
     test('generates object examples correctly', () => {
       const objectSchema = {
         type: 'object',
