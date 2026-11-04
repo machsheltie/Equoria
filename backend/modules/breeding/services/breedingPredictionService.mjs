@@ -257,10 +257,13 @@ function calculateBreedingQuality(traitSummary, epigeneticFlags) {
 
   // No rare-trait points (owner ruling 2026-10-28, q170).
 
-  // Epigenetic flags (max 2 points)
-  if (epigeneticFlags.totalFlags >= 3) {
+  // Epigenetic flags (max 2 points). Only revealed, active traits count: a hidden
+  // trait has no effect until it is revealed (owner ruling 2026-10-19,
+  // Equoria-q4uem.17), so hiddenCount (in totalFlags) earns nothing.
+  const activeFlags = epigeneticFlags.positive.length + epigeneticFlags.negative.length;
+  if (activeFlags >= 3) {
     score += 2;
-  } else if (epigeneticFlags.totalFlags >= 1) {
+  } else if (activeFlags >= 1) {
     score += 1;
   }
 
