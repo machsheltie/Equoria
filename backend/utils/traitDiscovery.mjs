@@ -18,7 +18,7 @@
  * until revealed (owner ruling 2026-10-19); a future reveal path belongs on
  * modules/traits/services/epigeneticModifiersWrites.mjs.
  *
- * Equoria-ecp0i: the ENRICHMENT_DISCOVERIES table (six player-run enrichment
+ * Equoria-ecp0i: the enrichmentDiscoveries table (six player-run enrichment
  * activity names nothing produces since Equoria-fr2kg) and
  * checkEnrichmentDiscoveries were removed (owner ruling 2026-10-16, fr2kg
  * F14). Groom-driven trait discovery is unaffected.
@@ -36,7 +36,7 @@ import logger from './logger.mjs';
  */
 const discoveryConditions = {
   // Bonding-based discoveries
-  HIGH_BOND: {
+  highBond: {
     name: 'High Bond',
     condition: horse => (horse.bondScore || 0) >= 80,
     description: 'Strong bond formed',
@@ -44,7 +44,7 @@ const discoveryConditions = {
     category: 'bonding',
   },
 
-  EXCELLENT_BOND: {
+  excellentBond: {
     name: 'Excellent Bond',
     condition: horse => (horse.bondScore || 0) >= 95,
     description: 'Exceptional bond achieved',
@@ -53,7 +53,7 @@ const discoveryConditions = {
   },
 
   // Combined conditions
-  PERFECT_CARE: {
+  perfectCare: {
     name: 'Perfect Care',
     condition: horse => horse.bondScore >= 80,
     description: 'Perfect care conditions achieved',
@@ -61,7 +61,7 @@ const discoveryConditions = {
     category: 'milestones',
   },
 
-  // Equoria-kqdde: MATURE_BOND (age 3+ with bond 70) and CONSISTENT_TRAINING
+  // Equoria-kqdde: matureBond (age 3+ with bond 70) and consistentTraining
   // (five trainings in a week, i.e. an adult) were removed. Traits change only
   // in a foal's first 21 days (owner rulings 2026-10-27, q115); there is no
   // adult discovery.

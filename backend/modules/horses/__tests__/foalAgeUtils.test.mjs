@@ -35,10 +35,10 @@ const daysAgo = days => new Date(NOW.getTime() - days * dayMs);
 describe('named life stages are gone (Equoria-fr2kg Q5)', () => {
   it.each([
     'computeAgeStage',
-    'STAGE_WEANLING_MIN_DAYS',
-    'STAGE_YEARLING_MIN_DAYS',
-    'STAGE_TWO_YEAR_OLD_MIN_DAYS',
-    'STAGE_GRADUATION_DAYS',
+    'stageWeanlingMinDays',
+    'stageYearlingMinDays',
+    'stageTwoYearOldMinDays',
+    'stageGraduationDays',
   ])('foalAgeUtils no longer exports %s', name => {
     expect(foalAgeUtils).not.toHaveProperty(name);
   });

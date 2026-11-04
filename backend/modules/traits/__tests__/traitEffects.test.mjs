@@ -174,7 +174,7 @@ describe('getCombinedTraitEffects', () => {
     // disciplineAffinityRacing.baseStatBoost = { speed: 3, stamina: 2 } (object)
     // combinedEffects.baseStatBoost = 1 (truthy, not object) → outer else-if fires;
     // the inner object check is FALSE (number ≠ object) → else overwrites with spread
-    const combined = getCombinedTraitEffects(['eager_learner', 'disciplineAffinityRacing']);
+    const combined = getCombinedTraitEffects(['eagerLearner', 'disciplineAffinityRacing']);
     expect(combined.baseStatBoost).toEqual({ speed: 3, stamina: 2 });
   });
 });

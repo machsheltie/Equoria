@@ -104,8 +104,8 @@ describe('Equoria-4maxb — legitimate 0 on NOT NULL Horse columns survives the 
 
     const met = conditions.map(c => c.name);
     // Unbonded: no bond-based discovery may fire.
-    expect(met).not.toContain('HIGH_BOND');
-    expect(met).not.toContain('PERFECT_CARE');
+    expect(met).not.toContain('highBond');
+    expect(met).not.toContain('perfectCare');
   }, 30000);
 });
 

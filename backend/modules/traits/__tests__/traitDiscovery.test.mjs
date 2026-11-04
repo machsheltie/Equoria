@@ -5,7 +5,7 @@
  * by GET /traits/discovery-status).
  * No mocks.
  *
- * Equoria-ecp0i. OLD CONTRACT: the module also exported ENRICHMENT_DISCOVERIES
+ * Equoria-ecp0i. OLD CONTRACT: the module also exported enrichmentDiscoveries
  * (six enrichment activity names: social_interaction, group_play,
  * puzzle_feeding, obstacle_course, free_exercise, controlled_movement) and
  * checkEnrichmentDiscoveries, and revealTraits took a checkEnrichment flag.
@@ -36,7 +36,7 @@ import { checkDiscoveryConditions, discoveryConditions } from '../../../utils/tr
 
 describe('retired trait discovery exports', () => {
   it.each([
-    'ENRICHMENT_DISCOVERIES',
+    'enrichmentDiscoveries',
     'checkEnrichmentDiscoveries',
     'revealTraits',
     'batchRevealTraits',
@@ -56,13 +56,13 @@ describe('retired trait discovery exports', () => {
 describe('discoveryConditions — structure and synchronous condition branches', () => {
   it('has expected keys', () => {
     const keys = Object.keys(discoveryConditions);
-    expect(keys).toContain('HIGH_BOND');
-    expect(keys).toContain('EXCELLENT_BOND');
-    expect(keys).toContain('PERFECT_CARE');
+    expect(keys).toContain('highBond');
+    expect(keys).toContain('excellentBond');
+    expect(keys).toContain('perfectCare');
     // Equoria-kqdde (owner rulings 2026-10-27, q115): no adult discovery, so the
-    // former MATURE_BOND and CONSISTENT_TRAINING conditions are gone.
-    expect(keys).not.toContain('MATURE_BOND');
-    expect(keys).not.toContain('CONSISTENT_TRAINING');
+    // former matureBond and consistentTraining conditions are gone.
+    expect(keys).not.toContain('matureBond');
+    expect(keys).not.toContain('consistentTraining');
   });
 
   it('each synchronous entry has name, condition fn, description, priority', () => {
@@ -77,34 +77,34 @@ describe('discoveryConditions — structure and synchronous condition branches',
     }
   });
 
-  // HIGH_BOND: (bondScore || 0) >= 80
-  it('HIGH_BOND returns false when bondScore < 80', () => {
-    expect(discoveryConditions.HIGH_BOND.condition({ bondScore: 50 })).toBe(false);
+  // highBond: (bondScore || 0) >= 80
+  it('highBond returns false when bondScore < 80', () => {
+    expect(discoveryConditions.highBond.condition({ bondScore: 50 })).toBe(false);
   });
-  it('HIGH_BOND returns true when bondScore >= 80', () => {
-    expect(discoveryConditions.HIGH_BOND.condition({ bondScore: 80 })).toBe(true);
+  it('highBond returns true when bondScore >= 80', () => {
+    expect(discoveryConditions.highBond.condition({ bondScore: 80 })).toBe(true);
   });
-  it('HIGH_BOND uses default 0 when bondScore missing', () => {
-    expect(discoveryConditions.HIGH_BOND.condition({})).toBe(false);
-  });
-
-  // EXCELLENT_BOND: (bondScore || 0) >= 95
-  it('EXCELLENT_BOND returns false for bondScore 80', () => {
-    expect(discoveryConditions.EXCELLENT_BOND.condition({ bondScore: 80 })).toBe(false);
-  });
-  it('EXCELLENT_BOND returns true for bondScore 95', () => {
-    expect(discoveryConditions.EXCELLENT_BOND.condition({ bondScore: 95 })).toBe(true);
+  it('highBond uses default 0 when bondScore missing', () => {
+    expect(discoveryConditions.highBond.condition({})).toBe(false);
   });
 
-  // PERFECT_CARE: bondScore >= 80
-  it('PERFECT_CARE returns true when the bond criterion is met', () => {
-    expect(discoveryConditions.PERFECT_CARE.condition({ bondScore: 85 })).toBe(true);
+  // excellentBond: (bondScore || 0) >= 95
+  it('excellentBond returns false for bondScore 80', () => {
+    expect(discoveryConditions.excellentBond.condition({ bondScore: 80 })).toBe(false);
   });
-  it('PERFECT_CARE returns true for a fully bonded horse', () => {
-    expect(discoveryConditions.PERFECT_CARE.condition({ bondScore: 100 })).toBe(true);
+  it('excellentBond returns true for bondScore 95', () => {
+    expect(discoveryConditions.excellentBond.condition({ bondScore: 95 })).toBe(true);
   });
-  it('PERFECT_CARE returns false below 80 bond', () => {
-    expect(discoveryConditions.PERFECT_CARE.condition({ bondScore: 79 })).toBe(false);
+
+  // perfectCare: bondScore >= 80
+  it('perfectCare returns true when the bond criterion is met', () => {
+    expect(discoveryConditions.perfectCare.condition({ bondScore: 85 })).toBe(true);
+  });
+  it('perfectCare returns true for a fully bonded horse', () => {
+    expect(discoveryConditions.perfectCare.condition({ bondScore: 100 })).toBe(true);
+  });
+  it('perfectCare returns false below 80 bond', () => {
+    expect(discoveryConditions.perfectCare.condition({ bondScore: 79 })).toBe(false);
   });
 });
 
@@ -118,34 +118,34 @@ describe('checkDiscoveryConditions()', () => {
     expect(result).toEqual([]);
   }, 10000);
 
-  it('returns HIGH_BOND when bondScore >= 80', async () => {
+  it('returns highBond when bondScore >= 80', async () => {
     const horse = { id: -1, bondScore: 85, age: 1 };
     const result = await checkDiscoveryConditions(horse);
     const names = result.map(c => c.name);
-    expect(names).toContain('HIGH_BOND');
+    expect(names).toContain('highBond');
   }, 10000);
 
-  it('returns HIGH_BOND and EXCELLENT_BOND when bondScore >= 95', async () => {
+  it('returns highBond and excellentBond when bondScore >= 95', async () => {
     const horse = { id: -1, bondScore: 97, age: 1 };
     const result = await checkDiscoveryConditions(horse);
     const names = result.map(c => c.name);
-    expect(names).toContain('HIGH_BOND');
-    expect(names).toContain('EXCELLENT_BOND');
+    expect(names).toContain('highBond');
+    expect(names).toContain('excellentBond');
   }, 10000);
 
   it('an adult with a strong bond meets no adult discovery condition (Equoria-kqdde)', async () => {
     const horse = { id: -1, bondScore: 75, age: 5 };
     const result = await checkDiscoveryConditions(horse);
     const names = result.map(c => c.name);
-    expect(names).not.toContain('MATURE_BOND');
+    expect(names).not.toContain('matureBond');
   }, 10000);
 
-  it('returns PERFECT_CARE + HIGH_BOND when the bond criterion is met', async () => {
+  it('returns perfectCare + highBond when the bond criterion is met', async () => {
     const horse = { id: -1, bondScore: 90, age: 1 };
     const result = await checkDiscoveryConditions(horse);
     const names = result.map(c => c.name);
-    expect(names).toContain('PERFECT_CARE');
-    expect(names).toContain('HIGH_BOND');
+    expect(names).toContain('perfectCare');
+    expect(names).toContain('highBond');
   }, 10000);
 
   it('returned conditions have name, description, priority, category, type', async () => {
@@ -167,7 +167,7 @@ describe('checkDiscoveryConditions()', () => {
 
 describe('checkDiscoveryConditions() — condition-throws catch path (Equoria-jkht)', () => {
   it('silently skips conditions whose synchronous evaluator throws (catch path line 340)', async () => {
-    // bondScore getter throws → HIGH_BOND, EXCELLENT_BOND, PERFECT_CARE all throw
+    // bondScore getter throws → highBond, excellentBond, perfectCare all throw
     // checkDiscoveryConditions catches each and continues — returns remaining met conditions
     const evil = {
       get bondScore() {

@@ -117,6 +117,13 @@
     "barn_management": "deliberately snake_case unknown value proving groomSpecialtyLabel humanizes values it has never seen (test input)",
     "advanced_showJumping": "deliberately mixed unknown value proving groomSpecialtyLabel humanizes values it has never seen (test input)",
     "MOCK_HORSES": "planted input proving check-no-frontend-mocks.mjs still catches the MOCK_ prefix (doctrineScanPatterns sentinel)",
-    "key_with_colons": "generateCacheKey output: the Redis key sanitizer turns colons into underscores (cache-key data, not a name)"
+    "key_with_colons": "generateCacheKey output: the Redis key sanitizer turns colons into underscores (cache-key data, not a name)",
+    "self_assured": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
+    "legendary_bloodline": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
+    "weather_immunity": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
+    "night_vision": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
+    "fire_resistance": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
+    "water_phobia": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
+    "show_calm": "deliberately snake_case input proving humanizeTraitKey title-cases snake keys (useHorseTraits test)"
   }
 }

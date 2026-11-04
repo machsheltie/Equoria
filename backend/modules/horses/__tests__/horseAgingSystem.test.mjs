@@ -380,16 +380,16 @@ describe('checkForMilestones() — Equoria-bvddn.16 age-2/3 dead path removal', 
 
     expect(errorSpy).not.toHaveBeenCalled();
     // The dead path is gone: it never fabricates an age_2 milestone entry.
-    expect(result.milestonesTriggered).not.toContain('age_2_trait_evaluation');
-    expect(result.milestonesTriggered).not.toContain('age_2_milestone_checked');
+    expect(result.milestonesTriggered).not.toContain('age2TraitEvaluation');
+    expect(result.milestonesTriggered).not.toContain('age2MilestoneChecked');
   });
 
   it('crossing the 21-day (age 3) threshold logs no error — no more swallowed Prisma failure', async () => {
     const result = await checkForMilestones(bvHorse.id, 20, 21);
 
     expect(errorSpy).not.toHaveBeenCalled();
-    expect(result.milestonesTriggered).not.toContain('age_3_trait_evaluation');
-    expect(result.milestonesTriggered).not.toContain('age_3_milestone_checked');
+    expect(result.milestonesTriggered).not.toContain('age3TraitEvaluation');
+    expect(result.milestonesTriggered).not.toContain('age3MilestoneChecked');
   });
 
   it('real coverage: the equivalent developmental window (8-14 real-time days = age-2) is evaluated by processFoalMilestoneEvaluations, once it has ended, and persists a MilestoneTraitLog row', async () => {

@@ -26,7 +26,7 @@ describe('publicTraitModifiers', () => {
   });
 
   it('sends only the three public keys, whatever else the column holds', () => {
-    const view = publicTraitModifiers({ ...STORED, epigenetic_tags: ['calm'] });
+    const view = publicTraitModifiers({ ...STORED, epigeneticTags: ['calm'] });
     expect(Object.keys(view).sort()).toEqual(['hiddenCount', 'negative', 'positive']);
   });
 

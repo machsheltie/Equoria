@@ -17,9 +17,9 @@
  *       (§E); the owner removed it from the roster, so it must now be absent.
  *   (c) §B — no groom-personality name leaks into the horse trait catalogs.
  *   (d) §C/§B — no snake_case key survives in the two camelCase catalogs
- *       (traitEffects + TRAIT_DEFINITIONS), EXCEPT the discipline_affinity_*
- *       effect keys which are intentionally converted in §F (9o3n7.5). This
- *       guard tightens to "zero snake keys" once §F lands.
+ *       (traitEffects + TRAIT_DEFINITIONS). The discipline_affinity_* effect
+ *       keys were exempt until §F (9o3n7.5) made them disciplineAffinity<Discipline>;
+ *       the guard is now "zero snake keys" (Equoria-pjvp8.9).
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -109,10 +109,10 @@ describe('canonical trait roster — §B groom-personality names excluded', () =
   });
 });
 
-describe('canonical trait roster — §C/§B casing (camelCase, affinity exempt until §F)', () => {
-  it('no snake_case key (other than discipline_affinity_*) survives in the two camelCase catalogs', () => {
+describe('canonical trait roster — §C/§B casing (camelCase, zero snake keys)', () => {
+  it('no snake_case key survives in the two camelCase catalogs (the affinity keys are camelCase since §F)', () => {
     const camelCatalogs = [...effectsKeys, ...definitionKeys];
-    const snakeOffenders = camelCatalogs.filter(k => k.includes('_') && !k.startsWith('discipline_affinity_'));
+    const snakeOffenders = camelCatalogs.filter(k => k.includes('_'));
     expect(snakeOffenders).toEqual([]);
   });
 });

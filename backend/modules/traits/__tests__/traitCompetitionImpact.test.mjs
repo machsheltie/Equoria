@@ -302,7 +302,7 @@ describe('traitCompetitionImpact — exact modifiers & balance invariants (merge
         'eagerLearner',
         'resilient',
         'eagerLearner',
-        'eager_learner',
+        'eagerLearner',
       ]);
       const result = calculateTraitCompetitionImpact(horse, 'Show Jumping', 100);
       expect(result.totalScoreModifier).toBeLessThanOrEqual(0.5);
