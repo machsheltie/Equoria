@@ -1405,6 +1405,14 @@ jobs:
       # timeout itself is NOT raised. A failed pass now fails the job (a
       # burn-in exists to surface exactly that), where it used to tolerate one
       # failure in five.
+      #
+      # The loop stops at the first failed pass: one failure already decides
+      # the verdict, and further passes of a red suite only spend the budget.
+      # Scheduled run 41288160533 (2026-11-01) is the evidence: 25 specs
+      # failed in pass 1 (25.6 min) and again in pass 2 (25.0 min), pass 3 was
+      # killed by "The job has exceeded the maximum execution time of 1h0m0s",
+      # so a red burn-in showed as cancelled and its failure report was never
+      # uploaded (that step runs on failure(), not on cancellation).
       - name: Burn-in E2E — 3 iterations
         env:
           BASE_URL: 'http://localhost:3000'
@@ -1415,10 +1423,11 @@ jobs:
             echo "━━━ Iteration $i/3 ━━━"
             if ! npx playwright test --project=chromium --reporter=line; then
               FAILURES=$((FAILURES + 1))
-              echo "⚠️ Iteration $i failed"
+              echo "⚠️ Iteration $i failed — stopping, one failure fails the burn-in"
+              break
             fi
           done
-          echo "Burn-in complete — $FAILURES/3 iterations failed"
+          echo "Burn-in complete — $FAILURES failed iteration(s), stopped at $i/3"
           if [ "$FAILURES" -gt 0 ]; then
             echo "❌ Flaky threshold exceeded (any failure in 3 runs)"
             exit 1

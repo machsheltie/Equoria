@@ -68,4 +68,17 @@ describe('burn-in job matches the e2e-tests backend and its time budget (Equoria
     // One pass took 13.5 minutes in the run inspected; setup is about 3 minutes.
     expect(iterations * 13.5 + 3).toBeLessThan(60);
   });
+
+  it('stops at the first failed pass, so a red suite fails the job instead of hitting the timeout', () => {
+    // Run 41288160533 (2026-11-01): two red passes of about 25 minutes each,
+    // then the third was killed at the 60-minute limit, so the job showed as
+    // cancelled and the on-failure report upload never ran.
+    const from = burnIn.indexOf('- name: Burn-in E2E');
+    expect(from).toBeGreaterThan(-1);
+    const rest = burnIn.slice(from + 1);
+    const step = rest.slice(0, rest.indexOf('- name:'));
+    const failedBranch = /if ! npx playwright test[^\n]*; then\n([\s\S]*?)\n\s*fi\n/.exec(step);
+    expect(failedBranch).not.toBeNull();
+    expect(failedBranch[1]).toMatch(/^\s*break\s*$/m);
+  });
 });
