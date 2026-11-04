@@ -188,7 +188,7 @@ const CompetitionFilters = ({
             <Calendar className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Date Range
           </label>
-          <div className="flex gap-1" role="group" aria-label="Date range filters">
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Date range filters">
             {dateRangeOptions.map((option) => (
               <FilterButton
                 key={option.value}
@@ -208,7 +208,7 @@ const CompetitionFilters = ({
             <Coins className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Entry Fee
           </label>
-          <div className="flex gap-1" role="group" aria-label="Entry fee filters">
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Entry fee filters">
             {entryFeeOptions.map((option) => (
               <FilterButton
                 key={option.value}
@@ -229,7 +229,7 @@ const CompetitionFilters = ({
             <Trophy className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Prize
           </label>
-          <div className="flex gap-1" role="group" aria-label="Prize filters">
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Prize filters">
             {prizeOptions.map((option) => (
               <FilterButton
                 key={option.value}
