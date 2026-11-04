@@ -284,10 +284,16 @@ describe('Staff action recording (Equoria-puj1e.1)', () => {
   it('keeps the log rows when both retention purges run with every cutoff passed', async () => {
     const { admin } = await fixtureStaff();
     const row = await recordStaffActionTx(prisma, entryFor(admin));
-    const farFuture = new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000);
+    // The row is made ten years old so every retention cutoff has passed for
+    // it, and the purges run on the real clock. Running them with a far-future
+    // clock instead deleted every live check-in code, device and settled email
+    // in the shared test database, failing other files' check-ins mid-verify
+    // (Equoria-r9drt).
+    const tenYearsAgo = new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000);
+    await prisma.staffActionLog.update({ where: { id: row.id }, data: { createdAt: tenYearsAgo } });
 
-    await staff.purgeStaleStaffCheckinRecords(farFuture);
-    await staff.purgeSettledEmails(farFuture);
+    await staff.purgeStaleStaffCheckinRecords(new Date());
+    await staff.purgeSettledEmails(new Date());
 
     expect(await prisma.staffActionLog.count({ where: { id: row.id } })).toBe(1);
   });
