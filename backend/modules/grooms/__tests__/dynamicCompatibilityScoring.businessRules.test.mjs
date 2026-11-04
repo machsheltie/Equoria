@@ -16,7 +16,7 @@
  * epigeneticFlags store is dropped with every reader. Old contract: the three
  * horses carried flags (fearful/reactive/insecure, brave/confident/social,
  * curious/calm) and four cases below pinned flag-driven results (energetic +
- * fearful < 0.4 and 'not_recommended', methodical + curious/calm under 0.8,
+ * fearful < 0.4 and 'notRecommended', methodical + curious/calm under 0.8,
  * 'energetic'/'fearful' risk factors, a bonding prediction under 2). New
  * contract: every horse is flagless, so those cases pin the no-flag values a
  * flagless horse always got: base compatibility 0.6 for every pair.
@@ -187,7 +187,7 @@ describe('Dynamic Compatibility Scoring', () => {
       expect(compatibility.confidence).toBeGreaterThan(0.8);
 
       // Should identify this as an excellent match
-      expect(compatibility.recommendationLevel).toBe('highly_recommended');
+      expect(compatibility.recommendationLevel).toBe('highlyRecommended');
     });
 
     test('should calculate low compatibility for energetic groom with fearful horse', async () => {
@@ -227,7 +227,7 @@ describe('Dynamic Compatibility Scoring', () => {
       expect(compatibility.baseCompatibility).toBe(0.6);
       expect(compatibility.overallScore).toBeCloseTo(1.1800404, 6);
       expect(compatibility.taskSpecificModifier).toBeGreaterThan(1.0); // Methodical good for technical tasks
-      expect(compatibility.recommendationLevel).toBe('highly_recommended');
+      expect(compatibility.recommendationLevel).toBe('highlyRecommended');
     });
 
     test('should apply experience bonuses correctly', async () => {

@@ -13,7 +13,7 @@
  *
  * Equoria-fefh2.40: the migrated score-threshold / response-shape / branch-value
  * tests (high/low compat, predict pos/neg, factors comprehensive, recommendations
- * ranked-groom shape, trends insufficient_data, config) require a richer fixture
+ * ranked-groom shape, trends insufficientData, config) require a richer fixture
  * than the original 1-groom/1-horse beforeAll could produce. The top-level
  * createFixture()'s 3-groom (calm/energetic/methodical) + 3-horse (incl. a
  * nervous horse bondScore:15) fixture is ported below so the
@@ -351,7 +351,7 @@ describe('POST /api/compatibility/calculate', () => {
   });
 
   // Equoria-fefh2.40 migrated: high compatibility — calm/expert groom with a
-  // fearful (nervous) horse should score highly_recommended.
+  // fearful (nervous) horse should score highlyRecommended.
   it('calculates high compatibility for calm groom with fearful horse', async () => {
     const [calmGroom] = grooms;
     const [fearfulHorse] = horses;
@@ -377,12 +377,12 @@ describe('POST /api/compatibility/calculate', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
     expect(res.body.data.overallScore).toBeGreaterThan(0.7);
-    expect(res.body.data.recommendationLevel).toBe('highly_recommended');
+    expect(res.body.data.recommendationLevel).toBe('highlyRecommended');
     expect(res.body.data.confidence).toBeCloseTo(0.9, 1);
   });
 
   // Equoria-fefh2.40 migrated: low compatibility — energetic/novice groom with
-  // a fearful horse should score not_recommended.
+  // a fearful horse should score notRecommended.
   it('calculates low compatibility for energetic groom with fearful horse', async () => {
     const energeticGroom = grooms[1];
     const [fearfulHorse] = horses;
@@ -515,8 +515,8 @@ describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
     expect(res.status).toBe(401);
   });
 
-  // Equoria-fefh2.40 migrated: insufficient_data trend — a fresh groom/horse
-  // pair has no interaction history, so the trend is 'insufficient_data'.
+  // Equoria-fefh2.40 migrated: insufficientData trend — a fresh groom/horse
+  // pair has no interaction history, so the trend is 'insufficientData'.
   it('analyzes compatibility trends with insufficient data', async () => {
     const [groom] = grooms;
     const [horse] = horses;
@@ -530,7 +530,7 @@ describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
-    expect(res.body.data.overallTrend).toBe('insufficient_data');
+    expect(res.body.data.overallTrend).toBe('insufficientData');
     expect(res.body.data.dataPoints).toBeLessThan(3);
   });
 });

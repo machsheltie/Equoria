@@ -77,20 +77,20 @@ const CONTEXT = { taskType: 'coatCheck', timeOfDay: 'morning', weather: 'sunny' 
 // ─── analyzeCompatibilityTrends ───────────────────────────────────────────────
 
 describe('analyzeCompatibilityTrends', () => {
-  it('returns insufficient_data for groom+horse with no interactions', async () => {
+  it('returns insufficientData for groom+horse with no interactions', async () => {
     const result = await analyzePair(groom.id, horse.id, compatibilityTrends);
 
     expect(result).toBeDefined();
-    expect(result.overallTrend).toBe('insufficient_data');
+    expect(result.overallTrend).toBe('insufficientData');
     expect(result.trendStrength).toBe(0);
     expect(result.dataPoints).toBe(0);
   });
 
-  it('returns insufficient_data for unknown ids', async () => {
+  it('returns insufficientData for unknown ids', async () => {
     const result = await analyzePair(999999999, 999999998, compatibilityTrends);
 
     expect(result).toBeDefined();
-    expect(result.overallTrend).toBe('insufficient_data');
+    expect(result.overallTrend).toBe('insufficientData');
   });
 });
 
@@ -122,9 +122,7 @@ describe('calculateDynamicCompatibility', () => {
     const result = await analyzePair(groom.id, horse.id, scoreCompatibility, CONTEXT);
 
     expect(typeof result.recommendationLevel).toBe('string');
-    expect(['highly_recommended', 'recommended', 'acceptable', 'not_recommended']).toContain(
-      result.recommendationLevel,
-    );
+    expect(['highlyRecommended', 'recommended', 'acceptable', 'notRecommended']).toContain(result.recommendationLevel);
   });
 });
 
@@ -363,8 +361,8 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
 });
 
 // ── recommendationLevel + environmental branches (Equoria-jkht) ───────────────
-// recommendationLevel tiers: highly_recommended(≥0.8), recommended(≥0.6),
-// acceptable(≥0.4), not_recommended(<0.4).
+// recommendationLevel tiers: highlyRecommended(≥0.8), recommended(≥0.6),
+// acceptable(≥0.4), notRecommended(<0.4).
 // calculateEnvironmentalModifier switch cases: quiet, noisy, familiar, unfamiliar.
 // calculateTimeOfDayModifier default case (unknown timeOfDay → 1.0).
 // calculateHistoricalModifier non-1.0 path + confidence historicalModifier branch.
@@ -373,7 +371,7 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
 describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () => {
   let branchUser;
   let branchHorse;
-  let highExpGroom; // level=10, experience=200 → guaranteed highly_recommended
+  let highExpGroom; // level=10, experience=200 → guaranteed highlyRecommended
   let methodicalGroom; // epigeneticInfluenceType='methodical', high exp → cap test
   const cleanup = createCleanupTracker();
 
@@ -489,12 +487,12 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
     expect(result.environmentalModifier).toBeCloseTo(0.85, 2);
   });
 
-  it('recommendationLevel=highly_recommended: high-experience groom in the morning', async () => {
+  it('recommendationLevel=highlyRecommended: high-experience groom in the morning', async () => {
     const result = await analyzePair(highExpGroom.id, branchHorse.id, scoreCompatibility, {
       taskType: 'coatCheck',
       timeOfDay: 'morning',
     });
-    expect(result.recommendationLevel).toBe('highly_recommended');
+    expect(result.recommendationLevel).toBe('highlyRecommended');
     expect(result.overallScore).toBeGreaterThanOrEqual(0.8);
   });
 
@@ -585,9 +583,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
     });
     expect(result.overallScore).toBeGreaterThan(0);
     expect(result.overallScore).toBeLessThanOrEqual(1.5);
-    expect(['highly_recommended', 'recommended', 'acceptable', 'not_recommended']).toContain(
-      result.recommendationLevel,
-    );
+    expect(['highlyRecommended', 'recommended', 'acceptable', 'notRecommended']).toContain(result.recommendationLevel);
   });
 });
 
@@ -596,7 +592,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 // 562 (default env factor switch arm), 725/727
 // (energetic/methodical bonding potential), 780 (low-bond+methodical risk),
 // 803 (methodical+developing strength), 855
-// (0-interaction insufficient_data trend), 864-875 (multi-interaction slope),
+// (0-interaction insufficientData trend), 864-875 (multi-interaction slope),
 // 898 (empty-recentInteractions baseline=0.5), 948-949/962 (contextual notes).
 
 describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)', () => {

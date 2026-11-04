@@ -167,13 +167,13 @@ export function scoreCompatibility(inputs, groomId, context) {
 
   let recommendationLevel;
   if (overallScore >= 0.8) {
-    recommendationLevel = 'highly_recommended';
+    recommendationLevel = 'highlyRecommended';
   } else if (overallScore >= 0.6) {
     recommendationLevel = 'recommended';
   } else if (overallScore >= 0.4) {
     recommendationLevel = 'acceptable';
   } else {
-    recommendationLevel = 'not_recommended';
+    recommendationLevel = 'notRecommended';
   }
 
   const confidence = calculateConfidence(groom, historicalModifier);
@@ -314,7 +314,7 @@ export function compatibilityTrends(inputs, groomId) {
 
   if (interactions.length < 3) {
     return {
-      overallTrend: 'insufficient_data',
+      overallTrend: 'insufficientData',
       trendStrength: 0,
       improvementRate: 0,
       stabilityScore: 0,

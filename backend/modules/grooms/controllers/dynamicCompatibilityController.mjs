@@ -199,9 +199,9 @@ export async function getCompatibilityConfig(req, res) {
         'stimulating',
       ],
       timeOfDayOptions: ['morning', 'afternoon', 'evening'],
-      recommendationLevels: ['highly_recommended', 'recommended', 'acceptable', 'not_recommended'],
+      recommendationLevels: ['highlyRecommended', 'recommended', 'acceptable', 'notRecommended'],
       qualityLevels: ['poor', 'fair', 'good', 'excellent'],
-      trendTypes: ['improving', 'stable', 'declining', 'insufficient_data'],
+      trendTypes: ['improving', 'stable', 'declining', 'insufficientData'],
     };
 
     res.json({
