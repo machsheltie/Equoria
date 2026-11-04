@@ -13,16 +13,16 @@
  * own sibling check: Radix is at a HARD ZERO (fully retired), and a hard-zero
  * gate must not be softened into a baseline one.
  *
- * ── WHY A RATCHET AND NOT A HARD ZERO ─────────────────────────────────────
- * Radix could be a hard zero because its rip-out had already landed. These four
- * have NOT been ripped out: at the time this check was written the live count
- * was 32 imports across 30 files — 23 sonner, 5 recharts, 2 chart.js, 2
- * react-chartjs-2. CLAUDE.md says existing usage is migration state, not
- * approval — the ban is on ADDING. A check that failed on every occurrence
- * would be red the moment it landed, would block every push, and would be
- * deleted or bypassed within a day. So this is a baseline ratchet in the exact
- * shape of the sibling rethrow-after-log gate: the recorded per-file, per-
- * package counts may only SHRINK.
+ * ── WHY A RATCHET, AND WHAT THE BASELINE IS NOW ───────────────────────────
+ * Radix is a hard zero because its rip-out landed first. These four were
+ * ripped out later: when this check was written the live count was 32 imports
+ * across 30 files (23 sonner, 5 recharts, 2 chart.js, 2 react-chartjs-2), and a
+ * check that failed on every occurrence would have blocked every push. So it
+ * was built as a baseline ratchet in the shape of the sibling rethrow-after-log
+ * gate: the recorded per-file, per-package counts may only SHRINK. The
+ * migration has since finished and the recorded baseline is all zero — every
+ * package, every import and every toast() call site. The ratchet is kept so any
+ * new use of the four fails at once, with nothing grandfathered.
  *
  *   - observed > baseline for a file/package  → FAIL (a new import was added)
  *   - a file not in the baseline importing any of them → FAIL (baseline 0)
