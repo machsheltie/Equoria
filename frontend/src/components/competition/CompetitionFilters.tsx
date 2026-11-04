@@ -26,6 +26,7 @@ import { Filter, Calendar, Coins, Award, Trophy, X } from 'lucide-react';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
 import { Select } from '@/components/ui/form';
 import { type JSX, useMemo, memo } from 'react';
+import '@/styles/competitionFilters.css';
 import type {
   DisciplineFilter,
   DateRangeFilter,
@@ -160,7 +161,7 @@ const CompetitionFilters = ({
 
   return (
     <div className={`glass-panel rounded-lg p-4 ${className}`} data-testid="competition-filters">
-      <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-5">
+      <div className="competition-filters__grid">
         {/* Discipline Filter */}
         <div>
           <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">

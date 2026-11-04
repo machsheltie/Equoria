@@ -1,0 +1,17 @@
+/**
+ * Competition browser filters (Equoria-icj63).
+ *
+ * The filter cells sit in a grid whose columns are never narrower than 11rem
+ * (176px). The Discipline select needs about 165px for "All Disciplines" at
+ * 14px: 105px of text plus 24px side padding, 32px chevron room and 2px
+ * border. The old fixed five-column grid gave each cell about 120px at a
+ * 1024px viewport beside the sidebar, which clipped the label. Auto-fit drops
+ * to fewer, wider columns as the space shrinks. The min() keeps one column
+ * from exceeding the container, so nothing scrolls sideways at 360px.
+ */
+
+.competition-filters__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+}

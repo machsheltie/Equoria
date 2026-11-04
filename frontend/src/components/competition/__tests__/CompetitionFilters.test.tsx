@@ -268,9 +268,10 @@ describe('CompetitionFilters', () => {
       render(<CompetitionFilters {...defaultProps} />);
       const container = screen.getByTestId('competition-filters');
 
-      // Should have responsive grid layout
-      const gridContainer = container.querySelector('.grid');
-      expect(gridContainer).toHaveClass('md:grid-cols-4');
+      // Responsive grid layout: the authored auto-fit grid (Equoria-icj63) replaced
+      // the fixed md:grid-cols-4 / lg:grid-cols-5 columns that clipped the select labels.
+      const gridContainer = container.querySelector('.competition-filters__grid');
+      expect(gridContainer).not.toBeNull();
     });
   });
 
