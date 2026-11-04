@@ -12,6 +12,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findViolations } from '../../scripts/doctrine-checks/check-no-unversioned-api.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(HERE, '..', '..');
@@ -77,5 +78,39 @@ describe('check-no-unversioned-api.mjs (Equoria-4bs3s)', () => {
     );
     const res = runCheck();
     expect(res.status).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Detector unit sentinel (merged from scripts/noUnversionedApiFrontend.sentinel.test.mjs,
+// Equoria-9ysza): findViolations is imported via the script's main-module guard,
+// so importing it does not run the scan. The regex once missed the
+// `${base}/api/...` template-literal form (the qv8n8 gap); these prove it
+// fires on both the bare-quoted and template forms and passes the canonical.
+// ---------------------------------------------------------------------------
+describe('no-unversioned-api (frontend) detector (Equoria-9ysza)', () => {
+  it('SENTINEL-POSITIVE: fires on an unversioned /api in a ${VAR} template literal', () => {
+    const v = findViolations('x.ts', 'fetch(`${API_BASE}/api/horses`);');
+    expect(v).toHaveLength(1);
+    expect(v[0].path).toBe('/api/horses');
+  });
+
+  it('SENTINEL-POSITIVE: fires on a bare-quoted unversioned /api literal', () => {
+    const v = findViolations('x.ts', "axios.get('/api/training/train');");
+    expect(v).toHaveLength(1);
+    expect(v[0].path).toBe('/api/training/train');
+  });
+
+  it('passes the versioned canonical /api/v1/... (bare and template)', () => {
+    expect(findViolations('x.ts', "axios.get('/api/v1/horses');")).toEqual([]);
+    expect(findViolations('x.ts', 'fetch(`${API_BASE}/api/v1/horses`);')).toEqual([]);
+  });
+
+  it('passes the allow-listed /api/internal/... prefix', () => {
+    expect(findViolations('x.ts', "fetch('/api/internal/metrics');")).toEqual([]);
+  });
+
+  it('respects the // 4bs3s-allow escape hatch', () => {
+    expect(findViolations('x.ts', "fetch('/api/legacy'); // 4bs3s-allow")).toEqual([]);
   });
 });
