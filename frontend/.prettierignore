@@ -22,7 +22,7 @@ package-lock.json
 # layout and contain JSX/TSX that doesn't parse with the current Prettier
 # config (e.g. components/GroomAssignmentManager.js has unwrapped adjacent
 # JSX siblings). Ignored from prettier-check; treated as archive.
-components/
+/components/
 hooks/
 navigation/
 screens/
