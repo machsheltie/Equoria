@@ -178,7 +178,20 @@ async function gameSnapshot(showId) {
     prisma.userTransaction.count({ where: { userId: { in: userIds } } }),
     prisma.horseXpEvent.count({ where: { horseId: entrantHorse.id } }),
     prisma.notification.count({ where: { userId: { in: userIds } } }),
-    prisma.systemAccount.findUnique({ where: { name: 'showEscrow' }, select: { balance: true } }),
+    // This show's escrow, not the global SystemAccount[showEscrow] balance, which
+    // other suites on the shared test database move concurrently (Equoria-2g1vj).
+    // Every settlement move out of escrow decrements show.prizeEscrow/feeEscrow
+    // (in `show` above) and writes a ledger row tagged with the account and showId.
+    prisma.userTransaction.findMany({
+      where: {
+        AND: [
+          { metadata: { path: ['systemAccount'], equals: 'showEscrow' } },
+          { metadata: { path: ['showId'], equals: showId } },
+        ],
+      },
+      orderBy: { id: 'asc' },
+      select: { id: true, userId: true, type: true, amount: true, category: true },
+    }),
   ]);
   return { show, users, horse, results, ledger, xpEvents, notifications, escrow };
 }
@@ -374,6 +387,10 @@ describe('Test run', () => {
   it('runs the real settlement and keeps nothing: rows and balances identical, the result reported', async () => {
     const showId = await buildQuarantinedShow();
     const before = await gameSnapshot(showId);
+    // The escrow ledger query finds this show's rows: the entry fee went in.
+    expect(before.escrow).toEqual([
+      expect.objectContaining({ userId: entrant.id, type: 'credit', amount: entryFee, category: 'showEntryFeeEscrow' }),
+    ]);
 
     const res = await post(`${api}/${showId}/test-run`, owner, {}, ownerDevice);
 
