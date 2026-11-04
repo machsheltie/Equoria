@@ -53,6 +53,16 @@ describe('getLegacyPerks — pure function', () => {
     expect(perks[0]).toHaveProperty('effect');
   });
 
+  // Folded from tests/services/groomLegacyService.test.mjs (Equoria-k1vly B).
+  it('every calm perk carries an id, name, description and effect', () => {
+    getLegacyPerks('calm').forEach(perk => {
+      expect(perk).toHaveProperty('id');
+      expect(perk).toHaveProperty('name');
+      expect(perk).toHaveProperty('description');
+      expect(perk).toHaveProperty('effect');
+    });
+  });
+
   it('returns perks array for energetic personality', () => {
     const perks = getLegacyPerks('energetic');
     expect(perks.length).toBeGreaterThan(0);
@@ -139,6 +149,8 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
   let glsGroomEligible; // retired, Expert → still insufficientLevel (q244)
   let glsGroomHasLegacy; // retired, existing legacy → legacyAlreadyCreated
   let glsProtegeStub; // stub groom as legacyGroomId for pre-created legacy log
+  let glsExpertMentor; // retired Expert with an older legacy log → history reads its stars
+  let glsExpertProtege; // that log's protégé
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -240,6 +252,36 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
         inheritedPerk: 'playtimePro',
       },
     });
+
+    // Folded from tests/services/groomLegacyService.test.mjs: a legacy whose mentor has
+    // Expert stars. Dated a day earlier so it sorts after the log above (history is
+    // newest first), leaving history[0] the Rookie mentor's entry.
+    glsExpertMentor = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GLS-ExpertMentor-${ts}`,
+        speciality: 'general',
+        personality: 'calm',
+        retired: true,
+        starLevel: 'expert',
+        userId: glsUser.id,
+      },
+    });
+    glsExpertProtege = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GLS-ExpertProtege-${ts}`,
+        speciality: 'general',
+        personality: 'methodical',
+        userId: glsUser.id,
+      },
+    });
+    await prisma.groomLegacyLog.create({
+      data: {
+        retiredGroomId: glsExpertMentor.id,
+        legacyGroomId: glsExpertProtege.id,
+        inheritedPerk: getLegacyPerks('calm')[0].id,
+        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      },
+    });
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);
@@ -299,5 +341,18 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
       name: 'Playtime Pro',
       description: 'Expert at engaging horses through play',
     });
+  });
+
+  // Folded from tests/services/groomLegacyService.test.mjs (Equoria-k1vly B).
+  it("getUserLegacyHistory: names both grooms and reads each groom's own stars (q229)", async () => {
+    const history = await getUserLegacyHistory(glsUser.id);
+    const entry = history.find(h => h.retiredGroomId === glsExpertMentor.id);
+    expect(entry).toBeDefined();
+    expect(entry.retiredGroomName).toBe(glsExpertMentor.name);
+    expect(entry.protegeGroomName).toBe(glsExpertProtege.name);
+    expect(entry.inheritedPerk).toBe(getLegacyPerks('calm')[0].id);
+    expect(entry.retiredGroomStarLevel).toBe('expert');
+    expect(entry.protegeGroomStarLevel).toBe('rookie');
+    expect(entry).not.toHaveProperty('mentorLevel');
   });
 });

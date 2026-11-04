@@ -113,6 +113,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
   let grsGroomMandatory; // careerWeeks == its hidden retirementAge → AGE
   let grsGroomMandatoryAge; // that groom's drawn retirement age
   let grsGroomLevelCap; // level=10 → NOT eligible any more (Equoria-m9lz1)
+  let grsGroomExpert; // Expert stars (the old top level, q229) → NOT eligible either
   let grsGroomAssignmentLimit; // 12 assignment logs → NOT eligible any more
   let grsGroomNotice; // one tick short of its retirementAge → notEligible, no countdown
   let grsGroomNoticeAge; // that groom's drawn retirement age
@@ -135,6 +136,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         grsGroomRetired?.id,
         grsGroomMandatory?.id,
         grsGroomLevelCap?.id,
+        grsGroomExpert?.id,
         grsGroomAssignmentLimit?.id,
         grsGroomNotice?.id,
         grsGroomNormal?.id,
@@ -149,6 +151,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         grsGroomRetired?.id,
         grsGroomMandatory?.id,
         grsGroomLevelCap?.id,
+        grsGroomExpert?.id,
         grsGroomAssignmentLimit?.id,
         grsGroomNotice?.id,
         grsGroomNormal?.id,
@@ -247,6 +250,21 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     });
     await ensureRetirementSchedule(prisma, grsGroomLevelCap.id);
 
+    // Folded from tests/services/groomRetirementService.test.mjs (Equoria-k1vly B):
+    // the top level is now Expert stars (q229), so that is the input to pin.
+    grsGroomExpert = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-Expert-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        starLevel: 'expert',
+        startAge: fixtureStartAge,
+        careerWeeks: 5, // age 25 — far below any retirement age
+        userId: grsUser.id,
+      },
+    });
+    await ensureRetirementSchedule(prisma, grsGroomExpert.id);
+
     grsGroomAssignmentLimit = await prisma.groom.create({
       data: {
         name: `TestFixture-GRS-AssignLimit-${ts}`,
@@ -333,6 +351,12 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     expect(result).toEqual({ eligible: false, reason: 'notEligible', mandatory: false });
   });
 
+  it('checkRetirementEligibility: Expert stars (the top level, q229) is NOT a retirement trigger', async () => {
+    // Folded from tests/services/groomRetirementService.test.mjs (Equoria-k1vly B).
+    const result = await checkRetirementEligibility(grsGroomExpert.id);
+    expect(result).toEqual({ eligible: false, reason: 'notEligible', mandatory: false });
+  });
+
   it('checkRetirementEligibility: one tick short of its age → notEligible, and NO countdown', async () => {
     const result = await checkRetirementEligibility(grsGroomNotice.id);
     expect(result).toEqual({ eligible: false, reason: 'notEligible', mandatory: false });
@@ -382,6 +406,65 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     // cleanup handled by afterAll groom.deleteMany startsWith 'TestFixture-GRS-'
   });
 
+  // Folded from tests/services/groomRetirementService.test.mjs (Equoria-k1vly B).
+  it('incrementCareerWeeks: each increment is persisted and they accumulate', async () => {
+    const tempGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-Increment-${Date.now()}`,
+        speciality: 'general',
+        personality: 'gentle',
+        careerWeeks: 0,
+        userId: grsUser.id,
+      },
+    });
+    const first = await incrementCareerWeeks(tempGroom.id);
+    expect(first.id).toBe(tempGroom.id);
+    expect(first.careerWeeks).toBe(1);
+    expect((await prisma.groom.findUnique({ where: { id: tempGroom.id } })).careerWeeks).toBe(1);
+    await incrementCareerWeeks(tempGroom.id);
+    const third = await incrementCareerWeeks(tempGroom.id);
+    expect(third.careerWeeks).toBe(3);
+  });
+
+  // Folded from tests/services/groomRetirementService.test.mjs (Equoria-k1vly B).
+  it('processRetirement: a groom on its own age retires for AGE by default, and its own user is notified', async () => {
+    const tempGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-AgeRetire-${Date.now()}`,
+        speciality: 'general',
+        personality: 'gentle',
+        startAge: fixtureStartAge,
+        userId: grsUser.id,
+      },
+    });
+    const retirementAge = await ensureRetirementSchedule(prisma, tempGroom.id);
+    await prisma.groom.update({
+      where: { id: tempGroom.id },
+      data: { careerWeeks: retirementAge - fixtureStartAge },
+    });
+
+    const result = await processRetirement(tempGroom.id);
+    expect(result.groom.retired).toBe(true);
+    expect(result.groom.isActive).toBe(false);
+    expect(result.retirementReason).toBe(retirementReasons.AGE);
+    // Realm-independent — see __tests__/helpers/expectRealDate.mjs.
+    expect(realDateOrReason(result.retirementTimestamp)).toBe('valid date');
+
+    const persisted = await prisma.groom.findUnique({ where: { id: tempGroom.id } });
+    expect(persisted.retired).toBe(true);
+    expect(persisted.retirementTimestamp).toBeTruthy();
+
+    // The notification is written by the retirement's own transaction. The voluntary
+    // case above notified this user too, so pick out this groom's rows.
+    const notifications = (
+      await prisma.notification.findMany({
+        where: { userId: grsUser.id, type: 'groomRetired' },
+      })
+    ).filter(n => n.payload?.groomId === tempGroom.id);
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].payload).toMatchObject({ groomId: tempGroom.id, reason: 'age' });
+  });
+
   it('careerConstants and retirementReasons exports are correctly shaped', () => {
     // Equoria-m9lz1: the fixed thresholds are gone; the band from the owner's
     // ruling replaces them. The DB CHECK constraint
@@ -418,6 +501,7 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
   let wcpGroomNormal;
   let wcpGroomMandatory;
   let wcpGroomMandatoryAge;
+  let wcpGroomRetired; // already retired → the pass must skip it
   const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
@@ -430,7 +514,7 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
     // TestFixture-GRS-WCP- name-prefix / id; never a bare deleteMany. These
     // grooms own no Horse/AssignmentLog/synergy fixtures.
     cleanup.add(() => {
-      const groomIds = [wcpGroomNormal?.id, wcpGroomMandatory?.id].filter(Boolean);
+      const groomIds = [wcpGroomNormal?.id, wcpGroomMandatory?.id, wcpGroomRetired?.id].filter(Boolean);
       return prisma.groomRetirementSchedule.deleteMany({ where: { groomId: { in: groomIds } } });
     }, 'groomRetirementSchedule');
     cleanup.add(
@@ -489,6 +573,20 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
       where: { id: wcpGroomMandatory.id },
       data: { careerWeeks: wcpGroomMandatoryAge - fixtureStartAge - 1 },
     });
+
+    // Folded from tests/services/groomRetirementService.test.mjs (Equoria-k1vly B):
+    // a retired groom still flagged active, so only the `retired` filter skips it.
+    wcpGroomRetired = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-WCP-Retired-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        careerWeeks: 10,
+        isActive: true,
+        retired: true,
+        userId: wcpUser.id,
+      },
+    });
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);
@@ -524,5 +622,27 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
     // The retirement announced itself to the groom's own user, in its own
     // transaction (see groomRetirementGameDriven.integration.test.mjs).
     expect(await prisma.notification.count({ where: { userId: wcpUser.id, type: 'groomRetired' } })).toBe(1);
+    // Folded from tests/services/groomRetirementService.test.mjs (Equoria-k1vly B):
+    // the retired row records AGE and is inactive, and an already-retired groom is
+    // skipped (its careerWeeks do not move).
+    const retiredRow = await prisma.groom.findUnique({ where: { id: wcpGroomMandatory.id } });
+    expect(retiredRow.retirementReason).toBe(retirementReasons.AGE);
+    expect(retiredRow.isActive).toBe(false);
+    const skipped = await prisma.groom.findUnique({ where: { id: wcpGroomRetired.id } });
+    expect(skipped.careerWeeks).toBe(10);
+  });
+
+  // Folded from tests/services/groomRetirementService.test.mjs (Equoria-k1vly B).
+  // Reads the state the pass above left: the Normal groom still working, the
+  // Mandatory groom retired for AGE, and the pre-retired fixture.
+  it('getRetirementStatistics after the pass counts the retirements and their reasons', async () => {
+    const stats = await getRetirementStatistics(wcpUser.id);
+    expect(stats.totalGrooms).toBe(3);
+    expect(stats.activeGrooms).toBe(1);
+    expect(stats.retiredGrooms).toBe(2);
+    expect(stats.retirementReasons).toBeDefined();
+    expect(stats.retirementReasons[retirementReasons.AGE]).toBe(1);
+    expect(stats.averageCareerYears).toBeGreaterThan(0);
+    expect(stats).not.toHaveProperty('approachingRetirement');
   });
 });

@@ -521,3 +521,177 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
     await expect(analyzePersonalityCompatibility(groom.id, 999999999)).rejects.toThrow('Horse not found');
   });
 });
+
+// ── per-personality detail (folded from tests/services/groomPersonalityTraits.test.mjs) ──
+// Equoria-k1vly B: the cases the module file did not already pin — each personality's
+// named traits and strength band, the 'low' experience level, the trait-definition
+// shape, and the no-flag results for every groom x horse pair.
+
+describe('groomPersonalityTraits — per-personality detail (Equoria-k1vly)', () => {
+  let gpfUser;
+  let gpfGrooms = [];
+  let gpfHorses = [];
+  const cleanup = createCleanupTracker();
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    gpfUser = await prisma.user.create({
+      data: {
+        emailVerified: true,
+        email: `gpf-${ts}-${rand()}@test.com`,
+        username: `gpf${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'GPF',
+        lastName: 'Detail',
+        money: 1000,
+      },
+    });
+
+    gpfGrooms = await createSequentially(
+      [
+        ['Calm', 'calm', 150], // high experience
+        ['Energetic', 'energetic', 25], // low experience
+        ['Methodical', 'methodical', 80], // medium experience
+      ].map(
+        ([label, type, experience]) =>
+          () =>
+            prisma.groom.create({
+              data: {
+                name: `TestFixture-GPF-${label}-${ts}`,
+                speciality: 'foalCare',
+                personality: type,
+                epigeneticInfluenceType: type,
+                experience,
+                userId: gpfUser.id,
+              },
+            }),
+      ),
+    );
+
+    gpfHorses = await createSequentially(
+      [
+        ['Nervous', 'Filly', 10],
+        ['Confident', 'Colt', 35],
+        ['Neutral', 'Colt', 20],
+      ].map(
+        ([label, sex, bondScore]) =>
+          async () =>
+            prisma.horse.create({
+              data: await testHorseData(prisma, {
+                ...fixtureColor(),
+                name: `TestFixture-GPF-Horse${label}-${ts}`,
+                sex,
+                dateOfBirth: new Date(),
+                age: 0,
+                bondScore,
+                userId: gpfUser.id,
+              }),
+            }),
+      ),
+    );
+  }, 60000);
+
+  // FK order: horses + grooms (both Restrict on user) → user. No groom-child rows.
+  afterAll(() => {
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GPF-' } } }), 'gpfHorses');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GPF-' } } }), 'gpfGrooms');
+    cleanup.add(() => prisma.user.delete({ where: { id: gpfUser?.id } }), 'gpfUser');
+    return cleanup.run();
+  }, 30000);
+
+  it('a calm groom with high experience is patient, gentle and consistent, with strong traits', async () => {
+    const [calmGroom] = gpfGrooms;
+    const traits = await getGroomPersonalityTraits(calmGroom.id);
+    expect(traits.groomId).toBe(calmGroom.id);
+    expect(traits.primaryPersonality).toBe('calm');
+    const traitNames = traits.traits.map(t => t.name);
+    expect(traitNames).toContain('patient');
+    expect(traitNames).toContain('gentle');
+    expect(traitNames).toContain('consistent');
+    expect(traits.experienceLevel).toBe('high');
+    expect(traits.traitStrength).toBeGreaterThan(0.7);
+  });
+
+  it('an energetic groom with low experience is enthusiastic, dynamic and stimulating, with weak traits', async () => {
+    const traits = await getGroomPersonalityTraits(gpfGrooms[1].id);
+    expect(traits.primaryPersonality).toBe('energetic');
+    const traitNames = traits.traits.map(t => t.name);
+    expect(traitNames).toContain('enthusiastic');
+    expect(traitNames).toContain('dynamic');
+    expect(traitNames).toContain('stimulating');
+    expect(traits.experienceLevel).toBe('low');
+    expect(traits.traitStrength).toBeLessThan(0.5);
+  });
+
+  it('a methodical groom with medium experience is systematic, thorough and precise, with medium traits', async () => {
+    const traits = await getGroomPersonalityTraits(gpfGrooms[2].id);
+    expect(traits.primaryPersonality).toBe('methodical');
+    const traitNames = traits.traits.map(t => t.name);
+    expect(traitNames).toContain('systematic');
+    expect(traitNames).toContain('thorough');
+    expect(traitNames).toContain('precise');
+    expect(traits.experienceLevel).toBe('medium');
+    expect(traits.traitStrength).toBeGreaterThan(0.5);
+    expect(traits.traitStrength).toBeLessThan(0.8);
+  });
+
+  // CONTRACT CHANGED BY THE OWNER, 2026-10-29 (q300, Equoria-efs4j): no horse has
+  // flags, so every pair gets the no-flag values: compatibility 0.6, modifiers that
+  // do not depend on the horse.
+  it.each([
+    ['calm', 0, 'trustBuilding'],
+    ['energetic', 1, 'desensitization'],
+    ['methodical', 2, 'hoofHandling'],
+  ])('a %s groom gets the same no-flag modifiers with every horse', async (_label, groomIndex, taskType) => {
+    const results = [];
+    for (const horse of gpfHorses) {
+      results.push(await calculatePersonalityModifiers(gpfGrooms[groomIndex].id, horse.id, taskType));
+    }
+    for (const modifiers of results) {
+      expect(modifiers).toEqual(results[0]);
+      expect(modifiers.compatibilityScore).toBe(0.6);
+      expect(modifiers.bondingModifier).toBeGreaterThanOrEqual(1.0);
+      expect(modifiers.qualityModifier).toBeGreaterThanOrEqual(1.0);
+      expect(modifiers.taskEffectiveness).toBeGreaterThan(1.0);
+    }
+  });
+
+  it('calculatePersonalityModifiers names no horse flags', async () => {
+    const modifiers = await calculatePersonalityModifiers(gpfGrooms[0].id, gpfHorses[0].id, 'trustBuilding');
+    expect(modifiers).not.toHaveProperty('horseFlags');
+  });
+
+  it('every groom and horse pair is the moderate no-flag match, with the moderate advice', async () => {
+    for (const g of gpfGrooms) {
+      for (const h of gpfHorses) {
+        const compatibility = await analyzePersonalityCompatibility(g.id, h.id);
+        expect(compatibility.overallScore).toBe(0.6);
+        expect(compatibility.compatibilityLevel).toBe('good');
+        expect(compatibility.strengths).toEqual([]);
+        expect(compatibility.challenges).toEqual([]);
+        expect(compatibility.recommendations).toEqual([
+          'Moderate compatibility - monitor interactions closely',
+          "Adjust approach based on horse's daily mood",
+        ]);
+      }
+    }
+  });
+
+  it('getPersonalityTraitDefinitions defines calm, energetic and methodical with full trait entries', async () => {
+    const definitions = await getPersonalityTraitDefinitions();
+    expect(definitions.personalities.calm).toBeDefined();
+    expect(definitions.personalities.energetic).toBeDefined();
+    expect(definitions.personalities.methodical).toBeDefined();
+    const calmTraits = definitions.personalities.calm.traits;
+    expect(Array.isArray(calmTraits)).toBe(true);
+    expect(calmTraits.length).toBeGreaterThan(0);
+    const [firstTrait] = calmTraits;
+    expect(firstTrait).toHaveProperty('name');
+    expect(firstTrait).toHaveProperty('description');
+    expect(firstTrait).toHaveProperty('effects');
+    expect(firstTrait).toHaveProperty('compatibleWith');
+    expect(firstTrait).toHaveProperty('incompatibleWith');
+  });
+});
