@@ -25,6 +25,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 import { groomHorse } from '../services/groomCareService.mjs';
 import { foalCareToday } from '../services/foalCareSchedule.mjs';
+import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 
 const fixturePrefix = 'TestFixture-9rhf6';
 const dayMs = 24 * 60 * 60 * 1000;
@@ -68,7 +69,7 @@ describe('Equoria-9rhf6 — groom horse records the foal bond milestone it cross
         ...fixtureColor(),
         name: `${fixturePrefix}-foal-${suffix}`,
         sex: 'Filly',
-        dateOfBirth: new Date(now.getTime() - 2 * dayMs),
+        dateOfBirth: gameCalendarDate(now, -2),
         age: 0,
         userId: user.id,
         healthStatus: 'Excellent',
@@ -80,7 +81,7 @@ describe('Equoria-9rhf6 — groom horse records the foal bond milestone it cross
         ...fixtureColor(),
         name: `${fixturePrefix}-grown-${suffix}`,
         sex: 'Mare',
-        dateOfBirth: new Date(now.getTime() - 200 * dayMs),
+        dateOfBirth: gameCalendarDate(now, -200),
         age: 5,
         userId: user.id,
         healthStatus: 'Excellent',
