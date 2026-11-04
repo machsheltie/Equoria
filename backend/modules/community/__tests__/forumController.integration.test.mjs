@@ -174,6 +174,20 @@ describe('POST /api/v1/forum/threads', () => {
     expect(res.body.success).toBe(false);
   });
 
+  it('returns 400 when the title is missing but the section is given', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .post('/api/v1/forum/threads')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ section: 'general' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
   it('returns 400 for invalid section', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
@@ -205,6 +219,8 @@ describe('POST /api/v1/forum/threads', () => {
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
+    expect(res.body.data.thread.authorId).toBe(user.id);
+    expect(res.body.data.firstPost).toBeDefined();
   });
 
   it('returns 401 without auth', async () => {

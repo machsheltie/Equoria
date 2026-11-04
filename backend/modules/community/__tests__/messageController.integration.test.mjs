@@ -216,6 +216,36 @@ describe('POST /api/v1/messages', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
+    expect(res.body.errors).toBeDefined();
+  });
+
+  it('returns 400 when recipientId is missing', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${senderToken}`] });
+    const res = await request(app)
+      .post('/api/v1/messages')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${senderToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ subject: 'Hello', content: 'Test message' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.errors).toBeDefined();
+  });
+
+  it('returns 400 when subject is missing', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${senderToken}`] });
+    const res = await request(app)
+      .post('/api/v1/messages')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${senderToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ recipientId: recipient.id, content: 'Test message' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
   });
 
   it('returns 400 when subject is empty', async () => {

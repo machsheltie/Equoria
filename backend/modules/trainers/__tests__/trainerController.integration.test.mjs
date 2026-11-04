@@ -122,6 +122,7 @@ describe('POST /api/v1/trainers/marketplace/hire', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
+    expect(res.body.errors).toBeDefined();
   });
 
   it('returns 404 when marketplaceId does not match any offer', async () => {
@@ -224,6 +225,37 @@ describe('POST /api/v1/trainers/assignments', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
+    expect(res.body.errors).toBeDefined();
+  });
+
+  it('returns 400 when trainerId is missing but horseId is given', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .post('/api/v1/trainers/assignments')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: 1 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.errors).toBeDefined();
+  });
+
+  it('returns 400 when horseId is missing but trainerId is given', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .post('/api/v1/trainers/assignments')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ trainerId: 1 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.errors).toBeDefined();
   });
 
   it('returns 404 when trainerId does not belong to user', async () => {

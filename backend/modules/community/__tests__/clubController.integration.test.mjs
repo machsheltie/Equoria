@@ -69,6 +69,7 @@ describe('GET /api/v1/clubs', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
+    expect(Array.isArray(res.body.data.clubs)).toBe(true);
   });
 
   it('returns 400 for invalid type filter', async () => {
@@ -173,6 +174,51 @@ describe('POST /api/v1/clubs', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
+    expect(res.body.errors).toBeDefined();
+  });
+
+  it('returns 400 when the name is missing but type and category are given', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .post('/api/v1/clubs')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ type: 'discipline', category: 'Dressage' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.errors).toBeDefined();
+  });
+
+  it('returns 201 with the new club led by the caller', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .post('/api/v1/clubs')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({
+        name: `TestFixture-Created Club ${Date.now()}`,
+        type: 'discipline',
+        category: 'Dressage',
+        description: 'Created over HTTP by the integration test',
+      });
+
+    const createdId = res.body?.data?.club?.id;
+    try {
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.club).toBeDefined();
+      expect(res.body.data.club.leaderId).toBe(user.id);
+    } finally {
+      if (createdId) {
+        await prisma.clubMembership.deleteMany({ where: { clubId: createdId } });
+        await prisma.club.delete({ where: { id: createdId } });
+      }
+    }
   });
 
   it('returns 400 for invalid club type', async () => {
