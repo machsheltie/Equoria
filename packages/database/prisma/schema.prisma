@@ -2341,12 +2341,12 @@ model EmailOutbox {
 
 /// Equoria-q4uem.9 — kind of breeding a BreedingRecord describes.
 enum BreedingKind {
-  OWN_PAIR
-  PUBLIC_STUD
-  PRIVATE_STUD
+  ownPair
+  publicStud
+  privateStud
 }
 
-/// Equoria-q4uem.9 — PENDING exists only for a PRIVATE_STUD request awaiting
+/// Equoria-q4uem.9 — PENDING exists only for a privateStud request awaiting
 /// the stallion owner; every other breeding is written COMPLETED.
 enum BreedingStatus {
   PENDING
@@ -2357,7 +2357,7 @@ enum BreedingStatus {
 
 /// Equoria-q4uem.9 — one row per breeding (owner ruling S-Q7, Stacey
 /// 2026-10-16): the breeding itself and the stud fee paid (0 for a pair the
-/// player owns). No other "terms". A PRIVATE_STUD request starts PENDING (the
+/// player owns). No other "terms". A privateStud request starts PENDING (the
 /// stallion owner's queue) and becomes COMPLETED, DECLINED or CANCELLED.
 ///
 /// FKs are nullable with onDelete: SetNull (GDPR erasure hard-deletes horses
@@ -2371,7 +2371,7 @@ model BreedingRecord {
   id                Int            @id @default(autoincrement())
   kind              BreedingKind
   status            BreedingStatus
-  /// Stud fee paid (or pinned while PENDING), in coins. 0 for OWN_PAIR.
+  /// Stud fee paid (or pinned while PENDING), in coins. 0 for ownPair.
   fee               Int
   sireId            Int?
   sire              Horse?         @relation("BreedingRecordSire", fields: [sireId], references: [id], onDelete: SetNull)

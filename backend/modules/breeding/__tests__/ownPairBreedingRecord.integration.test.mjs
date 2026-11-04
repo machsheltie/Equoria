@@ -73,7 +73,7 @@ describe('own-pair breeding: free, recorded, sire-pinned, and blocked by a pendi
     await disconnectLockClient();
   });
 
-  it('S-Q7: writes one OWN_PAIR COMPLETED record with fee 0; no money and no ledger rows; response shape unchanged', async () => {
+  it('S-Q7: writes one ownPair COMPLETED record with fee 0; no money and no ledger rows; response shape unchanged', async () => {
     const res = await breedOwnPair(owner.token, stallion.id, mare.id);
 
     expect(res.status).toBe(200);
@@ -83,7 +83,7 @@ describe('own-pair breeding: free, recorded, sire-pinned, and blocked by a pendi
     const records = await prisma.breedingRecord.findMany({ where: { damId: mare.id } });
     expect(records).toHaveLength(1);
     expect(records[0]).toMatchObject({
-      kind: 'OWN_PAIR',
+      kind: 'ownPair',
       status: 'COMPLETED',
       fee: 0,
       sireId: stallion.id,
@@ -162,7 +162,7 @@ describe('own-pair breeding: free, recorded, sire-pinned, and blocked by a pendi
         await tx.horse.update({ where: { id: mare.id }, data: { userId: owner.user.id } });
         await tx.breedingRecord.create({
           data: {
-            kind: 'PRIVATE_STUD',
+            kind: 'privateStud',
             status: 'PENDING',
             fee: 10,
             sireId: privateStud.id,

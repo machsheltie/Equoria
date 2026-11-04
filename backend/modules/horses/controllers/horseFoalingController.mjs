@@ -164,7 +164,7 @@ export async function createFoal(req, res) {
           });
           await tx.breedingRecord.create({
             data: {
-              kind: 'OWN_PAIR',
+              kind: 'ownPair',
               status: 'COMPLETED',
               fee: 0,
               sireId: sire.id,

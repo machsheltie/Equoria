@@ -208,7 +208,7 @@ export async function bookPublicStud(req, res) {
           // ── Last claim write: the record of this breeding (S-Q7) ──
           const record = await tx.breedingRecord.create({
             data: {
-              kind: 'PUBLIC_STUD',
+              kind: 'publicStud',
               status: 'COMPLETED',
               fee,
               sireId,

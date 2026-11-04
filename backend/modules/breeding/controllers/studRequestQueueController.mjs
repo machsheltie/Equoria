@@ -33,12 +33,12 @@ async function closeRequest({ requestId, callerId, field, data, notifyField, typ
     prisma.$transaction(
       async tx => {
         const claimed = await tx.breedingRecord.updateMany({
-          where: { id: requestId, kind: 'PRIVATE_STUD', status: 'PENDING', [field]: callerId },
+          where: { id: requestId, kind: 'privateStud', status: 'PENDING', [field]: callerId },
           data: { ...data, resolvedAt: new Date() },
         });
         const record = await tx.breedingRecord.findUnique({ where: { id: requestId } });
         if (claimed.count !== 1) {
-          if (!record || record.kind !== 'PRIVATE_STUD' || record[field] !== callerId) {
+          if (!record || record.kind !== 'privateStud' || record[field] !== callerId) {
             throw new BookingRefusal(404, requestNotFound);
           }
           throw new BookingRefusal(409, requestNotPending);
@@ -103,7 +103,7 @@ export async function listStudRequests(req, res) {
     const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
     const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 20));
     const where = {
-      kind: 'PRIVATE_STUD',
+      kind: 'privateStud',
       ...(incoming ? { stallionOwnerId: callerId } : { mareOwnerId: callerId }),
       ...(req.query.status ? { status: req.query.status } : {}),
       ...(req.query.sireId ? { sireId: Number.parseInt(req.query.sireId, 10) } : {}),

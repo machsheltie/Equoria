@@ -106,7 +106,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
       expect(res.status).toBe(201);
       expect(res.body.data).toMatchObject({ status: 'PENDING', fee: FEE, sireId: stud.id, damId: mare.id });
       expect(await recordOf(res.body.data.requestId)).toMatchObject({
-        kind: 'PRIVATE_STUD',
+        kind: 'privateStud',
         status: 'PENDING',
         fee: FEE,
         mareOwnerId: mareOwner.user.id,
@@ -418,7 +418,7 @@ describe('private stud requests: request, approve, reject, cancel (Equoria-q4uem
         expect.objectContaining({
           id: requestId,
           status: 'PENDING',
-          kind: 'PRIVATE_STUD',
+          kind: 'privateStud',
           fee: FEE,
           sire: { id: stud.id, name: stud.name },
           dam: { id: mare.id, name: mare.name },

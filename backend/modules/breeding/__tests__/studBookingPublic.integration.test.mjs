@@ -118,7 +118,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     expect(records).toHaveLength(1);
     expect(records[0]).toMatchObject({
       id: res.body.data.recordId,
-      kind: 'PUBLIC_STUD',
+      kind: 'publicStud',
       status: 'COMPLETED',
       fee: FEE,
       sireId: stud.id,
@@ -352,7 +352,7 @@ describe('public stud booking moves the stud fee atomically with the pregnancy (
     expect(await moneyOf(studOwner.user.id)).toBe(100);
     expect(await prisma.userTransaction.count({ where: { userId: { in: userIds } } })).toBe(0);
     const record = await prisma.breedingRecord.findFirst({ where: { damId: mare.id } });
-    expect(record).toMatchObject({ kind: 'PUBLIC_STUD', status: 'COMPLETED', fee: 0 });
+    expect(record).toMatchObject({ kind: 'publicStud', status: 'COMPLETED', fee: 0 });
   });
 
   it('a stallion that is missing and one that is not at stud answer the same 404', async () => {

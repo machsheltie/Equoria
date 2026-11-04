@@ -122,7 +122,7 @@ export async function moneyOf(userId) {
 export async function seedPendingRequest({ sire, dam, mareOwner, stallionOwner, fee }) {
   return prisma.breedingRecord.create({
     data: {
-      kind: 'PRIVATE_STUD',
+      kind: 'privateStud',
       status: 'PENDING',
       fee,
       sireId: sire.id,

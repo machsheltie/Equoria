@@ -184,7 +184,7 @@ export async function requestPrivateStud(req, res) {
           // ── Last claim write: the PENDING request (S7: one per mare, partial unique index) ──
           const record = await tx.breedingRecord.create({
             data: {
-              kind: 'PRIVATE_STUD',
+              kind: 'privateStud',
               status: 'PENDING',
               fee: expectedStudFee,
               sireId,
@@ -273,7 +273,7 @@ export async function approveStudRequest(req, res) {
           const request = await tx.breedingRecord.findUnique({ where: { id: requestId } });
           if (
             !request ||
-            request.kind !== 'PRIVATE_STUD' ||
+            request.kind !== 'privateStud' ||
             request.stallionOwnerId !== approverId
           ) {
             throw new BookingRefusal(404, requestNotFound);

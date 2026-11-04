@@ -146,7 +146,7 @@ describe('horse list/detail: mare cooldown, in-foal, pending stud request, stud 
   async function pendingRequest(sire, dam, mareOwner, stallionOwner) {
     return prisma.breedingRecord.create({
       data: {
-        kind: 'PRIVATE_STUD',
+        kind: 'privateStud',
         status: 'PENDING',
         fee: 250,
         sireId: sire.id,
