@@ -424,7 +424,9 @@ async function keyboardSweep(page: Page, label: string, maxStops = 15) {
  * backdrop, a gradient or a translucent panel). The text is hidden, the page
  * is captured, and every captured pixel behind each text box is compared with
  * the text's computed color (inside the element's content box, where its text
- * paints): `worstRatio` uses the backdrop pixel closest in
+ * paints, cut to the part its clipping ancestors show — text scrolled out of a
+ * scroll container is listed in `clippedOut`, not sampled): `worstRatio` uses
+ * the backdrop pixel closest in
  * luminance to the text (5th percentile of ratios, so a stray icon pixel does
  * not decide it) and `medianRatio` the typical pixel. Evidence only: attached
  * so the contrast record covers the whole page, not asserted (Equoria-oey96.10).
@@ -446,8 +448,9 @@ async function sampledContrast(page: Page, label: string) {
   await page.setViewportSize({ width: viewport.width, height: Math.min(fullHeight, 8000) });
   await page.evaluate(() => window.scrollTo(0, 0));
 
-  const boxes = await page.evaluate((sels) => {
-    return sels.flatMap((sel) => {
+  const { boxes, clippedOut } = await page.evaluate((sels) => {
+    const clippedOut: string[] = [];
+    const boxes = sels.flatMap((sel) => {
       const el = document.querySelector(sel) as HTMLElement | null;
       if (!el) return [];
       const r = el.getBoundingClientRect();
@@ -459,11 +462,60 @@ async function sampledContrast(page: Page, label: string) {
       const inset = (side: 'top' | 'right' | 'bottom' | 'left') =>
         (parseFloat(cs.getPropertyValue(`padding-${side}`)) || 0) +
         (parseFloat(cs.getPropertyValue(`border-${side}-width`)) || 0);
-      const x = r.left + inset('left');
-      const y = r.top + inset('top');
-      const w = r.width - inset('left') - inset('right');
-      const h = r.height - inset('top') - inset('bottom');
-      if (w < 2 || h < 2) return [];
+      let left = r.left + inset('left');
+      let top = r.top + inset('top');
+      let right = r.right - inset('right');
+      let bottom = r.bottom - inset('bottom');
+      // Keep only the part its clipping ancestors let paint: text scrolled
+      // past a scroll container's edge is not on screen, and sampling there
+      // measures whatever lies beyond the container (Equoria-4t8l4: the
+      // horse page's Pedigree tab sat right of the overflowing tab list's
+      // visible area, over the page backdrop). An ancestor clips the element
+      // only if it is on its containing-block chain: an absolute or fixed
+      // element escapes the overflow of ancestors below its containing block.
+      const fixedCb = (s: CSSStyleDeclaration) =>
+        s.transform !== 'none' ||
+        s.perspective !== 'none' ||
+        s.filter !== 'none' ||
+        s.backdropFilter !== 'none' ||
+        /paint|layout|strict|content/.test(s.contain) ||
+        /transform|perspective|filter/.test(s.willChange);
+      const modeOf = (s: CSSStyleDeclaration) =>
+        s.position === 'fixed' ? 'fixed' : s.position === 'absolute' ? 'abs' : 'flow';
+      const htmlClips = getComputedStyle(document.documentElement).overflow !== 'visible';
+      const fullyClipped = () => right - left < 2 || bottom - top < 2;
+      if (fullyClipped()) return [];
+      let mode = modeOf(cs);
+      for (let a = el.parentElement; a && a !== document.documentElement; a = a.parentElement) {
+        const as = getComputedStyle(a);
+        if (mode === 'fixed' && !fixedCb(as)) continue;
+        if (mode === 'abs' && as.position === 'static' && !fixedCb(as)) continue;
+        // body's overflow moves to the viewport unless html has its own.
+        const clips = a !== document.body || htmlClips;
+        if (clips && (as.overflowX !== 'visible' || as.overflowY !== 'visible')) {
+          const ar = a.getBoundingClientRect();
+          // The clip edge is the padding box, scrollbars excluded.
+          const cl = ar.left + a.clientLeft;
+          const ct = ar.top + a.clientTop;
+          if (as.overflowX !== 'visible') {
+            left = Math.max(left, cl);
+            right = Math.min(right, cl + a.clientWidth);
+          }
+          if (as.overflowY !== 'visible') {
+            top = Math.max(top, ct);
+            bottom = Math.min(bottom, ct + a.clientHeight);
+          }
+        }
+        mode = modeOf(as);
+      }
+      if (fullyClipped()) {
+        clippedOut.push(sel);
+        return [];
+      }
+      const x = left;
+      const y = top;
+      const w = right - left;
+      const h = bottom - top;
       return [
         {
           sel,
@@ -478,6 +530,7 @@ async function sampledContrast(page: Page, label: string) {
         },
       ];
     });
+    return { boxes, clippedOut };
   }, selectors);
 
   const hide = await page.addStyleTag({
@@ -558,7 +611,7 @@ async function sampledContrast(page: Page, label: string) {
 
   await test.info().attach(`contrast-sampled-${label}.json`, {
     body: JSON.stringify(
-      { undecidedByAxe: selectors.length, measured: rows.length, rows },
+      { undecidedByAxe: selectors.length, measured: rows.length, clippedOut, rows },
       null,
       2
     ),
