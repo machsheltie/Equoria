@@ -107,6 +107,20 @@ describe('rollStatBoost (deterministic via injected rng)', () => {
     expect(rollStatBoost('platinum', () => 0)).toBeNull();
     expect(rollStatBoost('', () => 0)).toBeNull();
     expect(rollStatBoost(undefined, () => 0)).toBeNull();
+    expect(rollStatBoost(null, () => 0)).toBeNull();
+  });
+
+  // Merged from the former horseFeedService suite (Equoria-k1vly).
+  it('every rolling tier hands back exactly +1 in one of the 12 stats', () => {
+    // Just under each tier's threshold: performance 10, performancePlus 15, highPerformance 20, elite 25.
+    const justUnder = { performance: 0.09, performancePlus: 0.14, highPerformance: 0.19, elite: 0.24 };
+    for (const [tier, firstRoll] of Object.entries(justUnder)) {
+      const result = rollStatBoost(tier, seqRng([firstRoll, 0]));
+      expect(result).not.toBeNull();
+      expect(result).toHaveProperty('stat');
+      expect(result).toHaveProperty('amount', 1);
+      expect(expectedStats).toContain(result.stat);
+    }
   });
 
   it('stat-picker maps rng to the 12-stat list correctly (sentinel-positive)', () => {
