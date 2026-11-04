@@ -363,3 +363,120 @@ describe('calculateStatGain — catch block (lines 567-568)', () => {
     expect(result).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Merged from the former enhanced competition logic suite (Equoria-k1vly): exact level
+// maths, age boundaries, deterministic stat gains, the bible's discipline
+// stat triples, and graceful handling of incomplete data.
+// ---------------------------------------------------------------------------
+describe('calculateHorseLevel — exact levels', () => {
+  it('computes level 3 for Racing from stats, two beneficial traits and training (total 140)', () => {
+    const horse = {
+      speed: 80,
+      stamina: 70,
+      focus: 60,
+      epigeneticModifiers: { positive: ['fast', 'athletic'], negative: [] },
+      disciplineScores: { Racing: 50 },
+    };
+    // Base (80 + 70 + 60) / 3 = 70; legacy trait bonus 5 + 5 = 10; discipline affinity 10; training 50
+    // Total 140; level = floor(140 / 50) + 1 = 3
+    expect(calculateHorseLevel(horse, 'Racing')).toBe(3);
+  });
+
+  it('handles a high-level horse with five beneficial traits and heavy training', () => {
+    const horse = {
+      speed: 100,
+      stamina: 100,
+      focus: 100,
+      epigeneticModifiers: { positive: ['fast', 'athletic', 'focused', 'brave', 'resilient'], negative: [] },
+      disciplineScores: { Racing: 200 },
+    };
+    // Base 100 + legacy 25 + affinity 25 + training 200 = 350 -> level 8
+    expect(calculateHorseLevel(horse, 'Racing')).toBeGreaterThanOrEqual(7);
+  });
+});
+
+describe('checkAgeRequirements — more ages', () => {
+  it('accepts a mid-career horse and refuses a newborn and a two-year-old', () => {
+    expect(checkAgeRequirements({ age: 10 })).toBe(true);
+    expect(checkAgeRequirements({ age: 2 })).toBe(false);
+    expect(checkAgeRequirements({ age: 0 })).toBe(false);
+  });
+});
+
+describe('breedAllowsDiscipline — plain breed', () => {
+  it('only a gaited breed may do Gaited, and every other discipline stays open to a plain breed', () => {
+    const gaitedBreed = { breedGeneticProfile: { ratingProfiles: { isGaitedBreed: true } } };
+    const plainBreed = { breedGeneticProfile: { ratingProfiles: { isGaitedBreed: false } } };
+    expect(breedAllowsDiscipline(gaitedBreed, 'Gaited')).toBe(true);
+    expect(breedAllowsDiscipline(plainBreed, 'Gaited')).toBe(false);
+    expect(breedAllowsDiscipline(plainBreed, 'Racing')).toBe(true);
+    expect(breedAllowsDiscipline(plainBreed, 'Dressage')).toBe(true);
+    expect(breedAllowsDiscipline(plainBreed, 'Show Jumping')).toBe(true);
+  });
+});
+
+describe('calculateStatGain — deterministic rolls', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('awards +1 in one of the discipline stats when the 1st-place roll succeeds', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.05);
+    const statGain = calculateStatGain(1, 'Racing');
+    expect(statGain).not.toBeNull();
+    expect(statGain.amount).toBe(1);
+    expect(['speed', 'stamina', 'focus']).toContain(statGain.stat);
+  });
+
+  it('awards nothing to 1st, 2nd or 3rd place when the roll fails', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.95);
+    expect(calculateStatGain(1, 'Racing')).toBeNull();
+    expect(calculateStatGain(2, 'Racing')).toBeNull();
+    expect(calculateStatGain(3, 'Racing')).toBeNull();
+  });
+
+  it('awards nothing to 4th place or lower even on the luckiest roll', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.01);
+    expect(calculateStatGain(4, 'Racing')).toBeNull();
+    expect(calculateStatGain(5, 'Racing')).toBeNull();
+  });
+});
+
+describe('calculatePrizeAmount — ten-horse field', () => {
+  it('pays 50/30/20 percent to the first three and nothing from 4th down', () => {
+    expect(calculatePrizeAmount(10000, 1, 10)).toBe(5000);
+    expect(calculatePrizeAmount(10000, 2, 10)).toBe(3000);
+    expect(calculatePrizeAmount(10000, 3, 10)).toBe(2000);
+    expect(calculatePrizeAmount(10000, 4, 10)).toBe(0);
+    expect(calculatePrizeAmount(10000, 5, 10)).toBe(0);
+  });
+});
+
+describe('discipline roster and stat triples', () => {
+  it('lists at least 24 disciplines including the named ones', () => {
+    const disciplines = getAllDisciplines();
+    expect(disciplines.length).toBeGreaterThanOrEqual(24);
+    ['Racing', 'Dressage', 'Show Jumping', 'Gaited', 'Western Pleasure', 'Barrel Racing'].forEach(name => {
+      expect(disciplines).toContain(name);
+    });
+  });
+
+  // Owner ruling R8 (2026-10-15) + C6: the bible's discipline table.
+  it('gives each discipline the bible stat triple', () => {
+    expect(getDisciplineConfig('Racing').stats).toEqual(['speed', 'stamina', 'focus']);
+    expect(getDisciplineConfig('Dressage').stats).toEqual(['precision', 'focus', 'obedience']);
+    expect(getDisciplineConfig('Western Pleasure').stats).toEqual(['focus', 'obedience', 'intelligence']);
+    expect(getDisciplineConfig('Gaited').stats).toEqual(['flexibility', 'balance', 'obedience']);
+  });
+});
+
+describe('incomplete data is handled gracefully', () => {
+  it('does not throw for a horse with no data or an unknown discipline', () => {
+    expect(() => calculateHorseLevel({}, 'Racing')).not.toThrow();
+    expect(() => checkAgeRequirements({})).not.toThrow();
+    expect(() => breedAllowsDiscipline(undefined, 'Racing')).not.toThrow();
+    expect(() => calculateHorseLevel({ age: 5 }, 'InvalidDiscipline')).not.toThrow();
+    expect(() => breedAllowsDiscipline(undefined, 'InvalidDiscipline')).not.toThrow();
+  });
+});
