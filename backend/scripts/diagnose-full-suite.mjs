@@ -130,7 +130,7 @@ async function samplePg(client) {
       WHERE datname = current_database() AND wait_event_type = 'Lock'`,
   );
   const longest = await client.query(
-    `SELECT coalesce(max(extract(epoch FROM now() - query_start)), 0)::float AS longest_query_s
+    `SELECT coalesce(max(extract(epoch FROM now() - query_start)), 0)::float AS "longestQueryS"
        FROM pg_stat_activity
       WHERE datname = current_database() AND state = 'active' AND pid <> pg_backend_pid()`,
   );
@@ -138,7 +138,7 @@ async function samplePg(client) {
     t: new Date().toISOString(),
     connections: Object.fromEntries(conns.rows.map(r => [r.state ?? 'null', r.n])),
     lockWaits: locks.rows[0].waiting,
-    longestQueryS: longest.rows[0].longest_query_s,
+    longestQueryS: longest.rows[0].longestQueryS,
   };
 }
 

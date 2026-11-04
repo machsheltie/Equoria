@@ -192,9 +192,9 @@ async function main() {
       con.conname        AS constraint_name,
       src.relname        AS table_name,
       srcatt.attname     AS column_name,
-      tgt.relname        AS ref_table_name,
-      tgtatt.attname     AS ref_column_name,
-      con.confdeltype    AS on_delete_code
+      tgt.relname        AS "refTableName",
+      tgtatt.attname     AS "refColumnName",
+      con.confdeltype    AS "onDeleteCode"
     FROM pg_constraint con
     JOIN pg_class src           ON src.oid = con.conrelid
     JOIN pg_namespace srcns     ON srcns.oid = src.relnamespace
@@ -217,9 +217,9 @@ async function main() {
     }
     actualByCol.get(key).push({
       name: row.constraint_name,
-      refTable: row.ref_table_name,
-      refColumn: row.ref_column_name,
-      onDelete: CONFDELTYPE[row.on_delete_code] || row.on_delete_code,
+      refTable: row.refTableName,
+      refColumn: row.refColumnName,
+      onDelete: CONFDELTYPE[row.onDeleteCode] || row.onDeleteCode,
     });
   }
 

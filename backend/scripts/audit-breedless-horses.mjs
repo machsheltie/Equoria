@@ -60,8 +60,8 @@ async function loadIncomingForeignKeys() {
   const rows = await prisma.$queryRaw`
     SELECT
       con.conname            AS constraint_name,
-      child.relname          AS child_table,
-      att.attname            AS child_column,
+      child.relname          AS "childTable",
+      att.attname            AS "childColumn",
       con.confdeltype        AS delete_rule
     FROM pg_constraint con
     JOIN pg_class  child  ON child.oid  = con.conrelid
@@ -75,8 +75,8 @@ async function loadIncomingForeignKeys() {
   `;
   return rows.map(r => ({
     constraintName: r.constraint_name,
-    table: r.child_table,
-    column: r.child_column,
+    table: r.childTable,
+    column: r.childColumn,
     deleteRule:
       { a: 'NO ACTION', r: 'RESTRICT', c: 'CASCADE', n: 'SET NULL', d: 'SET DEFAULT' }[
         r.delete_rule

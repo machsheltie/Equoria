@@ -67,7 +67,7 @@ async function main() {
   // Find store-bought horses: age 3, no parents, any original stat > 20, not E2E test horses
   const horses = await prisma.$queryRawUnsafe(`
     SELECT h.id, h.name, h."breedId", h.speed, h.agility, h.precision, h.intelligence, h.strength, h.endurance,
-           b.name as breed_name
+           b.name as "breedName"
     FROM horses h
     JOIN breeds b ON b.id = h."breedId"
     WHERE h.age = 3
@@ -109,9 +109,9 @@ async function main() {
 
     const total = Object.values(newStats).reduce((s, v) => s + v, 0);
     const statLine = statKeys.map(k => `${k.slice(0, 3).toUpperCase()}=${newStats[k]}`).join(' ');
-    const profileSrc = starterStats ? horse.breed_name : 'neutral fallback';
+    const profileSrc = starterStats ? horse.breedName : 'neutral fallback';
     console.log(
-      `  ✓ ${horse.name} (ID ${horse.id}, ${horse.breed_name}) — total ${total} [${profileSrc}]`,
+      `  ✓ ${horse.name} (ID ${horse.id}, ${horse.breedName}) — total ${total} [${profileSrc}]`,
     );
     console.log(`    ${statLine}`);
   }

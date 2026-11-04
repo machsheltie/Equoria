@@ -69,14 +69,14 @@ function parseFile(filePath) {
   const src = fs.readFileSync(filePath, 'utf8');
   const m = src.match(insertRe);
   if (!m) {
-    return { kind: 'no_insert', filePath };
+    return { kind: 'noInsert', filePath };
   }
   const [, breedName, defaultTrait, jsonBody] = m;
   let parsed;
   try {
     parsed = JSON.parse(jsonBody);
   } catch (err) {
-    return { kind: 'bad_json', filePath, breedName, error: err.message };
+    return { kind: 'badJson', filePath, breedName, error: err.message };
   }
   return { kind: 'ok', filePath, breedName, defaultTrait, profile: parsed };
 }
@@ -146,25 +146,25 @@ async function main() {
   const liveNames = new Set(liveBreeds.map(b => b.name));
 
   const results = {
-    ok_insert: [],
-    ok_update: [],
-    bad_json: [],
-    bad_structure: [],
-    no_insert: [],
+    okInsert: [],
+    okUpdate: [],
+    badJson: [],
+    badStructure: [],
+    noInsert: [],
   };
 
   for (const file of sqlFiles) {
     const rel = path.relative(repoRoot, file);
     const parsed = parseFile(file);
 
-    if (parsed.kind === 'no_insert') {
+    if (parsed.kind === 'noInsert') {
       console.log(`  [no-insert]   ${rel}`);
-      results.no_insert.push(rel);
+      results.noInsert.push(rel);
       continue;
     }
-    if (parsed.kind === 'bad_json') {
+    if (parsed.kind === 'badJson') {
       console.log(`  [bad-json]    ${rel}  ←  ${parsed.error}`);
-      results.bad_json.push({ rel, error: parsed.error });
+      results.badJson.push({ rel, error: parsed.error });
       continue;
     }
 
@@ -174,7 +174,7 @@ async function main() {
       for (const e of structErrors) {
         console.log(`                  - ${e}`);
       }
-      results.bad_structure.push({ rel, breedName: parsed.breedName, errors: structErrors });
+      results.badStructure.push({ rel, breedName: parsed.breedName, errors: structErrors });
       continue;
     }
 
@@ -182,22 +182,22 @@ async function main() {
     const tag = exists ? 'UPDATE' : 'INSERT';
     console.log(`  [${tag}]      ${rel}  (breed: ${parsed.breedName})`);
     if (exists) {
-      results.ok_update.push({ rel, breedName: parsed.breedName });
+      results.okUpdate.push({ rel, breedName: parsed.breedName });
     } else {
-      results.ok_insert.push({ rel, breedName: parsed.breedName });
+      results.okInsert.push({ rel, breedName: parsed.breedName });
     }
   }
 
   console.log('\n=== mxhpi dry-run summary ===');
   console.log(`files scanned:     ${sqlFiles.length}`);
-  console.log(`would INSERT:      ${results.ok_insert.length}`);
-  console.log(`would UPDATE:      ${results.ok_update.length}`);
-  console.log(`malformed JSON:    ${results.bad_json.length}`);
-  console.log(`bad structure:     ${results.bad_structure.length}`);
-  console.log(`no INSERT stmt:    ${results.no_insert.length}`);
+  console.log(`would INSERT:      ${results.okInsert.length}`);
+  console.log(`would UPDATE:      ${results.okUpdate.length}`);
+  console.log(`malformed JSON:    ${results.badJson.length}`);
+  console.log(`bad structure:     ${results.badStructure.length}`);
+  console.log(`no INSERT stmt:    ${results.noInsert.length}`);
   console.log(`live breeds table: ${liveBreeds.length} rows`);
 
-  const failed = results.bad_json.length + results.bad_structure.length;
+  const failed = results.badJson.length + results.badStructure.length;
   await prisma.$disconnect();
   process.exit(failed > 0 ? 1 : 0);
 }

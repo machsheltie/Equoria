@@ -224,13 +224,13 @@ async function testDataIntegrity() {
 
   if (fkCheckResult.success) {
     integrityChecks.push({
-      check: 'foreign_keys',
+      check: 'foreignKeys',
       status: 'passed',
       details: 'All foreign key constraints are valid',
     });
   } else {
     integrityChecks.push({
-      check: 'foreign_keys',
+      check: 'foreignKeys',
       status: 'failed',
       error: fkCheckResult.error,
     });
@@ -251,7 +251,7 @@ async function testDataIntegrity() {
     if (checkResult.success) {
       const count = parseInt(checkResult.output.trim()) || 0;
       integrityChecks.push({
-        check: `orphaned_records_${query.split(' ')[3]}`,
+        check: `orphanedRecords:${query.split(' ')[3]}`,
         status: count === 0 ? 'passed' : 'warning',
         count,
         details: count === 0 ? 'No orphaned records found' : `Found ${count} orphaned records`,
@@ -282,7 +282,7 @@ async function testDataIntegrity() {
       !tableCheckResult.output.includes('does not exist');
 
     integrityChecks.push({
-      check: `table_${table}`,
+      check: `table:${table}`,
       status: tableExists ? 'passed' : 'failed',
       details: tableExists ? `Table ${table} exists` : `Table ${table} missing`,
     });
