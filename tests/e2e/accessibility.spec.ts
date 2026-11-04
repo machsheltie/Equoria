@@ -423,7 +423,8 @@ async function keyboardSweep(page: Page, label: string, maxStops = 15) {
  * Measure contrast for the text axe could not score (text over the painted
  * backdrop, a gradient or a translucent panel). The text is hidden, the page
  * is captured, and every captured pixel behind each text box is compared with
- * the text's computed color: `worstRatio` uses the backdrop pixel closest in
+ * the text's computed color (inside the element's content box, where its text
+ * paints): `worstRatio` uses the backdrop pixel closest in
  * luminance to the text (5th percentile of ratios, so a stray icon pixel does
  * not decide it) and `medianRatio` the typical pixel. Evidence only: attached
  * so the contrast record covers the whole page, not asserted (Equoria-oey96.10).
@@ -450,16 +451,27 @@ async function sampledContrast(page: Page, label: string) {
       const el = document.querySelector(sel) as HTMLElement | null;
       if (!el) return [];
       const r = el.getBoundingClientRect();
-      if (r.width < 2 || r.height < 2) return [];
       const cs = getComputedStyle(el);
+      // Sample the content box: text never paints in the padding or border, and
+      // a rounded element's border box includes corner pixels outside its own
+      // background (Equoria-3m6bm: the narrow Equip button's 12px corners showed
+      // the dark bar behind it on over 5% of its box, reading 1.00:1).
+      const inset = (side: 'top' | 'right' | 'bottom' | 'left') =>
+        (parseFloat(cs.getPropertyValue(`padding-${side}`)) || 0) +
+        (parseFloat(cs.getPropertyValue(`border-${side}-width`)) || 0);
+      const x = r.left + inset('left');
+      const y = r.top + inset('top');
+      const w = r.width - inset('left') - inset('right');
+      const h = r.height - inset('top') - inset('bottom');
+      if (w < 2 || h < 2) return [];
       return [
         {
           sel,
           text: (el.textContent ?? '').trim().slice(0, 40),
-          x: r.left + window.scrollX,
-          y: r.top + window.scrollY,
-          w: r.width,
-          h: r.height,
+          x: x + window.scrollX,
+          y: y + window.scrollY,
+          w,
+          h,
           color: cs.color,
           fontSize: parseFloat(cs.fontSize),
           fontWeight: Number(cs.fontWeight) || 400,
