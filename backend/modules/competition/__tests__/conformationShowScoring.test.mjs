@@ -504,7 +504,7 @@ describe('validateConformationEntry (real DB)', () => {
     const dbGroom = await prisma.groom.create({
       data: {
         name: 'ValidGroom',
-        speciality: 'show_handling',
+        speciality: 'showHandling',
         personality: 'gentle',
         skillLevel: 'expert',
         user: { connect: { id: user.id } },
@@ -598,7 +598,7 @@ describe('validateConformationEntry (real DB)', () => {
     const g = await prisma.groom.create({
       data: {
         name: 'RecentGroom',
-        speciality: 'show_handling',
+        speciality: 'showHandling',
         personality: 'gentle',
         skillLevel: 'expert',
         user: { connect: { id: u.id } },

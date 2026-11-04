@@ -84,7 +84,7 @@ describe('getFlagsByType', () => {
   });
 
   it('returns empty array for nonexistent type', () => {
-    expect(getFlagsByType('MADE_UP_TYPE')).toEqual([]);
+    expect(getFlagsByType('madeUpType')).toEqual([]);
   });
 
   it('percentage flags all have numeric defaultValues', () => {

@@ -78,7 +78,7 @@ describe('getLegacyPerks', () => {
 });
 
 describe('checkLegacyEligibility', () => {
-  it('returns not_found for non-existent groom', async () => {
+  it('returns groomNotFound for non-existent groom', async () => {
     const result = await checkLegacyEligibility(999999999);
     expect(result.eligible).toBe(false);
     expect(result.reason).toBe('groomNotFound');

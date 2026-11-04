@@ -73,7 +73,7 @@ async function makeEntrant(label, { money = 1000, horseXp = 0 } = {}) {
   const groom = await prisma.groom.create({
     data: {
       name: `${fixturePrefix}-${label}-groom-${tag}`,
-      speciality: 'show_handling',
+      speciality: 'showHandling',
       personality: 'gentle',
       skillLevel: 'expert',
       user: { connect: { id: user.id } },

@@ -57,7 +57,7 @@ const financialCap = 1000; // owner ruling 2026-10-27 (was 20) // financialRateL
 // the limiter's REAL configured value — we are not weakening or bypassing
 // the limiter, we are exercising it at its production-intent cap inside the
 // jest env that otherwise loosens ALL useEnvOverride limiters to 1000.
-const __ORIGINAL_TEST_RL_MAX = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
+const originalTestRlMax = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
 process.env.TEST_RATE_LIMIT_MAX_REQUESTS = String(financialCap);
 
 const { default: app } = await import('../app.mjs');
@@ -119,10 +119,10 @@ afterAll(async () => {
   await cleanupTestData();
   // Restore the process-wide jest cap so any teardown / shared state is
   // unaffected (each test file is its own worker, but be tidy regardless).
-  if (__ORIGINAL_TEST_RL_MAX === undefined) {
+  if (originalTestRlMax === undefined) {
     delete process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
   } else {
-    process.env.TEST_RATE_LIMIT_MAX_REQUESTS = __ORIGINAL_TEST_RL_MAX;
+    process.env.TEST_RATE_LIMIT_MAX_REQUESTS = originalTestRlMax;
   }
 });
 

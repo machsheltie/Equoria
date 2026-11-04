@@ -66,7 +66,7 @@ async function main() {
     suite: 'bulk-foaling-cron-concurrency',
     issue: 'Equoria-fx5cb',
     startedAt: new Date().toISOString(),
-    config: { MARE_COUNT: mareCount, PARALLEL_SWEEPS: parallelSweeps, ADVANCE_DAYS: advanceDays },
+    config: { mareCount, parallelSweeps, advanceDays },
     mares: [],
     invariant: 'foals_materialised_per_mare <= 1',
     violations: [],

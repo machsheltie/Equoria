@@ -33,7 +33,7 @@ const { default: app } = await import('../../app.mjs');
 // than relying on "last line of stdout" — real app.mjs emits post-request
 // teardown logs (MemoryManager, Sentry flush, …) on stdout that would
 // otherwise clobber the payload.
-const SENTINEL = '__CSRF_PROBE_JSON__';
+const SENTINEL = '__csrfProbeJson__';
 
 try {
   const res = await request(app)

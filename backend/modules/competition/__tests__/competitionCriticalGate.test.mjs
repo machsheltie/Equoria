@@ -102,7 +102,7 @@ async function createGroom(userId) {
   return prisma.groom.create({
     data: {
       name: `${suitePrefix}-g-${randomBytes(4).toString('hex')}`,
-      speciality: 'show_handling',
+      speciality: 'showHandling',
       personality: 'gentle',
       skillLevel: 'expert',
       user: { connect: { id: userId } },

@@ -106,7 +106,7 @@ async function createGroom(userId, overrides = {}) {
   return prisma.groom.create({
     data: {
       name: overrides.name ?? `${suitePrefix}-g-${randomBytes(4).toString('hex')}`,
-      speciality: overrides.speciality ?? 'show_handling',
+      speciality: overrides.speciality ?? 'showHandling',
       personality: overrides.personality ?? 'gentle',
       skillLevel: overrides.skillLevel ?? 'expert',
       // showHandlingSkill is read by the validation; some controllers may

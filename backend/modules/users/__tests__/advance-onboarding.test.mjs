@@ -326,7 +326,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     // value the user never saw. If onboarding correctly reassigns from the
     // chosen breed, this sentinel string MUST be replaced; under the pre-8vwly
     // conditional ("preserve any existing temperament") it would survive.
-    const sentinelPlaceholder = 'REGISTER_TIME_PLACEHOLDER_8VWLY';
+    const sentinelPlaceholder = 'registerTimePlaceholder8vwly';
     await prisma.horse.deleteMany({ where: { userId: testUser.id } });
     await prisma.horse.create({
       data: await testHorseData(prisma, {

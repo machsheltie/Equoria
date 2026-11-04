@@ -2,7 +2,7 @@
 //
 // Owner ruling 2026-10-21 (Stacey): "temperaments don't have any effect on
 // discipline training gain. It is a standard +5 for the selected discipline."
-// Old contract (Story 31D-2): TEMPERAMENT_TRAINING_MODIFIERS scaled the
+// Old contract (Story 31D-2): temperamentTrainingModifiers scaled the
 // discipline gain and XP per temperament (e.g. Calm +10% score -> +6, Lazy
 // -15% score -> +4, Stubborn -15% XP -> 4 XP), trainHorse() returned a
 // temperamentEffects block, and Lazy + eagerLearner stacked multiplicatively.
@@ -100,7 +100,7 @@ async function cleanupSuite() {
 
 describe('the horses module no longer offers temperament training modifiers', () => {
   it('exports neither the table nor the lookup', () => {
-    expect(horsesModule).not.toHaveProperty('TEMPERAMENT_TRAINING_MODIFIERS');
+    expect(horsesModule).not.toHaveProperty('temperamentTrainingModifiers');
     expect(horsesModule).not.toHaveProperty('getTemperamentTrainingModifiers');
   });
 

@@ -48,7 +48,7 @@ describe('generateBreedingData — non-existent horse', () => {
 describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht)', () => {
   let bpsUser;
   let bpsStallionCalm; // Stallion, temperament='calm', 4 traits: brave/focused/fearful/bold
-  let bpsMareGentle; // Mare, temperament='gentle', 4 traits: brave/gentle/quick_learner/calm
+  let bpsMareGentle; // Mare, temperament='gentle', 4 traits: brave/gentle/quickLearner/calm
   let bpsHorseNoTraits; // Mare, no traits → hasInsufficientData=true; temperament=null → unknown key
   let bpsHorseRare; // Mare, 1 rare trait (heart) → parentTraitCounts=1 → low (not insufficient)
   const bpsHorseIds = [];
@@ -146,11 +146,11 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
       });
     }
 
-    // bpsMareGentle traits: brave (stacks with stallion), gentle, quick_learner (epigenetic), calm
+    // bpsMareGentle traits: brave (stacks with stallion), gentle, quickLearner (epigenetic), calm
     for (const [traitName, extra] of [
       ['brave', {}],
       ['gentle', {}],
-      ['quick_learner', { isEpigenetic: true }],
+      ['quickLearner', { isEpigenetic: true }],
       ['calm', {}],
     ]) {
       await prisma.traitHistoryLog.create({

@@ -84,7 +84,7 @@ describe('Groom Bonus Traits System', () => {
         bonusTraitMap: {
           sensitive: 0.2,
           noble: 0.1,
-          quick_learner: 0.15,
+          quickLearner: 0.15,
         },
         userId: testUser.id,
       },
@@ -201,7 +201,7 @@ describe('Groom Bonus Traits System', () => {
       expect(updatedGroom.bonusTraitMap).toEqual({
         sensitive: 0.2,
         noble: 0.1,
-        quick_learner: 0.15,
+        quickLearner: 0.15,
       });
     });
 

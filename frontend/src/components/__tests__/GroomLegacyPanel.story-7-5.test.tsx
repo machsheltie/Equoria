@@ -13,7 +13,7 @@
  *
  * Equoria-gghoi (orchestrator decision under the owner's rulings, 2026-10-28): the
  * backend's LEGACY_PERKS is the only perk table; the frontend copy
- * (LEGACY_PERKS_BY_PERSONALITY, getAvailablePerksForPersonality, formatPerkEffect) is
+ * (legacyPerksByPersonality, getAvailablePerksForPersonality, formatPerkEffect) is
  * deleted and the panel shows only the perks the game sends, by authored name and
  * description, never effect codes. Old contract: the panel looked perks up in its own
  * drifted table (methodical routineMastery/precisionTouch, playful/strict perks the game
@@ -120,7 +120,7 @@ describe('groomLegacy helpers', () => {
 
   describe('no frontend perk table (Equoria-gghoi)', () => {
     it('keeps no copy of the perks and no effect-code formatter', () => {
-      expect(groomLegacyModule).not.toHaveProperty('LEGACY_PERKS_BY_PERSONALITY');
+      expect(groomLegacyModule).not.toHaveProperty('legacyPerksByPersonality');
       expect(groomLegacyModule).not.toHaveProperty('getAvailablePerksForPersonality');
       expect(groomLegacyModule).not.toHaveProperty('formatPerkEffect');
     });

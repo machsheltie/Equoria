@@ -80,7 +80,7 @@ describe('🔒 REGRESSION: PUT /api/v1/grooms/:id/bonus-traits is closed (Equori
         bonusTraitMap: {
           sensitive: 0.2,
           noble: 0.1,
-          quick_learner: 0.15,
+          quickLearner: 0.15,
         },
         userId: testUser.id,
       },
@@ -131,7 +131,7 @@ describe('🔒 REGRESSION: PUT /api/v1/grooms/:id/bonus-traits is closed (Equori
     expect(persisted.bonusTraitMap).toEqual({
       sensitive: 0.2,
       noble: 0.1,
-      quick_learner: 0.15,
+      quickLearner: 0.15,
     });
   });
 
@@ -154,7 +154,7 @@ describe('🔒 REGRESSION: PUT /api/v1/grooms/:id/bonus-traits is closed (Equori
     expect(persisted.bonusTraitMap).toEqual({
       sensitive: 0.2,
       noble: 0.1,
-      quick_learner: 0.15,
+      quickLearner: 0.15,
     });
   });
 });

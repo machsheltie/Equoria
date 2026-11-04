@@ -19,16 +19,16 @@ import { temperamentTypes } from '../data/temperamentTypes.mjs';
 
 // ---------------------------------------------------------------------------
 // Owner ruling 2026-10-21: a temperament has no training modifier and no
-// ridden/conformation modifier. Old contract: TEMPERAMENT_TRAINING_MODIFIERS
+// ridden/conformation modifier. Old contract: temperamentTrainingModifiers
 // (xp/score per temperament, e.g. Lazy -0.2 XP) and
-// TEMPERAMENT_COMPETITION_MODIFIERS (ridden/conformation per temperament, e.g.
+// temperamentCompetitionModifiers (ridden/conformation per temperament, e.g.
 // Bold +0.05 ridden), with getTemperamentTrainingModifiers /
 // getTemperamentCompetitionModifiers lookups. All four are gone.
 // ---------------------------------------------------------------------------
 describe('no training or ridden/conformation temperament modifiers (owner ruling 2026-10-21)', () => {
   it('exports none of the removed tables or lookups', () => {
-    expect(temperamentService).not.toHaveProperty('TEMPERAMENT_TRAINING_MODIFIERS');
-    expect(temperamentService).not.toHaveProperty('TEMPERAMENT_COMPETITION_MODIFIERS');
+    expect(temperamentService).not.toHaveProperty('temperamentTrainingModifiers');
+    expect(temperamentService).not.toHaveProperty('temperamentCompetitionModifiers');
     expect(temperamentService).not.toHaveProperty('getTemperamentTrainingModifiers');
     expect(temperamentService).not.toHaveProperty('getTemperamentCompetitionModifiers');
   });

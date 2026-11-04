@@ -152,7 +152,7 @@ describe('forumController (real DB)', () => {
     it('returns 400 for invalid section values', async () => {
       const user = await createUser();
 
-      const h = makeReqRes(user.id, { query: { section: 'INVALID_SECTION' } });
+      const h = makeReqRes(user.id, { query: { section: 'invalidSection' } });
       await getThreads(h.req, h.res);
 
       expect(h.res.statusValue).toBe(400);

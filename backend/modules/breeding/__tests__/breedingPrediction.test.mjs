@@ -92,7 +92,7 @@ describe('Breeding Prediction System', () => {
         temperament: 'spirited',
         userId: testUser.id,
         breedId: testBreed.id,
-        epigeneticModifiers: { positive: ['sensitive', 'noble'], negative: [], hidden: ['quick_learner'] },
+        epigeneticModifiers: { positive: ['sensitive', 'noble'], negative: [], hidden: ['quickLearner'] },
       }),
     });
 

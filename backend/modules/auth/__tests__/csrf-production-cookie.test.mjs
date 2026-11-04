@@ -100,10 +100,10 @@ describe('CSRF cookie-name contract', () => {
       );
     }
 
-    // Probe wraps its JSON payload in __CSRF_PROBE_JSON__ sentinels so we
+    // Probe wraps its JSON payload in __csrfProbeJson__ sentinels so we
     // can pick it out even when surrounding stdout contains Winston logs,
     // Sentry flush lines, or MemoryManager teardown chatter.
-    const SENTINEL = '__CSRF_PROBE_JSON__';
+    const SENTINEL = '__csrfProbeJson__';
     const match = result.stdout.match(new RegExp(`${SENTINEL}(.*?)${SENTINEL}`));
     if (!match) {
       throw new Error(

@@ -78,7 +78,7 @@ async function addHorse(user, label, horseFields = {}) {
   const groom = await prisma.groom.create({
     data: {
       name: `${fixturePrefix}-${label}-groom-${seq}-${tag}`,
-      speciality: 'show_handling',
+      speciality: 'showHandling',
       personality: 'gentle',
       skillLevel: 'expert',
       user: { connect: { id: user.id } },

@@ -86,7 +86,7 @@ async function makeEntrant() {
   const groom = await prisma.groom.create({
     data: {
       name: `${fixturePrefix}-${label}-groom-${tag}`,
-      speciality: 'show_handling',
+      speciality: 'showHandling',
       personality: 'gentle',
       skillLevel: 'expert',
       user: { connect: { id: user.id } },
@@ -386,7 +386,7 @@ describe('conformation settlement is server-authoritative (Equoria-mwjst Finding
     const standIn = await prisma.groom.create({
       data: {
         name: `${fixturePrefix}-standin-groom-${tag}`,
-        speciality: 'show_handling',
+        speciality: 'showHandling',
         personality: 'strict',
         skillLevel: 'master',
         showHandlingSkill: 'master',

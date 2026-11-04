@@ -547,7 +547,7 @@ describe('throw-still-503 — alerting throw must not prevent the 503 response',
     // We do this by replacing the Map's `get` method on the instance.
     const origGet = _alertTimestamps.get.bind(_alertTimestamps);
     _alertTimestamps.get = () => {
-      throw new TypeError('SIMULATED_ALERT_THROW');
+      throw new TypeError('simulatedAlertThrow');
     };
 
     const { req, res, next, captured } = makeStubRequestTriple('throw-503-user');
