@@ -73,11 +73,13 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     horseId = horse.id;
     console.log(`Seeded test horse id=${horseId} name=${horseName}`);
 
-    // Buy enough performance feed for ~20 feeds.
-    // 1 pack = 100 units; one pack covers 20 feeds easily.
+    // Buy enough performance feed for both loops below: up to
+    // statGainApiFeedLimit (132) API feeds plus up to 20 UI feeds = 152 units.
+    // 1 pack = 100 units, so two packs. Running out mid-loop would clear the
+    // equipped feed and fail a feed for the wrong reason.
     const buyRes = await csrfMutate(session, 'POST', '/api/v1/feed-shop/purchase', {
       feedTier: 'performance',
-      packs: 1,
+      packs: 2,
     });
     if (!buyRes.ok()) {
       console.warn(
@@ -103,14 +105,22 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
   }) => {
     test.setTimeout(180_000);
 
-    // Step 1 — feed up to 20 times via API, watching for any statBoost.
-    // Each feed call sets lastFedDate=today; the feedHistory fixture backdates
-    // it in the test database between feeds (Equoria-mwjst — no production
-    // route may rewind it). statRollPct for performance is non-zero so at
-    // least one of 20 attempts should fire a statGain notification.
+    // Step 1 — feed via API until a statBoost fires, at most
+    // statGainApiFeedLimit times. Each feed call sets lastFedDate=today; the
+    // feedHistory fixture backdates it in the test database between feeds
+    // (Equoria-mwjst — no production route may rewind it).
+    //
+    // Why 132 (Equoria-7i4cw, owner ruling 2026-10-23: flaky tests may be made
+    // deterministic, never weaker): Performance Feed rolls a stat 10% of the
+    // time and no deterministic seam reaches the HTTP route (feedHorse's rng
+    // argument is in-process only). With 20 tries the loop missed every roll
+    // 0.9^20 = 12% of the time; with 132 it misses 0.9^132 = 9.1e-7. The loop
+    // still stops at the first gain (about 10 feeds on average), and a
+    // statRollPct of 0 still fails every time.
+    const statGainApiFeedLimit = 132;
     let statBoostFired = false;
     let attempts = 0;
-    while (attempts < 20 && !statBoostFired) {
+    while (attempts < statGainApiFeedLimit && !statBoostFired) {
       // Give the horse earlier feeding history so the next feed proceeds.
       if (attempts > 0) {
         await markHorseFedTwoDaysAgo(horseId);
