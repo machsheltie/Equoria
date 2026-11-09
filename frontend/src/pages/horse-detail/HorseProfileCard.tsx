@@ -318,7 +318,10 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
             <span className="text-xs fantasy-caption text-[var(--text-secondary)] capitalize">
               {statName}
             </span>
-            <span className="text-lg font-semibold tabular-nums text-[var(--text-primary)]">
+            <span
+              className="text-lg font-semibold tabular-nums text-[var(--text-primary)]"
+              data-testid={`horse-quick-stat-${statName}`}
+            >
               {value}
             </span>
           </div>

@@ -80,8 +80,36 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     // Step 1: navigate to feed shop, buy a default pack of basic (100 units)
     await page.goto('/feed-shop', { waitUntil: 'load' });
     await expect(page.getByTestId('feed-tier-basic')).toBeVisible();
+    // Owner ruling q173 (Equoria-7i4cw): no "Purchased ..." pop-up any more —
+    // success is the header coin balance dropping. Read the balance and the
+    // Basic Feed pack price before buying, then require the balance to fall by
+    // exactly one pack and the server to confirm exactly 100 units bought.
+    const coins = page.getByTestId('coins-display');
+    const readCoins = async () => Number((await coins.innerText()).replace(/[^0-9]/g, '') || NaN);
+    await expect.poll(readCoins, { timeout: 15_000 }).not.toBeNaN();
+    const coinsBefore = await readCoins();
+    const catalogRes = await page.request.get('/api/v1/feed-shop/catalog');
+    expect(catalogRes.ok()).toBeTruthy();
+    const catalog = (
+      (await catalogRes.json()) as { data: Array<{ id: string; packPrice: number }> }
+    ).data;
+    const basicPackPrice = catalog.find((t) => t.id === 'basic')?.packPrice;
+    expect(typeof basicPackPrice, 'basic feed missing from the catalog').toBe('number');
+    const purchaseResp = page.waitForResponse(
+      (resp) =>
+        resp.url().includes('/api/v1/feed-shop/purchase') && resp.request().method() === 'POST'
+    );
     await page.getByTestId('buy-basic').click();
-    await expect(page.getByText(/Purchased 100 units of Basic Feed/)).toBeVisible();
+    const purchaseResponse = await purchaseResp;
+    expect(purchaseResponse.ok()).toBeTruthy();
+    const purchaseJson = (await purchaseResponse.json()) as {
+      message: string;
+      data: { remainingMoney: number; inventoryItem: { quantity: number } };
+    };
+    expect(purchaseJson.message).toBe('Purchased 100 units of Basic Feed.');
+    expect(purchaseJson.data.inventoryItem.quantity).toBe(100);
+    expect(purchaseJson.data.remainingMoney).toBe(coinsBefore - basicPackPrice!);
+    await expect.poll(readCoins, { timeout: 5_000 }).toBe(coinsBefore - basicPackPrice!);
 
     // Step 2: navigate to equip page, equip basic feed
     await page.goto(`/horses/${testHorseId}/equip`, { waitUntil: 'load' });
@@ -99,7 +127,13 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     await page.getByTestId('equip-feed-basic').click();
     const equipResponse = await equipResp;
     expect(equipResponse.ok()).toBeTruthy();
-    await expect(page.getByText(/Equipped Basic Feed/)).toBeVisible();
+    // Owner ruling q173: no "Equipped Basic Feed" pop-up — the Basic Feed card
+    // itself becomes the equipped card (gold star, Unequip) with its stock.
+    const equippedCard = page.getByTestId('equipped-feed-card');
+    await expect(equippedCard).toBeVisible();
+    await expect(equippedCard).toContainText('Basic Feed');
+    await expect(equippedCard).toContainText('100 units in stock');
+    await expect(page.getByTestId('feed-item-basic')).toHaveCount(0);
 
     // Defense-in-depth verification — hit the equippable endpoint directly via
     // Playwright's request context (uses the same cookie jar as the page) and
@@ -126,9 +160,23 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     // Wait for horse data to hydrate and button to become enabled.
     // equippedFeedType='basic' is in the RQ cache from the equip step above.
     await expect(feedButton).toBeEnabled({ timeout: 15_000 });
+    const feedResp = page.waitForResponse(
+      (resp) =>
+        resp.url().includes(`/api/v1/horses/${testHorseId}/feed`) &&
+        resp.request().method() === 'POST'
+    );
     await feedButton.click();
-    // Success toast: "Fed [name] with Basic Feed. 99 units left."
-    await expect(page.getByText(/99 units left/)).toBeVisible({ timeout: 10_000 });
+    // Owner ruling q173: no "Fed [name] with Basic Feed. 99 units left." pop-up.
+    // The feed must succeed with exactly 99 units left; the page then shows that
+    // count on the equipped feed card (checked after the button state below).
+    const feedResponse = await feedResp;
+    expect(feedResponse.ok()).toBeTruthy();
+    const feedJson = (await feedResponse.json()) as {
+      message: string;
+      data: { remainingUnits: number };
+    };
+    expect(feedJson.message).toMatch(/^Fed .+ with Basic Feed\.$/);
+    expect(feedJson.data.remainingUnits).toBe(99);
 
     // Step 4: after feeding, the action-feed button must be disabled for the
     // rest of the UTC day. useFeedHorse.onSuccess (Equoria-28cj follow-up)
@@ -136,6 +184,12 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     // the isAlreadyFedToday check in HorseDetailPage disables the button
     // immediately without a background-GET race.
     await expect(feedButton).toBeDisabled({ timeout: 5_000 });
+
+    // The remaining count the old pop-up printed, now read off the page: the
+    // equipped Basic Feed card shows the 99 units left after this feed.
+    await page.goto(`/horses/${testHorseId}/equip`, { waitUntil: 'load' });
+    await expect(page.getByTestId('horse-equip-loading')).toHaveCount(0, { timeout: 10_000 });
+    await expect(page.getByTestId('equipped-feed-card')).toContainText('99 units in stock');
   });
 
   test('inventory page shows the purchased feed under the feed category', async ({ page }) => {

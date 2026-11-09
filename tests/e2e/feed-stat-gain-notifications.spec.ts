@@ -184,19 +184,34 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     await expect(page.getByTestId('notification-dot')).toHaveCount(0, { timeout: 15_000 });
   });
 
-  test('UI feed click renders sonner toast with "+1 [Stat]!" suffix on statGain (Equoria-ap38)', async ({
+  test('UI feed click shows a "+1 [Stat]" gain on the page and in a new notification (Equoria-ap38)', async ({
     page,
   }) => {
     // E2E coverage replacing deleted vi.mock unit test
     // (frontend/src/pages/__tests__/HorseDetailPage.feed-toast.test.tsx,
-    // Equoria-ap38 sentinel). The unit test locked the merged-toast text format
-    // 'Fed [Name] with [Feed]. [N] units left. +1 [Stat]!' at
-    // HorseActionBar.tsx:60-66. This UI-driven path proves the production toast
-    // string matches that format AND, on a non-stat-gain feed, has no suffix.
+    // Equoria-ap38 sentinel). Old contract: a sonner toast reading
+    // 'Fed [Name] with [Feed]. [N] units left. +1 [Stat]!'. Owner ruling q173
+    // (Equoria-7i4cw) removed every pop-up: the page itself changes. So a UI
+    // feed click must now (a) succeed for THIS horse with the equipped feed,
+    // (b) on a stat gain raise exactly that stat's number on the horse page by
+    // exactly 1 and leave the others alone, and (c) add a NEW stat-gain
+    // notification for this horse reading '+1 [Stat] from [Feed]'. On a feed
+    // without a gain, no stat number on the page may change.
     test.setTimeout(180_000);
 
     // Make sure the test horse can be fed via the UI (test-database fixture).
     await markHorseFedTwoDaysAgo(horseId);
+
+    // Stat-gain notifications that already exist (the API loop above made at
+    // least one for this horse) — the one this test finds must be new.
+    const notifsBeforeRes = await session.request.get('/api/v1/users/me/game-notifications');
+    expect(notifsBeforeRes.ok()).toBeTruthy();
+    const notifsBefore = (
+      (await notifsBeforeRes.json()) as {
+        data: { notifications: Array<{ id: string | number; type: string }> };
+      }
+    ).data.notifications;
+    const priorStatGainIds = notifsBefore.filter((n) => n.type === 'statGain').map((n) => n.id);
 
     // Navigate to the horse detail page and wait for the action bar to mount.
     await page.goto(`/horses/${horseId}`, { waitUntil: 'load' });
@@ -204,15 +219,25 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     const feedButton = page.getByTestId('action-feed');
     await expect(feedButton).toBeEnabled({ timeout: 15_000 });
 
-    // sonner renders toasts as [data-sonner-toast] elements in a portal.
-    // We loop UI feeds (resetting last-fed each round) up to 20 times until
-    // we catch a stat-gain toast — same statRollPct assumption the API loop
-    // above relies on.
-    let statGainToastCaptured = false;
-    let lastNonGainText: string | null = null;
-    const toastLocator = page.locator('[data-sonner-toast]');
+    // The twelve stat numbers in the horse page's quick-stats summary.
+    const statValues = page.locator('[data-testid^="horse-quick-stat-"]');
+    const readStats = async (): Promise<Record<string, number>> =>
+      Object.fromEntries(
+        await statValues.evaluateAll((els) =>
+          els.map((el) => [
+            (el.getAttribute('data-testid') ?? '').replace('horse-quick-stat-', ''),
+            Number((el.textContent ?? '').trim()),
+          ])
+        )
+      );
 
-    for (let i = 0; i < 20 && !statGainToastCaptured; i++) {
+    // We loop UI feeds (resetting last-fed each round) up to 20 times until a
+    // feed rolls a stat gain — same statRollPct assumption the API loop above
+    // relies on.
+    let gain: { stat: string; feedName: string } | null = null;
+    let nonGainFeeds = 0;
+
+    for (let i = 0; i < 20 && !gain; i++) {
       if (i > 0) {
         await markHorseFedTwoDaysAgo(horseId);
         // Reload so the page picks up the backdated lastFedDate and re-enables the button.
@@ -220,45 +245,71 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
         await expect(page.getByTestId('action-feed')).toBeEnabled({ timeout: 15_000 });
       }
 
-      await page.getByTestId('action-feed').click();
-
-      // Wait for at least one toast to appear after the click.
-      await expect(toastLocator.first()).toBeVisible({ timeout: 15_000 });
-      // Grab the most recently rendered toast's text content.
-      const count = await toastLocator.count();
-      const latestText = (await toastLocator.nth(count - 1).innerText()).trim();
-
-      // Production format from HorseActionBar.tsx:60-66:
-      //   `Fed ${name} with ${feedName}. ${remaining} units left.${statSuffix}`
-      // where statSuffix is ' +1 [Stat]!' when statBoost present, '' otherwise.
-      expect(latestText).toContain(`Fed ${horseName}`);
-      expect(latestText).toMatch(/\d+ units left\./);
-
-      if (/\+1 [A-Z][a-z]+!/.test(latestText)) {
-        // Stat-gain branch: capitalized stat name, full AC text.
-        // e.g. "Fed StatGainNotif-... with Performance Feed. 12 units left. +1 Speed!"
-        expect(latestText).toMatch(
-          new RegExp(`Fed ${horseName} with .+\\. \\d+ units left\\. \\+1 [A-Z][a-z]+!$`)
-        );
-        statGainToastCaptured = true;
-      } else {
-        // No-stat-gain branch: must NOT contain any '+1' substring.
-        expect(latestText).not.toMatch(/\+1/);
-        // Must end exactly at "units left." with no trailing suffix.
-        expect(latestText).toMatch(new RegExp(`Fed ${horseName} with .+\\. \\d+ units left\\.$`));
-        lastNonGainText = latestText;
+      await expect(statValues).toHaveCount(12, { timeout: 15_000 });
+      const statsBefore = await readStats();
+      for (const [name, value] of Object.entries(statsBefore)) {
+        expect(Number.isInteger(value), `stat ${name} reads ${value}`).toBe(true);
       }
 
-      // Dismiss/wait for the toast to clear before the next iteration so we
-      // don't read a stale toast in the next loop. Sonner auto-dismisses
-      // (3000ms no-gain, 5000ms gain) — wait until the count drops back to 0.
-      await expect(toastLocator).toHaveCount(0, { timeout: 10_000 });
+      const feedResp = page.waitForResponse(
+        (resp) =>
+          resp.url().includes(`/api/v1/horses/${horseId}/feed`) &&
+          resp.request().method() === 'POST'
+      );
+      await page.getByTestId('action-feed').click();
+      const feedResponse = await feedResp;
+      expect(feedResponse.ok()).toBeTruthy();
+      const feedJson = (await feedResponse.json()) as {
+        message: string;
+        data: {
+          feed: { name: string };
+          remainingUnits: number;
+          statBoost: { stat: string; amount: number } | null;
+        };
+      };
+      // The feed ran for THIS horse with the equipped feed and reported stock.
+      expect(feedJson.message).toBe(`Fed ${horseName} with ${feedJson.data.feed.name}.`);
+      expect(Number.isInteger(feedJson.data.remainingUnits)).toBe(true);
+
+      const boost = feedJson.data.statBoost;
+      if (boost) {
+        // Stat-gain branch: exactly +1, to one of the page's twelve stats.
+        expect(boost.amount).toBe(1);
+        expect(Object.keys(statsBefore)).toContain(boost.stat);
+        // The page itself changes: that stat's number rises by exactly 1 ...
+        await expect(page.getByTestId(`horse-quick-stat-${boost.stat}`)).toHaveText(
+          String(statsBefore[boost.stat] + 1),
+          { timeout: 15_000 }
+        );
+        // ... and no other stat moves.
+        expect(await readStats()).toEqual({
+          ...statsBefore,
+          [boost.stat]: statsBefore[boost.stat] + 1,
+        });
+        gain = { stat: boost.stat, feedName: feedJson.data.feed.name };
+      } else {
+        // No-stat-gain branch: no stat number on the page changes.
+        expect(await readStats()).toEqual(statsBefore);
+        nonGainFeeds++;
+      }
     }
 
     expect(
-      statGainToastCaptured,
-      `No stat-gain toast captured in 20 UI feeds — statRollPct may have regressed ` +
-        `(non-gain sample: ${lastNonGainText ?? 'none'})`
-    ).toBe(true);
+      gain,
+      `No stat gain in 20 UI feeds (${nonGainFeeds} without a gain) — statRollPct may have regressed`
+    ).not.toBeNull();
+
+    // The "+1 [Stat]" words the old pop-up printed now arrive as a NEW
+    // stat-gain notification for this horse: '+1 Speed from Performance Feed'.
+    const statLabel = gain!.stat.charAt(0).toUpperCase() + gain!.stat.slice(1);
+    const newRowSelector =
+      '[data-notif-type="statGain"]' +
+      priorStatGainIds.map((id) => `:not([data-testid="game-notif-${id}"])`).join('');
+    await page.goto('/messages', { waitUntil: 'load' });
+    await page.getByTestId('tab-notifications').click();
+    await expect(page.getByTestId('tab-notifications')).toHaveAttribute('aria-selected', 'true');
+    const newGainRow = page.locator(newRowSelector, { hasText: horseName });
+    await expect(newGainRow).toHaveCount(1, { timeout: 15_000 });
+    await expect(newGainRow).toContainText(`+1 ${statLabel} from ${gain!.feedName}`);
   });
 });

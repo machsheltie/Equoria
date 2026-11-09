@@ -198,15 +198,34 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     await page.getByTestId('equip-feed-basic').click();
     const equipResponse = await equipResp;
     expect(equipResponse.ok()).toBeTruthy();
-    await expect(page.getByText(/Equipped Basic Feed/)).toBeVisible();
+    // Owner ruling q173 (Equoria-7i4cw): no "Equipped Basic Feed" pop-up — the
+    // Basic Feed card itself becomes the equipped card (gold star, Unequip).
+    const equippedCard = page.getByTestId('equipped-feed-card');
+    await expect(equippedCard).toBeVisible();
+    await expect(equippedCard).toContainText('Basic Feed');
+    await expect(page.getByTestId('feed-item-basic')).toHaveCount(0);
 
     // Step 2: navigate to the mare's detail page and use the Feed button
     await page.goto(`/horses/${mareId}`, { waitUntil: 'load' });
     const feedButton = page.getByTestId('action-feed');
     await expect(feedButton).toBeEnabled({ timeout: 15_000 });
+    const feedResp = page.waitForResponse(
+      (resp) =>
+        resp.url().includes(`/api/v1/horses/${mareId}/feed`) && resp.request().method() === 'POST'
+    );
     await feedButton.click();
-    // Success toast shows remaining units, e.g. "Fed [name] with Basic Feed. 99 units left."
-    await expect(page.getByText(/units left/)).toBeVisible({ timeout: 10_000 });
+    // Owner ruling q173: no "Fed [name] with Basic Feed. N units left." pop-up.
+    // The feed must succeed for this mare with Basic Feed and report what is
+    // left; the page shows that count on the equipped feed card (end of test).
+    const feedResponse = await feedResp;
+    expect(feedResponse.ok()).toBeTruthy();
+    const feedJson = (await feedResponse.json()) as {
+      message: string;
+      data: { remainingUnits: number };
+    };
+    expect(feedJson.message).toBe(`Fed ${mareName} with Basic Feed.`);
+    expect(Number.isInteger(feedJson.data.remainingUnits)).toBe(true);
+    const unitsLeft = feedJson.data.remainingUnits;
 
     // Step 3: reload to flush React Query cache and pick up updated
     // pregnancyFeedingsByTier from the server.
@@ -215,6 +234,15 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
 
     // The basic counter must now show at least 1 feed event
     await expect(page.getByTestId('pregnancy-counter-basic')).toContainText(/[1-9]/);
+
+    // The remaining count the old pop-up printed, now read off the page: the
+    // equipped Basic Feed card shows exactly the units the feed left.
+    expect(unitsLeft).toBeGreaterThan(0);
+    await page.goto(`/horses/${mareId}/equip`, { waitUntil: 'load' });
+    await expect(page.getByTestId('horse-equip-loading')).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.getByTestId('equipped-feed-card')).toContainText(
+      `${unitsLeft} units in stock`
+    );
   });
 
   test('a materialised foal appears in the horse list', async ({ page }) => {
