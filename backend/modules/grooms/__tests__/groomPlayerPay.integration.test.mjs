@@ -29,6 +29,10 @@ import { getPayWeekStart } from '../services/groomSalaryService.mjs';
 import { checkGroomMayWork } from '../services/groomEngagementService.mjs';
 
 const PREFIX = 'TestFixture-groomPlayerPay';
+// Usernames are capped at 30 characters. PREFIX alone is 26, so `${PREFIX}-${tag}` sliced to 30
+// kept only 3 of the 8 random hex characters (4096 values): two of this file's dozen users could
+// collide on the unique username (CI master run 41842633232). A short prefix keeps all 32 bits.
+const USER_PREFIX = 'TestFixture-gPay';
 const tag = () => randomBytes(4).toString('hex');
 const dayMs = 24 * 60 * 60 * 1000;
 
@@ -64,7 +68,7 @@ async function makeUser(money) {
   const user = await prisma.user.create({
     data: {
       emailVerified: true,
-      username: `${PREFIX}-${t}`.slice(0, 30),
+      username: `${USER_PREFIX}-${t}`,
       email: `${PREFIX}-${t}@example.com`,
       password: await bcrypt.hash('TestPassword123!', 1),
       firstName: 'Pay',
