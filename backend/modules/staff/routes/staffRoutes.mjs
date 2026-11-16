@@ -45,6 +45,7 @@ import {
 import {
   getFlaggedAddresses,
   getLinkedAccounts,
+  getLoginHistory,
 } from '../controllers/staffLinkedAccountsController.mjs';
 import {
   diagnoseShow,
@@ -102,6 +103,13 @@ router.get(
   '/conduct/:userId/linked-accounts',
   requireStaffCapability('accounts.linked.view'),
   getLinkedAccounts,
+);
+// Owner and Admins (Equoria-puj1e.4, owner ruling q102): where a player signed in
+// from in the last 90 days, and the accounts seen on the same addresses.
+router.get(
+  '/conduct/:userId/login-history',
+  requireStaffCapability('view.identity'),
+  getLoginHistory,
 );
 router.get(
   '/flagged-addresses',
