@@ -87,6 +87,7 @@ export default function StewardsOfficePage() {
               onCheckinRequired={onCheckinRequired}
               canLift={can('conduct.lift')}
               canSeeLinked={can('accounts.linked.view')}
+              canSeeIdentity={can('view.identity')}
             />
           )}
           {can('accounts.linked.view') && (

@@ -29,6 +29,7 @@ export const staffKeys = {
   roles: ['staff', 'roles'] as const,
   conduct: (userId: string) => ['staff', 'conduct', userId] as const,
   linkedAccounts: (userId: string) => ['staff', 'linked-accounts', userId] as const,
+  loginHistory: (userId: string) => ['staff', 'login-history', userId] as const,
   flaggedAddresses: ['staff', 'flagged-addresses'] as const,
   tickets: ['staff', 'tickets'] as const,
   quarantinedShows: ['staff', 'quarantined-shows'] as const,
@@ -217,6 +218,13 @@ export function useLinkedAccounts(userId: string) {
   return useQuery({
     queryKey: staffKeys.linkedAccounts(userId),
     queryFn: () => staffApi.linkedAccounts(userId),
+  });
+}
+
+export function useLoginHistory(userId: string) {
+  return useQuery({
+    queryKey: staffKeys.loginHistory(userId),
+    queryFn: () => staffApi.loginHistory(userId),
   });
 }
 

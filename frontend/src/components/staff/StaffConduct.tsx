@@ -21,6 +21,7 @@ import type { ConductAction, ConductEntry, StaffMember } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { LinkedAccountsForPlayer } from './StaffLinkedAccounts';
+import { LoginHistoryForPlayer } from './StaffLoginHistory';
 import { staffErrorMessage } from './staffMessages';
 import StaffSection from './StaffSection';
 
@@ -88,10 +89,12 @@ function ConductPanel({
   member,
   canLift,
   canSeeLinked,
+  canSeeIdentity,
 }: {
   member: StaffMember;
   canLift: boolean;
   canSeeLinked: boolean;
+  canSeeIdentity: boolean;
 }) {
   const record = useConductRecord(member.id);
   const act = useConductAction(member.id);
@@ -152,6 +155,7 @@ function ConductPanel({
     <div className="mt-4 flex flex-col gap-4">
       <div>{history}</div>
       {canSeeLinked && <LinkedAccountsForPlayer userId={member.id} />}
+      {canSeeIdentity && <LoginHistoryForPlayer userId={member.id} />}
       <form onSubmit={confirm} className="flex flex-col gap-3" noValidate>
         <FormField label="Action">
           {(field) => (
@@ -217,12 +221,15 @@ export interface StaffConductProps {
   canLift?: boolean;
   /** The viewer holds accounts.linked.view (the owner and admins). */
   canSeeLinked?: boolean;
+  /** The viewer holds view.identity (the owner and admins): sign-in history. */
+  canSeeIdentity?: boolean;
 }
 
 export function StaffConduct({
   onCheckinRequired,
   canLift = false,
   canSeeLinked = false,
+  canSeeIdentity = false,
 }: StaffConductProps) {
   const lookup = useLookupConductPlayer();
   const [username, setUsername] = useState('');
@@ -274,7 +281,13 @@ export function StaffConduct({
         )}
       </form>
       {found && (
-        <ConductPanel key={found.id} member={found} canLift={canLift} canSeeLinked={canSeeLinked} />
+        <ConductPanel
+          key={found.id}
+          member={found}
+          canLift={canLift}
+          canSeeLinked={canSeeLinked}
+          canSeeIdentity={canSeeIdentity}
+        />
       )}
     </StaffSection>
   );

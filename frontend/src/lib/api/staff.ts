@@ -88,6 +88,30 @@ export interface LinkedAccountsView {
   accounts: LinkedAccount[];
 }
 
+/** Equoria-puj1e.4: one address and device a player signed in from (90 days). */
+export interface LoginSighting {
+  ipAddress: string;
+  /** The player's devices numbered in the order first used; never the device id. */
+  device: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
+/** Another account seen on one of the player's addresses; a lead, never a block. */
+export interface SameAddressAccount {
+  id: string;
+  username: string;
+  role: AccountRole;
+  sharedAddresses: string[];
+  lastSeenAt: string;
+}
+
+export interface LoginHistoryView {
+  player: StaffMember;
+  sightings: LoginSighting[];
+  sameAddress: SameAddressAccount[];
+}
+
 /** An internet address seen with more than four accounts; a flag, never a block. */
 export interface FlaggedAddress {
   ipAddress: string;
@@ -403,6 +427,8 @@ export const staffApi = {
     apiClient.get<LinkedAccountsView>(
       `${BASE}/conduct/${encodeURIComponent(userId)}/linked-accounts`
     ),
+  loginHistory: (userId: string) =>
+    apiClient.get<LoginHistoryView>(`${BASE}/conduct/${encodeURIComponent(userId)}/login-history`),
   flaggedAddresses: () =>
     apiClient.get<{ addresses: FlaggedAddress[] }>(`${BASE}/flagged-addresses`),
   conductAct: (userId: string, action: ConductAction, reason: string, days?: 1 | 3 | 7) =>
