@@ -3,8 +3,8 @@
  *
  * Beta-readiness path:
  *  1. Equip a performance+ feed on a test horse.
- *  2. Feed up to 20 times in a row (statRollPct is per-feed, so a stat boost
- *     fires on at least one of those attempts at performance/elite tiers).
+ *  2. Feed up to 132 times in a row (statRollPct is per-feed; at 10% a stat
+ *     boost misses all 132 only 0.9^132 = 9e-7 of the time).
  *  3. Assert that AT LEAST ONE feed response carries a non-null statBoost.
  *  4. Assert MainNavigation bell renders notification-dot.
  *  5. Open Messages page → click Notifications tab → row(s) render.
@@ -74,12 +74,12 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     console.log(`Seeded test horse id=${horseId} name=${horseName}`);
 
     // Buy enough performance feed for both loops below: up to
-    // statGainApiFeedLimit (132) API feeds plus up to 20 UI feeds = 152 units.
-    // 1 pack = 100 units, so two packs. Running out mid-loop would clear the
-    // equipped feed and fail a feed for the wrong reason.
+    // statGainApiFeedLimit (132) API feeds plus up to statGainUiFeedLimit (132)
+    // UI feeds = 264 units. 1 pack = 100 units, so three packs. Running out
+    // mid-loop would clear the equipped feed and fail a feed for the wrong reason.
     const buyRes = await csrfMutate(session, 'POST', '/api/v1/feed-shop/purchase', {
       feedTier: 'performance',
-      packs: 2,
+      packs: 3,
     });
     if (!buyRes.ok()) {
       console.warn(
@@ -241,18 +241,40 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
         )
       );
 
-    // We loop UI feeds (resetting last-fed each round) up to 20 times until a
-    // feed rolls a stat gain — same statRollPct assumption the API loop above
-    // relies on.
+    // We loop UI feeds (resetting last-fed each round) until a feed rolls a stat
+    // gain, at most statGainUiFeedLimit times — same statRollPct assumption the
+    // API loop above relies on.
+    //
+    // Why 132 (Equoria-ypgx1, owner ruling 2026-10-23: flaky tests may be made
+    // deterministic, never weaker): Performance Feed rolls a stat 10% of the time
+    // and no seam reaches the HTTP route, so 20 UI feeds missed every roll
+    // 0.9^20 = 12% of the time; 132 misses 0.9^132 = 9.1e-7. Each round used to
+    // reload the page (~1+ s), which put 132 rounds near the 180 s test limit.
+    // A round now does what a player returning to the tab does instead: the
+    // page's own refocus refetch (a visibilitychange event, which TanStack Query
+    // listens to) re-reads the horse and picks up the backdated lastFedDate. No
+    // reload, no production hook, no change to the odds, and every per-round
+    // assertion below is unchanged. The loop still stops at the first gain (about
+    // 10 feeds on average).
+    const statGainUiFeedLimit = 132;
     let gain: { stat: string; feedName: string } | null = null;
     let nonGainFeeds = 0;
 
-    for (let i = 0; i < 20 && !gain; i++) {
+    for (let i = 0; i < statGainUiFeedLimit && !gain; i++) {
       if (i > 0) {
+        // The previous feed's response marks the horse fed today and disables the
+        // button; wait for that so the backdate below cannot race the page's own
+        // post-feed bookkeeping.
+        await expect(page.getByTestId('action-feed')).toBeDisabled({ timeout: 15_000 });
         await markHorseFedTwoDaysAgo(horseId);
-        // Reload so the page picks up the backdated lastFedDate and re-enables the button.
-        await page.reload({ waitUntil: 'load' });
-        await expect(page.getByTestId('action-feed')).toBeEnabled({ timeout: 15_000 });
+        // Tell the page it is visible again (what returning to the tab does). The
+        // refocus refetch re-reads the horse and re-enables the button; the nudge
+        // is repeated until the page has taken it, so a refetch already in flight
+        // cannot swallow it.
+        await expect(async () => {
+          await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
+          await expect(page.getByTestId('action-feed')).toBeEnabled({ timeout: 2_000 });
+        }).toPass({ timeout: 15_000 });
       }
 
       await expect(statValues).toHaveCount(12, { timeout: 15_000 });
@@ -306,7 +328,7 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
 
     expect(
       gain,
-      `No stat gain in 20 UI feeds (${nonGainFeeds} without a gain) — statRollPct may have regressed`
+      `No stat gain in ${statGainUiFeedLimit} UI feeds (${nonGainFeeds} without a gain) — statRollPct may have regressed`
     ).not.toBeNull();
 
     // The "+1 [Stat]" words the old pop-up printed now arrive as a NEW
