@@ -64,33 +64,35 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
   const username = `TestFixture-cs6wf-horseoverview-${suffix}`;
   const email = `testfixture-cs6wf-horseoverview-${suffix}@example.com`;
 
-  beforeEach(async () => {
-    // Clean up any existing test data (scoped by name + email prefix so
-    // stale rows from any prior crashed run are caught regardless of the
-    // random suffix used at the time).
-    await prisma.competitionResult.deleteMany({
-      where: { horse: { name: { startsWith: 'TestHorse' } } },
-    });
-    await prisma.trainingLog.deleteMany({
-      where: { horse: { name: { startsWith: 'TestHorse' } } },
-    });
-    await prisma.riderAssignment.deleteMany({
-      where: { horse: { name: { startsWith: 'TestHorse' } } },
-    });
+  // Equoria-zt4un: every sweep below is scoped to horses OWNED by this suite's
+  // fixture users. It used to match `name: startsWith 'TestHorse'`, which is also
+  // the name prefix createTestHorse() gives every other suite's horse
+  // (`TestHorse_<uid>`), so under parallel workers this suite deleted horses out
+  // from under suites that were mid-test (inventoryEquip got 404/409 on its own
+  // horse). The horses this suite creates all belong to its fixture user, so the
+  // owner is the identity to sweep by.
+  const fixtureOwner = {
+    OR: [
+      { username: { startsWith: 'TestFixture-cs6wf-horseoverview-' } },
+      { email: { startsWith: 'testfixture-cs6wf-horseoverview-' } },
+      // Legacy static-name sweep — covers stale rows from pre-cs6wf runs.
+      { email: { startsWith: 'test-horse-overview' } },
+    ],
+  };
+  const sweepFixtureRows = async () => {
+    await prisma.competitionResult.deleteMany({ where: { horse: { user: fixtureOwner } } });
+    await prisma.trainingLog.deleteMany({ where: { horse: { user: fixtureOwner } } });
+    await prisma.riderAssignment.deleteMany({ where: { horse: { user: fixtureOwner } } });
     await prisma.rider.deleteMany({ where: { lastName: { startsWith: 'TestFixture-97se-' } } });
-    await prisma.horse.deleteMany({
-      where: { name: { startsWith: 'TestHorse' } },
-    });
-    await prisma.user.deleteMany({
-      where: { username: { startsWith: 'TestFixture-cs6wf-horseoverview-' } },
-    });
-    await prisma.user.deleteMany({
-      where: { email: { startsWith: 'testfixture-cs6wf-horseoverview-' } },
-    });
-    // Legacy static-name sweep — covers stale rows from pre-cs6wf runs.
-    await prisma.user.deleteMany({
-      where: { email: { startsWith: 'test-horse-overview' } },
-    });
+    await prisma.horse.deleteMany({ where: { user: fixtureOwner } });
+    await prisma.user.deleteMany({ where: fixtureOwner });
+  };
+
+  beforeEach(async () => {
+    // Clean up any existing test data (scoped by fixture owner so stale rows
+    // from any prior crashed run are caught regardless of the random suffix
+    // used at the time).
+    await sweepFixtureRows();
 
     // Create test user
     testUser = await prisma.user.create({
@@ -147,28 +149,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
   afterEach(async () => {
     // Clean up test data (scoped by every fixture identity prefix this
     // suite has ever used, so a partial crash mid-cleanup is recoverable).
-    await prisma.competitionResult.deleteMany({
-      where: { horse: { name: { startsWith: 'TestHorse' } } },
-    });
-    await prisma.trainingLog.deleteMany({
-      where: { horse: { name: { startsWith: 'TestHorse' } } },
-    });
-    await prisma.riderAssignment.deleteMany({
-      where: { horse: { name: { startsWith: 'TestHorse' } } },
-    });
-    await prisma.rider.deleteMany({ where: { lastName: { startsWith: 'TestFixture-97se-' } } });
-    await prisma.horse.deleteMany({
-      where: { name: { startsWith: 'TestHorse' } },
-    });
-    await prisma.user.deleteMany({
-      where: { username: { startsWith: 'TestFixture-cs6wf-horseoverview-' } },
-    });
-    await prisma.user.deleteMany({
-      where: { email: { startsWith: 'testfixture-cs6wf-horseoverview-' } },
-    });
-    await prisma.user.deleteMany({
-      where: { email: { startsWith: 'test-horse-overview' } },
-    });
+    await sweepFixtureRows();
   }, 120000); // 120s — cascade deletes can be slow under full-suite load
 
   describe('GET /api/horses/:id/overview', () => {
