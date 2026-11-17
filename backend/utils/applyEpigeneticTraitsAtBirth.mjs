@@ -2,7 +2,7 @@
  * Epigenetic Trait Assignment at Birth — staged pipeline (Equoria-9o3n7.2 §A,
  * e2flk §D).
  *
- * One ordered pipeline produces a foal's `{ positive, negative, hidden }`
+ * One ordered pipeline produces a foal's `{ positive, negative, hidden, dormant }`
  * epigenetic modifiers at birth:
  *
  *   Stage 0 — INHERITANCE (§A): each sire/dam epigenetic trait ON THE ROSTER
@@ -22,7 +22,12 @@
  *   Dedupe, then VISIBILITY (owner ruling 2026-10-26, q98; Equoria-2d55z):
  *     every trait the foal carries is born HIDDEN, unless a parent had that
  *     trait active and revealed (`parentActiveTraits`), in which case it is
- *     born active in positive[] / negative[]. Hidden traits are revealed or
+ *     born active in positive[] / negative[]. An inherited trait whose
+ *     winning roll came from a parent that had it revealed but dormant
+ *     (switched off) is born revealed but dormant in dormant[] (owner ruling
+ *     2026-11-17, q355; it was born hidden under q98): players see it, it does
+ *     nothing, and the reveal engine can still switch it on. Prenatal traits
+ *     (stages 1-2) keep the q98 rule (q356). Hidden traits are revealed or
  *     switched off later only by grooming and neglect days
  *     (modules/traits/services/traitRevealEngine.mjs). This replaced the
  *     rarity/feed visibility rolls (rare 70% / legendary 90% / poor feed 30%
@@ -104,9 +109,11 @@ function traitPolarity(trait, fallbackType) {
  * @param {string[]} [params.damTraits]  - dam's epigenetic traits (pos∪neg∪hidden)
  * @param {string[]} [params.parentActiveTraits] - traits active and revealed on
  *   either parent (their positive ∪ negative); only these can be born active
+ * @param {string[]} [params.sireDormantTraits] - sire's revealed-but-dormant traits (q355)
+ * @param {string[]} [params.damDormantTraits]  - dam's revealed-but-dormant traits (q355)
  * @param {number} [params.seed] - deterministic seed for tests
  * @param {() => number} [params.rng] - injected random source for tests (wins over seed)
- * @returns {{positive:string[], negative:string[], hidden:string[]}}
+ * @returns {{positive:string[], negative:string[], hidden:string[], dormant:string[]}}
  */
 export function applyEpigeneticTraitsAtBirth({
   mare,
@@ -116,6 +123,8 @@ export function applyEpigeneticTraitsAtBirth({
   sireTraits = [],
   damTraits = [],
   parentActiveTraits = [],
+  sireDormantTraits = [],
+  damDormantTraits = [],
   seed,
   rng: injectedRng,
 }) {
@@ -154,15 +163,26 @@ export function applyEpigeneticTraitsAtBirth({
     );
   const sireCarried = rosterTraitsOf(sireTraits);
   const damCarried = rosterTraitsOf(damTraits);
+  const sireDormant = rosterTraitsOf(sireDormantTraits);
+  const damDormant = rosterTraitsOf(damDormantTraits);
+  // Traits whose winning roll came from a parent on which they were revealed
+  // but dormant (q355). Same rolls, same order as before: only who won is kept.
+  const inheritedDormant = new Set();
   const parentTraits = [...new Set([...sireCarried, ...damCarried])];
   for (const trait of parentTraits) {
     const def = getTraitDefinition(trait);
     const p = def?.type === 'negative' ? negativeChance(inheritanceChance) : inheritanceChance;
-    const rolls = (sireCarried.has(trait) ? 1 : 0) + (damCarried.has(trait) ? 1 : 0);
+    const carriers = [
+      ...(sireCarried.has(trait) ? [sireDormant] : []),
+      ...(damCarried.has(trait) ? [damDormant] : []),
+    ];
     let inherited = false;
-    for (let roll = 0; roll < rolls; roll += 1) {
+    for (const carrierDormant of carriers) {
       if (rng() < p) {
         inherited = true;
+        if (carrierDormant.has(trait)) {
+          inheritedDormant.add(trait);
+        }
       }
     }
     if (inherited) {
@@ -202,14 +222,16 @@ export function applyEpigeneticTraitsAtBirth({
     }
   }
 
-  // ── Dedupe + visibility (q98) ───────────────────────────────────────────────
-  // Hidden unless a parent had the trait active and revealed.
+  // ── Dedupe + visibility (q98, q355) ─────────────────────────────────────────
+  // Active if a parent had the trait active and revealed (q98, unchanged);
+  // otherwise revealed but dormant if it was inherited from a parent on which
+  // it was revealed but dormant (q355); otherwise hidden.
   const activeOnParent = new Set(
     (Array.isArray(parentActiveTraits) ? parentActiveTraits : []).filter(
       t => typeof t === 'string' && t.length > 0,
     ),
   );
-  const result = { positive: [], negative: [], hidden: [] };
+  const result = { positive: [], negative: [], hidden: [], dormant: [] };
   const seen = new Set();
 
   // Process positives then negatives; a trait that appears in both buckets
@@ -225,6 +247,8 @@ export function applyEpigeneticTraitsAtBirth({
     seen.add(trait);
     if (activeOnParent.has(trait)) {
       result[traitPolarity(trait, fallback)].push(trait);
+    } else if (inheritedDormant.has(trait)) {
+      result.dormant.push(trait);
     } else {
       result.hidden.push(trait);
     }

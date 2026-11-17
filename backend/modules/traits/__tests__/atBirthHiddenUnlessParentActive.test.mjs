@@ -108,3 +108,71 @@ describe('at birth — hidden unless a parent had the trait active and revealed'
     }
   });
 });
+
+// Owner ruling 2026-11-17 (q355): a trait inherited from a parent on which it was revealed but
+// dormant is born revealed but dormant. Prenatal traits keep today's rule (q356).
+describe('at birth — inherited from a revealed-but-dormant parent (q355)', () => {
+  /** Rolls that return `draws` in order, then always lose. */
+  const scripted = draws => {
+    const queue = [...draws];
+    return () => (queue.length > 0 ? queue.shift() : 0.99);
+  };
+
+  it("the dam's dormant trait, passed on by her roll, is born dormant: not hidden, not active", () => {
+    const r = applyEpigeneticTraitsAtBirth({
+      mare,
+      lineage: [],
+      feedQuality: 50,
+      damTraits: ['brave'],
+      damDormantTraits: ['brave'],
+      rng: scripted([0]),
+    });
+    expect(r.dormant).toEqual(['brave']);
+    expect(r.hidden).toEqual([]);
+    expect(r.positive).toEqual([]);
+  });
+
+  it('both parents pass it, dormant on the sire and hidden on the dam: born dormant', () => {
+    const r = applyEpigeneticTraitsAtBirth({
+      mare,
+      lineage: [],
+      feedQuality: 50,
+      sireTraits: ['fearful'],
+      damTraits: ['fearful'],
+      sireDormantTraits: ['fearful'],
+      rng: scripted([0, 0]),
+    });
+    expect(r.dormant).toEqual(['fearful']);
+    expect(r.hidden).toEqual([]);
+    expect(r.negative).toEqual([]);
+  });
+
+  it('a trait active on a parent still makes the inherited copy active (q98 precedence kept)', () => {
+    const r = applyEpigeneticTraitsAtBirth({
+      mare,
+      lineage: [],
+      feedQuality: 50,
+      sireTraits: ['brave'],
+      damTraits: ['brave'],
+      damDormantTraits: ['brave'],
+      parentActiveTraits: ['brave'],
+      rng: scripted([0, 0]),
+    });
+    expect(r.positive).toEqual(['brave']);
+    expect(r.dormant).toEqual([]);
+  });
+
+  it('a prenatal trait the dam carries dormant but did not pass on is born hidden (q356)', () => {
+    // Inheritance roll loses (0.99), the well-kept-mare Resilient roll wins (0.05).
+    const r = applyEpigeneticTraitsAtBirth({
+      mare,
+      lineage: [],
+      feedQuality: 90,
+      damTraits: ['resilient'],
+      damDormantTraits: ['resilient'],
+      rng: scripted([0.99, 0.05]),
+    });
+    expect(r.hidden).toEqual(['resilient']);
+    expect(r.dormant).toEqual([]);
+  });
+});

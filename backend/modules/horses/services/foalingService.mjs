@@ -228,12 +228,10 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const lineage = await gatherLineage(sireId, damId, 3);
   const feedQuality = assessFeedQualityFromMare(mareStats);
 
-  // §A inheritance: each parent's carried traits (positive ∪ negative ∪ hidden). Tests make
-  // the rolls deterministic with `epigeneticSeed` or `traitRng` (a () => number in [0,1)).
+  // §A inheritance: each parent's carried traits. Tests seed it (`epigeneticSeed`, `traitRng`).
   const damTraits = collectEpigeneticTraits(dam.epigeneticModifiers);
   const sireTraits = collectEpigeneticTraits(sire.epigeneticModifiers);
-  // Owner ruling 2026-10-26 (q98, Equoria-2d55z): a foal's traits are born
-  // hidden unless a parent had the trait active and revealed.
+  // Born hidden unless a parent had it active and revealed (q98) or passed it on dormant (q355).
   const parentActiveTraits = [
     ...new Set([
       ...collectActiveTraits(dam.epigeneticModifiers),
@@ -252,11 +250,13 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     sireTraits,
     damTraits,
     parentActiveTraits,
+    sireDormantTraits: traitList(sire.epigeneticModifiers, 'dormant'),
+    damDormantTraits: traitList(dam.epigeneticModifiers, 'dormant'),
     seed: options.epigeneticSeed,
     rng: typeof options.traitRng === 'function' ? options.traitRng : undefined,
   });
-  // §D: the pipeline now also returns hidden[]; carry it through to persistence.
   const hiddenTraits = [...(epigeneticTraits.hidden || [])];
+  const dormant = [...(epigeneticTraits.dormant || [])]; // revealed but switched off (q355)
 
   // B5: per-feeding pregnancy bonus rolls. The foaling job passes
   // positiveTraitChance / negativeTraitChance (0..100 percent points)
@@ -272,9 +272,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const positiveTraits = [...(epigeneticTraits.positive || [])];
   const negativeTraits = [...(epigeneticTraits.negative || [])];
 
-  // A bonus trait is carried like any other: hidden unless a parent had it
-  // active and revealed (q98).
-  const carriedTraits = () => [...positiveTraits, ...negativeTraits, ...hiddenTraits];
+  // A bonus trait is hidden unless a parent had it active and revealed (q98, kept by q356).
+  const carriedTraits = () => [...positiveTraits, ...negativeTraits, ...hiddenTraits, ...dormant];
   const bornAs = (trait, activeList) =>
     parentActiveTraits.includes(trait) ? activeList : hiddenTraits;
   if (positiveChance > 0 && rng() * 100 < positiveChance) {
@@ -433,6 +432,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
       positive: positiveTraits,
       negative: negativeTraits,
       hidden: hiddenTraits, // §D: hidden traits persist for later discovery
+      dormant,
     },
     _epigeneticTraitsApplied: true,
   };
