@@ -231,13 +231,11 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   // §A inheritance: each parent's carried traits. Tests seed it (`epigeneticSeed`, `traitRng`).
   const damTraits = collectEpigeneticTraits(dam.epigeneticModifiers);
   const sireTraits = collectEpigeneticTraits(sire.epigeneticModifiers);
-  // Born hidden unless a parent had it active and revealed (q98) or passed it on dormant (q355).
-  const parentActiveTraits = [
-    ...new Set([
-      ...collectActiveTraits(dam.epigeneticModifiers),
-      ...collectActiveTraits(sire.epigeneticModifiers),
-    ]),
-  ];
+  // An inherited trait takes its state on the parent that passed it on (q354, q355); a
+  // prenatal or bonus trait is active if either parent shows it (q98, kept by q356).
+  const sireActiveTraits = collectActiveTraits(sire.epigeneticModifiers);
+  const damActiveTraits = collectActiveTraits(dam.epigeneticModifiers);
+  const parentActiveTraits = [...new Set([...damActiveTraits, ...sireActiveTraits])];
   // A Fair mare multiplies EVERY negative foal-trait roll by 1.25, a Bad mare by 1.5
   // (owner rulings 2026-10-23 Equoria-w4ivy and 2026-10-26 Equoria-pw7cm).
   const damHealthGrade = horseHealthGrade(dam);
@@ -250,6 +248,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     sireTraits,
     damTraits,
     parentActiveTraits,
+    sireActiveTraits,
+    damActiveTraits,
     sireDormantTraits: traitList(sire.epigeneticModifiers, 'dormant'),
     damDormantTraits: traitList(dam.epigeneticModifiers, 'dormant'),
     seed: options.epigeneticSeed,

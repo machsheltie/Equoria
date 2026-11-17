@@ -199,3 +199,59 @@ describe('dormant traits are still carried (Equoria-nrto5)', () => {
     expect(born.epigeneticModifiers.dormant).toEqual([]);
   }, 60_000);
 });
+
+// Owner ruling 2026-11-17 (q354): an inherited trait takes its state from the parent whose roll
+// passed it on. Old behavior: active whenever EITHER parent had it active, whoever passed it.
+describe('an inherited trait follows the parent that passed it on (q354)', () => {
+  it('active on the sire, hidden on the dam, only the dam passes it: born hidden', async () => {
+    const { dam } = await makeParents(
+      'q354Hidden',
+      { positive: ['brave'], negative: [], hidden: [] },
+      { positive: [], negative: [], hidden: ['brave'] },
+    );
+    // Sire's roll first (loses), then the dam's (wins).
+    const born = await foalOf(dam, { traitRng: scriptedRolls([0.99, 0]) });
+
+    expect(born.epigeneticModifiers.hidden).toEqual(['brave']);
+    expect(born.epigeneticModifiers.positive).toEqual([]);
+    expect(born.epigeneticModifiers.dormant).toEqual([]);
+  }, 60_000);
+
+  it('active on the sire (his roll lost), dormant on the dam (hers won): born dormant', async () => {
+    const { dam } = await makeParents(
+      'q354Dormant',
+      { positive: [], negative: ['fearful'], hidden: [] },
+      { positive: [], negative: [], hidden: [], dormant: ['fearful'] },
+    );
+    const born = await foalOf(dam, { traitRng: scriptedRolls([0.99, 0]) });
+
+    expect(born.epigeneticModifiers.dormant).toEqual(['fearful']);
+    expect(born.epigeneticModifiers.negative).toEqual([]);
+    expect(born.epigeneticModifiers.hidden).toEqual([]);
+  }, 60_000);
+
+  it('both parents pass it, active on the sire and hidden on the dam: born active', async () => {
+    const { dam } = await makeParents(
+      'q354Both',
+      { positive: ['brave'], negative: [], hidden: [] },
+      { positive: [], negative: [], hidden: ['brave'] },
+    );
+    const born = await foalOf(dam, { traitRng: scriptedRolls([0, 0]) });
+
+    expect(born.epigeneticModifiers.positive).toEqual(['brave']);
+    expect(born.epigeneticModifiers.hidden).toEqual([]);
+  }, 60_000);
+
+  it('a prenatal trait the sire shows is born active though his roll lost (q356 unchanged)', async () => {
+    const { dam } = await makeParents(
+      'q356Prenatal',
+      { positive: ['resilient'], negative: [], hidden: [] },
+      { positive: [], negative: [], hidden: [] },
+    );
+    // The sire's inheritance roll loses; the well-kept-mare Resilient roll (Excellent dam) wins.
+    const born = await foalOf(dam, { traitRng: scriptedRolls([0.99, 0.05]) });
+
+    expect(born.epigeneticModifiers.positive).toEqual(['resilient']);
+    expect(born.epigeneticModifiers.hidden).toEqual([]);
+  }, 60_000);
+});

@@ -19,16 +19,19 @@
  *   rulings 2026-10-20/21 (Equoria-n7ph5): every horse has exactly one discipline
  *   trait, the +5 birth discipline (modules/horses/services/birthDiscipline.mjs),
  *   which replaces the 23 discipline affinities, so no affinity is given at birth.)
- *   Dedupe, then VISIBILITY (owner ruling 2026-10-26, q98; Equoria-2d55z):
- *     every trait the foal carries is born HIDDEN, unless a parent had that
- *     trait active and revealed (`parentActiveTraits`), in which case it is
- *     born active in positive[] / negative[]. An inherited trait whose
- *     winning roll came from a parent that had it revealed but dormant
- *     (switched off) is born revealed but dormant in dormant[] (owner ruling
- *     2026-11-17, q355; it was born hidden under q98): players see it, it does
- *     nothing, and the reveal engine can still switch it on. Prenatal traits
- *     (stages 1-2) keep the q98 rule (q356). Hidden traits are revealed or
- *     switched off later only by grooming and neglect days
+ *   Dedupe, then VISIBILITY. An INHERITED trait takes the state it had on the
+ *     parent whose roll passed it on (owner rulings 2026-11-17, q354 and q355):
+ *     active (positive[] / negative[]) if it was active and revealed there,
+ *     revealed but dormant (dormant[]) if it was revealed but switched off
+ *     there, hidden otherwise. When both parents' rolls pass it, the best of
+ *     their states wins: active, then dormant, then hidden. So a trait active
+ *     on the sire but passed on only by the dam, who has it hidden, is born
+ *     hidden. Under q98 it was born active whenever EITHER parent had it
+ *     active, whichever parent passed it. A PRENATAL trait (stages 1-2) keeps
+ *     the q98 rule (q356): active if either parent has it active and revealed
+ *     (`parentActiveTraits`), otherwise hidden. A trait that both kinds of
+ *     stage give takes the better of the two states. Hidden traits are
+ *     revealed or switched off later only by grooming and neglect days
  *     (modules/traits/services/traitRevealEngine.mjs). This replaced the
  *     rarity/feed visibility rolls (rare 70% / legendary 90% / poor feed 30%
  *     hidden), which made a store-bred foal's traits visible by chance.
@@ -97,6 +100,24 @@ function traitPolarity(trait, fallbackType) {
   return fallbackType;
 }
 
+/** A foal's birth states for a trait, worst to best: when two apply, the better wins. */
+const birthStates = ['hidden', 'dormant', 'active'];
+
+function betterState(a, b) {
+  if (a === undefined || b === undefined) {
+    return a ?? b;
+  }
+  return birthStates.indexOf(a) >= birthStates.indexOf(b) ? a : b;
+}
+
+/** The state a carried trait has on one parent: active, revealed but dormant, or hidden. */
+function stateOnParent(parent, trait) {
+  if (parent.active.has(trait)) {
+    return 'active';
+  }
+  return parent.dormant.has(trait) ? 'dormant' : 'hidden';
+}
+
 /**
  * Apply epigenetic traits at birth via the staged pipeline.
  *
@@ -108,7 +129,10 @@ function traitPolarity(trait, fallbackType) {
  * @param {string[]} [params.sireTraits] - sire's epigenetic traits (pos∪neg∪hidden)
  * @param {string[]} [params.damTraits]  - dam's epigenetic traits (pos∪neg∪hidden)
  * @param {string[]} [params.parentActiveTraits] - traits active and revealed on
- *   either parent (their positive ∪ negative); only these can be born active
+ *   either parent (their positive ∪ negative): the q356 rule for prenatal traits
+ * @param {string[]} [params.sireActiveTraits] - sire's active, revealed traits (q354);
+ *   when omitted, a trait he carries counts active on him if `parentActiveTraits` lists it
+ * @param {string[]} [params.damActiveTraits]  - dam's active, revealed traits (q354); same default
  * @param {string[]} [params.sireDormantTraits] - sire's revealed-but-dormant traits (q355)
  * @param {string[]} [params.damDormantTraits]  - dam's revealed-but-dormant traits (q355)
  * @param {number} [params.seed] - deterministic seed for tests
@@ -123,6 +147,8 @@ export function applyEpigeneticTraitsAtBirth({
   sireTraits = [],
   damTraits = [],
   parentActiveTraits = [],
+  sireActiveTraits,
+  damActiveTraits,
   sireDormantTraits = [],
   damDormantTraits = [],
   seed,
@@ -163,26 +189,32 @@ export function applyEpigeneticTraitsAtBirth({
     );
   const sireCarried = rosterTraitsOf(sireTraits);
   const damCarried = rosterTraitsOf(damTraits);
-  const sireDormant = rosterTraitsOf(sireDormantTraits);
-  const damDormant = rosterTraitsOf(damDormantTraits);
-  // Traits whose winning roll came from a parent on which they were revealed
-  // but dormant (q355). Same rolls, same order as before: only who won is kept.
-  const inheritedDormant = new Set();
+  const sire = {
+    carried: sireCarried,
+    active: rosterTraitsOf(sireActiveTraits ?? parentActiveTraits),
+    dormant: rosterTraitsOf(sireDormantTraits),
+  };
+  const dam = {
+    carried: damCarried,
+    active: rosterTraitsOf(damActiveTraits ?? parentActiveTraits),
+    dormant: rosterTraitsOf(damDormantTraits),
+  };
+  // The best state an inherited trait had on a parent whose roll passed it on
+  // (q354, q355). Same rolls, same order as before: only who won is kept.
+  const inheritedState = new Map();
   const parentTraits = [...new Set([...sireCarried, ...damCarried])];
   for (const trait of parentTraits) {
     const def = getTraitDefinition(trait);
     const p = def?.type === 'negative' ? negativeChance(inheritanceChance) : inheritanceChance;
-    const carriers = [
-      ...(sireCarried.has(trait) ? [sireDormant] : []),
-      ...(damCarried.has(trait) ? [damDormant] : []),
-    ];
+    const carriers = [sire, dam].filter(parent => parent.carried.has(trait));
     let inherited = false;
-    for (const carrierDormant of carriers) {
+    for (const carrier of carriers) {
       if (rng() < p) {
         inherited = true;
-        if (carrierDormant.has(trait)) {
-          inheritedDormant.add(trait);
-        }
+        inheritedState.set(
+          trait,
+          betterState(inheritedState.get(trait), stateOnParent(carrier, trait)),
+        );
       }
     }
     if (inherited) {
@@ -198,8 +230,10 @@ export function applyEpigeneticTraitsAtBirth({
   }
 
   // ── Stage 1 — well-kept mare (bible 08, q175) ─────────────────────────────
+  const prenatal = new Set();
   if (currentFeedQuality >= wellKeptMareFeedQuality && rng() < wellKeptMareResilientChance) {
     addPositive('resilient');
+    prenatal.add('resilient');
     logger.debug('[applyEpigeneticTraitsAtBirth] Applied resilient (well-kept mare)');
   }
 
@@ -218,19 +252,23 @@ export function applyEpigeneticTraitsAtBirth({
           : 0.25;
     if (rng() < negativeChance(fragileChance)) {
       addNegative('fragile');
+      prenatal.add('fragile');
       logger.debug('[applyEpigeneticTraitsAtBirth] Applied fragile (inbreeding)');
     }
   }
 
-  // ── Dedupe + visibility (q98, q355) ─────────────────────────────────────────
-  // Active if a parent had the trait active and revealed (q98, unchanged);
-  // otherwise revealed but dormant if it was inherited from a parent on which
-  // it was revealed but dormant (q355); otherwise hidden.
+  // ── Dedupe + visibility (q354, q355, q356) ──────────────────────────────────
+  // Inherited: the best state on a parent that passed it on. Prenatal: active
+  // if either parent has it active and revealed (q98 kept by q356), else hidden.
   const activeOnParent = new Set(
-    (Array.isArray(parentActiveTraits) ? parentActiveTraits : []).filter(
-      t => typeof t === 'string' && t.length > 0,
-    ),
+    [
+      ...(Array.isArray(parentActiveTraits) ? parentActiveTraits : []),
+      ...sire.active,
+      ...dam.active,
+    ].filter(t => typeof t === 'string' && t.length > 0),
   );
+  const prenatalState = trait =>
+    prenatal.has(trait) ? (activeOnParent.has(trait) ? 'active' : 'hidden') : undefined;
   const result = { positive: [], negative: [], hidden: [], dormant: [] };
   const seen = new Set();
 
@@ -245,13 +283,8 @@ export function applyEpigeneticTraitsAtBirth({
       continue;
     }
     seen.add(trait);
-    if (activeOnParent.has(trait)) {
-      result[traitPolarity(trait, fallback)].push(trait);
-    } else if (inheritedDormant.has(trait)) {
-      result.dormant.push(trait);
-    } else {
-      result.hidden.push(trait);
-    }
+    const state = betterState(inheritedState.get(trait), prenatalState(trait)) ?? 'hidden';
+    result[state === 'active' ? traitPolarity(trait, fallback) : state].push(trait);
   }
 
   logger.debug(`[applyEpigeneticTraitsAtBirth] Final traits: ${JSON.stringify(result)}`);

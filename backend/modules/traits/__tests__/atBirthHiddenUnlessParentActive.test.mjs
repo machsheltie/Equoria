@@ -176,3 +176,137 @@ describe('at birth — inherited from a revealed-but-dormant parent (q355)', () 
     expect(r.dormant).toEqual([]);
   });
 });
+
+// Owner ruling 2026-11-17 (q354): an inherited trait takes its state from the parent whose roll
+// passed it on, not from whichever parent shows it. Both passing: the better state wins (active,
+// then dormant, then hidden). Prenatal traits keep today's rule (q356). Arguments mirror the
+// foaling service: each parent's active list plus their union.
+describe('at birth — the state follows the parent whose roll passed the trait on (q354)', () => {
+  const scripted = draws => {
+    const queue = [...draws];
+    return () => (queue.length > 0 ? queue.shift() : 0.99);
+  };
+  const parents = ({ sireActive = [], damActive = [], ...rest }) => ({
+    mare,
+    lineage: [],
+    feedQuality: 50,
+    sireActiveTraits: sireActive,
+    damActiveTraits: damActive,
+    parentActiveTraits: [...new Set([...sireActive, ...damActive])],
+    ...rest,
+  });
+
+  it('active on the sire, hidden on the dam, only the dam passes it: born hidden', () => {
+    const r = applyEpigeneticTraitsAtBirth(
+      parents({
+        sireTraits: ['brave'],
+        damTraits: ['brave'],
+        sireActive: ['brave'],
+        rng: scripted([0.99, 0]),
+      }),
+    );
+    expect(r.hidden).toEqual(['brave']);
+    expect(r.positive).toEqual([]);
+    expect(r.dormant).toEqual([]);
+  });
+
+  it('active on the sire (roll lost), dormant on the dam (roll won): born dormant', () => {
+    const r = applyEpigeneticTraitsAtBirth(
+      parents({
+        sireTraits: ['fearful'],
+        damTraits: ['fearful'],
+        sireActive: ['fearful'],
+        damDormantTraits: ['fearful'],
+        rng: scripted([0.99, 0]),
+      }),
+    );
+    expect(r.dormant).toEqual(['fearful']);
+    expect(r.negative).toEqual([]);
+    expect(r.hidden).toEqual([]);
+  });
+
+  it('active on the dam, hidden on the sire, only the sire passes it: born hidden', () => {
+    const r = applyEpigeneticTraitsAtBirth(
+      parents({
+        sireTraits: ['confident'],
+        damTraits: ['confident'],
+        damActive: ['confident'],
+        rng: scripted([0, 0.99]),
+      }),
+    );
+    expect(r.hidden).toEqual(['confident']);
+    expect(r.positive).toEqual([]);
+  });
+
+  it('both parents pass it, active on one and hidden on the other: born active', () => {
+    for (const [sireActive, damActive] of [
+      [['brave'], []],
+      [[], ['brave']],
+    ]) {
+      const r = applyEpigeneticTraitsAtBirth(
+        parents({
+          sireTraits: ['brave'],
+          damTraits: ['brave'],
+          sireActive,
+          damActive,
+          rng: scripted([0, 0]),
+        }),
+      );
+      expect(r.positive).toEqual(['brave']);
+      expect(r.hidden).toEqual([]);
+    }
+  });
+
+  it('both parents pass it, active on one and dormant on the other: born active', () => {
+    const r = applyEpigeneticTraitsAtBirth(
+      parents({
+        sireTraits: ['skittish'],
+        damTraits: ['skittish'],
+        damActive: ['skittish'],
+        sireDormantTraits: ['skittish'],
+        rng: scripted([0, 0]),
+      }),
+    );
+    expect(r.negative).toEqual(['skittish']);
+    expect(r.dormant).toEqual([]);
+  });
+
+  it('the pass odds and roll order are unchanged: one roll per carrying parent, sire first', () => {
+    const draws = [];
+    const rng = () => {
+      draws.push('roll');
+      return 0.99;
+    };
+    applyEpigeneticTraitsAtBirth(parents({ sireTraits: ['brave'], damTraits: ['brave'], sireActive: ['brave'], rng }));
+    expect(draws).toHaveLength(2);
+  });
+
+  it('a prenatal trait a parent shows is still born active though that parent did not pass it (q356)', () => {
+    // Sire's inheritance roll loses (0.99); the well-kept-mare Resilient roll wins (0.05).
+    const r = applyEpigeneticTraitsAtBirth(
+      parents({
+        feedQuality: 90,
+        sireTraits: ['resilient'],
+        sireActive: ['resilient'],
+        rng: scripted([0.99, 0.05]),
+      }),
+    );
+    expect(r.positive).toEqual(['resilient']);
+    expect(r.hidden).toEqual([]);
+  });
+
+  it('a prenatal trait also passed on by a hidden parent stays active when the other parent shows it (q356)', () => {
+    // Sire (active) loses, dam (hidden) wins, then the well-kept-mare Resilient roll wins too.
+    const r = applyEpigeneticTraitsAtBirth(
+      parents({
+        feedQuality: 90,
+        sireTraits: ['resilient'],
+        damTraits: ['resilient'],
+        sireActive: ['resilient'],
+        rng: scripted([0.99, 0, 0.05]),
+      }),
+    );
+    expect(r.positive).toEqual(['resilient']);
+    expect(r.hidden).toEqual([]);
+  });
+});
