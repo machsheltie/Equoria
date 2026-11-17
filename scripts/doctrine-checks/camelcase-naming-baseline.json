@@ -1,5 +1,3 @@
 {
-  "backend/modules/staff/services/staffCheckinService.mjs": 1,
-  "samples/Breeds/Saddlebred/AmericanSaddlebred.txt": 29,
-  "samples/Breeds/generichorse.txt": 27
+  "backend/modules/staff/services/staffCheckinService.mjs": 1
 }

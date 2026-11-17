@@ -1,6 +1,6 @@
 INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
 ('GenericHorse', 'Trait', $json${
-    "allowed_alleles": {
+    "allowedAlleles": {
       "E_Extension": ["e/e", "E/e", "E/E"],
       "A_Agouti": ["a/a", "A/a", "A/A"],
       "Cr_Cream": ["n/n", "n/Cr", "Cr/Cr"],
@@ -25,13 +25,13 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "Prl_Pearl": ["n/n", "n/prl", "prl/prl", "cr/prl"],
       "BR1_Brindle1": ["n/n", "n/br1", "br1/br1", "br1/y"]
     },
-    "disallowed_combinations": {
+    "disallowedCombinations": {
       "O_FrameOvero": ["O/O"],
       "W_DominantWhite": ["W5/W5", "W10/W10", "W13/W13", "W15/W15", "W19/W19", "W20/W20", "W22/W22", "W36/W36", "W37/W37", "W38/W38", "W39/W39"],
       "SW_SplashWhite": ["SW3/SW3", "SW4/SW4", "SW5/SW5", "SW6/SW6", "SW7/SW7", "SW8/SW8", "SW9/SW9", "SW10/SW10"],
       "EDXW": ["EDXW1/EDXW1", "EDXW2/EDXW2", "EDXW3/EDXW3"]
     },
-    "allele_weights": {
+    "alleleWeights": {
       "E_Extension": {"e/e": 0.3, "E/e": 0.4, "E/E": 0.3},
       "A_Agouti": {"a/a": 0.3, "A/a": 0.4, "A/A": 0.3},
       "Cr_Cream": {"n/n": 0.8, "n/Cr": 0.15, "Cr/Cr": 0.05},
@@ -66,21 +66,21 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "Prl_Pearl": {"n/n": 0.98, "n/prl": 0.015, "prl/prl": 0.005, "cr/prl": 0.0},
       "BR1_Brindle1": {"n/n": 0.995, "n/br1": 0.004, "br1/br1": 0.001, "br1/y": 0.0}
     },
-    "marking_bias": {
+    "markingBias": {
       "face": {"none": 0.2, "star": 0.2, "strip": 0.2, "blaze": 0.2, "snip": 0.2},
-      "legs_general_probability": 0.5,
-      "leg_specific_probabilities": {
+      "legsGeneralProbability": 0.5,
+      "legSpecificProbabilities": {
         "coronet": 0.25, "pastern": 0.25, "sock": 0.25, "stocking": 0.25
       },
-      "max_legs_marked": 4
+      "maxLegsMarked": 4
     },
-    "boolean_modifiers_prevalence": {
+    "booleanModifiersPrevalence": {
       "sooty": 0.3,
       "flaxen": 0.1,
       "pangare": 0.1,
       "rabicano": 0.05
     },
-    "shade_bias": {
+    "shadeBias": {
       "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
       "Mushroom Chestnut": {"taupe": 0.5, "warm gray": 0.3, "sepia": 0.2},
       "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
@@ -145,31 +145,31 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "Brindle (Female)": {"vertical stripes": 0.7, "altered texture": 0.3},
       "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
     },
-    "advanced_markings_bias": {
-      "bloody_shoulder_probability_multiplier": 1.0,
-      "snowflake_probability_multiplier": 1.0,
-      "frost_probability_multiplier": 1.0
+    "advancedMarkingsBias": {
+      "bloodyShoulderProbabilityMultiplier": 1.0,
+      "snowflakeProbabilityMultiplier": 1.0,
+      "frostProbabilityMultiplier": 1.0
     },
-  "rating_profiles": {
+  "ratingProfiles": {
     "conformation": {
-      "head": { "mean": 78, "std_dev": 8 },
-      "neck": { "mean": 75, "std_dev": 8 },
-      "shoulders": { "mean": 72, "std_dev": 8 },
-      "back": { "mean": 70, "std_dev": 8 },
-      "hindquarters": { "mean": 76, "std_dev": 8 },
-      "legs": { "mean": 74, "std_dev": 8 },
-      "hooves": { "mean": 70, "std_dev": 8 }
+      "head": { "mean": 78, "stdDev": 8 },
+      "neck": { "mean": 75, "stdDev": 8 },
+      "shoulders": { "mean": 72, "stdDev": 8 },
+      "back": { "mean": 70, "stdDev": 8 },
+      "hindquarters": { "mean": 76, "stdDev": 8 },
+      "legs": { "mean": 74, "stdDev": 8 },
+      "hooves": { "mean": 70, "stdDev": 8 }
     },
     "gaits": {
-      "walk": { "mean": 65, "std_dev": 9 },
-      "trot": { "mean": 75, "std_dev": 9 },
-      "canter": { "mean": 80, "std_dev": 9 },
-      "gallop": { "mean": 90, "std_dev": 9 },
+      "walk": { "mean": 65, "stdDev": 9 },
+      "trot": { "mean": 75, "stdDev": 9 },
+      "canter": { "mean": 80, "stdDev": 9 },
+      "gallop": { "mean": 90, "stdDev": 9 },
       "gaiting": null
     },
-    "is_gaited_breed": false
+    "isGaitedBreed": false
   },
-  "temperament_weights": {
+  "temperamentWeights": {
     "Spirited": 20,
     "Nervous": 15,
     "Calm": 3,
