@@ -31,7 +31,7 @@ const projectRoot = join(__dirname, '..', '..', '..');
 const AUDITOR = join(projectRoot, 'utils', 'agent-skills', 'auditor.mjs');
 // Assembled so this file never carries the literal token that
 // noConsoleLogInTestsDirs.sentinel bans under backend/__tests__ (Equoria-326tg).
-const CONSOLE_LOG = ['console', '.', 'log'].join('');
+const consoleLogToken = ['console', '.', 'log'].join('');
 const missingDir = './this-directory-truly-does-not-exist-lq5li';
 
 function runAuditorCli(arg) {
@@ -98,7 +98,7 @@ describe('auditor — positive detection on a clean (successful) scan', () => {
       [
         'const API_KEY = "abc123hardcodedsecret";',
         'request.headers["x-test-bypass-auth"] = "1";',
-        `${CONSOLE_LOG}("debug noise left behind");`,
+        `${consoleLogToken}("debug noise left behind");`,
         '',
       ].join('\n'),
     );
@@ -107,7 +107,7 @@ describe('auditor — positive detection on a clean (successful) scan', () => {
 
     const secrets = results.get('Potential hardcoded secrets');
     const bypass = results.get('Test-bypass / E2E-bypass flags');
-    const consoleNoise = results.get(`${CONSOLE_LOG} (hygiene)`);
+    const consoleNoise = results.get(`${consoleLogToken} (hygiene)`);
 
     expect(secrets.length).toBeGreaterThan(0);
     expect(bypass.length).toBeGreaterThan(0);
