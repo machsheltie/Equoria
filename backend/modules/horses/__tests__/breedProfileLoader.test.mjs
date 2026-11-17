@@ -1,12 +1,50 @@
 /**
  * breedProfileLoader — unit tests (Equoria-rr7)
  *
- * Tests loader functions that read breedProfiles.json from disk.
- * No DB required — reads static JSON file only.
+ * Tests the loader as the game uses it: backend/tests/setup.mjs installs the
+ * DB cache from breeds.breedGeneticProfile before this file loads, as
+ * server.mjs preloads it at boot (Equoria-ctop1). The first block proves that
+ * this file really is reading the DB rows, not the breedProfiles.json
+ * fallback, including from a loader imported after Jest's per-test module reset.
  */
 
 import { describe, it, expect } from '@jest/globals';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getBreedProfile, countLoadedBreedProfiles } from '../data/breedProfileLoader.mjs';
+
+// ---------------------------------------------------------------------------
+// The test setup's preload (Equoria-ctop1)
+// ---------------------------------------------------------------------------
+describe('test setup preloads the DB breed cache (Equoria-ctop1)', () => {
+  it('holds every DB breed row that has ratingProfiles', async () => {
+    const [{ withProfile }] = await prisma.$queryRaw`
+      SELECT count(*)::int AS "withProfile" FROM breeds
+       WHERE jsonb_typeof("breedGeneticProfile"->'ratingProfiles') = 'object'`;
+    expect(withProfile).toBeGreaterThan(0);
+    expect(countLoadedBreedProfiles()).toBe(withProfile);
+  });
+
+  it('serves the DB row for Thoroughbred, color genetics included', async () => {
+    const row = await prisma.breed.findUnique({
+      where: { name: 'Thoroughbred' },
+      select: { breedGeneticProfile: true },
+    });
+    const profile = getBreedProfile('Thoroughbred');
+    // shadeBias exists only in the DB profile; breedProfiles.json has none.
+    expect(typeof profile.shadeBias).toBe('object');
+    expect(profile).toEqual(row.breedGeneticProfile);
+  });
+
+  it('reaches a loader imported after the per-test module reset', async () => {
+    // resetModules: true gives this test a fresh module registry, so this is a
+    // second loader instance, the way a route handler that awaits import() of
+    // its controller gets one. It must read the same DB cache, not the JSON.
+    const fresh = await import('../data/breedProfileLoader.mjs');
+    expect(fresh.getBreedProfile).not.toBe(getBreedProfile);
+    expect(typeof fresh.getBreedProfile('Thoroughbred').shadeBias).toBe('object');
+    expect(fresh.countLoadedBreedProfiles()).toBe(countLoadedBreedProfiles());
+  });
+});
 
 // ---------------------------------------------------------------------------
 // countLoadedBreedProfiles

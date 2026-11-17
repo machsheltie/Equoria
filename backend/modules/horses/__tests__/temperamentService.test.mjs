@@ -2,7 +2,7 @@
  * temperamentService — unit tests (Equoria-rr7)
  *
  * Tests pure-function helpers and breed-backed generator.
- * File-based breed profiles (breedProfiles.json), no DB required.
+ * Breed profiles from the DB cache backend/tests/setup.mjs preloads; writes nothing.
  */
 
 import { describe, it, expect } from '@jest/globals';

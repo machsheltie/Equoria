@@ -9,10 +9,12 @@
  *      superset: full conformation (all 8 regions incl. topline), gaits,
  *      temperament, AND color genetics (shadeBias, alleleWeights, etc.).
  *   2. backend/data/breedProfiles.json — fallback for the conformation /
- *      gait / temperament subset (no color genetics). Serves the backend
- *      test suite, which intentionally does NOT preload the DB cache (see
- *      backend/tests/setup.mjs), and keeps the loader robust against the DB
- *      cache being empty during early-boot / cold-cache paths.
+ *      gait / temperament subset (no color genetics). Keeps the loader
+ *      robust against the DB cache being empty during early-boot /
+ *      cold-cache paths. The backend test setup (backend/tests/setup.mjs)
+ *      installs the DB cache for every test file, as server.mjs preloads it
+ *      at boot (Equoria-ctop1); only a test that clears the cache still
+ *      reads this file through the loader.
  *
  * The DB became the authoritative source on 2026-05-28 when 312 breed
  * profiles imported via populateBreedsFromSql.mjs landed in production.
@@ -21,8 +23,8 @@
  * conformation regions (topline added), so the DB profile is complete and
  * the loader returns it directly on a cache hit — the transitional per-key
  * merge that grafted topline from the JSON has been removed. The JSON file
- * is RETAINED, not deleted: it still has live consumers (the no-preload
- * test suite via this loader, backend/tests/load/run-bulk-foaling-cron.mjs,
+ * is RETAINED, not deleted: it still has live consumers (tests that clear
+ * the cache, backend/tests/load/run-bulk-foaling-cron.mjs,
  * backend/scripts/backfill-horse-temperament-gaits.mjs, breedProfileData.test.mjs,
  * and others). Removing it remains a separate follow-up gated on migrating
  * those consumers onto a preloaded DB cache.
@@ -45,6 +47,11 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import logger from '../../../utils/logger.mjs';
+import {
+  clearBreedProfileCache,
+  getBreedProfileCache,
+  installBreedProfileRows,
+} from './breedProfileCache.mjs';
 
 // Equoria-f6xgn (2026-05-28): the LEGACY_ID_TO_NAME shim was removed. It
 // only resolved the 12 breed IDs of a hand-authored table (itself deleted
@@ -84,7 +91,7 @@ const profilesPath = process.env.BREED_PROFILES_PATH
 // purely sync contexts (e.g. controller hot paths). Carries the 312-breed
 // gait+temperament+category subset — NO color genetics. When the DB cache is
 // populated (preloadBreedProfiles has run), the cache wins; this JSON is the
-// safety net for boot-order races and tests that don't preload.
+// safety net for boot-order races and for a process nothing preloaded.
 let profilesByName = {};
 let jsonLoadError = null;
 try {
@@ -98,10 +105,11 @@ try {
 }
 
 // ── DB cache (authoritative source post-26qjf) ────────────────────────────────
-// Map<breedName, profile> populated by preloadBreedProfiles(). null when the
-// cache has not been loaded yet (server.mjs boot before the await; bare test
-// invocations).
-let dbCache = null;
+// Map<breedName, profile> kept by breedProfileCache.mjs (on globalThis, so every
+// instance of this module in a process or test file shares it). null until
+// preloadBreedProfiles() has run (server.mjs boot before the await) or after
+// _clearBreedProfileCache(). backend/tests/setup.mjs installs it for each test
+// file from the rows the test environment read once (Equoria-ctop1).
 
 /**
  * Populate the in-memory cache from `breeds.breedGeneticProfile`.
@@ -113,9 +121,10 @@ let dbCache = null;
  * a long-lived dev process).
  *
  * Rows whose `breedGeneticProfile` is null, a primitive, an array, or
- * missing `ratingProfiles` are skipped — the loader's contract is that
- * every returned profile has the full conformation/gait/temperament
- * shape, so a malformed DB row is treated as absent rather than served.
+ * missing `ratingProfiles` are skipped (installBreedProfileRows) — the
+ * loader's contract is that every returned profile has the full
+ * conformation/gait/temperament shape, so a malformed DB row is treated as
+ * absent rather than served.
  *
  * @param {import('@prisma/client').PrismaClient} prisma
  * @returns {Promise<number>} count of breeds loaded into the cache
@@ -128,35 +137,20 @@ export async function preloadBreedProfiles(prisma) {
   const rows = await prisma.breed.findMany({
     select: { name: true, breedGeneticProfile: true },
   });
-  const next = new Map();
-  for (const r of rows) {
-    const p = r.breedGeneticProfile;
-    // Four-part JSONB guard (CONTRIBUTING.md "JSONB type guard"): typeof null
-    // is 'object' and typeof [] is 'object', so we must exclude both
-    // explicitly. Profiles without ratingProfiles are useless to consumers.
-    if (
-      p !== null &&
-      p !== undefined &&
-      typeof p === 'object' &&
-      !Array.isArray(p) &&
-      p.ratingProfiles
-    ) {
-      next.set(r.name, p);
-    }
-  }
-  dbCache = next;
-  logger.info(`[breedProfileLoader] DB cache preloaded: ${next.size} breed profiles`);
-  return next.size;
+  const size = installBreedProfileRows(rows);
+  logger.info(`[breedProfileLoader] DB cache preloaded: ${size} breed profiles`);
+  return size;
 }
 
 /**
  * Test helper: clear the DB cache.
  * Underscore prefix marks it as a test-only export not part of the
- * production API. Exists so tests can exercise the JSON-fallback path
- * without polluting cache state across test files.
+ * production API. Exists so tests can exercise the JSON-fallback path. The
+ * cache lives on the test file's own global, so clearing it never reaches
+ * another test file.
  */
 export function _clearBreedProfileCache() {
-  dbCache = null;
+  clearBreedProfileCache();
 }
 
 /**
@@ -193,6 +187,7 @@ export function getBreedProfile(breedName) {
   }
 
   // Resolve from each source independently, then merge.
+  const dbCache = getBreedProfileCache();
   const fromDb = dbCache ? (dbCache.get(breedName) ?? null) : null;
   const fromJson = profilesByName[breedName] ?? null;
 
@@ -230,9 +225,8 @@ export function getBreedProfile(breedName) {
   // Single-source paths.
   if (!fromDb) {
     // Cache absent (no preload) or this breed not in the cache — serve the
-    // JSON profile. This is the path the whole backend test suite uses, since
-    // tests intentionally do not preload the DB cache (see backend/tests/
-    // setup.mjs). It is also the production boot-order safety net.
+    // JSON profile: the production boot-order safety net, and the path a test
+    // takes when it clears the cache.
     return fromJson;
   }
 
@@ -255,6 +249,7 @@ export function getBreedProfile(breedName) {
  * @returns {number}
  */
 export function countLoadedBreedProfiles() {
+  const dbCache = getBreedProfileCache();
   if (dbCache) {
     return dbCache.size;
   }

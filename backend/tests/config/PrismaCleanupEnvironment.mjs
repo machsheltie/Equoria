@@ -43,6 +43,49 @@ import { cleanupPrismaInstances } from '../../../packages/database/prismaTestLif
 // worker — gets it through the one module they all load.
 v8.setFlagsFromString('--no-compilation-cache');
 
+// Breed profiles for every test file (Equoria-ctop1). The game serves breed
+// profiles from the DB cache server.mjs preloads at boot; tests get the same
+// rows. They are read ONCE per Jest process, here in the host realm, and handed
+// to each file's sandbox as a JSON string that backend/tests/setup.mjs parses
+// into that file's cache. Two measured reasons it is not a per-file query in
+// setup.mjs (Equoria-ctop1, 2026-11-17): (1) a setup file that imports
+// packages/database/prismaClient.mjs evaluates it before the test file runs, so
+// the four suites that install their own query-logging client on
+// globalThis.__prisma before importing it got the default client instead, and
+// each one ran out of memory (reproduced with the import alone, no breed
+// query); (2) one read per process instead of one per
+// file. A string carries no host-realm object into the sandbox, so profiles are
+// ordinary sandbox objects and nothing here can keep a finished file alive.
+//
+// In an in-band run the host already holds the shared client (globalSetup made
+// it) and it is reused. In a worker process nothing in the host has one, so the
+// client made here is disconnected after the read, leaving the connection
+// budget as it was. A failed read rejects every file's setup: a suite without
+// its breed data must not run.
+//
+// backend/tests/setup.mjs reads this key by its literal name (it must not
+// import this host-side module into the sandbox).
+const breedProfileRowsGlobal = '__equoriaBreedProfileRowsJson';
+let breedProfileRowsJson = null;
+
+function readBreedProfileRowsJson() {
+  breedProfileRowsJson ??= (async () => {
+    const madeHere = globalThis.__prisma === undefined;
+    const { default: prisma } = await import('../../../packages/database/prismaClient.mjs');
+    try {
+      const rows = await prisma.breed.findMany({
+        select: { name: true, breedGeneticProfile: true },
+      });
+      return JSON.stringify(rows);
+    } finally {
+      if (madeHere) {
+        await prisma.$disconnect();
+      }
+    }
+  })();
+  return breedProfileRowsJson;
+}
+
 const timerGlobals = [
   ['setTimeout', 'clearTimeout'],
   ['setInterval', 'clearInterval'],
@@ -159,6 +202,11 @@ export default class PrismaCleanupEnvironment extends NodeEnvironment {
     super(config, context);
     this._sandboxTimers = trackSandboxTimers(this.global);
     this._prismaMethodSnapshot = snapshotGuardedPrismaMethods(this.global);
+  }
+
+  async setup() {
+    await super.setup();
+    this.global[breedProfileRowsGlobal] = await readBreedProfileRowsJson();
   }
 
   async teardown() {
