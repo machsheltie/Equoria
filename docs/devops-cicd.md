@@ -104,7 +104,11 @@ therefore skipped the backend matrix, the frontend suite and the security gate.
 `backend-tests` waits only for `db-preflight`. Downstream jobs (Coverage Gate,
 E2E, Production Build, Beta Readiness, Deployment Gate) still wait for the
 test jobs they summarise, and `Critical Jobs Ran` fails a run on which any of
-them was skipped. Branch protection does not require these checks yet
+them was skipped. One legitimate skip exists (owner ruling q364,
+Equoria-rhet): a push or PR whose changed paths are all Markdown files or under
+`docs/` skips Beta Readiness and Deployment Gate. The `changes` job decides with
+plain `git diff`; anything else, an empty diff, or an unusable base commit runs
+the gate. The sentinel mirrors both conditions. Branch protection does not require these checks yet
 (Equoria-zstml's later step), so a red GitHub run does not block a push; it
 has to be read.
 

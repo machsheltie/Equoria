@@ -124,6 +124,10 @@
     "night_vision": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
     "fire_resistance": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
     "water_phobia": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
-    "show_calm": "deliberately snake_case input proving humanizeTraitKey title-cases snake keys (useHorseTraits test)"
+    "show_calm": "deliberately snake_case input proving humanizeTraitKey title-cases snake keys (useHorseTraits test)",
+    "GITHUB_OUTPUT": "GitHub Actions runner variable the changes-job script writes its result to (notesOnlyGateSkip sentinel)",
+    "RUNNER_TEMP": "GitHub Actions runner variable the changes-job script uses for scratch files (notesOnlyGateSkip sentinel)",
+    "pull_request": "GitHub Actions event name the workflow is triggered by (notesOnlyGateSkip sentinel)",
+    "workflow_dispatch": "GitHub Actions event name the workflow is triggered by (notesOnlyGateSkip sentinel)"
   }
 }
