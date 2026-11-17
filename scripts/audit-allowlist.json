@@ -6,6 +6,11 @@
       "id": "GHSA-vfj7-8cjw-p6xm",
       "justification": "braces stack-exhaustion DoS (no fixed braces release). Reached only through tailwindcss 3 (micromatch / fast-glob / chokidar) in the frontend build: it expands glob patterns from our own tailwind.config.ts content list at build time, takes no player input, and is not in the shipped bundle. Tailwind is banned (owner ruling 2026-10-01) and its removal, which drops this chain, is Equoria-efso8. Owner approved this interim entry 2026-10-15 (Equoria-5hdwr). Remove it when efso8 lands.",
       "expires": "2027-01-15"
+    },
+    {
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "justification": "picomatch ReDoS through single-branch repeated extglobs; every picomatch release (<= 4.0.7) is affected and none is patched. Not in the backend production tree (npm ls --omit=dev is empty there). It reaches the backend only through Jest (@jest/*, jest-*) and @typescript-eslint, the frontend through tailwindcss 3 (chokidar/anymatch, build time) and dev tooling, and the repo root through fast-glob in our own scripts. Every glob it matches is a pattern we write in config or test tooling; no player input reaches it, and it is not in the shipped bundle. Same footing as the braces entry above. Remove this entry as soon as picomatch ships a fixed release (Equoria-j4e1i).",
+      "expires": "2026-12-17"
     }
   ]
 }
