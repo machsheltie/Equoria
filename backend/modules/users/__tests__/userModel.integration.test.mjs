@@ -10,12 +10,8 @@
 
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import bcrypt from 'bcryptjs';
-import prisma from '../../packages/database/prismaClient.mjs';
-import {
-  createUser,
-  getUserById,
-  getUserWithHorses,
-} from '../../backend/modules/users/services/userModelService.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createUser, getUserById, getUserWithHorses } from '../services/userModelService.mjs';
 
 // Unique seed per run to prevent collisions across parallel test suites
 const seed = Date.now();
@@ -63,17 +59,17 @@ describe('User Integration Tests', () => {
 
     test('rejects creation when username is missing', async () => {
       await expect(
-        createUser({ email: `missing-user-${seed}@test.local`, password: 'x', firstName: 'A', lastName: 'B' })
+        createUser({ email: `missing-user-${seed}@test.local`, password: 'x', firstName: 'A', lastName: 'B' }),
       ).rejects.toThrow('Username, email, and password are required.');
     });
 
     test('rejects creation when email is missing', async () => {
       await expect(
-        createUser({ username: `noEmail${seed}`, password: 'x', firstName: 'A', lastName: 'B' })
+        createUser({ username: `noEmail${seed}`, password: 'x', firstName: 'A', lastName: 'B' }),
       ).rejects.toThrow('Username, email, and password are required.');
     });
 
-    test('rejects duplicate username with a Duplicate error', async () => {
+    test('rejects duplicate username with the raw Prisma unique-constraint error (P2002)', async () => {
       const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
       // Use same username, different email
       await expect(
@@ -83,8 +79,8 @@ describe('User Integration Tests', () => {
           password: hashedPassword,
           firstName: 'Dup',
           lastName: 'User',
-        })
-      ).rejects.toThrow(/Duplicate value/);
+        }),
+      ).rejects.toMatchObject({ code: 'P2002', meta: { target: expect.arrayContaining(['username']) } });
     });
   });
 
