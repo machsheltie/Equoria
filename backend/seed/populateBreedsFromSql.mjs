@@ -34,7 +34,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Resolve path relative to backend/ (one level up from backend/seed/).
 // Equoria-26qjf.3 (2026-05-28): operational seed data lives in backend/data/breeds/
-// (next to backend/data/breedProfiles.json) — not docs/, not samples/.
+// (next to backend/data/breedStarterStats.json) — not docs/, not samples/.
 const breedDataDir = join(__dirname, '..', 'data', 'breeds');
 
 // Non-breed SQL files to skip

@@ -18,7 +18,7 @@
  * Responsibilities (all of which were previously inline in the router):
  *   - parse + validate the breedId param
  *   - resolve breed name + breedGeneticProfile via raw SQL (DMMF may omit it)
- *   - probe breedProfiles.json existence (surface as 422 vs generic 500)
+ *   - probe the breed profile (surface as 422 vs generic 500)
  *   - generate conformation / gait / temperament from breed genetics
  *   - generate or inherit colorGenotype (with sire/dam ownership + sex guards)
  *   - calculate phenotype + markings (random or inherited)
@@ -96,7 +96,7 @@ export async function createHorseFromRequest(reqBody, userId) {
   // The loader words a genuine absence differently depending on whether the DB
   // cache is loaded (production) or not (tests), so the message cannot be the
   // discriminator (Equoria-72bub). It sets `cause` only on its load-FAILURE arms
-  // (a broken breedProfiles.json) and never on a genuine absence, so branch on that.
+  // (no profiles loaded) and never on a genuine absence, so branch on that.
   try {
     getBreedProfile(breedName);
   } catch (err) {

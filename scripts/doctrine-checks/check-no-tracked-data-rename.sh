@@ -6,7 +6,7 @@
 #
 # WHAT WENT WRONG THAT THIS PREVENTS
 #   foalCreationBreedDataOutage.test.mjs used to prove its 500 arm by renaming
-#   the TRACKED backend/data/breedProfiles.json aside for one request and
+#   the TRACKED breed profile JSON file (since deleted, Equoria-fbnw8) aside for one request and
 #   restoring it in a `finally`. A `finally` does not run when the process is
 #   killed, and this campaign already hit one OOM death — so a killed run could
 #   leave the tracked file missing from the shared working tree, and every
@@ -28,20 +28,17 @@
 #   guard spec scanning for these strings).
 #
 # WHAT TO DO INSTEAD
-#   A suite that genuinely needs an unreadable data source works on a COPY. The
-#   worked example is backend/modules/horses/__tests__/foalCreationBreedDataOutage.test.mjs:
-#   it copies the tracked file into an mkdtemp directory outside the repository,
-#   points the code under test at that copy through the loader's ordinary path
-#   configuration — BREED_PROFILES_PATH in
-#   backend/modules/horses/data/breedProfileLoader.mjs, read the same way in
-#   every environment and defaulting to the repository file when unset, the same
-#   shape as DATABASE_URL — and then deletes the COPY for one request. The
-#   tracked path is only ever read.
+#   A suite that genuinely needs an unreadable data source works on a COPY: copy
+#   the tracked file into an mkdtemp directory outside the repository, point the
+#   code under test at the copy through its ordinary path configuration (the same
+#   shape as DATABASE_URL), and break the copy. The tracked path is only ever
+#   read. (The suite that used to do this for breedProfiles.json was reworked in
+#   Equoria-fbnw8 when that file was deleted; it now removes the in-memory breed
+#   cache for one request instead.)
 #
-#   That variable is plain configuration, NOT a test-only seam. Do not reach for
-#   a NODE_ENV-gated or TEST-prefixed escape hatch here: see
-#   .claude/rules/INTERLEAVING_TEST_SEAMS.md for why that shape is capped and
-#   what a seam has to satisfy before it may exist at all.
+#   Plain configuration is fine; a NODE_ENV-gated or TEST-prefixed escape hatch is
+#   not: see .claude/rules/INTERLEAVING_TEST_SEAMS.md for why that shape is capped
+#   and what a seam has to satisfy before it may exist at all.
 
 set -uo pipefail
 
@@ -129,8 +126,7 @@ if [ -n "$violations" ]; then
   echo "every suite that reads it then fails for a reason that is not its own."
   echo
   echo "Work on a COPY instead: copy the data file into an OS temp directory, point the code"
-  echo "under test at the copy through its ordinary path configuration, and break the copy. See"
-  echo "backend/modules/horses/__tests__/foalCreationBreedDataOutage.test.mjs."
+  echo "under test at the copy through its ordinary path configuration, and break the copy."
   echo
   echo "If a line is part of a doctrine-enforcement guard, append:"
   echo "    // $MARKER"

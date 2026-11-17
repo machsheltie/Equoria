@@ -177,7 +177,6 @@ backend/_ul
 backend/_ul/
 backend/data/*
 !backend/data/breedStarterStats.json
-!backend/data/breedProfiles.json
 # Equoria-26qjf.3: 312 breed SQL profiles (canonical operational seed data).
 !backend/data/breeds/
 !backend/data/breeds/*

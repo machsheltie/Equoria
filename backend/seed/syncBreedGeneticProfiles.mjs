@@ -29,13 +29,9 @@
  *
  * Source of the profile: backend/data/breeds/*.txt — the files
  * populateBreedsFromSql.mjs loads into the DB locally. They carry the FULL
- * profile (color genetics + ratingProfiles + temperamentWeights). The
- * backend/data/breedProfiles.json file carries only the ratingProfiles +
- * temperamentWeights subset, so it cannot be the copy source on its own; it is
- * read as a cross-check instead. Owner ruling 2026-10-22: one breed data set
- * across the seed .txt, the JSON and the DB. If any breed's ratingProfiles or
- * temperamentWeights differ between a .txt file and the JSON (or a breed is in
- * one and not the other) the script refuses to run and writes nothing.
+ * profile (color genetics + ratingProfiles + temperamentWeights). Owner ruling
+ * 2026-10-22: one breed data set, the seed .txt files and the DB; there is no
+ * parallel JSON copy (backend/data/breedProfiles.json was deleted, Equoria-fbnw8).
  *
  * The Pearl / Brindle allele-case normalization that populateBreedsFromSql
  * applies is reused (sanitizeSql), so the synced profile is byte-for-byte what
@@ -60,7 +56,6 @@
  * file breeds with no DB row (never inserted), and DB breeds with no file.
  */
 
-import { readFileSync } from 'fs';
 import { readdir, readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -69,7 +64,6 @@ import { sanitizeSql } from './populateBreedsFromSql.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export const defaultBreedDataDir = join(__dirname, '..', 'data', 'breeds');
-export const defaultBreedProfilesJson = join(__dirname, '..', 'data', 'breedProfiles.json');
 
 // Same meta/template exclusions as the populateBreedsFromSql.mjs skip list.
 const skipFiles = new Set(['generichorse.txt', '_breed-list.txt', '_gait-registry.txt']);
@@ -150,49 +144,6 @@ export async function loadBreedSourceRows(dataDir = defaultBreedDataDir) {
 /** Fold a breed name for near-duplicate detection: accents and case removed. */
 export function foldBreedName(name) {
   return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-}
-
-function canonicalJson(value) {
-  if (Array.isArray(value)) {
-    return `[${value.map(canonicalJson).join(',')}]`;
-  }
-  if (value !== null && typeof value === 'object') {
-    return `{${Object.keys(value)
-      .sort()
-      .map(k => `${JSON.stringify(k)}:${canonicalJson(value[k])}`)
-      .join(',')}}`;
-  }
-  return JSON.stringify(value);
-}
-
-/**
- * Cross-check the .txt profiles against breedProfiles.json. Returns a list of
- * human-readable problems; an empty list means the two agree.
- *
- * @param {Map<string, object>} sourceProfiles
- * @param {Record<string, object>} profilesJson
- * @returns {string[]}
- */
-export function findSourceJsonDrift(sourceProfiles, profilesJson) {
-  const problems = [];
-  for (const [name, profile] of sourceProfiles) {
-    const entry = profilesJson[name];
-    if (!entry) {
-      problems.push(`"${name}" has a .txt file but no breedProfiles.json entry`);
-      continue;
-    }
-    for (const key of ['ratingProfiles', 'temperamentWeights']) {
-      if (canonicalJson(profile[key]) !== canonicalJson(entry[key])) {
-        problems.push(`"${name}" ${key} differs between its .txt file and breedProfiles.json`);
-      }
-    }
-  }
-  for (const name of Object.keys(profilesJson)) {
-    if (!sourceProfiles.has(name)) {
-      problems.push(`"${name}" is in breedProfiles.json but has no .txt file`);
-    }
-  }
-  return problems;
 }
 
 /**
@@ -377,25 +328,12 @@ async function main() {
   const rows = await loadBreedSourceRows();
   const profiles = new Map([...rows].map(([name, row]) => [name, row.profile]));
   const defaultTraits = new Map([...rows].map(([name, row]) => [name, row.defaultTrait]));
-  const drift = findSourceJsonDrift(
-    profiles,
-    JSON.parse(readFileSync(defaultBreedProfilesJson, 'utf8')),
-  );
-  if (drift.length > 0) {
-    console.error(
-      `Refusing to sync: ${drift.length} breed(s) differ between the .txt files and breedProfiles.json:`,
-    );
-    drift.forEach(p => console.error(`  - ${p}`));
-    process.exitCode = 1;
-    return;
-  }
-
   const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
   try {
     console.log(
       `breedGeneticProfile sync — target ${describeTarget()} — ${apply ? 'APPLY' : 'DRY RUN (no writes)'}`,
     );
-    console.log(`  source breeds (.txt, agree with breedProfiles.json): ${profiles.size}`);
+    console.log(`  source breeds (.txt): ${profiles.size}`);
     if (removeRetired) {
       const gone = await removeRetiredBreeds(prisma, { profiles, apply });
       console.log(

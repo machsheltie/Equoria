@@ -4,8 +4,7 @@
  * Tests the loader as the game uses it: backend/tests/setup.mjs installs the
  * DB cache from breeds.breedGeneticProfile before this file loads, as
  * server.mjs preloads it at boot (Equoria-ctop1). The first block proves that
- * this file really is reading the DB rows, not the breedProfiles.json
- * fallback, including from a loader imported after Jest's per-test module reset.
+ * this file really is reading the DB rows, including from a loader imported after Jest's per-test module reset.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -30,7 +29,7 @@ describe('test setup preloads the DB breed cache (Equoria-ctop1)', () => {
       select: { breedGeneticProfile: true },
     });
     const profile = getBreedProfile('Thoroughbred');
-    // shadeBias exists only in the DB profile; breedProfiles.json has none.
+    // The DB profile carries color genetics (shadeBias) beside the ratings.
     expect(typeof profile.shadeBias).toBe('object');
     expect(profile).toEqual(row.breedGeneticProfile);
   });
@@ -38,7 +37,7 @@ describe('test setup preloads the DB breed cache (Equoria-ctop1)', () => {
   it('reaches a loader imported after the per-test module reset', async () => {
     // resetModules: true gives this test a fresh module registry, so this is a
     // second loader instance, the way a route handler that awaits import() of
-    // its controller gets one. It must read the same DB cache, not the JSON.
+    // its controller gets one. It must read the same DB cache.
     const fresh = await import('../data/breedProfileLoader.mjs');
     expect(fresh.getBreedProfile).not.toBe(getBreedProfile);
     expect(typeof fresh.getBreedProfile('Thoroughbred').shadeBias).toBe('object');

@@ -117,7 +117,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     // access cookie) or doubleCsrf 403s the legitimate breeding requests.
     __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
-    // Use a real breed name that exists in breedProfiles.json. The
+    // Use a real breed name that has a profile in the DB breed cache. The
     // post-309-breeds refactor requires every breed in the DB to have
     // a matching JSON profile — random synthetic breed names no longer
     // work, so we upsert the canonical "Thoroughbred" for this suite.

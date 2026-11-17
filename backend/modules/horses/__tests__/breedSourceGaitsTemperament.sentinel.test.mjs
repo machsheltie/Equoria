@@ -9,7 +9,7 @@
  *
  * ── Why this exists ───────────────────────────────────────────────────────
  * The runtime validateProfile() in backend/seed/breedProfileValidator.mjs
- * runs against backend/data/breedProfiles.json (breedProfileData.test.mjs) —
+ * runs against the DB breed profiles (breedProfileData.test.mjs) —
  * NOT against the 312 .txt source files that actually seed the DB through
  * populateBreedsFromSql.mjs. So this sentinel asserts the .txt files KEEP
  * their full gait set and 12-key temperament map.
@@ -28,7 +28,7 @@
  *      mean) plus a non-empty gaitedGaitRegistry; a non-gaited breed has
  *      gaiting === null. (This mirrors validateProfile()'s own is_gaited
  *      branch, so the source files are held to the same contract the runtime
- *      validator enforces on breedProfiles.json.)
+ *      validator enforces on the breed profiles.)
  *   3. temperamentWeights carries EXACTLY the 11 canonical keys, each an
  *      integer, summing to 100.
  *
@@ -139,7 +139,7 @@ function findGaitErrors(profile) {
   }
 
   // gaiting (the optional 5th gait) must be consistent with isGaitedBreed —
-  // same contract validateProfile() enforces on breedProfiles.json.
+  // same contract validateProfile() enforces on the breed profiles.
   const isGaited = rp.isGaitedBreed === true;
   const gaiting = gaits.gaiting;
   if (isGaited) {

@@ -9,7 +9,7 @@
  *
  * Used by:
  *   - backend/modules/horses/__tests__/breedProfileData.test.mjs
- *     (every breed in backend/data/breedProfiles.json is well-formed)
+ *     (every breed in the seed files is well-formed)
  *
  * Future work: this validator could be wired into populateBreedsFromSql.mjs
  * as a pre-import gate so a malformed sample file is caught before the DB

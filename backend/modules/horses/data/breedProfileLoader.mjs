@@ -1,51 +1,41 @@
 /**
  * breedProfileLoader.mjs
  *
- * Source-of-truth precedence for per-breed conformation, gait, temperament,
- * and (post-Equoria-26qjf.3) color genetics:
+ * The single reader of per-breed conformation, gait, temperament and
+ * color-genetics data. Equoria has exactly one breed data set: the seed files
+ * (backend/data/breeds/*.txt) and the `breeds.breedGeneticProfile` JSONB rows
+ * they load. This loader serves those rows from an in-memory cache
+ * (breedProfileCache.mjs) filled by `preloadBreedProfiles(prisma)`.
  *
- *   1. DB cache populated by `preloadBreedProfiles(prisma)` — full 312-breed
- *      roster from `breeds.breedGeneticProfile` JSONB. The DB profile is the
- *      superset: full conformation (all 8 regions incl. topline), gaits,
- *      temperament, AND color genetics (shadeBias, alleleWeights, etc.).
- *   2. backend/data/breedProfiles.json — fallback for the conformation /
- *      gait / temperament subset (no color genetics). Keeps the loader
- *      robust against the DB cache being empty during early-boot /
- *      cold-cache paths. The backend test setup (backend/tests/setup.mjs)
- *      installs the DB cache for every test file, as server.mjs preloads it
- *      at boot (Equoria-ctop1); only a test that clears the cache still
- *      reads this file through the loader.
+ *   - server.mjs awaits preloadBreedProfiles(prisma) before it binds the
+ *     listener and refuses to start if it fails.
+ *   - Scripts that run outside the server (backfills, load drivers) call it
+ *     once at startup.
+ *   - The backend test setup (backend/tests/setup.mjs) installs the same rows
+ *     for every test file (Equoria-ctop1).
  *
- * The DB became the authoritative source on 2026-05-28 when 312 breed
- * profiles imported via populateBreedsFromSql.mjs landed in production.
- *
- * Equoria-f8qew (2026-06-02): the breed source files now carry all 8
- * conformation regions (topline added), so the DB profile is complete and
- * the loader returns it directly on a cache hit — the transitional per-key
- * merge that grafted topline from the JSON has been removed. The JSON file
- * is RETAINED, not deleted: it still has live consumers (tests that clear
- * the cache, backend/tests/load/run-bulk-foaling-cron.mjs,
- * backend/scripts/backfill-horse-temperament-gaits.mjs, breedProfileData.test.mjs,
- * and others). Removing it remains a separate follow-up gated on migrating
- * those consumers onto a preloaded DB cache.
+ * There is no second copy. backend/data/breedProfiles.json, which used to back
+ * this loader when the cache was empty, was deleted (Equoria-fbnw8, finishing
+ * Equoria-f8qew AC4): a parallel breed source is how the "12 canonical breeds"
+ * copy drifted, and the owner ruled that breed data must match everywhere.
  *
  * Contract:
- *   - `breedName` must match the DB row name (or the JSON key) exactly,
- *     case-sensitive.
- *   - Missing breeds are treated as data bugs and throw. No silent
- *     fallback to "generic defaults" — the previous architecture's
- *     "unknown breed → random defaults" pattern was the root cause of
- *     the stats bug corrected in PR #94, and the same instinct produced
- *     the all-Bay starter horses fixed under Equoria-wvdya.
+ *   - `breedName` must match the DB row name exactly, case-sensitive.
+ *   - A breed with no profile is a data bug and throws. No silent fallback to
+ *     "generic defaults" — the previous architecture's "unknown breed ->
+ *     random defaults" pattern was the root cause of the stats bug corrected
+ *     in PR #94, and the same instinct produced the all-Bay starter horses
+ *     fixed under Equoria-wvdya.
+ *   - A cache nobody installed is a server fault, not a fault of the breed. It
+ *     throws an error that carries a `cause`; a genuine absence carries none.
+ *     Callers (createHorseService, breedingPairRules, breedPhysique, the
+ *     foaling controller) branch on that to answer 500 versus 422/400.
  *
  * Equoria-wpfvl (2026-05-28).
  *
  * @module modules/horses/data/breedProfileLoader
  */
 
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
 import logger from '../../../utils/logger.mjs';
 import {
   clearBreedProfileCache,
@@ -60,51 +50,7 @@ import {
 // quiet-degradation pattern the constitution forbids. Callers that have a
 // numeric breedId resolve it to a name via Prisma before reaching here.
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-// Where the JSON fallback lives. Ordinary configuration, read the same way in
-// every environment: `BREED_PROFILES_PATH` if it is set, otherwise the file
-// shipped in the repository. Same shape as DATABASE_URL — a deployment names the
-// resource, the code does not hard-code it. No environment gate and no test-only
-// behaviour: whatever the variable names is what every process reads, and if it
-// is unset (the normal case, including production) the constant below wins.
-//
-// It exists because backend/modules/horses/__tests__/foalCreationBreedDataOutage.test.mjs
-// must make this read genuinely fail to prove the 500 arm (jsonLoadError is
-// captured once, right here, at module init, and mocking an Equoria-owned module
-// is forbidden). That suite used to rename the TRACKED backend/data/breedProfiles.json
-// aside for one request — so a run killed inside the window left the tracked file
-// missing from the shared working tree and every breed-dependent path 500ing for
-// no visible reason. OWNER RULING 2026-09-14 10:23 (Equoria-rlvgn): "Tests may not
-// rename tracked data files at all; the affected suite works on a copy." Pointing
-// this variable at a disposable copy is how the suite gets one.
-//
-// Set it in the process environment, or in the env file config.mjs loads for the
-// current NODE_ENV. A relative value resolves against the process working directory.
-const defaultProfilesPath = resolve(__dirname, '../../../data/breedProfiles.json');
-const profilesPath = process.env.BREED_PROFILES_PATH
-  ? resolve(process.env.BREED_PROFILES_PATH)
-  : defaultProfilesPath;
-
-// ── JSON fallback (transition mechanism) ──────────────────────────────────────
-// Loaded once at module init with readFileSync so the loader is usable in
-// purely sync contexts (e.g. controller hot paths). Carries the 312-breed
-// gait+temperament+category subset — NO color genetics. When the DB cache is
-// populated (preloadBreedProfiles has run), the cache wins; this JSON is the
-// safety net for boot-order races and for a process nothing preloaded.
-let profilesByName = {};
-let jsonLoadError = null;
-try {
-  profilesByName = JSON.parse(readFileSync(profilesPath, 'utf8'));
-} catch (err) {
-  jsonLoadError = err;
-  logger.error(
-    `[breedProfileLoader] Failed to load breedProfiles.json (${profilesPath}): ${err.message}. ` +
-      'Calls to getBreedProfile() will require preloadBreedProfiles(prisma) to have succeeded.',
-  );
-}
-
-// ── DB cache (authoritative source post-26qjf) ────────────────────────────────
+// ── DB cache ──────────────────────────────────────────────────────────────────
 // Map<breedName, profile> kept by breedProfileCache.mjs (on globalThis, so every
 // instance of this module in a process or test file shares it). null until
 // preloadBreedProfiles() has run (server.mjs boot before the await) or after
@@ -145,7 +91,7 @@ export async function preloadBreedProfiles(prisma) {
 /**
  * Test helper: clear the DB cache.
  * Underscore prefix marks it as a test-only export not part of the
- * production API. Exists so tests can exercise the JSON-fallback path. The
+ * production API. Exists so tests can exercise the cache-not-installed path. The
  * cache lives on the test file's own global, so clearing it never reaches
  * another test file.
  */
@@ -156,17 +102,13 @@ export function _clearBreedProfileCache() {
 /**
  * Fetch a breed's full profile by display name (or legacy numeric ID).
  *
- * Resolution order:
- *   1. DB cache (if populated) — authoritative full profile.
- *   2. breedProfiles.json — fallback for gait/temperament subset only.
+ * Throws when the breed has no profile in the cache (no `cause`), when no
+ * cache is installed (with a `cause`), or when given a malformed identifier.
  *
- * Throws if neither source has the breed, or if the loader was given a
- * malformed identifier.
- *
- * @param {string|number} breedIdentifier
- * @returns {object} the profile object (full when DB cache hit; gait/temp
- *   subset when JSON fallback)
- * @throws {Error} when both sources are empty / unable to resolve
+ * @param {string} breedName
+ * @returns {object} the full profile: conformation, gaits, temperament and
+ *   color genetics
+ * @throws {Error}
  */
 export function getBreedProfile(breedName) {
   // Equoria-f6xgn (2026-05-28): the LEGACY_ID_TO_NAME shim was removed.
@@ -186,72 +128,34 @@ export function getBreedProfile(breedName) {
     );
   }
 
-  // Resolve from each source independently, then merge.
   const dbCache = getBreedProfileCache();
-  const fromDb = dbCache ? (dbCache.get(breedName) ?? null) : null;
-  const fromJson = profilesByName[breedName] ?? null;
-
-  if (!fromDb && !fromJson) {
-    // Surface a different error message depending on which subsystem(s)
-    // are actually broken so the operator can act precisely.
-    if (dbCache && jsonLoadError) {
-      throw new Error(
-        `No DB row for breed "${breedName}" AND breedProfiles.json failed to load — ` +
-          `${jsonLoadError.message}`,
-        { cause: jsonLoadError },
-      );
-    }
-    if (dbCache) {
-      throw new Error(
-        `No profile for breed "${breedName}" — absent from both the DB cache ` +
-          `(${dbCache.size} breeds loaded) and breedProfiles.json. ` +
-          'Run `npm run seed:breeds` from backend/ to re-import, ' +
-          'or confirm the breed name spelling.',
-      );
-    }
-    if (jsonLoadError) {
-      throw new Error(
-        `breedProfiles.json failed to load AND DB cache is empty — ${jsonLoadError.message}`,
-        { cause: jsonLoadError },
-      );
-    }
+  if (!dbCache) {
+    // Nothing installed a cache: preloadBreedProfiles(prisma) never ran or
+    // failed. Every breed would fail, so this is a server fault, not a missing
+    // breed; the `cause` lets callers tell the two apart.
     throw new Error(
-      `No breedProfiles.json entry for breed "${breedName}". ` +
-        'Every breed must have a profile — check that the DB breed name matches the JSON key ' +
-        'exactly, or call preloadBreedProfiles(prisma) at startup so the DB is consulted.',
+      `Breed profiles are not loaded, so "${breedName}" cannot be resolved. ` +
+        'Call preloadBreedProfiles(prisma) at startup.',
+      { cause: new Error('breed profile cache has not been installed') },
     );
   }
-
-  // Single-source paths.
-  if (!fromDb) {
-    // Cache absent (no preload) or this breed not in the cache — serve the
-    // JSON profile: the production boot-order safety net, and the path a test
-    // takes when it clears the cache.
-    return fromJson;
+  const profile = dbCache.get(breedName);
+  if (!profile) {
+    throw new Error(
+      `No profile for breed "${breedName}" in the DB cache (${dbCache.size} breeds loaded). ` +
+        'Run `npm run seed:breeds` from backend/ to re-import, ' +
+        'or confirm the breed name spelling.',
+    );
   }
-
-  // DB cache hit. Post-Equoria-f8qew the DB profile is COMPLETE: the breed
-  // source files (backend/data/breeds/*.txt) now carry all 8 conformation
-  // regions — including `topline` — so the DB row imported via
-  // populateBreedsFromSql.mjs is a strict superset of the JSON profile
-  // (DB additionally carries color genetics: shadeBias, alleleWeights,
-  // markingBias, etc.). The transitional per-key deep-merge that previously
-  // grafted `topline` from the JSON onto topline-less DB rows (Equoria-wpfvl)
-  // is therefore a no-op and has been removed: when the DB has the breed, the
-  // DB profile is returned directly, regardless of whether the JSON also has it.
-  return fromDb;
+  return profile;
 }
 
 /**
- * Number of breeds available via the loader. Prefers the DB cache count
- * when populated; falls back to the JSON entry count.
+ * Number of breeds available via the loader: the DB cache count, 0 when no
+ * cache is installed.
  *
  * @returns {number}
  */
 export function countLoadedBreedProfiles() {
-  const dbCache = getBreedProfileCache();
-  if (dbCache) {
-    return dbCache.size;
-  }
-  return Object.keys(profilesByName).length;
+  return getBreedProfileCache()?.size ?? 0;
 }

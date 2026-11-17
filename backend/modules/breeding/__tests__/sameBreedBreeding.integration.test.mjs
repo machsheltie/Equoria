@@ -42,7 +42,7 @@ const FEE = 400;
 const notTheSameBreed = /must be the same breed to breed/;
 
 async function otherBreed() {
-  // 'Abaga' has a real entry in backend/data/breedProfiles.json, as foaling needs.
+  // 'Abaga' has a real profile in the DB breed cache, as foaling needs.
   return prisma.breed.upsert({
     where: { name: 'Abaga' },
     update: {},

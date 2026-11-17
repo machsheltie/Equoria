@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { applyTestRateLimitProfile } from './config/testRateLimitProfile.mjs';
+import { installBreedProfileCache } from './config/installBreedProfileCache.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -84,9 +85,9 @@ if (!process.env.DATABASE_URL) {
 // awaits preloadBreedProfiles(prisma) before it binds the listener; here the
 // test environment (tests/config/PrismaCleanupEnvironment.mjs) reads the same
 // breeds.breedGeneticProfile rows once per Jest process and this file installs
-// them as the file's breed cache. The seed .txt files, breedProfiles.json and
-// the DB carry the same ratingProfiles and temperamentWeights (checked by
-// syncBreedGeneticProfiles); JSONB stores object keys in its own order, so no
+// them as the file's breed cache (tests/config/installBreedProfileCache.mjs,
+// shared with the security config's __tests__/setup.mjs). The DB rows are loaded
+// from the seed .txt files; JSONB stores object keys in its own order, so no
 // test may depend on the key order of a profile object.
 //
 // This file must not import packages/database/prismaClient.mjs (nor anything
@@ -97,20 +98,7 @@ if (!process.env.DATABASE_URL) {
 // file's global, so loader instances a test imports after Jest's per-test
 // module reset see it too. Missing rows throw: a suite without its breed data
 // must not run.
-{
-  // Key set by PrismaCleanupEnvironment.setup() (breedProfileRowsGlobal there).
-  // Not imported: the environment module is host-side and must not be
-  // evaluated inside the test file's sandbox.
-  const rowsJson = globalThis.__equoriaBreedProfileRowsJson;
-  if (typeof rowsJson !== 'string') {
-    throw new Error(
-      'Breed profile rows are missing: backend tests must run in tests/config/PrismaCleanupEnvironment.mjs, ' +
-        'which reads them from the database once per Jest process.',
-    );
-  }
-  const { installBreedProfileRows } = await import('../modules/horses/data/breedProfileCache.mjs');
-  installBreedProfileRows(JSON.parse(rowsJson));
-}
+await installBreedProfileCache();
 //
 // Equoria-fefh2.15: per-file Prisma disconnect is NOT done here anymore. A
 // suite-owned afterAll could reconnect Prisma after this file's drain ran,

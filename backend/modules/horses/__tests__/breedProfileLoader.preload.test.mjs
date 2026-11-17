@@ -3,8 +3,8 @@
  *
  * Real-DB tests for the DB-cache behavior introduced by the DB-as-SoT
  * refactor. The original Equoria-rr7 test file
- * (`breedProfileLoader.test.mjs`) covers the static JSON-only API surface;
- * this file covers what the refactor added:
+ * (`breedProfileLoader.test.mjs`) covers the loader as the game uses it;
+ * this file covers the cache lifecycle:
  *
  *   - preloadBreedProfiles() populates an in-memory cache from
  *     breeds.breedGeneticProfile.
@@ -12,7 +12,9 @@
  *     Post-Equoria-f8qew the DB profile is complete (all 8 conformation
  *     regions incl. topline + color genetics), so the prior transitional
  *     DB+JSON per-key merge was removed — the DB row is a strict superset.
- *   - cache-empty fallback still works (JSON-only behavior).
+ *   - with no cache installed the loader throws loudly, with a `cause`
+ *     (Equoria-fbnw8: the breedProfiles.json fallback is gone; the DB is the
+ *     only source).
  *   - _clearBreedProfileCache test helper drops the cache cleanly.
  *
  * No mocks (CLAUDE.md Testing Philosophy). Each test owns its cache state
@@ -82,24 +84,36 @@ describe('getBreedProfile — returns the complete DB profile on a cache hit (Eq
     }
   });
 
-  it('throws "absent from both sources" when neither the cache nor the JSON has the breed', async () => {
+  it('throws a cause-free "No profile" error when the cache does not have the breed', async () => {
     await preloadBreedProfiles(prisma);
-    expect(() => getBreedProfile('Nonexistent-Breed-WPFVL')).toThrow(
-      /absent from both the DB cache.*and breedProfiles\.json/,
-    );
+    let thrown;
+    try {
+      getBreedProfile('Nonexistent-Breed-WPFVL');
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown.message).toMatch(/No profile for breed "Nonexistent-Breed-WPFVL" in the DB cache/);
+    expect(thrown.cause).toBeUndefined();
   });
 });
 
-describe('getBreedProfile — JSON-only fallback when DB cache empty (Equoria-wpfvl)', () => {
+describe('getBreedProfile — no cache installed (Equoria-fbnw8)', () => {
   beforeEach(() => {
     _clearBreedProfileCache();
   });
 
-  it('serves Thoroughbred from breedProfiles.json with conformation but no shadeBias', () => {
-    const profile = getBreedProfile('Thoroughbred');
-    expect(profile.ratingProfiles.conformation.topline).toBeDefined();
-    // Color genetics live only on the DB; an unpreloaded loader cannot
-    // produce shadeBias for any breed.
-    expect(profile.shadeBias).toBeUndefined();
+  it('throws loudly with a cause instead of serving a second copy of the breed data', () => {
+    let thrown;
+    try {
+      getBreedProfile('Thoroughbred');
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown.message).toMatch(/Breed profiles are not loaded/);
+    expect(thrown.cause).toBeInstanceOf(Error);
+  });
+
+  it('counts zero breeds', () => {
+    expect(countLoadedBreedProfiles()).toBe(0);
   });
 });

@@ -172,7 +172,7 @@ describe('createHorse, the funnel every acquisition path uses', () => {
     const name = `${prefix}-funnel-bare`;
     await expect(
       createHorse({ name, age: 3, sex: 'Mare', dateOfBirth: birthDateForAge(3), breedId: bare.id }),
-    ).rejects.toThrow(/No (profile|breedProfiles.json entry) for breed/);
+    ).rejects.toThrow(/No profile for breed/);
     expect(await prisma.horse.count({ where: { name } })).toBe(0);
   });
 });

@@ -3,21 +3,18 @@
  *
  * Real-DB coverage for the production breedGeneticProfile sync. The sync is
  * driven with profiles named after this suite's own fixture breeds, so it
- * reads and writes only rows this file created. The source-file loader and
- * the .txt-vs-JSON cross-check run against the real shipped data files.
+ * reads and writes only rows this file created. The source-file loader
+ * runs against the real shipped data files.
  *
  * NO MOCKS — real Prisma, real Postgres jsonb comparison and UPDATE.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../__tests__/helpers/failLoudCleanup.mjs';
 import { createTestHorse, cleanupTestHorses } from '../__tests__/helpers/createTestHorse.mjs';
 import {
-  defaultBreedProfilesJson,
-  findSourceJsonDrift,
   loadBreedSourceProfiles,
   parseBreedSourceFile,
   removeRetiredBreeds,
@@ -59,13 +56,11 @@ describe('syncBreedGeneticProfiles (Equoria-hxhqk)', () => {
 
   // Old contract: 312 breed files. Owner ruling q337 (2026-11-03): keep
   // 'Tennessee Walking Horse' and remove the duplicate 'Tennessee Walking'.
-  it('loads all 311 breed files and they agree with breedProfiles.json', async () => {
+  it('loads all 311 breed files', async () => {
     expect(sources.size).toBe(311);
     expect(sources.has('Tennessee Walking')).toBe(false);
     expect(sources.has('Tennessee Walking Horse')).toBe(true);
-    const json = JSON.parse(readFileSync(defaultBreedProfilesJson, 'utf8'));
-    expect(findSourceJsonDrift(sources, json)).toEqual([]);
-    // Full profile, not just the JSON subset: color genetics come along.
+    // Full profile: color genetics come along with the ratings.
     expect(Object.keys(profileA)).toEqual(
       expect.arrayContaining(['alleleWeights', 'shadeBias', 'markingBias', 'ratingProfiles', 'temperamentWeights']),
     );
@@ -87,15 +82,6 @@ describe('syncBreedGeneticProfiles (Equoria-hxhqk)', () => {
       BR1_Brindle1: ['br1/n'],
       MFSD12_Mushroom: ['N/N'],
     });
-  });
-
-  it('reports drift when a .txt profile and the JSON disagree', () => {
-    const json = { Abaga: { ...profileA, temperamentWeights: { Calm: 100 } }, Extra: profileA };
-    const drift = findSourceJsonDrift(new Map([['Abaga', profileA]]), json);
-    expect(drift).toEqual([
-      '"Abaga" temperamentWeights differs between its .txt file and breedProfiles.json',
-      '"Extra" is in breedProfiles.json but has no .txt file',
-    ]);
   });
 
   it('dry run reports, writes nothing; apply updates only the profile; second apply changes 0 rows', async () => {

@@ -40,7 +40,7 @@ function requireGaitedRange(breedName, profile) {
     gaitedNames.length === 0
   ) {
     throw new Error(
-      `breedProfiles.json entry for gaited breed "${breedName}" is missing its special-gait range ` +
+      `breed profile for gaited breed "${breedName}" is missing its special-gait range ` +
         '(ratingProfiles.gaits.gaiting and gaitedGaitRegistry).',
     );
   }
@@ -96,14 +96,14 @@ export function validateGaitScores(scores) {
  * @param {string} breedName - Breed display name
  * @param {{ random?: () => number }} [options] - `random` is the uniform source (default Math.random)
  * @returns {Object} Object with walk/trot/canter/gallop (integers 0-100) and gaiting (array or null)
- * @throws {Error} if the breed is missing from breedProfiles.json or any gait entry is absent
+ * @throws {Error} if the breed is missing from the breed profiles or any gait entry is absent
  *   (a gaited breed without its special-gait range included)
  */
 export function generateGaitScores(breedName, { random = Math.random } = {}) {
   const profile = getBreedProfile(breedName);
   const gaits = profile.ratingProfiles?.gaits;
   if (!gaits) {
-    throw new Error(`breedProfiles.json entry for "${breedName}" is missing ratingProfiles.gaits.`);
+    throw new Error(`breed profile for "${breedName}" is missing ratingProfiles.gaits.`);
   }
   const scores = {};
 
@@ -112,7 +112,7 @@ export function generateGaitScores(breedName, { random = Math.random } = {}) {
     const gaitProfile = gaits[gait];
     if (!gaitProfile || !Number.isFinite(gaitProfile.mean)) {
       throw new Error(
-        `breedProfiles.json entry for "${breedName}" missing gait "${gait}" ` +
+        `breed profile for "${breedName}" missing gait "${gait}" ` +
           'in ratingProfiles.gaits. All 4 standard gaits (walk/trot/canter/gallop) are required.',
       );
     }
@@ -155,7 +155,7 @@ export function generateInheritedGaitScores(breedName, sireGaitScores, damGaitSc
   const gaits = profile.ratingProfiles?.gaits;
   if (!gaits) {
     throw new Error(
-      `breedProfiles.json entry for "${breedName}" is missing ratingProfiles.gaits (inherited path).`,
+      `breed profile for "${breedName}" is missing ratingProfiles.gaits (inherited path).`,
     );
   }
   const scores = {};
@@ -165,7 +165,7 @@ export function generateInheritedGaitScores(breedName, sireGaitScores, damGaitSc
     const gaitProfile = gaits[gait];
     if (!gaitProfile || !Number.isFinite(gaitProfile.mean)) {
       throw new Error(
-        `breedProfiles.json entry for "${breedName}" missing gait "${gait}" ` +
+        `breed profile for "${breedName}" missing gait "${gait}" ` +
           'in ratingProfiles.gaits (inherited path).',
       );
     }

@@ -12,7 +12,7 @@
  * the DB row directly on a cache hit.
  *
  * BUT: the runtime validateProfile() in backend/seed/breedProfileValidator.mjs
- * runs against backend/data/breedProfiles.json (breedProfileData.test.mjs) —
+ * runs against the DB breed profiles (breedProfileData.test.mjs) —
  * NOT against the 312 .txt source files that actually seed the DB through
  * populateBreedsFromSql.mjs. So nothing
  * asserts the .txt files KEEP all 8 regions. A future hand-edit (or a

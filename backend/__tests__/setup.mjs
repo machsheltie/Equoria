@@ -9,6 +9,10 @@ import { beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { applyTestRateLimitProfile } from '../tests/config/testRateLimitProfile.mjs';
+import { installBreedProfileCache } from '../tests/config/installBreedProfileCache.mjs';
+
+// The DB breed cache, as in tests/setup.mjs (Equoria-fbnw8: no JSON fallback).
+await installBreedProfileCache();
 
 // Set test environment
 process.env.NODE_ENV = 'test';

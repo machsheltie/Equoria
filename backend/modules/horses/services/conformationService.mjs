@@ -2,7 +2,7 @@
 // Generates 8 conformation region scores for a horse using breed rating profiles.
 // Scores are permanent physical structure attributes generated at birth.
 //
-// Per-breed profiles come from backend/data/breedProfiles.json via
+// Per-breed profiles come from the DB breed profile cache via
 // breedProfileLoader. Every breed in the DB must have an entry.
 
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
@@ -73,15 +73,15 @@ export function calculateOverallConformation(scores) {
  * @param {string} breedName - Breed display name
  * @param {{ random?: () => number }} [options] - `random` is the uniform source (default Math.random)
  * @returns {Object} Object with 8 region scores (integers 0-100) and overallConformation
- * @throws {Error} if the breed is missing from breedProfiles.json or any region is absent
+ * @throws {Error} if the breed is missing from the breed profiles or any region is absent
  */
 export function generateConformationScores(breedName, { random = Math.random } = {}) {
   const profile = getBreedProfile(breedName);
   const conformation = profile.ratingProfiles?.conformation;
   if (!conformation) {
     throw new Error(
-      `breedProfiles.json entry for "${breedName}" is missing ratingProfiles.conformation. ` +
-        'Fix the hand-tuned entry in backend/data/breedProfiles.json.',
+      `breed profile for "${breedName}" is missing ratingProfiles.conformation. ` +
+        'Fix the breed source file in backend/data/breeds/ and re-seed.',
     );
   }
 
@@ -97,7 +97,7 @@ export function generateConformationScores(breedName, { random = Math.random } =
       regionProfile.stdDev < 0
     ) {
       throw new Error(
-        `breedProfiles.json entry for "${breedName}" has invalid region "${region}" ` +
+        `breed profile for "${breedName}" has invalid region "${region}" ` +
           'in ratingProfiles.conformation. All 8 regions require finite mean and non-negative stdDev.',
       );
     }
@@ -152,9 +152,7 @@ export function generateInheritedConformationScores(
   const profile = getBreedProfile(breedName);
   const conformation = profile.ratingProfiles?.conformation;
   if (!conformation) {
-    throw new Error(
-      `breedProfiles.json entry for "${breedName}" is missing ratingProfiles.conformation.`,
-    );
+    throw new Error(`breed profile for "${breedName}" is missing ratingProfiles.conformation.`);
   }
 
   // Equoria-84pu: sanitize the breeding-value boost. Guard against NaN, negative
@@ -177,7 +175,7 @@ export function generateInheritedConformationScores(
       regionProfile.stdDev < 0
     ) {
       throw new Error(
-        `breedProfiles.json entry for "${breedName}" has invalid region "${region}" ` +
+        `breed profile for "${breedName}" has invalid region "${region}" ` +
           'in ratingProfiles.conformation (inherited path). Finite mean and non-negative stdDev are required.',
       );
     }

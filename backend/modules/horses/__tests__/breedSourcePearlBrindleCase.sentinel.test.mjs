@@ -38,7 +38,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // Equoria-dsd2a: c12c53c72 (Equoria-26qjf.3) relocated the 312 breed SQL
 // profile files samples/Breeds/*.txt -> backend/data/breeds/*.txt to
-// co-locate operational seed data with backend/data/breedProfiles.json.
+// co-locate operational seed data with backend/data/breedStarterStats.json.
 // The sentinel now scans the new canonical location.
 const breedsDir = resolve(__dirname, '../../../data/breeds');
 

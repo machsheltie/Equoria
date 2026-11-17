@@ -12,18 +12,13 @@
 // the missing-breed contract: the old OrNull form returned null and the horse kept its
 // placeholder scores; now the horse is refused.
 
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import {
   generateBreedPhysique,
   generateBreedPhysiqueOrRefuse,
   breedScoresMissingCode,
 } from '../services/breedPhysique.mjs';
 import { seededRng as seeded } from '../../../__tests__/helpers/seededRng.mjs';
-
-const here = dirname(fileURLToPath(import.meta.url));
-const profiles = JSON.parse(readFileSync(resolve(here, '../../../data/breedProfiles.json'), 'utf8'));
 
 const standardGaits = ['walk', 'trot', 'canter', 'gallop'];
 const regions = ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves', 'topline'];
@@ -37,7 +32,7 @@ describe('generateBreedPhysique (Equoria-vqz4b, Equoria-17zgu)', () => {
   test.each(['American Saddlebred', 'Morgan USA'])(
     '%s: every conformation region is rolled from its own breed range',
     breedName => {
-      const ranges = profiles[breedName].ratingProfiles.conformation;
+      const ranges = getBreedProfile(breedName).ratingProfiles.conformation;
       const { conformationScores } = generateBreedPhysique(breedName, { random: () => fixedU });
       for (const region of regions) {
         expect(conformationScores[region]).toBe(expectedScore(ranges[region].mean, ranges[region].stdDev));
@@ -51,7 +46,7 @@ describe('generateBreedPhysique (Equoria-vqz4b, Equoria-17zgu)', () => {
   );
 
   test('gaited breed: each standard gait and each named special gait comes from its gait range only (q210)', () => {
-    const rating = profiles['American Saddlebred'].ratingProfiles;
+    const rating = getBreedProfile('American Saddlebred').ratingProfiles;
     const { conformationScores, gaitScores } = generateBreedPhysique('American Saddlebred', {
       random: () => fixedU,
     });

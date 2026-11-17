@@ -79,17 +79,14 @@ beforeAll(async () => {
     }
   }
   // Owner ruling 2026-10-28 (q211): a breed with no conformation/gait ranges is refused,
-  // so the purchase breed must also have a breedProfiles.json entry (a legacy
+  // so the purchase breed must also have a breed profile in the DB (a legacy
   // 'Quarter Horse' row has starter stats but no ranges).
-  const rangedNames = new Set(
-    Object.keys(JSON.parse(readFileSync(resolve(__dirname, '../../../data/breedProfiles.json'), 'utf8'))),
-  );
-  validBreedNames = validBreedNames.filter(name => rangedNames.has(name));
   if (validBreedNames.length > 0) {
-    const breed = await prisma.breed.findFirst({
-      where: { name: { in: validBreedNames } },
-      select: { id: true },
-    });
+    const [breed] = await prisma.$queryRaw`
+      SELECT id FROM breeds
+       WHERE name = ANY(${validBreedNames})
+         AND jsonb_typeof("breedGeneticProfile"->'ratingProfiles') = 'object'
+       ORDER BY id LIMIT 1`;
     realBreedId = breed?.id ?? null;
   } else {
     realBreedId = null;

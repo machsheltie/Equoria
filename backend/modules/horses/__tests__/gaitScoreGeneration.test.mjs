@@ -95,7 +95,7 @@ describe('Gait Score Generation Service', () => {
       expect(new Set(scores.gaiting.map(g => g.name))).toEqual(new Set(['Flat Walk', 'Running Walk']));
     });
 
-    // Owner ruling 2026-10-21: breedProfiles.json now carries the same gait
+    // Owner ruling 2026-10-21: the DB breed profile now carries the same gait
     // profiles as the seed files that load the DB the game reads (the invented
     // 12-breed table these values came from was deleted). Old contract:
     // Walkaloosa had Indian Shuffle only. The game's data: Walkaloosa has
@@ -338,7 +338,7 @@ describe('Gait Score Generation Service', () => {
       expect(percentage).toBeGreaterThanOrEqual(0.93);
     });
 
-    // Owner ruling 2026-10-21: breedProfiles.json now carries the same gait
+    // Owner ruling 2026-10-21: the DB breed profile now carries the same gait
     // profiles as the seed files that load the DB the game reads (the invented
     // 12-breed table these values came from was deleted). Old contract:
     // Thoroughbred walk mean 65 (window 57-73); the game's value is 78.

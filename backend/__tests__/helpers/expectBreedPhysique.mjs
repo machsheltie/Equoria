@@ -3,8 +3,7 @@
  * ranges (Equoria-vqz4b, Equoria-17zgu; owner request 2026-10-28). Shared by the Horse
  * Trader and onboarding regression tests.
  *
- * Checks, against backend/data/breedProfiles.json (the profile the backend reads when
- * the DB cache is not preloaded, as in tests):
+ * Checks, against the breed profile the backend reads (the DB cache the test setup preloads):
  *   - the 8 conformation regions are not all one value, each is an integer inside its
  *     OWN breed range (mean +/- 4 stdDev, clamped to 0..100), and the overall score is
  *     their rounded mean;
@@ -16,12 +15,7 @@
  */
 
 import { expect } from '@jest/globals';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
-
-const here = dirname(fileURLToPath(import.meta.url));
-const profiles = JSON.parse(readFileSync(resolve(here, '../../data/breedProfiles.json'), 'utf8'));
+import { getBreedProfile } from '../../modules/horses/data/breedProfileLoader.mjs';
 
 const regions = ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves', 'topline'];
 const standardGaits = ['walk', 'trot', 'canter', 'gallop'];
@@ -39,10 +33,8 @@ function inRange(value, { mean, stdDev }, low = 0, high = 0) {
  * @param {string} breedName - the breed the scores must come from
  */
 export function expectBreedPhysique(horse, breedName) {
-  const rating = profiles[breedName]?.ratingProfiles;
-  if (!rating) {
-    throw new Error(`expectBreedPhysique: no breedProfiles.json entry for "${breedName}"`);
-  }
+  // Throws loudly when the breed has no profile.
+  const rating = getBreedProfile(breedName).ratingProfiles;
 
   const conf = horse.conformationScores;
   const regionValues = regions.map(r => conf?.[r]);

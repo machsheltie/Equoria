@@ -993,8 +993,8 @@ jobs:
           npx prisma migrate deploy --schema=prisma/schema.prisma
 
       - name: Seed canonical breeds
-        # The bulk-cron driver selects a breed whose name is a
-        # breedProfiles.json key (createFoalFromPregnancy requires a
+        # The bulk-cron driver selects a breed the DB breed
+        # cache can resolve (createFoalFromPregnancy requires a
         # profile). seedDatabase.mjs idempotently inserts the canonical
         # breeds, several of which have profiles.
         working-directory: ./backend

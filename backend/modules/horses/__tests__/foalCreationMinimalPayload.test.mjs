@@ -138,7 +138,7 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
     playerCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${playerToken}`] });
 
     // Canonical breeds — both names have a real profile in
-    // backend/data/breedProfiles.json, which foaling requires.
+    // the DB breed cache, which foaling requires.
     breedThoroughbred = await prisma.breed.upsert({
       where: { name: 'Thoroughbred' },
       update: {},
@@ -203,14 +203,14 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       data: await testHorseData(prisma, adult(`TestFixture-6w3ur-BreedlessDam_${ts}`, 'Mare', player.id, null)),
     });
 
-    // A breed row whose NAME has no entry in backend/data/breedProfiles.json.
+    // A breed row whose NAME has no profile in the DB breed cache.
     // The foaling path resolves the breed id to a name and then asks the profile
     // loader for that name; a missing profile throws inside conformation
     // generation, which is the same stuck-pregnancy outcome as a null breed.
     breedWithoutProfile = await prisma.breed.create({
       data: {
         name: `TestFixture-6w3ur-NoProfileBreed_${ts}`,
-        description: 'Deliberately absent from breedProfiles.json',
+        description: 'Deliberately absent from the breed profiles',
       },
     });
     profilelessMare = await prisma.horse.create({
@@ -526,8 +526,8 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
 
     // The controller separates "this breed has no profile" (400, the player's
     // breed really is missing) from "the profile SOURCE is broken" (500, a server
-    // data outage) by branching on `profileError.cause`. If breedProfiles.json
-    // fails to load and the DB cache is empty, EVERY breed fails the check, so a
+    // data outage) by branching on `profileError.cause`. If no breed profile cache is
+    // installed, EVERY breed fails the check, so a
     // 400 blaming the player's mare would be a total outage rendered as a
     // per-breed refusal.
     //
@@ -547,7 +547,7 @@ describe('POST /horses/foals — minimal breeding-surface payload (Equoria-6w3ur
       // getBreedProfile must throw for a breed with no profile.
       expect(thrown).toBeTruthy();
       expect(thrown.cause).toBeUndefined();
-      expect(thrown.message).toMatch(/no breedprofiles\.json entry|absent from both/i);
+      expect(thrown.message).toMatch(/no profile for breed .* in the db cache/i);
     });
   });
 

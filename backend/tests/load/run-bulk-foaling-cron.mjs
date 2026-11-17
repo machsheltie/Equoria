@@ -43,12 +43,13 @@
  * @module tests/load/run-bulk-foaling-cron
  */
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { runFoalingJob } from '../../modules/horses/index.mjs';
+import { runFoalingJob, preloadBreedProfiles } from '../../modules/horses/index.mjs';
+import { getBreedProfile } from '../../modules/horses/data/breedProfileLoader.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../__tests__/helpers/createTestHorse.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
 
@@ -78,21 +79,28 @@ async function main() {
   let breed;
 
   try {
-    // createFoalFromPregnancy requires the dam's breed to have a
-    // breedProfiles.json entry (name must match a JSON key exactly).
-    // A bare findFirst() can grab a junk "Test Breed …" row with no
-    // profile, which makes runFoalingJob error out and the sweep a
-    // no-op. Select a breed whose name IS a profile key.
-    const profileNames = Object.keys(
-      JSON.parse(await readFile(join(__dirname, '..', '..', 'data', 'breedProfiles.json'), 'utf8')),
-    );
-    breed = await prisma.breed.findFirst({
-      where: { name: { in: profileNames } },
+    // createFoalFromPregnancy requires the dam's breed to have a profile in the
+    // DB breed cache. A bare findFirst() can grab a junk "Test Breed …" row
+    // with no profile, which makes runFoalingJob error out and the sweep a
+    // no-op. Load the cache the way server.mjs does, then select a breed the
+    // loader can resolve.
+    await preloadBreedProfiles(prisma);
+    const hasProfile = name => {
+      try {
+        getBreedProfile(name);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const breedRows = await prisma.breed.findMany({
       select: { id: true, name: true },
+      orderBy: { id: 'asc' },
     });
+    breed = breedRows.find(row => hasProfile(row.name));
     if (!breed) {
       throw new Error(
-        'No DB breed with a breedProfiles.json entry — run `npm run seed` before this driver (CI seeds canonical breeds).',
+        'No DB breed with a breed profile — run `npm run seed` before this driver (CI seeds canonical breeds).',
       );
     }
     summary.config.breed = breed.name;

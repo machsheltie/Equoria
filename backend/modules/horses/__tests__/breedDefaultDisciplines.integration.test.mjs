@@ -1,6 +1,6 @@
 /**
  * Every breed's birth discipline is the owner's approved list, the same in the
- * seed files, breedProfiles.json and the database (Equoria-cdmk1, Equoria-n7ph5).
+ * seed files and the database (Equoria-cdmk1, Equoria-n7ph5).
  *
  * Owner ruling 2026-10-28 (q232): the per-breed default discipline list is
  * approved as written; gaited breeds are always Gaited. A store or starter horse
@@ -10,8 +10,13 @@
  *
  * The seed files (backend/data/breeds/*.txt, default_trait) own the value; the
  * 20261028150000_breed_default_disciplines migration writes the same values to
- * existing databases. breedProfiles.json carries no discipline field, only the
+ * existing databases. The breed profile carries no discipline field, only the
  * gaited flag, which must agree.
+ *
+ * Equoria-fbnw8: breedProfiles.json is deleted. Old contract: the gaited flag
+ * agreed across the seed and that JSON. New contract: it agrees across the seed
+ * and the DB breed profile (read through the loader), so no leg is dropped
+ * except the file that no longer exists.
  *
  * Real database read; no mocks.
  */
@@ -24,11 +29,11 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { DISCIPLINES } from '../../../constants/schema.mjs';
 import { breedDefaultDiscipline } from '../services/birthDiscipline.mjs';
 import { retiredBreedNames } from '../../../seed/syncBreedGeneticProfiles.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const backend = resolve(here, '../../..');
 const breedsDir = resolve(backend, 'data/breeds');
-const profiles = JSON.parse(readFileSync(resolve(backend, 'data/breedProfiles.json'), 'utf8'));
 const migration = readFileSync(
   resolve(backend, '../packages/database/prisma/migrations/20261028150000_breed_default_disciplines/migration.sql'),
   'utf8',
@@ -57,11 +62,11 @@ describe('breed default disciplines (q232)', () => {
     expect(bad).toEqual([]);
   });
 
-  it('gaited breeds are Gaited and no other breed is, in the seed and in breedProfiles.json', () => {
+  it('gaited breeds are Gaited and no other breed is, in the seed and in the DB breed profile', () => {
     const wrong = seed.filter(
       row =>
         (row.discipline === 'Gaited') !== row.gaited ||
-        Boolean(profiles[row.name]?.ratingProfiles?.isGaitedBreed) !== row.gaited,
+        Boolean(getBreedProfile(row.name).ratingProfiles.isGaitedBreed) !== row.gaited,
     );
     expect(wrong.map(row => row.name)).toEqual([]);
   });

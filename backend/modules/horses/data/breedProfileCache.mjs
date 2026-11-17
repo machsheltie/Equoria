@@ -66,7 +66,7 @@ export function getBreedProfileCache() {
   return globalThis[cacheKey] ?? null;
 }
 
-/** Drop the cache; getBreedProfile falls back to breedProfiles.json. */
+/** Drop the cache; getBreedProfile getBreedProfile then throws (no profiles loaded). */
 export function clearBreedProfileCache() {
   globalThis[cacheKey] = null;
 }

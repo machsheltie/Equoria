@@ -135,21 +135,21 @@ export function weightedRandomSelect(weights) {
 
 /**
  * Generate a temperament for a horse based on its breed's temperament weights.
- * Uses weighted random selection from the breed's temperamentWeights in breedProfiles.json
+ * Uses weighted random selection from the breed's temperamentWeights in the breed profile
  * (via getBreedProfile). Throws if the breed is unknown or its profile lacks temperamentWeights.
  * If the weighted-selection result is not one of the 12 canonical temperament types (e.g. a
- * misspelled key in the JSON), falls back to a uniformly-random valid type.
+ * misspelled key in the breed data), falls back to a uniformly-random valid type.
  *
  * @param {string} breedName - Breed display name
  * @returns {string} One of the 12 temperament types
- * @throws {Error} if the breed is missing from breedProfiles.json or lacks temperamentWeights
+ * @throws {Error} if the breed is missing from the breed profiles or lacks temperamentWeights
  */
 export function generateTemperament(breedName) {
   const profile = getBreedProfile(breedName);
 
   const weights = profile.temperamentWeights;
   if (!weights || typeof weights !== 'object' || Object.keys(weights).length === 0) {
-    throw new Error(`breedProfiles.json entry for "${breedName}" is missing temperamentWeights.`);
+    throw new Error(`breed profile for "${breedName}" is missing temperamentWeights.`);
   }
 
   const temperament = weightedRandomSelect(weights);
