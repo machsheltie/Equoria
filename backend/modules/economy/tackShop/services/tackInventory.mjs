@@ -443,19 +443,20 @@ export const tackInventory = [
     disciplines: ['Parade'],
     isCosmetic: true,
   },
-  // Seasonal decorative item
+  // Monthly-theme item (owner ruling q359, 2026-11-17): not sold in the regular
+  // shop. It is kept here so the winter month's theme can offer it, and so
+  // copies a player already owns still resolve to a name and description.
   {
     id: 'snowflake-parade-tack',
     category: 'decorative',
     comingSoon: true,
     name: 'Snowflake Parade Tack',
-    description:
-      'A limited winter set with silver snowflake embroidery. Available during the frost season.',
+    description: 'A limited winter set with silver snowflake embroidery.',
     cost: tackPrice,
     tier: 'premium',
     disciplines: ['Parade'],
     isCosmetic: true,
-    seasonalTag: 'winter',
+    monthlyThemeItem: true,
   },
 ];
 

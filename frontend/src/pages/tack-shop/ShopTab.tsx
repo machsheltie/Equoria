@@ -3,7 +3,7 @@
  *
  * The "Shop" tab: loads live tack inventory, applies a discipline filter,
  * renders functional categories plus a separated Decorative & Parade
- * section (regular + seasonal), and drives the purchase mutation for the
+ * section, and drives the purchase mutation for the
  * inventory (no horse involved). Owns its own loading / error / success states.
  *
  * Design-system migration (Equoria-o5hub, world-services family): canonical
@@ -71,13 +71,10 @@ export const ShopTab: React.FC = () => {
     return result;
   }, [data?.categories, disciplineFilter]);
 
-  // Decorative items — split into regular and seasonal sub-sections
-  const decorativeItems = useMemo(() => {
-    const all = (data?.categories?.['decorative'] ?? []) as TackItem[];
-    const regular = all.filter((i) => !i.seasonalTag);
-    const seasonal = all.filter((i) => !!i.seasonalTag);
-    return { regular, seasonal };
-  }, [data?.categories]);
+  const decorativeItems = useMemo(
+    () => (data?.categories?.['decorative'] ?? []) as TackItem[],
+    [data?.categories]
+  );
 
   const categoryNames = data?.categoryDisplayNames ?? defaultCategoryNames;
 
@@ -160,7 +157,7 @@ export const ShopTab: React.FC = () => {
       )}
 
       {/* Decorative & Parade section */}
-      {(decorativeItems.regular.length > 0 || decorativeItems.seasonal.length > 0) && (
+      {decorativeItems.length > 0 && (
         <section className="mt-4" data-testid="decorative-tack-section">
           <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-1 flex items-center gap-2">
             ✨ Decorative &amp; Parade
@@ -169,42 +166,19 @@ export const ShopTab: React.FC = () => {
             Decorations for parades, which are coming soon. They do nothing in other shows.
           </p>
 
-          {/* Regular decorative items */}
-          {decorativeItems.regular.length > 0 && (
-            <div className="mb-6">
-              <CardGrid aria-label="Decorative tack">
-                {decorativeItems.regular.map((item) => (
-                  <TackItemCard
-                    key={item.id}
-                    item={item}
-                    onPurchase={handlePurchase}
-                    isPurchasing={purchaseMutation.isPending}
-                    errorMessage={purchaseErrorFor(item)}
-                  />
-                ))}
-              </CardGrid>
-            </div>
-          )}
-
-          {/* Seasonal sub-section */}
-          {decorativeItems.seasonal.length > 0 && (
-            <>
-              <h3 className="text-xs font-semibold text-[var(--role-warning-text)] uppercase tracking-widest mb-3">
-                🍂 Seasonal
-              </h3>
-              <CardGrid aria-label="Seasonal decorative tack">
-                {decorativeItems.seasonal.map((item) => (
-                  <TackItemCard
-                    key={item.id}
-                    item={item}
-                    onPurchase={handlePurchase}
-                    isPurchasing={purchaseMutation.isPending}
-                    errorMessage={purchaseErrorFor(item)}
-                  />
-                ))}
-              </CardGrid>
-            </>
-          )}
+          <div className="mb-6">
+            <CardGrid aria-label="Decorative tack">
+              {decorativeItems.map((item) => (
+                <TackItemCard
+                  key={item.id}
+                  item={item}
+                  onPurchase={handlePurchase}
+                  isPurchasing={purchaseMutation.isPending}
+                  errorMessage={purchaseErrorFor(item)}
+                />
+              ))}
+            </CardGrid>
+          </div>
         </section>
       )}
     </div>

@@ -117,7 +117,9 @@ function returnDecorationToInventory(inventory, horseId, itemId) {
  */
 export async function getTackInventory(_req, res) {
   // Equoria-no441: each item carries its category's word beside the code.
-  const visibleItems = tackInventory.filter(item => !item.isLegacyAlias).map(withCategoryLabel);
+  const visibleItems = tackInventory
+    .filter(item => !item.isLegacyAlias && !item.monthlyThemeItem)
+    .map(withCategoryLabel);
   const categories = {};
   for (const item of visibleItems) {
     const key = item.category;
@@ -243,6 +245,12 @@ export async function purchaseTackItem(req, res) {
       return res
         .status(404)
         .json({ success: false, message: 'Item not found in inventory', data: null });
+    }
+    // Monthly-theme items (q359) are offered by their theme, never by the shop.
+    if (item.monthlyThemeItem) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'That item is not sold in the shop', data: null });
     }
 
     return await purchaseIntoInventory(req, res, item);

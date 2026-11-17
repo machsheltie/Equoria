@@ -244,11 +244,16 @@ describe('tackInventory — decorative items (merged from legacy backend/tests, 
     }
   });
 
-  it('includes a winter seasonal item (snowflake-parade-tack)', () => {
-    expect(decorativeItems.filter(i => !!i.seasonalTag).length).toBeGreaterThanOrEqual(1);
+  // Owner ruling q359 (2026-11-17). Old contract: Snowflake Parade Tack was a
+  // 'seasonalTag: winter' item sold in the shop under a Seasonal heading. New:
+  // it is a monthly-theme item, kept in the catalogue but not sold in the shop.
+  it('keeps snowflake-parade-tack as a monthly-theme item with no season wording', () => {
     const item = decorativeItems.find(i => i.id === 'snowflake-parade-tack');
     expect(item).toBeDefined();
-    expect(item.seasonalTag).toBe('winter');
+    expect(item.monthlyThemeItem).toBe(true);
+    expect(item).not.toHaveProperty('seasonalTag');
+    expect(item.description).not.toMatch(/frost|season/i);
+    expect(decorativeItems.filter(i => i.monthlyThemeItem).map(i => i.id)).toEqual(['snowflake-parade-tack']);
   });
 
   it('glitter-spray is limited to 3 uses', () => {

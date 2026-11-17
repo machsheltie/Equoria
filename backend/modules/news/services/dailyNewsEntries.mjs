@@ -180,7 +180,7 @@ function defaultStoreCatalogs() {
       shop: 'tack',
       shopName: 'the Tack Shop',
       linkPath: '/tack-shop',
-      items: allTackItems().filter(item => !item.isLegacyAlias),
+      items: allTackItems().filter(item => !item.isLegacyAlias && !item.monthlyThemeItem),
     },
     { shop: 'feed', shopName: 'the Feed Shop', linkPath: '/feed-shop', items: feedCatalogItems() },
   ];

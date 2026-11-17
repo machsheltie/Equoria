@@ -36,8 +36,6 @@ export interface TackItem {
   isCosmetic?: boolean;
   /** Limited-use count (e.g. Glitter Spray has 3 applications) */
   limitedUse?: number;
-  /** Seasonal tag for grouping under seasonal sub-header (e.g. 'winter', 'summer') */
-  seasonalTag?: string;
 }
 
 export interface TackInventoryData {

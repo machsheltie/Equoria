@@ -161,3 +161,28 @@ describe('POST /tack-shop/purchase puts tack in the inventory, no horse involved
     expect(res.status).toBe(404);
   });
 });
+
+// Owner ruling q359 (2026-11-17): Snowflake Parade Tack belongs to a winter
+// month's theme, not the regular shop.
+describe('monthly-theme tack is not sold in the shop (q359)', () => {
+  it('leaves Snowflake Parade Tack out of the shop listing', async () => {
+    const res = await request(app)
+      .get('/api/v1/tack-shop/inventory')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.items.map(i => i.id)).not.toContain('snowflake-parade-tack');
+    expect(res.body.data.categories.decorative.map(i => i.id)).not.toContain('snowflake-parade-tack');
+    expect(res.body.data.categories.decorative.length).toBeGreaterThan(0);
+  });
+
+  it('refuses to sell it and changes nothing', async () => {
+    await prisma.user.update({ where: { id: user.id }, data: { money: startMoney } });
+    const before = (await readUser()).settings?.inventory?.length ?? 0;
+    const res = await buy({ itemId: 'snowflake-parade-tack' });
+    expect(res.status).toBe(404);
+    const after = await readUser();
+    expect(after.money).toBe(startMoney);
+    expect(after.settings?.inventory?.length ?? 0).toBe(before);
+  });
+});
