@@ -3,7 +3,7 @@
  *
  * Tests pure-function helpers only. generateConformationScores /
  * generateInheritedConformationScores are tested via real breed profiles
- * (the DB breed cache backend/tests/setup.mjs preloads). Reads the DB, writes nothing.
+ * (breedProfiles.json is file-based, not DB). No DB required.
  */
 
 import { describe, it, expect } from '@jest/globals';

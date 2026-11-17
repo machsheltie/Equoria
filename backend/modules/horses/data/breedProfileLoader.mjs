@@ -9,12 +9,10 @@
  *      superset: full conformation (all 8 regions incl. topline), gaits,
  *      temperament, AND color genetics (shadeBias, alleleWeights, etc.).
  *   2. backend/data/breedProfiles.json — fallback for the conformation /
- *      gait / temperament subset (no color genetics). Keeps the loader
- *      robust against the DB cache being empty during early-boot /
- *      cold-cache paths. The backend test setup (backend/tests/setup.mjs)
- *      preloads the DB cache like server.mjs does (Equoria-ctop1); only a
- *      loader instance a test imports after Jest's per-test module reset,
- *      or a test that clears the cache, still reads this file.
+ *      gait / temperament subset (no color genetics). Serves the backend
+ *      test suite, which intentionally does NOT preload the DB cache (see
+ *      backend/tests/setup.mjs), and keeps the loader robust against the DB
+ *      cache being empty during early-boot / cold-cache paths.
  *
  * The DB became the authoritative source on 2026-05-28 when 312 breed
  * profiles imported via populateBreedsFromSql.mjs landed in production.
@@ -23,8 +21,8 @@
  * conformation regions (topline added), so the DB profile is complete and
  * the loader returns it directly on a cache hit — the transitional per-key
  * merge that grafted topline from the JSON has been removed. The JSON file
- * is RETAINED, not deleted: it still has live consumers (test code that
- * reaches a fresh, unpreloaded loader instance, backend/tests/load/run-bulk-foaling-cron.mjs,
+ * is RETAINED, not deleted: it still has live consumers (the no-preload
+ * test suite via this loader, backend/tests/load/run-bulk-foaling-cron.mjs,
  * backend/scripts/backfill-horse-temperament-gaits.mjs, breedProfileData.test.mjs,
  * and others). Removing it remains a separate follow-up gated on migrating
  * those consumers onto a preloaded DB cache.
@@ -86,7 +84,7 @@ const profilesPath = process.env.BREED_PROFILES_PATH
 // purely sync contexts (e.g. controller hot paths). Carries the 312-breed
 // gait+temperament+category subset — NO color genetics. When the DB cache is
 // populated (preloadBreedProfiles has run), the cache wins; this JSON is the
-// safety net for boot-order races and for a loader instance nothing preloaded.
+// safety net for boot-order races and tests that don't preload.
 let profilesByName = {};
 let jsonLoadError = null;
 try {
@@ -232,10 +230,9 @@ export function getBreedProfile(breedName) {
   // Single-source paths.
   if (!fromDb) {
     // Cache absent (no preload) or this breed not in the cache — serve the
-    // JSON profile: the production boot-order safety net, and the path a test
-    // takes when it clears the cache or imports a fresh loader instance after
-    // Jest's per-test module reset (backend/tests/setup.mjs preloads the one
-    // the test file loaded with).
+    // JSON profile. This is the path the whole backend test suite uses, since
+    // tests intentionally do not preload the DB cache (see backend/tests/
+    // setup.mjs). It is also the production boot-order safety net.
     return fromJson;
   }
 

@@ -9,9 +9,9 @@ import {
   conformationRegions,
 } from '../services/conformationService.mjs';
 // Equoria-5p26: All breed-mean assertions now read from getBreedProfile() — the same
-// runtime data source consumed by the service under test (the DB breed cache
-// backend/tests/setup.mjs preloads, via breedProfileLoader), so any future drift
-// fails the test loudly rather than passing by coincidence. (The invented 12-breed table it once imported was
+// runtime data source consumed by the service under test (breedProfiles.json via
+// breedProfileLoader), so any future drift fails the test loudly rather than
+// passing by coincidence. (The invented 12-breed table it once imported was
 // deleted 2026-10-21.)
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 

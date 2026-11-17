@@ -85,8 +85,7 @@ describe('generateConformationScores', () => {
   // New contract (post-309-breeds refactor): missing/invalid breed identifiers
   // must throw rather than silently returning stub defaults. The old silent-50
   // fallback was the root cause of store horses arriving with generic random
-  // stats; the breed profile (breeds.breedGeneticProfile) now drives the
-  // per-breed baselines.
+  // stats; breedProfiles.json now drives the per-breed baselines.
   test('unknown numeric breedId throws', () => {
     expect(() => generateConformationScores(999)).toThrow(/no longer accepts a numeric breedId/);
   });
@@ -281,7 +280,7 @@ describe('clampScore', () => {
 describe('Statistical validation - normal distribution verification', () => {
   test('95% of 10000 generated scores fall within breedMean ± 2*stdDev per region', () => {
     const breedName = 'Thoroughbred'; // Thoroughbred
-    // Use the same data source the service uses (the preloaded DB cache via getBreedProfile).
+    // Use the same data source the service uses (breedProfiles.json via getBreedProfile).
     const conformation = getBreedProfile(breedName).ratingProfiles.conformation;
     const sampleSize = 10000;
     const allScores = [];
