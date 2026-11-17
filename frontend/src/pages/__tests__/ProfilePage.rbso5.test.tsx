@@ -138,5 +138,7 @@ describe('ProfilePage game statistics (Equoria-rbso5)', () => {
     expect(await within(section).findByText('Horses Owned')).toBeInTheDocument();
     expect(within(section).getByText('9')).toBeInTheDocument();
     expect(within(section).getByText('4')).toBeInTheDocument();
+    expect(within(section).getByText('Foals in your stable')).toBeInTheDocument();
+    expect(within(section).queryByText('Breeding Count')).not.toBeInTheDocument();
   });
 });

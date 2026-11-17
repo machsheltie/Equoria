@@ -304,7 +304,7 @@ const ProfilePage: React.FC = () => {
                 )}
                 <StatisticsCard
                   value={breedingCount}
-                  label="Breeding Count"
+                  label="Foals in your stable"
                   type={StatisticType.breedingCount}
                   size="sm"
                   isLoading={progressPending}
