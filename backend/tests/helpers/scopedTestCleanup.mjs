@@ -1,19 +1,19 @@
 /**
- * Scoped cleanup helpers for root-level integration tests.
+ * Scoped cleanup helpers for the progression integration tests.
  *
- * These suites run inside the `backend` jest project (jest.config.js testMatch
- * `<rootDir>/../tests/*.test.{js,mjs}`) against the CANONICAL database
- * (.env.test → production DB per CLAUDE.md §2). A bare
- * `prisma.user.deleteMany({})` here wipes ALL real users. Cleanup MUST be
+ * These suites run inside the `backend` jest project (modules/users/__tests__)
+ * against a real database: a disposable lane DB under the sharded runner, the
+ * configured test DB otherwise. A bare `prisma.user.deleteMany({})` here wipes
+ * ALL users in that database. Cleanup MUST be
  * scoped to the rows the fixtures created — never unscoped.
  *
  * Reusing these helpers (instead of inlining where-clauses) keeps the scope in
- * one place and lets the sentinel test (tests/scopedTestCleanup.sentinel.test.mjs)
+ * one place and lets the sentinel test (modules/users/__tests__/scopedTestCleanup.sentinel.test.mjs)
  * exercise the REAL cleanup code: if anyone reverts a helper back to `{}`, the
  * sentinel's non-fixture row gets deleted and the sentinel fails.
  */
 
-/** Fixed string PKs created by tests/progression.integration.test.mjs. */
+/** Fixed string PKs created by modules/users/__tests__/progression.integration.test.mjs. */
 export const progressionTestUserIds = ['test-user-1', 'test-user-2', 'test-user-3'];
 
 /**

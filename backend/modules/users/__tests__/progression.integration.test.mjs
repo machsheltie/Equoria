@@ -9,17 +9,19 @@
  * - Level progression (REAL behavior, source of truth = backend/models/userModel.mjs;
  *   the progressionController shim was REMOVED in the module refactor and this
  *   suite imports addXpToUser/getUserProgress directly from userModel —
- *   Equoria-u70px): cumulative-XP, LINEAR thresholds.
- *   xpThreshold(level) = 100 * level, so the level-up boundary for reaching
- *   level N is 100 * N total XP. XP is NOT reset on level-up — it accumulates
- *   (db xp keeps the running total). e.g. 230 total XP => level 2 (230 >= 200,
- *   but 230 < 300), db xp stays 230.
+ *   Equoria-u70px): cumulative-XP, level = floor(xp / 100) + 1
+ *   (owner ruling 2026-07-07, Equoria-smqn7 option A; levelForXp/levelProgress
+ *   in userModelService). That ruling retired the older curve (level 1 spanned
+ *   0-199 xp, xpThreshold(level) = 100 * level). The boundary for reaching
+ *   level N is 100 * (N - 1) total XP. XP is NOT reset on level-up — it
+ *   accumulates (db xp keeps the running total). e.g. 230 total XP => level 3
+ *   (230 >= 200, but 230 < 300), db xp stays 230.
  *   addXpToUser returns { success, currentXP, currentLevel, leveledUp,
  *   levelsGained, xpGained } on success and { success:false, error } on bad
  *   input (it does NOT throw). getUserProgress returns { userId, level, xp,
  *   xpToNextLevel, xpForNextLevel } (no legacy `valid` flag). The assertions
- *   below match the executed (linear, cumulative) path, verified against the
- *   canonical DB (Equoria-xade6 / u70px).
+ *   below match the executed (floor(xp/100)+1, cumulative) path, verified against the
+ *   canonical DB (Equoria-xade6 / u70px / smqn7).
  * - Single and multiple level-ups from large cumulative XP totals
  * - Progress reporting with accurate level and XP calculations
  * - Error handling for invalid inputs (negative XP, empty user IDs)
@@ -45,19 +47,16 @@ const mockLogger = {
   warn: jest.fn(),
 };
 
-jest.mock('../backend/utils/logger.mjs', () => ({
+jest.mock('../../../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
 // Import real modules. The progressionController shim was removed in the module
 // refactor (Equoria-u70px) — addXpToUser/getUserProgress now live in userModel,
 // and db/index.mjs was deleted in favour of the packages/database prismaClient.
-import prisma from '../packages/database/prismaClient.mjs';
-import {
-  addXpToUser,
-  getUserProgress,
-} from '../backend/modules/users/services/userModelService.mjs';
-import { cleanupProgressionFixtures } from './helpers/scopedTestCleanup.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { addXpToUser, getUserProgress } from '../services/userModelService.mjs';
+import { cleanupProgressionFixtures } from '../../../tests/helpers/scopedTestCleanup.mjs';
 
 describe('📈 INTEGRATION: Progression Controller - Real Database Operations', () => {
   beforeEach(async () => {
@@ -103,7 +102,7 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
         email: 'test3@example.com',
         password: 'hashedpassword',
         level: 2,
-        xp: 75,
+        xp: 150,
         money: 1000,
       },
     });
@@ -135,55 +134,55 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
       expect(updatedUser.level).toBe(1);
     });
 
-    it('should stay level 1 at exactly 100 cumulative XP (level-2 threshold is 200) using real database', async () => {
+    it('should reach level 2 at exactly 100 cumulative XP (level = floor(xp/100)+1) using real database', async () => {
       const result = await addXpToUser('test-user-2', 10); // 90 + 10 = 100 cumulative XP
 
       expect(result.success).toBe(true);
       expect(result.currentXP).toBe(100); // cumulative, not reset
-      expect(result.currentLevel).toBe(1); // 100 < 200 (xpThreshold(2)) => still level 1
-      expect(result.leveledUp).toBe(false);
-      expect(result.levelsGained).toBe(0);
+      expect(result.currentLevel).toBe(2); // floor(100/100)+1 = 2
+      expect(result.leveledUp).toBe(true);
+      expect(result.levelsGained).toBe(1);
 
-      // Verify in database: cumulative XP retained, level unchanged
+      // Verify in database: cumulative XP retained, level advanced once
       const updatedUser = await prisma.user.findUnique({
         where: { id: 'test-user-2' },
       });
       expect(updatedUser.xp).toBe(100);
-      expect(updatedUser.level).toBe(1);
+      expect(updatedUser.level).toBe(2);
     });
 
-    it('should accumulate XP without resetting on partial progress using real database', async () => {
+    it('should accumulate XP without resetting when it crosses a level using real database', async () => {
       const result = await addXpToUser('test-user-2', 25); // 90 + 25 = 115 cumulative XP
 
       expect(result.success).toBe(true);
       expect(result.currentXP).toBe(115); // cumulative; no rollover/reset
-      expect(result.currentLevel).toBe(1); // 115 < 200 => still level 1
-      expect(result.leveledUp).toBe(false);
-      expect(result.levelsGained).toBe(0);
+      expect(result.currentLevel).toBe(2); // floor(115/100)+1 = 2
+      expect(result.leveledUp).toBe(true);
+      expect(result.levelsGained).toBe(1);
 
       // Verify in database
       const updatedUser = await prisma.user.findUnique({
         where: { id: 'test-user-2' },
       });
       expect(updatedUser.xp).toBe(115);
-      expect(updatedUser.level).toBe(1);
+      expect(updatedUser.level).toBe(2);
     });
 
-    it('should level up once when crossing a cumulative threshold using real database', async () => {
+    it('should level up twice when crossing two cumulative thresholds using real database', async () => {
       const result = await addXpToUser('test-user-1', 230); // 0 + 230 cumulative XP
 
       expect(result.success).toBe(true);
       expect(result.currentXP).toBe(230); // cumulative; not reset on level-up
-      expect(result.currentLevel).toBe(2); // 230 >= 200 (level 2) but < 300 (level 3)
+      expect(result.currentLevel).toBe(3); // 230 >= 200 (level 3) but < 300 (level 4)
       expect(result.leveledUp).toBe(true);
-      expect(result.levelsGained).toBe(1); // From level 1 to level 2
+      expect(result.levelsGained).toBe(2); // From level 1 to level 3
 
       // Verify in database: cumulative XP retained, level advanced once
       const updatedUser = await prisma.user.findUnique({
         where: { id: 'test-user-1' },
       });
       expect(updatedUser.xp).toBe(230);
-      expect(updatedUser.level).toBe(2);
+      expect(updatedUser.level).toBe(3);
     });
   });
 
@@ -193,24 +192,24 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
 
       // userModel.getUserProgress returns { userId, level, xp, xpToNextLevel,
       // xpForNextLevel } — there is no legacy `valid` flag (that belonged to the
-      // removed progressionController shim). xpThreshold(level+1) = 100*(level+1),
-      // so for a level-1 user with 0 xp: xpForNextLevel = 200, xpToNextLevel = 200.
+      // removed progressionController shim). levelProgress: xpForNextLevel = level * 100,
+      // so for a level-1 user with 0 xp: xpForNextLevel = 100, xpToNextLevel = 100.
       expect(result.userId).toBe('test-user-1');
       expect(result.level).toBe(1);
       expect(result.xp).toBe(0);
-      expect(result.xpForNextLevel).toBe(200);
-      expect(result.xpToNextLevel).toBe(200);
+      expect(result.xpForNextLevel).toBe(100);
+      expect(result.xpToNextLevel).toBe(100);
     });
 
     it('should return correct progress for level 2 user using real database', async () => {
       const result = await getUserProgress('test-user-3');
 
-      // Level-2 user with 75 xp: xpForNextLevel = 100*3 = 300, xpToNextLevel = 225.
+      // Level-2 user with 150 xp (level 2 spans 100-199): xpForNextLevel = 200, xpToNextLevel = 50.
       expect(result.userId).toBe('test-user-3');
       expect(result.level).toBe(2);
-      expect(result.xp).toBe(75);
-      expect(result.xpForNextLevel).toBe(300);
-      expect(result.xpToNextLevel).toBe(225);
+      expect(result.xp).toBe(150);
+      expect(result.xpForNextLevel).toBe(200);
+      expect(result.xpToNextLevel).toBe(50);
     });
 
     it('should handle non-existent user in getUserProgress', async () => {
@@ -279,19 +278,19 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
     });
 
     it('should handle complete competition workflow with XP using real database', async () => {
-      // Add competition XP — 90 + 30 = 120 cumulative XP (still below the
-      // level-2 threshold of 200, so no level-up; XP accumulates).
+      // Add competition XP — 90 + 30 = 120 cumulative XP, which crosses the
+      // level-2 threshold of 100 (level = floor(xp/100)+1); XP accumulates.
       const result = await addXpToUser('test-user-2', 30);
 
       expect(result.success).toBe(true);
       expect(result.currentXP).toBe(120); // cumulative, not reset
-      expect(result.currentLevel).toBe(1); // 120 < 200 => still level 1
-      expect(result.leveledUp).toBe(false);
+      expect(result.currentLevel).toBe(2); // floor(120/100)+1 = 2
+      expect(result.leveledUp).toBe(true);
 
       // Verify final state: cumulative XP retained at current level
       const progress = await getUserProgress('test-user-2');
       expect(progress.xp).toBe(120);
-      expect(progress.level).toBe(1);
+      expect(progress.level).toBe(2);
     });
   });
 });

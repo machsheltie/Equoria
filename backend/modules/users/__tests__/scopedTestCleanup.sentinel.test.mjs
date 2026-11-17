@@ -4,7 +4,7 @@
  * Guards Equoria-5bwdl / Equoria-seahi class: an unscoped `deleteMany({})` in a
  * test that runs against the canonical DB (CLAUDE.md §2) destroys all real
  * users. This sentinel exercises the REAL cleanup helper
- * (tests/helpers/scopedTestCleanup.mjs#cleanupProgressionFixtures):
+ * (backend/tests/helpers/scopedTestCleanup.mjs#cleanupProgressionFixtures):
  *
  *   - proves the helper DELETES its fixture targets (not a no-op), and
  *   - proves the helper SPARES a non-fixture "survivor" row.
@@ -15,11 +15,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import prisma from '../packages/database/prismaClient.mjs';
-import {
-  cleanupProgressionFixtures,
-  progressionTestUserIds,
-} from './helpers/scopedTestCleanup.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { cleanupProgressionFixtures, progressionTestUserIds } from '../../../tests/helpers/scopedTestCleanup.mjs';
 
 describe('🛡️ SENTINEL: cleanupProgressionFixtures is scoped (no canonical-DB wipe)', () => {
   it('deletes fixture users but spares a non-fixture survivor', async () => {
