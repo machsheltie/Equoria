@@ -796,10 +796,16 @@ jobs:
         # tests/e2e/global-setup.ts opens /onboarding and selects index 1 of
         # the breed-select dropdown. A freshly migrated DB has zero breeds,
         # so the select renders only the placeholder and the locator times
-        # out. seedDatabase.mjs idempotently inserts the 5 canonical breeds
-        # the UI needs to render a real choice. Equoria-3iyk Phase 1b.
+        # out. seedDatabase.mjs idempotently inserts the base data; seed:breeds
+        # then loads the full breed roster WITH breedGeneticProfile. The server
+        # reads breed profiles only from that DB cache (breedProfiles.json is
+        # gone, Equoria-fbnw8), so profile-less breeds make onboarding fail
+        # with breedScoresMissing. seed:breeds takes about a second.
+        # Equoria-3iyk Phase 1b, Equoria-cfg6q.
         working-directory: ./backend
-        run: npm run seed
+        run: |
+          npm run seed
+          npm run seed:breeds
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -898,16 +904,14 @@ jobs:
 
       - name: Seed performance data
         working-directory: ./backend
-        # The perf seed picks a random breed via prisma.breed.findMany();
-        # it just needs ANY breed to exist. `npm run seed` inserts 5
-        # canonical breeds in ~5s, vs `npm run seed:breeds` which loads
-        # 310 SQL files via $executeRawUnsafe and was taking 15+ min on CI
-        # — long enough to blow the 20-min job timeout. Random selection
-        # over 5 breeds is functionally identical to selection over 310
-        # for performance testing purposes (we don't exercise breed-
-        # specific code paths in the perf tests).
+        # The perf seed preloads the DB breed cache and picks breeds that the
+        # cache resolves (breeds.breedGeneticProfile). `npm run seed` alone
+        # inserts 5 profile-less breeds, so seed:breeds must follow it
+        # (about a second; the old 15+ min figure no longer applies).
+        # Equoria-cfg6q.
         run: |
           npm run seed
+          npm run seed:breeds
           npm run seed:performance
 
       - name: Run performance tests
@@ -1285,14 +1289,16 @@ jobs:
         # whatever's in the breeds table — empty in a fresh CI test DB.
         # Without breed seeding the test times out waiting for option 1.
         #
-        # Use `npm run seed` (5 canonical breeds, ~5s) NOT seed:breeds
-        # (310 SQL files via $executeRawUnsafe, 15+ min — blows the
-        # 35-min job timeout per the comment in ci-cd.yml line 323).
-        # Five breeds are enough to populate the dropdown.
+        # Run `npm run seed` then `npm run seed:breeds`: the server reads
+        # breed profiles only from breeds.breedGeneticProfile, and `seed`
+        # alone inserts 5 breeds without one (Equoria-cfg6q). seed:breeds
+        # takes about a second.
         working-directory: ./backend
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/equoria_test
-        run: npm run seed
+        run: |
+          npm run seed
+          npm run seed:breeds
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -1462,10 +1468,16 @@ jobs:
         # tests/e2e/global-setup.ts opens /onboarding and selects index 1 of
         # the breed-select dropdown. A freshly migrated DB has zero breeds,
         # so the select renders only the placeholder and the locator times
-        # out. seedDatabase.mjs idempotently inserts the 5 canonical breeds
-        # the UI needs to render a real choice. Equoria-3iyk Phase 1b.
+        # out. seedDatabase.mjs idempotently inserts the base data; seed:breeds
+        # then loads the full breed roster WITH breedGeneticProfile. The server
+        # reads breed profiles only from that DB cache (breedProfiles.json is
+        # gone, Equoria-fbnw8), so profile-less breeds make onboarding fail
+        # with breedScoresMissing. seed:breeds takes about a second.
+        # Equoria-3iyk Phase 1b, Equoria-cfg6q.
         working-directory: ./backend
-        run: npm run seed
+        run: |
+          npm run seed
+          npm run seed:breeds
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

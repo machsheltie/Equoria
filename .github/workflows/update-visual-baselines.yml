@@ -126,9 +126,13 @@ jobs:
         # global-setup.ts registers a user and completes onboarding, which
         # calls breedSelect.selectOption({ index: 1 }). Without seed data the
         # dropdown only has its placeholder and the setup times out.
-        # `npm run seed` inserts the 5 canonical breeds in ~5s.
+        # `npm run seed` inserts the base data; `npm run seed:breeds` adds the
+        # full roster with breed profiles, which the server reads only from
+        # the DB (Equoria-cfg6q). Both take a few seconds.
         working-directory: ./backend
-        run: npm run seed
+        run: |
+          npm run seed
+          npm run seed:breeds
 
       - name: 'Cache Playwright Browsers'
         uses: actions/cache@v5

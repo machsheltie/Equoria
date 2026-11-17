@@ -29,7 +29,9 @@ import {
   generateGaitScores,
   generateStoreStats,
   generateTemperamentWithDefault,
+  preloadBreedProfiles,
 } from '../modules/horses/index.mjs';
+import { getBreedProfile } from '../modules/horses/data/breedProfileLoader.mjs';
 import { birthDateForAge } from '../utils/horseAge.mjs';
 import { staffLevels } from '../constants/staffLevels.mjs';
 
@@ -108,12 +110,26 @@ async function seedPerformanceHorses() {
   // Filter to breeds that have a starter-stats profile in
   // breedStarterStats.json. Skips test-leftover breeds (e.g. "OWASP Test
   // Breed") that would cause generateStoreStats to throw.
+  // Equoria-cfg6q: the gait/temperament generators read the DB breed cache
+  // (breeds.breedGeneticProfile), exactly as server.mjs does. Load it first,
+  // then keep only breeds the cache resolves AND that have starter stats.
+  await preloadBreedProfiles(prisma);
+  const hasBreedProfile = name => {
+    try {
+      getBreedProfile(name);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const allBreeds = await prisma.breed.findMany();
-  const breeds = allBreeds.filter(b => breedNamesWithProfiles.has(b.name));
+  const breeds = allBreeds.filter(
+    b => breedNamesWithProfiles.has(b.name) && hasBreedProfile(b.name),
+  );
   if (breeds.length === 0) {
     throw new Error(
-      'seedPerformanceHorses: no breeds in DB have a starter-stats profile. ' +
-        'Run `npm run seed` (5 canonical breeds) or `npm run seed:breeds` first.',
+      'seedPerformanceHorses: no breeds in DB have both a starter-stats entry and a breed profile. ' +
+        'Run `npm run seed` then `npm run seed:breeds` first.',
     );
   }
   logger.info(
