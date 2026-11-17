@@ -152,9 +152,52 @@ type CreateHorseFromRequestFn = (
   _userId: string
 ) => Promise<{ status: number; body: { success: boolean; message?: string; data?: CreatedHorse } }>;
 
+const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
+const breedProfileLoaderPath = path.join(
+  projectRoot,
+  'backend',
+  'modules',
+  'horses',
+  'data',
+  'breedProfileLoader.mjs'
+);
+
+type PreloadBreedProfilesFn = (_prisma: unknown) => Promise<number>;
+let breedProfilesLoaded: Promise<number> | null = null;
+
+/**
+ * The creation pipeline reads breed profiles from the in-memory DB cache, which
+ * server.mjs fills at boot. This fixture runs createHorseFromRequest in the
+ * Playwright worker's own process, so it fills that process's cache the same way,
+ * once per worker (Equoria-cfg6q; the deleted breedProfiles.json fallback used to
+ * hide this). Zero profiles means the CI database was seeded without breeds.
+ */
+function ensureBreedProfilesLoaded(): Promise<number> {
+  breedProfilesLoaded ??= (async () => {
+    const prismaMod = await import(/* @vite-ignore */ prismaClientPath);
+    const loaderMod = await import(/* @vite-ignore */ breedProfileLoaderPath);
+    const preload = (loaderMod as { preloadBreedProfiles?: PreloadBreedProfilesFn })
+      .preloadBreedProfiles;
+    if (typeof preload !== 'function' || !prismaMod.default) {
+      throw new Error(
+        `Could not resolve preloadBreedProfiles from ${breedProfileLoaderPath} or prisma from ${prismaClientPath}`
+      );
+    }
+    const count = await preload(prismaMod.default);
+    if (count === 0) {
+      throw new Error(
+        'No breed profiles in the test database: run `npm run seed:breeds` after `npm run seed`.'
+      );
+    }
+    return count;
+  })();
+  return breedProfilesLoaded;
+}
+
 // Dynamic import so this stays a plain TypeScript module without ambient
 // declarations for the backend's .mjs exports (the coatGenotypeHorses pattern).
 async function getCreateHorseFromRequest(): Promise<CreateHorseFromRequestFn> {
+  await ensureBreedProfilesLoaded();
   const mod = await import(/* @vite-ignore */ createHorseServicePath);
   const fn = (mod as { createHorseFromRequest?: CreateHorseFromRequestFn }).createHorseFromRequest;
   if (typeof fn !== 'function') {
