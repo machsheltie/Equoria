@@ -203,8 +203,11 @@ describe('Equoria-4wl0r — no imports of deprecated backend/db/index.mjs shim',
   // backend/). The breeds + progression suites that motivated this extension
   // are migrated to packages/database/prismaClient.mjs, so this must be green.
   test('no repo-root tests/ (*.mjs) imports the deprecated db/index.mjs path', () => {
+    // Equoria-hnrfu (owner q370, 2026-11-17) moved every root tests/ .mjs suite into
+    // backend gates, so the walk may legitimately find none. Sanity: the root still
+    // exists (a renamed root would make this arm vacuous); any .mjs added later is scanned.
+    expect(fs.existsSync(rootTestsRoot)).toBe(true);
     const files = walkMjs(rootTestsRoot);
-    expect(files.length).toBeGreaterThan(0); // sanity: the dir exists and has suites
 
     const violations = [];
     for (const filePath of files) {
