@@ -110,6 +110,15 @@ function buildMetaSuffix(meta, message) {
   return ` ${json.slice(0, suffixByteCap)}[truncated-${dropped}-bytes]`;
 }
 
+// Equoria-xnph5: winston's Console transport writes to the stream behind
+// console (console._stdout / _stderr), so setup.mjs's console silencing never
+// reaches it, and nothing here read NODE_ENV=test. Expected-failure tests then
+// flooded CI shard logs. Mute only the Console transport under NODE_ENV=test;
+// transports a test attaches itself (Stream capture) still receive every
+// line. Set EQUORIA_TEST_LOGS=1 to see the lines while debugging a test.
+const muteConsoleTransport =
+  process.env.NODE_ENV === 'test' && process.env.EQUORIA_TEST_LOGS !== '1';
+
 const logger = winston.createLogger({
   level: config.env === 'development' ? 'debug' : 'info',
   format: winston.format.combine(
@@ -151,6 +160,7 @@ const logger = winston.createLogger({
   transports: [
     new winston.transports.Console({
       stderrLevels: ['error'],
+      silent: muteConsoleTransport,
     }),
   ],
 });

@@ -185,6 +185,16 @@ rather than creation — `git reset --hard`, `git checkout --`, `git stash` and 
 branch force still discard the other session's uncommitted work silently, and
 no hook exists for them.
 
+## Test-run logger output (Equoria-xnph5)
+
+Under `NODE_ENV=test` the winston Console transport in `backend/utils/logger.mjs`
+is muted, so expected-failure tests (login errors, aborted purchases) no longer
+bury real failures in CI shard logs. Transports a test attaches itself (Stream
+capture, as the logger and redaction tests do) still receive every line.
+Set `EQUORIA_TEST_LOGS=1` to see the lines while debugging, for example
+`EQUORIA_TEST_LOGS=1 npm run test:backend:targeted -- <path-to-test>`.
+Development and production logging are unchanged.
+
 ## Pre-push candidate validation (Equoria-hqrqk)
 
 The pre-push gate tests the working tree of the checkout it runs in, while git
