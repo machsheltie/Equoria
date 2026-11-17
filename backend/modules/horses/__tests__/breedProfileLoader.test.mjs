@@ -1,12 +1,39 @@
 /**
  * breedProfileLoader — unit tests (Equoria-rr7)
  *
- * Tests loader functions that read breedProfiles.json from disk.
- * No DB required — reads static JSON file only.
+ * Tests the loader as the game uses it: backend/tests/setup.mjs preloads the
+ * DB cache from breeds.breedGeneticProfile before this file loads, exactly as
+ * server.mjs does at boot (Equoria-ctop1). The first block proves that this
+ * file really is reading the DB rows, not the breedProfiles.json fallback.
  */
 
 import { describe, it, expect } from '@jest/globals';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getBreedProfile, countLoadedBreedProfiles } from '../data/breedProfileLoader.mjs';
+
+// ---------------------------------------------------------------------------
+// The test setup's preload (Equoria-ctop1)
+// ---------------------------------------------------------------------------
+describe('test setup preloads the DB breed cache (Equoria-ctop1)', () => {
+  it('holds every DB breed row that has ratingProfiles', async () => {
+    const [{ withProfile }] = await prisma.$queryRaw`
+      SELECT count(*)::int AS "withProfile" FROM breeds
+       WHERE jsonb_typeof("breedGeneticProfile"->'ratingProfiles') = 'object'`;
+    expect(withProfile).toBeGreaterThan(0);
+    expect(countLoadedBreedProfiles()).toBe(withProfile);
+  });
+
+  it('serves the DB row for Thoroughbred, color genetics included', async () => {
+    const row = await prisma.breed.findUnique({
+      where: { name: 'Thoroughbred' },
+      select: { breedGeneticProfile: true },
+    });
+    const profile = getBreedProfile('Thoroughbred');
+    // shadeBias exists only in the DB profile; breedProfiles.json has none.
+    expect(typeof profile.shadeBias).toBe('object');
+    expect(profile).toEqual(row.breedGeneticProfile);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // countLoadedBreedProfiles

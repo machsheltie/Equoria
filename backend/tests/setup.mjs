@@ -80,19 +80,26 @@ if (!process.env.DATABASE_URL) {
 // which this file never runs in. The banner was dead code; deletion is the
 // honest fix per .claude/rules/OPTIMAL_FIX_DISCIPLINE.md §6.
 
-// Equoria-wpfvl (2026-05-28) — DB cache preload INTENTIONALLY NOT wired into
-// tests during the transition window. Production (server.mjs) preloads
-// before binding the listener and uses the DB profile (richer: color
-// genetics, post-26qjf-imported breed data). The tests in this codebase
-// were authored against breedProfiles.json and assert JSON-shaped values
-// (e.g. specific gaitedGaitRegistry orderings, breed-specific gait names)
-// that diverge from the DB SQL data in real ways — see follow-up issue
-// for the reconciliation work (align DB ratingProfiles.gaits ordering,
-// gaitedGaitRegistry contents, and conformation regions to the JSON
-// before the cache can be preloaded in tests without per-test surgery).
-// Tests that NEED cache behavior must call preloadBreedProfiles(prisma)
-// explicitly in their own beforeAll; the JSON fallback covers everything
-// else. NOT a regression of wpfvl — the production path still preloads.
+// Equoria-ctop1: breed profiles come from the DB, as in production. server.mjs
+// awaits preloadBreedProfiles(prisma) before it binds the listener; this file
+// does the same once per test file, so suites read the same
+// breeds.breedGeneticProfile rows players get. (Until ctop1 the tests ran on
+// the breedProfiles.json fallback because the DB rows once differed from it;
+// they no longer do: seed .txt files, breedProfiles.json and the DB carry the
+// same ratingProfiles and temperamentWeights, which syncBreedGeneticProfiles
+// refuses to break. JSONB stores object keys in its own order, so no test may
+// depend on the key order of a profile object.)
+//
+// Jest resets the module registry before every test (resetModules: true). The
+// loader instance preloaded here is the one the test file imported when it
+// loaded; a module the test imports dynamically after a reset gets a fresh
+// loader with an empty cache and still falls back to breedProfiles.json.
+// A failed preload throws: a suite without its breed data must not run.
+{
+  const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
+  const { preloadBreedProfiles } = await import('../modules/horses/data/breedProfileLoader.mjs');
+  await preloadBreedProfiles(prisma);
+}
 //
 // Equoria-fefh2.15: per-file Prisma disconnect is NOT done here anymore. A
 // suite-owned afterAll could reconnect Prisma after this file's drain ran,

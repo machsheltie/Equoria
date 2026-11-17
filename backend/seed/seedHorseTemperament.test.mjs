@@ -6,14 +6,15 @@
  * NULL-temperament horses. Before the fix the seed scripts omitted temperament
  * entirely, while register/advanceOnboarding correctly assigned it.
  *
- * This is a NO-DB sentinel suite. The seed scripts are one-shot dev scripts that
+ * This is a read-only sentinel suite. The seed scripts are one-shot dev scripts that
  * mutate the canonical DB when executed (CLAUDE.md §2 forbids running them in a
  * test), so we do NOT run them here. Instead we prove the fix two ways:
  *
  *   1. The canonical generator (generateTemperamentWithDefault) — the SAME fn the
  *      seed scripts now call — returns one of the 12 temperament types
  *      for every breed name the seed scripts use. This exercises the real data
- *      wiring (breedProfileLoader + breedProfiles.json), no DB, no mocks.
+ *      wiring (breedProfileLoader + the DB breed cache backend/tests/setup.mjs
+ *      preloads), no DB writes, no mocks.
  *   2. Each fixed seed source file injects `temperament:` immediately adjacent to
  *      a horse-create. Sentinel-positive: this assertion FAILS if a future edit
  *      removes the temperament injection from any seed script — the exact
