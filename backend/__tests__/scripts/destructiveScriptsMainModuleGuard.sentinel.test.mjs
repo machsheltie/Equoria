@@ -90,7 +90,7 @@ const destructivePatterns = [
 //   import.meta.url to the file URL built from process.argv[1]:
 //     if (import.meta.url === pathToFileURL(process.argv[1]).href) { ... }
 //
-//   Legacy `file:///${argv.replace(...)}` via a hoisted var (seedShows.mjs):
+//   Legacy `file:///${argv.replace(...)}` via a hoisted var (formerly seedShows.mjs, now deleted):
 //     const executedFileUrl = `file:///${process.argv[1].replace(/\\/g, '/')}`;
 //     if (currentFileUrl === executedFileUrl) { ... }
 //   Accepted as the legacy/three-slash sibling of the file:// template form
@@ -231,7 +231,7 @@ describe('Equoria-5z0if — destructive scripts must have main-module guard', ()
   });
 
   test('detector accepts the legacy file:/// var-hoist guard form (Equoria-o706s NEGATIVE CONTROL)', () => {
-    // Form used by backend/seed/seedShows.mjs.
+    // Form formerly used by backend/seed/seedShows.mjs (deleted).
     const guarded = `
       import { PrismaClient } from '@prisma/client';
       const prisma = new PrismaClient();
