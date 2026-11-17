@@ -23,11 +23,11 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { runScan, main } from '../../utils/agent-skills/auditor.mjs';
+import { runScan, main } from '../../../utils/agent-skills/auditor.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const projectRoot = join(__dirname, '..', '..');
+const projectRoot = join(__dirname, '..', '..', '..');
 const AUDITOR = join(projectRoot, 'utils', 'agent-skills', 'auditor.mjs');
 const missingDir = './this-directory-truly-does-not-exist-lq5li';
 
@@ -97,7 +97,7 @@ describe('auditor — positive detection on a clean (successful) scan', () => {
         'request.headers["x-test-bypass-auth"] = "1";',
         'console.log("debug noise left behind");',
         '',
-      ].join('\n')
+      ].join('\n'),
     );
 
     const results = runScan(tmp);

@@ -26,7 +26,7 @@
  * runner.
  */
 
-import { classifyGrepError, packageContext } from '../../utils/agent-skills/context-packager.mjs';
+import { classifyGrepError, packageContext } from '../../../utils/agent-skills/context-packager.mjs';
 
 describe('context-packager — classifyGrepError fail-loud boundary (Equoria-h3sij)', () => {
   test('SENTINEL-POSITIVE: a genuine grep failure (exit >= 2) classifies as failure', () => {

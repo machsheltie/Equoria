@@ -1,5 +1,5 @@
 import request from 'supertest';
-import app from '../../backend/app.mjs'; // Adjusted path to backend/app.mjs and .mjs extension
+import app from '../../app.mjs';
 
 describe('GET /ping', () => {
   it('should return { message: "pong" }', async () => {
@@ -9,7 +9,7 @@ describe('GET /ping', () => {
       expect.objectContaining({
         message: 'pong',
         success: true,
-      })
+      }),
     );
     expect(res.body).toHaveProperty('timestamp');
   });

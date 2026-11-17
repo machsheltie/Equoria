@@ -51,12 +51,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
-import app from '../backend/app.mjs';
-import prisma from '../packages/database/prismaClient.mjs';
-import config from '../backend/config/config.mjs';
-import { fetchCsrf } from '../backend/tests/helpers/csrfHelper.mjs';
-import { checkedInDeviceCookie } from '../backend/tests/helpers/staffDeviceFixture.mjs';
-import { invalidateCachePattern } from '../backend/utils/cacheHelper.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import config from '../../../config/config.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
+import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 
 const namePrefix = 'TestFixture-Breed-';
 const ORIGIN = 'http://localhost:3000';
@@ -77,7 +77,7 @@ function adminAccessCookie() {
       fingerprint: Date.now(),
     },
     config.jwtSecret,
-    { expiresIn: config.jwtExpiresIn || '7d' }
+    { expiresIn: config.jwtExpiresIn || '7d' },
   );
   return `accessToken=${token}`;
 }
@@ -119,7 +119,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
   let tag;
 
   beforeEach(async () => {
-    tag = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    tag = randomBytes(8).toString('hex');
     // Breed list/detail are cached 10 min — clear so fresh fixtures are visible.
     await invalidateCachePattern('breeds:*');
   });
@@ -201,7 +201,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
       // No absolute-count assertion (the DB holds real breeds too); count must
       // simply agree with the array length, and the fixture must appear.
       expect(res.body.count).toBe(res.body.data.length);
-      expect(res.body.data.map((b) => b.name)).toContain(name);
+      expect(res.body.data.map(b => b.name)).toContain(name);
     });
 
     // Equoria-refgs trimmed the LIST endpoint's breedGeneticProfile to ONLY
@@ -244,7 +244,7 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
       const res = await request(app).get('/api/v1/breeds');
       expect(res.statusCode).toBe(200);
 
-      const row = res.body.data.find((b) => b.name === name);
+      const row = res.body.data.find(b => b.name === name);
       expect(row).toBeDefined();
 
       // No part of the profile ships on the list endpoint.

@@ -174,7 +174,7 @@ describe('live root jest.config.js', () => {
     () => {
       const selected = listTests(repoRoot, ['backend']);
       expect(selected).toContain('backend/__tests__/jestRootConfigDotPathGlob.sentinel.test.mjs');
-      expect(selected).toContain('tests/breeds.integration.test.mjs');
+      expect(selected).toContain('backend/modules/horses/__tests__/breedsApi.integration.test.mjs');
       expect(selected.filter(file => file.startsWith('tests/e2e/'))).toEqual([]);
     },
     listTestsTimeoutMs,
