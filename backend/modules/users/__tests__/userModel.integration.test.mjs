@@ -8,26 +8,28 @@
  * Story 21R-2 / Change 8: Reclassify and Strengthen Integration Tests
  */
 
-import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createUser, getUserById, getUserWithHorses } from '../services/userModelService.mjs';
 
-// Unique seed per run to prevent collisions across parallel test suites
-const seed = Date.now();
+// Per-run unique suffix: parallel workers and repeated runs never share fixture names.
+const seed = `${randomBytes(4).toString('hex')}${Math.floor(Math.random() * 100000)}`;
 const baseEmail = `integration-user-${seed}@test.local`;
 const baseUsername = `intuser${seed}`;
+// Every email this suite can create. Cleanup is scoped to these exact rows only.
+const ownEmails = [baseEmail, `missing-user-${seed}@test.local`, `dup-${seed}@test.local`];
 
 let createdUserId = null;
 
-beforeAll(async () => {
-  // Clean any leftovers from previous runs with same seed (extremely unlikely but safe)
-  await prisma.user.deleteMany({ where: { email: { contains: '@test.local' } } });
-});
-
 afterAll(async () => {
-  // Remove any users created by these tests
-  await prisma.user.deleteMany({ where: { email: { contains: '@test.local' } } });
+  // SCOPED cleanup: only rows this run created (by id, or by this run's exact unique emails/username).
+  await prisma.user.deleteMany({
+    where: {
+      OR: [...(createdUserId ? [{ id: createdUserId }] : []), { email: { in: ownEmails } }, { username: baseUsername }],
+    },
+  });
   await prisma.$disconnect();
 });
 
