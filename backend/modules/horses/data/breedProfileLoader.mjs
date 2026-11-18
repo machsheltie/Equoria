@@ -8,7 +8,8 @@
  * (breedProfileCache.mjs) filled by `preloadBreedProfiles(prisma)`.
  *
  *   - server.mjs awaits preloadBreedProfiles(prisma) before it binds the
- *     listener and refuses to start if it fails.
+ *     listener and refuses to start if it fails or loads zero profiles
+ *     (assertBreedProfilesLoaded).
  *   - Scripts that run outside the server (backfills, load drivers) call it
  *     once at startup.
  *   - The backend test setup (backend/tests/setup.mjs) installs the same rows
@@ -86,6 +87,25 @@ export async function preloadBreedProfiles(prisma) {
   const size = installBreedProfileRows(rows);
   logger.info(`[breedProfileLoader] DB cache preloaded: ${size} breed profiles`);
   return size;
+}
+
+/**
+ * Startup guard: a cache with zero usable profiles is a mis-seeded database
+ * (migrations ran, `npm run seed:breeds` did not), not a working server.
+ * preloadBreedProfiles() deliberately returns 0 instead of throwing so that
+ * tests and tools can inspect an empty cache; server.mjs passes the count here
+ * and refuses to bind the listener when it throws (Equoria-cfg6q).
+ *
+ * @param {number} count the value preloadBreedProfiles() returned
+ * @throws {Error} when no breed has a usable profile
+ */
+export function assertBreedProfilesLoaded(count) {
+  if (!Number.isInteger(count) || count < 1) {
+    throw new Error(
+      'no breed has a usable breedGeneticProfile (ratingProfiles) in the database; ' +
+        'run the breed seed (npm run seed:breeds) before starting the server',
+    );
+  }
 }
 
 /**

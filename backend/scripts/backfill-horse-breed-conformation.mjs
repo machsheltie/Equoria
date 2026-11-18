@@ -38,7 +38,7 @@
 
 import { fileURLToPath } from 'node:url';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { preloadBreedProfiles } from '../modules/horses/index.mjs';
+import { assertBreedProfilesLoaded, preloadBreedProfiles } from '../modules/horses/index.mjs';
 import { generateConformationScores } from '../modules/horses/services/conformationService.mjs';
 
 /** The schema default for horses.conformationScores: the flat-20 placeholder. */
@@ -191,7 +191,7 @@ export async function runBreedConformationBackfill({
 
 async function main() {
   const apply = process.argv.slice(2).includes('--apply');
-  await preloadBreedProfiles(prisma);
+  assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
   const result = await runBreedConformationBackfill({ dryRun: !apply });
   for (const r of result.rescored) {
     console.log(`RESCORED ${JSON.stringify(r)}`);

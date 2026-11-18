@@ -27,8 +27,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterAll } from '@jest/globals';
+import { readFileSync } from 'node:fs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { installBreedProfileRows } from '../data/breedProfileCache.mjs';
 import {
+  assertBreedProfilesLoaded,
   preloadBreedProfiles,
   getBreedProfile,
   countLoadedBreedProfiles,
@@ -56,6 +59,45 @@ describe('preloadBreedProfiles — populates the DB cache (Equoria-wpfvl)', () =
     const count = await preloadBreedProfiles(prisma);
     expect(count).toBeGreaterThanOrEqual(12);
     expect(countLoadedBreedProfiles()).toBe(count);
+  });
+});
+
+describe('assertBreedProfilesLoaded — a server never boots on zero profiles (Equoria-cfg6q)', () => {
+  beforeEach(() => {
+    _clearBreedProfileCache();
+  });
+
+  it('refuses the count a migrated-but-unseeded database produces', () => {
+    // Rows without ratingProfiles are skipped, so a database whose breeds carry
+    // no usable profile installs an empty cache and counts 0.
+    const count = installBreedProfileRows([
+      { name: 'Unseeded A', breedGeneticProfile: null },
+      { name: 'Unseeded B', breedGeneticProfile: { shadeBias: {} } },
+    ]);
+    expect(count).toBe(0);
+    expect(() => assertBreedProfilesLoaded(count)).toThrow(/npm run seed:breeds/);
+  });
+
+  it('refuses a missing or non-numeric count', () => {
+    expect(() => assertBreedProfilesLoaded(undefined)).toThrow(/no breed has a usable/);
+    expect(() => assertBreedProfilesLoaded(Number.NaN)).toThrow(/no breed has a usable/);
+  });
+
+  it('accepts the count a seeded database produces', async () => {
+    const count = await preloadBreedProfiles(prisma);
+    expect(() => assertBreedProfilesLoaded(count)).not.toThrow();
+  });
+
+  it('server.mjs runs the guard inside the fatal try block, before it binds the listener', () => {
+    const source = readFileSync(new URL('../../../server.mjs', import.meta.url), 'utf8');
+    const tryStart = source.indexOf('const breedCount = await preloadBreedProfiles(prisma);');
+    const guard = source.indexOf('assertBreedProfilesLoaded(breedCount);');
+    const exit = source.indexOf('process.exit(1);', guard);
+    const listen = source.indexOf('app.listen(');
+    expect(tryStart).toBeGreaterThan(-1);
+    expect(guard).toBeGreaterThan(tryStart);
+    expect(exit).toBeGreaterThan(guard);
+    expect(listen).toBeGreaterThan(exit);
   });
 });
 

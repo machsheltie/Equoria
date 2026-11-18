@@ -28,7 +28,7 @@ import { shutdownMemoryManagement } from './services/memoryResourceManagementSer
 import { closeRedis } from './middleware/rateLimiting.mjs';
 import { closeRedisConnection } from './utils/cacheHelper.mjs';
 import { checkAndAlertMultiInstance } from './utils/sseMultiInstanceGuard.mjs';
-import { preloadBreedProfiles } from './modules/horses/index.mjs';
+import { preloadBreedProfiles, assertBreedProfilesLoaded } from './modules/horses/index.mjs';
 
 // Load environment variables FIRST
 dotenv.config();
@@ -44,17 +44,20 @@ const nodeEnv = process.env.NODE_ENV || 'development';
 // Equoria-wpfvl (2026-05-28): preload the per-breed profile cache from
 // breeds.breedGeneticProfile BEFORE binding the listener. Hot paths in
 // conformationService, gaitService, temperamentService, horseRoutes, and
-// horseController call getBreedProfile() synchronously; an unwarmed cache
-// would force them to fall back to the gait/temperament-only JSON and miss
-// post-26qjf color genetics. Fatal-on-error so a misconfigured DB never
-// boots into a "partially correct" state. Cron + show scheduler init move
-// inside the listen callback (unchanged).
+// horseController call getBreedProfile() synchronously, and the cache is their
+// only source (breedProfiles.json is gone, Equoria-fbnw8). Fatal on error AND on
+// zero usable profiles (Equoria-cfg6q): a database that was migrated but never
+// seeded with breeds would otherwise boot "healthy" while onboarding and the
+// Trader answer 422, breeding answers 400 and foaling leaves pregnancies
+// pending. Cron + show scheduler init move inside the listen callback
+// (unchanged).
 try {
   const breedCount = await preloadBreedProfiles(prisma);
+  assertBreedProfilesLoaded(breedCount);
   logger.info(`🧬 Preloaded ${breedCount} breed profiles into in-memory cache`);
 } catch (err) {
   logger.error(
-    '❌ FATAL: preloadBreedProfiles() failed during startup. ' +
+    '❌ FATAL: breed profile preload failed during startup. ' +
       `Refusing to bind listener so requests never serve from an empty cache. ${err.message}`,
   );
   await prisma.$disconnect();

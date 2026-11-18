@@ -4,7 +4,12 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 // Equoria-o7pnn: seeded horses must arrive with a permanent breed-weighted
 // temperament so dev databases never contain NULL-temperament horses.
-import { generateGaitScores, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import {
+  assertBreedProfilesLoaded,
+  generateGaitScores,
+  generateTemperamentWithDefault,
+  preloadBreedProfiles,
+} from '../modules/horses/index.mjs';
 import { birthDateForAge } from '../utils/horseAge.mjs';
 
 /**
@@ -50,6 +55,11 @@ async function seedUserWithHorses() {
     });
 
     logger.info(`✅ Created test user: ${testUser.username} (ID: ${testUser.id})`);
+
+    // Gait and temperament generation read the breed profile cache, which nothing
+    // fills outside the server (Equoria-cfg6q). Load it before the first write and
+    // stop if the database has no profiles: run `npm run seed:breeds` first.
+    assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
 
     // Ensure we have a breed
     let breed = await prisma.breed.findFirst();

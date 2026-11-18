@@ -6,7 +6,12 @@ import logger from '../utils/logger.mjs';
 // types (temperamentService.mjs). The live seed-create path uses the same
 // breed-weighted generator the register/advanceOnboarding paths use (the
 // o7pnn convention) so dev databases never contain non-canonical temperaments.
-import { generateGaitScores, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import {
+  assertBreedProfilesLoaded,
+  generateGaitScores,
+  generateTemperamentWithDefault,
+  preloadBreedProfiles,
+} from '../modules/horses/index.mjs';
 import { birthDateForAge } from '../utils/horseAge.mjs';
 
 // Get __dirname equivalent for ES modules
@@ -396,6 +401,13 @@ async function main() {
 
     // Ensure some base users exist for general horse seeding if needed
     await ensureReferencedRecordsExist();
+
+    // seedHorses and seedUserWithHorses generate gait scores and temperaments from
+    // the breed profile cache, which nothing fills outside the server
+    // (Equoria-cfg6q). Load it after ensureReferencedRecordsExist and stop before
+    // any horse is written if the database has no profiles: run
+    // `npm run seed:breeds` first.
+    assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
 
     // Get some users to assign horses to, or create a default if none exist
     const usersToSeed = await prisma.user.findMany({ take: 2 });

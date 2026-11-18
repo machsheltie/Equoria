@@ -293,6 +293,16 @@ jobs:
           LOG_LEVEL=error
           EOF
 
+      - name: Seed breed profiles
+        # The server refuses to start when no breed has a profile in
+        # breeds.breedGeneticProfile (Equoria-cfg6q); a migrate-only database
+        # has none. seed:breeds takes about a second. DATABASE_URL comes from
+        # the backend/.env written above.
+        working-directory: backend
+        run: |
+          npm run seed
+          npm run seed:breeds
+
       - name: Start API server
         working-directory: backend
         run: |

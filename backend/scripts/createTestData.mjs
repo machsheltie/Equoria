@@ -7,12 +7,22 @@ import { fileURLToPath } from 'node:url';
 // Equoria-o7pnn: test-data horses must arrive with a permanent breed-weighted
 // temperament so dev databases never contain NULL-temperament horses (mirrors
 // the register/advanceOnboarding creation paths).
-import { generateGaitScores, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
+import {
+  assertBreedProfilesLoaded,
+  generateGaitScores,
+  generateTemperamentWithDefault,
+  preloadBreedProfiles,
+} from '../modules/horses/index.mjs';
 import { birthDateForAge } from '../utils/horseAge.mjs';
 
 async function createTestData() {
   try {
     console.log('🧪 Creating test data...');
+
+    // Gait and temperament generation read the breed profile cache, which nothing
+    // fills outside the server (Equoria-cfg6q). Load it before the first write and
+    // stop if the database has no profiles: run `npm run seed:breeds` first.
+    assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
 
     // 1. Create test user
     console.log('Creating test user...');

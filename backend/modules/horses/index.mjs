@@ -9,7 +9,7 @@
  * boundaries"); add a name here when a consumer genuinely needs it, never `export *`.
  */
 
-export { preloadBreedProfiles } from './data/breedProfileLoader.mjs';
+export { preloadBreedProfiles, assertBreedProfilesLoaded } from './data/breedProfileLoader.mjs';
 export { getFoalDevelopment } from './models/foalModel.mjs';
 // Equoria-9rhf6: grooms' "groom horse" records a foal's bond milestones inside its own transaction.
 export { detectAndRecordFoalMilestonesCore } from './services/foalMilestoneService.mjs';

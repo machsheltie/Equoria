@@ -26,6 +26,7 @@ import logger from '../utils/logger.mjs';
 // at creation — the "temperament is permanent" invariant.
 // Equoria-94z3m: both symbols now resolve through the horses module barrel.
 import {
+  assertBreedProfilesLoaded,
   generateGaitScores,
   generateStoreStats,
   generateTemperamentWithDefault,
@@ -113,7 +114,7 @@ async function seedPerformanceHorses() {
   // Equoria-cfg6q: the gait/temperament generators read the DB breed cache
   // (breeds.breedGeneticProfile), exactly as server.mjs does. Load it first,
   // then keep only breeds the cache resolves AND that have starter stats.
-  await preloadBreedProfiles(prisma);
+  assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
   const hasBreedProfile = name => {
     try {
       getBreedProfile(name);

@@ -33,7 +33,7 @@
 
 import { fileURLToPath } from 'node:url';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { preloadBreedProfiles } from '../modules/horses/index.mjs';
+import { assertBreedProfilesLoaded, preloadBreedProfiles } from '../modules/horses/index.mjs';
 import { generateTemperament } from '../modules/horses/services/temperamentService.mjs';
 import { generateGaitScores } from '../modules/horses/services/gaitService.mjs';
 
@@ -218,7 +218,7 @@ export async function runTemperamentGaitBackfill({
 
 async function main() {
   const apply = process.argv.slice(2).includes('--apply');
-  await preloadBreedProfiles(prisma);
+  assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
   const result = await runTemperamentGaitBackfill({ dryRun: !apply });
   for (const s of result.skipped) {
     console.log(`SKIPPED ${JSON.stringify(s)}`);
