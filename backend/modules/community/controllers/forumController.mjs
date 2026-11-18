@@ -52,29 +52,60 @@ const visibleTo = viewerId =>
     ? { OR: [{ status: 'published' }, { authorId: viewerId }] }
     : { status: 'published' };
 
+/** A refusal decided inside a posting transaction: nothing is written, the body is sent. */
+class PostingRefusal extends Error {
+  constructor(status, body) {
+    super(body.message);
+    this.status = status;
+    this.body = body;
+  }
+}
+
+const threadNotFound = () =>
+  new PostingRefusal(404, { success: false, message: 'Thread not found' });
+const busyMessage = { message: 'Forum service is busy right now, please retry in a moment.' };
+
 /**
- * Ask the word lists about a new thread or reply (Equoria-puj1e.3, q380). Answers
- * the refusal and returns null for a blocked word (the player is never told which);
- * otherwise returns the status to save: 'held' for a review word, else 'published'.
+ * The first step of every posting transaction (Equoria-puj1e.3, q375): lock the
+ * author's account row, then read their posting cooldown. A steward's cooldown is
+ * written under FOR UPDATE on the same row (staffConductController runAction), so a
+ * post and a cooldown serialise: the post either commits before the cooldown exists
+ * or, waiting on the lock, reads it here and is refused. The same lock orders a reply
+ * after a steward's accept or reject of its author's held opening post.
  */
-async function statusForWords(res, texts) {
-  const verdict = await forumWordVerdict(prisma, texts);
+async function lockAuthorOffCooldown(tx, authorId) {
+  await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${authorId} FOR SHARE`;
+  const until = await postingCooldownUntil(tx, authorId);
+  if (until) {
+    const refusal = postingCooldownRefusal(until);
+    throw new PostingRefusal(refusal.status, refusal.body);
+  }
+}
+
+/**
+ * Ask the word lists about a new thread or reply (Equoria-puj1e.3, q380). Throws the
+ * refusal for a blocked word (the player is never told which); otherwise returns the
+ * status to save: 'held' for a review word, else 'published'.
+ */
+async function statusForWords(tx, texts) {
+  const verdict = await forumWordVerdict(tx, texts);
   if (verdict === 'blocked') {
-    res.status(blockedWordRefusal.status).json(blockedWordRefusal.body);
-    return null;
+    throw new PostingRefusal(blockedWordRefusal.status, blockedWordRefusal.body);
   }
   return verdict === 'review' ? 'held' : 'published';
 }
 
-/** Refuse when the author is on a posting cooldown; returns true when it answered. */
-async function refusedForCooldown(res, authorId) {
-  const until = await postingCooldownUntil(prisma, authorId);
-  if (!until) {
-    return false;
+/** Answer a posting failure: a refusal, the retryable 503, or a logged 500. */
+function answerPostingError(res, error, where, fallback) {
+  if (error instanceof PostingRefusal) {
+    return res.status(error.status).json(error.body);
   }
-  const refusal = postingCooldownRefusal(until);
-  res.status(refusal.status).json(refusal.body);
-  return true;
+  // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+  if (error?.status === 503) {
+    return res.status(503).json({ success: false, message: error.message });
+  }
+  logger.error(`[forumController.${where}] ${error.message}`);
+  return res.status(500).json({ success: false, message: fallback });
 }
 
 // Pinned threads first, then the most recently active, ties broken by id
@@ -210,20 +241,15 @@ export async function createThread(req, res) {
   const authorId = req.user.id;
 
   try {
-    if (await refusedForCooldown(res, authorId)) {
-      return undefined;
-    }
-    const status = await statusForWords(res, [
-      title,
-      content,
-      ...(Array.isArray(tags) ? tags : []),
-    ]);
-    if (status === null) {
-      return undefined;
-    }
     // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503 (catch honours error.status).
     const [thread, firstPost] = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
+        await lockAuthorOffCooldown(tx, authorId);
+        const status = await statusForWords(tx, [
+          title,
+          content,
+          ...(Array.isArray(tags) ? tags : []),
+        ]);
         const t = await tx.forumThread.create({
           data: { section, title, authorId, tags, status },
           include: { author: { select: { id: true, username: true } } },
@@ -234,18 +260,13 @@ export async function createThread(req, res) {
         });
         return [t, p];
       }),
-      { message: 'Forum service is busy right now, please retry in a moment.' },
+      busyMessage,
     );
 
     logger.info(`[forumController.createThread] User ${authorId} created thread ${thread.id}`);
     return res.status(201).json({ success: true, data: { thread, firstPost } });
   } catch (error) {
-    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
-    if (error?.status === 503) {
-      return res.status(503).json({ success: false, message: error.message });
-    }
-    logger.error(`[forumController.createThread] ${error.message}`);
-    return res.status(500).json({ success: false, message: 'Failed to create thread' });
+    return answerPostingError(res, error, 'createThread', 'Failed to create thread');
   }
 }
 
@@ -264,34 +285,35 @@ export async function createPost(req, res) {
   }
 
   try {
-    if (await refusedForCooldown(res, authorId)) {
-      return undefined;
-    }
-    const thread = await prisma.forumThread.findUnique({ where: { id: threadId } });
-    // A held thread is missing to everyone but its author (q376).
-    if (!thread || (thread.status === 'held' && thread.authorId !== authorId)) {
-      return res.status(404).json({ success: false, message: 'Thread not found' });
-    }
-    const status = await statusForWords(res, [content]);
-    if (status === null) {
-      return undefined;
-    }
-
-    // A held reply is not activity yet: accepting it bumps the thread (q376).
-    const [post] = await prisma.$transaction([
-      prisma.forumPost.create({
-        data: { threadId, authorId, content, status },
-        include: { author: { select: { id: true, username: true } } },
+    const { thread, post, status } = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        await lockAuthorOffCooldown(tx, authorId);
+        // Read under the author's lock: a steward deciding this author's held opening
+        // post holds the same row, so the thread's status here is the settled one.
+        const found = await tx.forumThread.findUnique({ where: { id: threadId } });
+        // A held thread is missing to everyone but its author (q376).
+        if (!found || (found.status === 'held' && found.authorId !== authorId)) {
+          throw threadNotFound();
+        }
+        const byWords = await statusForWords(tx, [content]);
+        // A reply in a thread still awaiting a moderator waits too: accepting the
+        // opening post must never publish a reply nobody has reviewed (q376).
+        const saved = found.status === 'held' ? 'held' : byWords;
+        const created = await tx.forumPost.create({
+          data: { threadId, authorId, content, status: saved },
+          include: { author: { select: { id: true, username: true } } },
+        });
+        // A held reply is not activity yet: accepting it bumps the thread (q376).
+        if (saved === 'published') {
+          await tx.forumThread.update({
+            where: { id: threadId },
+            data: { lastActivityAt: new Date() },
+          });
+        }
+        return { thread: found, post: created, status: saved };
       }),
-      ...(status === 'published'
-        ? [
-            prisma.forumThread.update({
-              where: { id: threadId },
-              data: { lastActivityAt: new Date() },
-            }),
-          ]
-        : []),
-    ]);
+      busyMessage,
+    );
 
     // Equoria-pwwuz (ADR-011): real-time receipt to the thread author AFTER the
     // DB write succeeded — mirrors the DM 'message' producer (Equoria-lewrv).
@@ -314,14 +336,15 @@ export async function createPost(req, res) {
 
     return res.status(201).json({ success: true, data: { post } });
   } catch (error) {
-    logger.error(`[forumController.createPost] ${error.message}`);
-    return res.status(500).json({ success: false, message: 'Failed to create post' });
+    return answerPostingError(res, error, 'createPost', 'Failed to create post');
   }
 }
 
 /**
  * POST /api/forum/threads/:id/view
- * Increments viewCount by 1, deduplicated per user per thread per hour.
+ * Increments viewCount by 1, deduplicated per user per thread per hour. A thread the
+ * viewer may not see (missing, or held and not theirs, q376) answers 404 and is not
+ * counted, so the endpoint never tells whether a held thread exists.
  */
 export async function incrementView(req, res) {
   const id = parseInt(req.params.id, 10);
@@ -330,26 +353,29 @@ export async function incrementView(req, res) {
     return res.status(400).json({ success: false, message: 'Invalid thread ID' });
   }
 
+  // Only a counted view is remembered, so a hit here means this viewer saw the thread.
   const key = `${userId}:${id}`;
   const now = Date.now();
   const last = _viewLog.get(key);
   if (last && now - last < viewCooldownMs) {
     return res.json({ success: true });
   }
-  _viewLog.set(key, now);
-
-  // Prune entries older than the cooldown window to prevent unbounded growth
-  for (const [k, ts] of _viewLog) {
-    if (now - ts >= viewCooldownMs) {
-      _viewLog.delete(k);
-    }
-  }
 
   try {
-    await prisma.forumThread.update({
-      where: { id },
+    const { count } = await prisma.forumThread.updateMany({
+      where: { id, ...visibleTo(userId) },
       data: { viewCount: { increment: 1 } },
     });
+    if (count === 0) {
+      return res.status(404).json({ success: false, message: 'Thread not found' });
+    }
+    _viewLog.set(key, now);
+    // Prune entries older than the cooldown window to prevent unbounded growth
+    for (const [k, ts] of _viewLog) {
+      if (now - ts >= viewCooldownMs) {
+        _viewLog.delete(k);
+      }
+    }
     return res.json({ success: true });
   } catch (error) {
     logger.error(`[forumController.incrementView] ${error.message}`);

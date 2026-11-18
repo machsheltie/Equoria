@@ -127,8 +127,18 @@ const barrelPolicySymbols = new Set(['firstHorseNameRejectionMessage', 'horseNam
 // rule through a port the app layer fills (Equoria-puj1e.3). Importing the port's
 // `horseNameRejection` gates a writer ONLY while backend/app/routers.mjs still hands
 // the real horses-barrel rule to registerHorseNameRule (see portIsWiredToPolicy).
-const policyPortSuffix = 'staff/services/contentRulesPort.mjs';
-const policyPortRelative = 'services/contentRulesPort.mjs';
+// The ONE real port file. An import counts only when its relative specifier resolves,
+// from the importing file's directory, to exactly this path: a same-named module
+// anywhere else (`./services/contentRulesPort.mjs` beside some other controller) never
+// gates a writer, and neither does a bare or aliased specifier.
+const policyPortPath = path.join(
+  repoRoot,
+  'backend',
+  'modules',
+  'staff',
+  'services',
+  'contentRulesPort.mjs'
+);
 const portPolicySymbols = new Set(['horseNameRejection']);
 const appRoutersPath = path.join(repoRoot, 'backend', 'app', 'routers.mjs');
 const validatorsPolicySymbols = new Set([
@@ -420,6 +430,13 @@ function portIsWiredToPolicy() {
   return portWiredCache;
 }
 
+/** Does relative import `spec`, written in `file`, name the one real staff port file? */
+function resolvesToPolicyPort(spec, file) {
+  if (!file || !(spec.startsWith('./') || spec.startsWith('../'))) return false;
+  const resolved = path.resolve(path.dirname(file), spec);
+  return path.relative(policyPortPath, resolved) === '' && fs.existsSync(policyPortPath);
+}
+
 /**
  * Does this file route through the shared policy at all?
  *
@@ -430,7 +447,7 @@ function portIsWiredToPolicy() {
  * sits inside a string or template literal is ignored (S5 fix round 2, minor 10 — an
  * import written inside a string is prose, not an import).
  */
-function importsPolicy(source) {
+function importsPolicy(source, file) {
   const { code, spans } = stripComments(source);
   const importRe = /(?:^|[\n;}])[ \t]*((?:import|export)\b[^;'"`]*?)from\s*['"]([^'"\n]+)['"]/g;
   let m;
@@ -450,7 +467,7 @@ function importsPolicy(source) {
       return true;
     // The staff port: only its exact rule function, and only while the app layer wires it.
     if (
-      (spec.endsWith(policyPortSuffix) || spec.endsWith(`/${policyPortRelative}`)) &&
+      resolvesToPolicyPort(spec, file) &&
       names.some((nm) => portPolicySymbols.has(nm)) &&
       portIsWiredToPolicy()
     )
@@ -532,7 +549,7 @@ for (const file of walkFiles(scanRoots, { skipDir, includeFile })) {
   const rel = path.relative(repoRoot, file).split(path.sep).join('/');
   flaggedRelPaths.add(rel);
 
-  if (allowlist.has(rel) || importsPolicy(source)) continue;
+  if (allowlist.has(rel) || importsPolicy(source, file)) continue;
 
   violations.push({
     rel,
