@@ -57,6 +57,8 @@ import {
 } from '../rules/disciplineRules.mjs';
 import { healthScorePercent } from '../rules/healthScoring.mjs';
 import { tackPoints } from '../rules/tackScoring.mjs';
+import { riderGrowthPoints } from '../../../constants/staffGrowth.mjs';
+import { visibleTraitKeys } from '../../../utils/publicTraitView.mjs';
 
 /**
  * The ridden base: 50% primary + 30% secondary + 20% tertiary of the
@@ -152,6 +154,8 @@ export function applyPercentTerms(base, percentTerms) {
  * @param {Function} [input.rng] - Luck RNG (default Math.random), called once
  *   per entry; tests pass a fixed value (0 gives +1%, 0.5 gives +6%).
  * @param {Date} [input.now] - Settlement time, for the horse's health.
+ * @param {Map} [input.riderItemsByRiderId] - riderId -> the rider's hidden growth items
+ *   (owner ruling q331): a matching item adds or takes flat points, like tack.
  * @returns {Array<{entry: Object, score: number, assignment: Object|undefined,
  *   breakdown: Object}>} `breakdown` holds every input of the score (base, flat
  *   points, each percent term) so a result can be audited (Equoria-4q02c).
@@ -162,6 +166,7 @@ export function scoreShowEntries({
   assignmentByHorseId,
   rng = Math.random,
   now = new Date(),
+  riderItemsByRiderId = new Map(),
 }) {
   // A show row whose discipline is outside the 24 (a legacy name) keeps the
   // pre-B4a flat 5-stat average, so the show still settles instead of failing
@@ -206,6 +211,19 @@ export function scoreShowEntries({
       rider: assignment?.rider ?? null,
       discipline: show.discipline,
     });
+    // Owner ruling q331 (Equoria-xlw03): the rider's hidden discipline, temperament,
+    // favorite-breed and trait items add or take flat points, hidden or revealed alike,
+    // like tack. A horse's own hidden traits have no effect, so only the traits it shows
+    // count. A legacy discipline keeps its pre-B4a scoring and gets none.
+    const riderItemPoints =
+      weighted && assignment?.riderId !== undefined
+        ? riderGrowthPoints(riderItemsByRiderId.get(assignment.riderId), {
+            discipline: show.discipline,
+            temperament: h.temperament,
+            breedId: h.breedId ?? null,
+            traitKeys: visibleTraitKeys(h.epigeneticModifiers),
+          })
+        : 0;
     // Owner ruling 2026-10-23 (Equoria-k1p62): traits contribute nothing to a
     // show score until they are reworked, and flags are traits (2026-10-19),
     // so the horse's flags no longer adjust the rider percents (the old
@@ -238,6 +256,7 @@ export function scoreShowEntries({
       base,
       trainingPoints,
       tackPoints: tackBonus,
+      riderItemPoints,
       luckPercent,
       riderPercent,
       temperamentPercent: temperamentTerm,
@@ -246,7 +265,7 @@ export function scoreShowEntries({
 
     return {
       entry,
-      score: applyPercentTerms(base + trainingPoints + tackBonus, percentTerms),
+      score: applyPercentTerms(base + trainingPoints + tackBonus + riderItemPoints, percentTerms),
       assignment,
       breakdown,
     };

@@ -52,6 +52,7 @@ const inputKeys = [
   'base',
   'healthPercent',
   'luckPercent',
+  'riderItemPoints',
   'riderPercent',
   'tackPoints',
   'temperamentPercent',

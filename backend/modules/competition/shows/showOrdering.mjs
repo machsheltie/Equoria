@@ -6,6 +6,7 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { ensureGrowthProfileTx } from '../../../services/staffGrowthService.mjs';
 import { rankScoredEntries, scoreShowEntries } from '../services/competitionScoring.mjs';
 
 /**
@@ -13,8 +14,9 @@ import { rankScoredEntries, scoreShowEntries } from '../services/competitionScor
  * discipline can weigh (Equoria-576c0 B4a), the temperament percent term (B6),
  * and, for epic Equoria-k1p62 (owner rulings 2026-10-23), the trained values
  * behind the training points, the tack behind the saddle/bridle points and the
- * health fields behind the health percent term. Traits and flags are not read:
- * they contribute nothing until traits are reworked.
+ * health fields behind the health percent term. A horse's traits add nothing to
+ * its own score; they are read only so a rider's hidden trait items can match
+ * them (owner ruling q331).
  */
 export const scoringHorseSelect = {
   id: true,
@@ -31,6 +33,9 @@ export const scoringHorseSelect = {
   obedience: true,
   focus: true,
   temperament: true,
+  // A rider's hidden breed and trait items read the breed and the shown traits (q331).
+  breedId: true,
+  epigeneticModifiers: true,
   disciplineScores: true,
   tack: true,
   age: true,
@@ -58,6 +63,14 @@ export async function scoreOrdering(show, entries, scoreRng, now) {
     : [];
   const assignmentByHorseId = new Map(riderAssignments.map(ra => [ra.horseId, ra]));
 
+  // The riders' hidden growth items (owner ruling q331). A rider hired before growth
+  // existed gets its profile drawn here, as every other reader does.
+  const riderItemsByRiderId = new Map();
+  for (const riderId of new Set(riderAssignments.map(ra => ra.riderId))) {
+    const { items } = await prisma.$transaction(tx => ensureGrowthProfileTx(tx, 'rider', riderId));
+    riderItemsByRiderId.set(riderId, items);
+  }
+
   // Score (extracted verbatim to competitionScoring.mjs) + rank. Equal scores
   // are separated by a luck re-roll among the tied horses (owner ruling
   // 2026-10-22, Equoria-bvddn.22): no shared placings, no split prizes.
@@ -65,6 +78,7 @@ export async function scoreOrdering(show, entries, scoreRng, now) {
     show,
     entries,
     assignmentByHorseId,
+    riderItemsByRiderId,
     now,
     ...(scoreRng ? { rng: scoreRng } : {}),
   });

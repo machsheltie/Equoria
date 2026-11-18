@@ -17,6 +17,8 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { bondScoreMax, careStreakGraceDays, dailyBondGain } from '../../../config/groomConfig.mjs';
+import { groomGrowthBondPoints } from '../../../constants/staffGrowth.mjs';
+import { ensureGrowthProfileTx } from '../../../services/staffGrowthService.mjs';
 import { groomInteractionSource } from '../../../utils/foalActivityStore.mjs';
 import { gameDayBounds, gameDayIndex } from '../../../utils/gameTime.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
@@ -143,6 +145,9 @@ const horseCareSelect = {
   userId: true,
   dateOfBirth: true,
   bondScore: true,
+  // The groom's hidden temperament and favorite-breed items act on bond (q331).
+  temperament: true,
+  breedId: true,
   lastGroomed: true,
   daysGroomedInARow: true,
   taskLog: true,
@@ -255,7 +260,14 @@ export async function groomHorse({ horseId, activity, now = new Date() }) {
       const foalCare = foalCareToday(horse.dateOfBirth, now);
       const interactionType = chooseInteractionType(horse, foalCare, activity);
 
-      const newBond = Math.min(bondScoreMax, Math.max(0, horse.bondScore) + dailyBondGain);
+      // Owner ruling q331: the groom's hidden items add or take away bond, hidden or
+      // revealed alike. The horse row is locked, so the staff row follows in lock order.
+      const { items: groomItems } = await ensureGrowthProfileTx(tx, 'groom', assignment.groom.id);
+      const groomBondPoints = groomGrowthBondPoints(groomItems, horse);
+      const newBond = Math.min(
+        bondScoreMax,
+        Math.max(0, horse.bondScore) + dailyBondGain + groomBondPoints,
+      );
       const bondAdded = newBond - horse.bondScore;
       const taskLog =
         horse.taskLog !== null && typeof horse.taskLog === 'object' && !Array.isArray(horse.taskLog)

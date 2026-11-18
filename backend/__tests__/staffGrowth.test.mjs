@@ -1,6 +1,6 @@
 /**
  * staffGrowth.test.mjs — the pure staff growth rules (Equoria-xlw03), owner rulings
- * 2026-10-28 (q160, q177, q244). Seeded randomness; no database.
+ * 2026-10-28 (q160, q177) and 2026-11-18 (q331). Seeded randomness; no database.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -10,9 +10,9 @@ import {
   growthItemTotal,
   growthRevealedCountForLevel,
   growthShowsForNextLevel,
+  groomGrowthBondPoints,
   revealRandomGrowthItems,
-  staffGrowthModifierBonus,
-  staffGrowthModifierEffectsEnabled,
+  riderGrowthPoints,
 } from '../constants/staffGrowth.mjs';
 
 function seeded(seed) {
@@ -103,8 +103,34 @@ describe('staff growth rules (Equoria-xlw03)', () => {
     });
   });
 
-  it('q244: the hidden items have no effect while the switch is off', () => {
-    expect(staffGrowthModifierEffectsEnabled).toBe(false);
-    expect(staffGrowthModifierBonus()).toBe(0);
+  // Old contract (q244, 2026-10-28): the hidden items had no effect while a switch was off.
+  // New owner ruling q331 (2026-11-18): they act, as flat points.
+  it("q331: a rider's items give +/-2 (discipline, temperament, breed) and +/-1 (trait)", () => {
+    const horse = { discipline: 'Dressage', temperament: 'Calm', breedId: 3, traitKeys: ['brave'] };
+    const one = (kind, value, sign = 'positive') => [{ kind, value, sign, revealed: false }];
+    expect(riderGrowthPoints(one('discipline', 'Dressage'), horse)).toBe(2);
+    expect(riderGrowthPoints(one('discipline', 'Dressage', 'negative'), horse)).toBe(-2);
+    expect(riderGrowthPoints(one('temperament', 'Calm'), horse)).toBe(2);
+    expect(riderGrowthPoints(one('temperament', 'Calm', 'negative'), horse)).toBe(-2);
+    expect(riderGrowthPoints(one('breed', 3), horse)).toBe(2);
+    expect(riderGrowthPoints(one('trait', 'brave'), horse)).toBe(1);
+    expect(riderGrowthPoints(one('trait', 'brave', 'negative'), horse)).toBe(-1);
+    expect(riderGrowthPoints(one('discipline', 'Racing'), horse)).toBe(0);
+    expect(riderGrowthPoints(one('temperament', 'Bold'), horse)).toBe(0);
+    expect(riderGrowthPoints(one('breed', 4), horse)).toBe(0);
+    expect(riderGrowthPoints(one('trait', 'aloof'), horse)).toBe(0);
+    expect(riderGrowthPoints(null, horse)).toBe(0);
+  });
+
+  it("q331: a groom's + temperament or favorite breed is +1 bond, a - temperament -1", () => {
+    const horse = { temperament: 'Calm', breedId: 3 };
+    const one = (kind, value, sign = 'positive') => [{ kind, value, sign, revealed: false }];
+    expect(groomGrowthBondPoints(one('temperament', 'Calm'), horse)).toBe(1);
+    expect(groomGrowthBondPoints(one('temperament', 'Calm', 'negative'), horse)).toBe(-1);
+    expect(groomGrowthBondPoints(one('breed', 3), horse)).toBe(1);
+    expect(groomGrowthBondPoints(one('temperament', 'Bold'), horse)).toBe(0);
+    expect(groomGrowthBondPoints(one('breed', 4), horse)).toBe(0);
+    expect(groomGrowthBondPoints(one('trait', 'brave'), horse)).toBe(0);
+    expect(groomGrowthBondPoints(one('discipline', 'Dressage'), horse)).toBe(0);
   });
 });
