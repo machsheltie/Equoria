@@ -47,7 +47,8 @@ request. The panel shows only tools the account holds.
 | `ticket.file`                                                  | yes       | —     | —     |
 | `ticket.resolve`, `log.view.all`                               | —         | yes   | yes   |
 | `ban.ip`, `ban.device`, `view.identity`                        | —         | yes   | yes   |
-| `roles.manage`, `jobs.hold`, `time-back`, `horse.admin`        | —         | yes   | yes   |
+| `roles.manage`, `horse.admin`                                  | —         | yes   | yes   |
+| `jobs.hold`, `time-back` (owner rulings q377/q378)             | —         | —     | yes   |
 | `news.post` (News, Equoria-wbt8l)                              | —         | yes   | yes   |
 | `shows.quarantine.view` (quarantined shows, Equoria-c7mx0.1)   | —         | yes   | yes   |
 | `traits.hidden.view` (hidden trait names)                      | —         | —     | yes   |
@@ -92,8 +93,9 @@ Owner ruling 2026-10-09: email codes, not text messages; remember the device.
   deleted 30 days after it expired or was revoked. A nightly job at 03:50
   Eastern does this. The permanent record of each check-in is its staff action
   log entry.
-- Applying or reversing a time-back always requires a fresh code.
-  The `time-back` and `jobs.hold` capabilities must not be mounted on any route until that fresh proof exists (STAFF-CR-06; `docs/features/admin-time-back.md`, "Blocking dependency").
+- Applying or reversing a time-back always requires a fresh, purpose-bound,
+  one-time emailed code (STAFF-CR-06, built 2026-11-18;
+  `docs/features/admin-time-back.md`, "Fresh-code proof").
 - Staff without a verified email cannot use staff tools; they can still play.
 - SMS was considered and declined (paid provider receives phone numbers; weakest
   2FA). It can be added later without changing this design.

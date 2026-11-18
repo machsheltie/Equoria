@@ -1,8 +1,9 @@
 # Outage Time-Back Contract
 
-- **Status:** Planned — owner-approved design (2026-10-06), not implemented
+- **Status:** Active contract — implemented 2026-11-18 (Equoria-puj1e.5) except
+  the owed weekly bank claims and the horse lookup (see "Not yet built")
 - **Owner:** Project owner (Stacey)
-- **Last verified:** 2026-10-06
+- **Last verified:** 2026-11-18
 - **Load only when:** designing, planning, implementing, or reviewing the admin
   "give time back after an outage" operation, the durable nightly-job hold, or
   the overdue-only foaling control
@@ -32,8 +33,10 @@ the 8-day world-wide foaling fast-forward does not.
 
 1. Game time froze at the outage start `S` and resumes at the end `E`; the pause
    length is `N = E − S`.
-2. Only the admin can apply or reverse a time-back, and only with MFA enrolled
-   and verified.
+2. Only the Owner can hold the jobs, apply or reverse a time-back (owner ruling
+   q377, 2026-11-18; moderators and admins never see the tools). Apply and
+   reverse each need one fresh emailed code at that moment (q378); no
+   authenticator app.
 3. A time-back applies only while nightly jobs are **held** (below).
 4. Apply and its record are one transaction: the change set and the
    `staff action` entry cannot disagree. Nothing changes if apply fails.
@@ -111,13 +114,11 @@ describes the code as surveyed on 2026-10-06 and must be re-checked against the
 Eastern migration before planning. Raw SQL must still bind instants with an
 explicit zone.
 
-## Blocking dependency: fresh-code proof (STAFF-CR-06)
+## Fresh-code proof (STAFF-CR-06)
 
-The staff foundation has no fresh-code proof. Its only primitive for `time-back`
-is the ordinary capability guard, which a device trusted for up to 30 days
-satisfies, so an apply or reverse endpoint built on it would accept a month-old
-check-in. This project must build the proof before any apply or reverse route
-exists:
+Built 2026-11-18 (`staffFreshCodeService.mjs`, `requireFreshStaffProof`). The
+ordinary capability guard alone, which a device trusted for up to 30 days
+satisfies, never authorizes apply or reverse:
 
 - A purpose-bound, one-time, short-lived fresh check-in proof, consumed
   atomically by apply and by reverse. It is not interchangeable with the 30-day
@@ -125,10 +126,12 @@ exists:
 - Invalidated by a password change, a verified-email change, or a role change.
 - A `requireFreshStaffProof` route guard in front of apply and reverse.
 
-Until it exists, the `time-back` and `jobs.hold` capabilities must not be
-mounted: `scripts/doctrine-checks/check-staff-routes-guarded.mjs` refuses any
-staff route guarded by either. Once the guard exists, relax that rule to "must
-be preceded by `requireFreshStaffProof`".
+`scripts/doctrine-checks/check-staff-routes-guarded.mjs` allows the two
+capabilities only in the staff routes, and requires `requireFreshStaffProof`
+directly after the guard of every `time-back` write except the route that sends
+the code. Holding the jobs needs only its capability (q378: a code at apply and
+undo, nothing else). A code is purpose-bound (`timeBackApply`, `timeBackUndo`):
+a browser check-in code or the other purpose's code never works.
 
 Regressions this project must provide: a trusted 30-day device alone cannot
 authorize apply or reverse; a fresh purpose-bound proof works once; replay,
@@ -140,14 +143,16 @@ The in-memory scheduler stop does not survive a restart, and `server.mjs` starts
 every scheduled job at boot in production, plus `showScheduler` every 10
 minutes. A hold must therefore be durable:
 
-- A single `GameControl` record (`jobsHeld`, `heldAt`, `heldBy`, `reason`) is
-  read at boot and before every run of **every** scheduled job — Registry A
-  (`services/jobs`), Registry B (`services/cron-job-service-jobs`) and
-  `showScheduler`. A held job records `skipped-held` and does nothing.
+- A single `GameControl` record (`jobsHeld`, `heldAt`, `heldById`, `reason`)
+  is read before every run of **every** scheduled job — Registry A
+  (`services/jobs`) and Registry B (`services/cron-job-service-jobs`) both run
+  through `CronJobMonitor.runWithHeartbeat`, which reads it. A held job records
+  `skipped-held` and does nothing. (`showScheduler` no longer exists: shows
+  settle only in the nightly run.)
 - Hold and release are admin actions recorded in the staff action log.
-- Registry B jobs, `showScheduler` and admin manual triggers must write
-  `CronRunLog` rows (today they do not), so the preview can name every run that
-  happened inside a window.
+- Both registries write `CronRunLog` rows. Of the admin manual triggers, only
+  "deliver overdue foals now" runs through the monitor (run log + hold); the
+  owner's "age every horse now" and the trait-evaluation trigger do not yet.
 
 ## Operation
 
@@ -156,13 +161,16 @@ minutes. A hold must therefore be durable:
 3. **Preview** — a dry run with no writes: counts per field, horses that
    un-retire, worked examples, and every job run inside the window with its
    irreversible effects.
-4. **Confirm** — the admin types the pause length and an MFA code; the
-   operation recomputes everything inside the apply transaction.
+4. **Give back** — the Owner asks for an emailed code and types it; the
+   operation recomputes everything inside the apply transaction. No confirm
+   page and no receipt (owner ruling 2026-10-26): the list of time-backs
+   changes on the page.
 5. **Release jobs.**
 
 **Reverse** restores recorded old values only where the field still holds the
 value the time-back wrote; values changed by play since then are left alone and
-listed. It needs MFA, is recorded and linked to the original, and runs once.
+listed. It needs its own fresh emailed code, is recorded and linked to the
+original, and runs once.
 
 **Irreversible effects** (named in the preview, never silently undone): shows
 already completed and paid, elections already closed, foals already born,
@@ -176,6 +184,16 @@ traits already revealed, payroll already charged.
   already past their due time foal. The fast-forward is removed.
 - **Horse lookup** by id or name shows owner, birth date, age, retired or not,
   pregnancy and due time, and foal development day.
+
+## Not yet built (2026-11-18)
+
+- The owed weekly bank claim for bank weeks fully inside an outage.
+- The horse lookup.
+- Fields added to the schema after the 2026-10-06 survey that drive play are
+  listed as `unruled` in `backend/modules/staff/services/timeBackClassification.mjs`
+  and are not moved until the owner rules (hunger, rider unpaid fees and
+  free-agent time, rider retirement notices, Hall of Fame rounds, a foal's last
+  development day).
 
 ## Tests the implementation must provide
 
