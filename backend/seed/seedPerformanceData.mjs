@@ -112,9 +112,9 @@ async function seedPerformanceHorses() {
   // breedStarterStats.json. Skips test-leftover breeds (e.g. "OWASP Test
   // Breed") that would cause generateStoreStats to throw.
   // Equoria-cfg6q: the gait/temperament generators read the DB breed cache
-  // (breeds.breedGeneticProfile), exactly as server.mjs does. Load it first,
-  // then keep only breeds the cache resolves AND that have starter stats.
-  assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
+  // (breeds.breedGeneticProfile), exactly as server.mjs does. seedPerformanceData
+  // loads it before any write; here keep only breeds the cache resolves AND that
+  // have starter stats.
   const hasBreedProfile = name => {
     try {
       getBreedProfile(name);
@@ -446,6 +446,11 @@ async function seedPerformanceData() {
   try {
     logger.info('🚀 Starting performance data seeding...');
     logger.info('=====================================');
+
+    // The horse generators read the DB breed cache; load it before the cleanup
+    // below deletes anything, and stop if there are no usable profiles
+    // (Equoria-cfg6q): run `npm run seed:breeds` first.
+    assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
 
     // Clean existing performance test data
     logger.info('🧹 Cleaning existing performance test data...');

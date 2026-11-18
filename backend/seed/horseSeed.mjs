@@ -399,15 +399,14 @@ async function main() {
 
     logger.info('[seed] Starting comprehensive seeding process...');
 
-    // Ensure some base users exist for general horse seeding if needed
-    await ensureReferencedRecordsExist();
-
     // seedHorses and seedUserWithHorses generate gait scores and temperaments from
     // the breed profile cache, which nothing fills outside the server
-    // (Equoria-cfg6q). Load it after ensureReferencedRecordsExist and stop before
-    // any horse is written if the database has no profiles: run
-    // `npm run seed:breeds` first.
+    // (Equoria-cfg6q). Load it before the first write and stop if the database has
+    // no usable profiles: run `npm run seed:breeds` first.
     assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
+
+    // Ensure some base users exist for general horse seeding if needed
+    await ensureReferencedRecordsExist();
 
     // Get some users to assign horses to, or create a default if none exist
     const usersToSeed = await prisma.user.findMany({ take: 2 });

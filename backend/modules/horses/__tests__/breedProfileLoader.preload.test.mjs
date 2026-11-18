@@ -78,6 +78,29 @@ describe('assertBreedProfilesLoaded — a server never boots on zero profiles (E
     expect(() => assertBreedProfilesLoaded(count)).toThrow(/npm run seed:breeds/);
   });
 
+  it('refuses a database whose only profiles carry an empty ratingProfiles', () => {
+    // Gait, temperament and conformation generation all reject such a profile, so
+    // counting it would let the server start with zero usable profiles.
+    const count = installBreedProfileRows([
+      { name: 'Hollow A', breedGeneticProfile: { ratingProfiles: {} } },
+      { name: 'Hollow B', breedGeneticProfile: { ratingProfiles: { conformation: {}, gaits: {} } } },
+    ]);
+    expect(count).toBe(0);
+    expect(countLoadedBreedProfiles()).toBe(0);
+    expect(() => assertBreedProfilesLoaded(count)).toThrow(/npm run seed:breeds/);
+  });
+
+  it('refuses a counts a complete profile and skips a hollow one beside it', async () => {
+    await preloadBreedProfiles(prisma);
+    const complete = getBreedProfile('Thoroughbred');
+    const count = installBreedProfileRows([
+      { name: 'Hollow', breedGeneticProfile: { ratingProfiles: {} } },
+      { name: 'Complete', breedGeneticProfile: complete },
+    ]);
+    expect(count).toBe(1);
+    expect(() => assertBreedProfilesLoaded(count)).not.toThrow();
+  });
+
   it('refuses a missing or non-numeric count', () => {
     expect(() => assertBreedProfilesLoaded(undefined)).toThrow(/no breed has a usable/);
     expect(() => assertBreedProfilesLoaded(Number.NaN)).toThrow(/no breed has a usable/);

@@ -399,12 +399,12 @@ async function main() {
   console.log('=== Equoria Dev Data Seed ===\n');
 
   try {
-    const breeds = await seedBreeds();
     // seedHorses generates gait scores and temperaments from the breed profile
     // cache, which nothing fills outside the server (Equoria-cfg6q). Load it
-    // after seedBreeds and stop before any user or horse row if the database has
-    // no profiles: run `npm run seed:breeds` first.
+    // before the first write and stop if the database has no usable profiles:
+    // run `npm run seed:breeds` first.
     assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
+    const breeds = await seedBreeds();
     const users = await seedUsers();
     await seedHorses(users, breeds);
     await seedShows();

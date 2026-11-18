@@ -19,6 +19,12 @@ async function seedUserWithHorses() {
   try {
     logger.info('🌱 Starting user and horse seeding...');
 
+    // Gait and temperament generation read the breed profile cache, which nothing
+    // fills outside the server (Equoria-cfg6q). Load it before any write and stop
+    // if the database has no usable profiles (run `npm run seed:breeds` first), so
+    // a failed run never leaves the test user behind without its horses.
+    assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
+
     // Check if test user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: 'test@example.com' },
@@ -55,11 +61,6 @@ async function seedUserWithHorses() {
     });
 
     logger.info(`✅ Created test user: ${testUser.username} (ID: ${testUser.id})`);
-
-    // Gait and temperament generation read the breed profile cache, which nothing
-    // fills outside the server (Equoria-cfg6q). Load it before the first write and
-    // stop if the database has no profiles: run `npm run seed:breeds` first.
-    assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));
 
     // Ensure we have a breed
     let breed = await prisma.breed.findFirst();

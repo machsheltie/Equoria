@@ -23,15 +23,22 @@
  * @module modules/horses/data/breedProfileCache
  */
 
+// The runtime profile validator is the one definition of a complete profile
+// (8 conformation regions, 4 gaits, gaited registry, 12 temperament weights): the
+// same shape conformationService, gaitService and temperamentService require.
+// It imports nothing, so the no-imports rule above still holds.
+import { validateProfile } from '../../../seed/breedProfileValidator.mjs';
+
 const cacheKey = '__equoriaBreedProfileCache';
 
 /**
  * Replace the cache with the profiles in `rows` ({ name, breedGeneticProfile }).
  *
- * Rows whose `breedGeneticProfile` is null, a primitive, an array, or missing
- * `ratingProfiles` are skipped: every cached profile must have the full
- * conformation/gait/temperament shape, so a malformed DB row is treated as
- * absent rather than served.
+ * Rows whose `breedGeneticProfile` is null, a primitive, an array, or fails
+ * validateProfile (breedProfileValidator.mjs) are skipped: every cached profile
+ * must have the full conformation/gait/temperament shape the generators demand,
+ * so a malformed DB row is treated as absent rather than served, and the
+ * returned count is the number of usable profiles (Equoria-cfg6q).
  *
  * @param {Array<{ name: string, breedGeneticProfile: unknown }>} rows
  * @returns {number} count of breeds in the cache
@@ -46,13 +53,13 @@ export function installBreedProfileRows(rows) {
     const p = r.breedGeneticProfile;
     // Four-part JSONB guard (CONTRIBUTING.md "JSONB type guard"): typeof null
     // is 'object' and typeof [] is 'object', so we must exclude both
-    // explicitly. Profiles without ratingProfiles are useless to consumers.
+    // explicitly. A profile the generators would reject is useless to consumers.
     if (
       p !== null &&
       p !== undefined &&
       typeof p === 'object' &&
       !Array.isArray(p) &&
-      p.ratingProfiles
+      validateProfile(r.name, p).length === 0
     ) {
       next.set(r.name, p);
     }

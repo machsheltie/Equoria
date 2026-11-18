@@ -67,6 +67,26 @@ export function findMissingPreload(source) {
   return null;
 }
 
+// Returns the first write, delete or seeding step that runs inside `functionName`
+// before assertBreedProfilesLoaded(), or null when the guard comes first. A guard
+// placed after a write leaves half a seed behind when the database has no usable
+// profiles (userSeed created its user, then threw; the rerun skipped the horses).
+export function findWriteBeforeGuard(source, functionName) {
+  const start = source.search(new RegExp(`async function ${functionName}\\(`));
+  if (start === -1) {
+    return `function ${functionName} not found`;
+  }
+  const guard = source.indexOf('assertBreedProfilesLoaded(', start);
+  if (guard === -1) {
+    return `${functionName} never asserts the count`;
+  }
+  const before = source.slice(start, guard);
+  const write = before.match(
+    /prisma\.\w+\.(create|createMany|upsert|update|updateMany|delete|deleteMany)\(|await\s+(seed|ensure)\w+\(/,
+  );
+  return write ? write[0] : null;
+}
+
 function listEntryPoints() {
   const files = [];
   for (const dir of ['seed', 'scripts']) {
@@ -113,5 +133,27 @@ describe('seed and script entry points load the breed profile cache (Equoria-cfg
     }
     expect(checked).toBeGreaterThan(0);
     expect(problems).toEqual([]);
+  });
+});
+
+describe('seed entry points guard before they write (Equoria-cfg6q)', () => {
+  test('detector fires on a planted write-before-guard', () => {
+    const planted =
+      'async function run() {\n  await prisma.user.create({});\n  assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));\n}\n';
+    expect(findWriteBeforeGuard(planted, 'run')).toMatch(/prisma\.user\.create\(/);
+    const ok =
+      'async function run() {\n  assertBreedProfilesLoaded(await preloadBreedProfiles(prisma));\n  await prisma.user.create({});\n}\n';
+    expect(findWriteBeforeGuard(ok, 'run')).toBeNull();
+  });
+
+  test.each([
+    ['seed/userSeed.mjs', 'seedUserWithHorses'],
+    ['seed/seedDevData.mjs', 'main'],
+    ['seed/horseSeed.mjs', 'main'],
+    ['seed/seedPerformanceData.mjs', 'seedPerformanceData'],
+    ['scripts/createTestData.mjs', 'createTestData'],
+  ])('%s asserts usable profiles before its first write', (relative, functionName) => {
+    const source = fs.readFileSync(path.join(backendRoot, relative), 'utf8');
+    expect(findWriteBeforeGuard(source, functionName)).toBeNull();
   });
 });
