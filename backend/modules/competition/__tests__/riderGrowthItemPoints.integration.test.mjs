@@ -98,6 +98,30 @@ describe("a rider's hidden items at a show (scorer)", () => {
     expect(elsewhere.breakdown.riderItemPoints).toBe(0);
   });
 
+  it('a show in a legacy discipline still gives the discipline-independent items their points', () => {
+    // Codex 2026-11-18: a legacy discipline keeps the flat 5-stat average, but the
+    // favorite breed, temperament and trait items do not depend on the discipline.
+    const legacy = 'Obedience Training';
+    const legacyHorse = { ...horse, temperament: horseTemperamentValues[0] };
+    const scoreLegacy = items =>
+      scoreShowEntries({
+        show: { id: 0, discipline: legacy },
+        entries: [{ horseId: 1, horse: legacyHorse }],
+        assignmentByHorseId: new Map([[1, { riderId: 9, rider: null }]]),
+        riderItemsByRiderId: new Map([[9, items]]),
+        rng: luckTen,
+      })[0];
+    expect(scoreLegacy([]).score).toBe(110);
+    const breed = scoreLegacy([item('breed', 7)]);
+    expect(breed.breakdown.riderItemPoints).toBe(2);
+    // (100 + 2) x 1.10 = 112.2 -> 112
+    expect(breed.score).toBe(112);
+    expect(scoreLegacy([item('temperament', horseTemperamentValues[0])]).breakdown.riderItemPoints).toBe(2);
+    expect(scoreLegacy([item('trait', 'brave', 'negative')]).breakdown.riderItemPoints).toBe(-1);
+    // The discipline items still need a discipline they can match.
+    expect(scoreLegacy([item('discipline', showDiscipline)]).breakdown.riderItemPoints).toBe(0);
+  });
+
   it('a + temperament item is +2 and a - one is -2 for a horse of that temperament', () => {
     const own = neutralTemperament(showDiscipline);
     const plus = scoreWith([item('temperament', own)]);

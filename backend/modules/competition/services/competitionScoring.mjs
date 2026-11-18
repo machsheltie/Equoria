@@ -214,9 +214,11 @@ export function scoreShowEntries({
     // Owner ruling q331 (Equoria-xlw03): the rider's hidden discipline, temperament,
     // favorite-breed and trait items add or take flat points, hidden or revealed alike,
     // like tack. A horse's own hidden traits have no effect, so only the traits it shows
-    // count. A legacy discipline keeps its pre-B4a scoring and gets none.
+    // count. Only the discipline items depend on the show: favorite breed, temperament and
+    // trait items apply in a legacy discipline too (it keeps its flat 5-stat base, and a
+    // discipline item cannot match a discipline that is not one of the 24).
     const riderItemPoints =
-      weighted && assignment?.riderId !== undefined
+      assignment?.riderId !== undefined
         ? riderGrowthPoints(riderItemsByRiderId.get(assignment.riderId), {
             discipline: show.discipline,
             temperament: h.temperament,
