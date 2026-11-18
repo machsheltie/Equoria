@@ -36,6 +36,9 @@ const MODERATOR = [
   'rename',
   'post.moderate',
   'post.review',
+  // Owner ruling q382 (2026-11-18, Equoria-puj1e.3): players' reports of forum posts
+  // go to the moderators, who resolve or dismiss them.
+  'report.review',
   'ticket.file',
   'log.view.own',
 ];
@@ -55,6 +58,9 @@ const adminOnly = [
   // Equoria-x5n89 (owner rulings q123-q125): which accounts share a device, and the
   // internet addresses seen with more than four accounts. Never moderators or players.
   'accounts.linked.view',
+  // Owner ruling q381 (2026-11-18, Equoria-puj1e.3): only the Owner and Admins add or
+  // remove words on the forum's blocked-word and review-word lists. Never moderators.
+  'words.manage',
 ];
 const ownerOnly = [
   // Owner ruling q76 (2026-10-26, Equoria-i1hgt): only the owner manages ALL staff

@@ -69,6 +69,8 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   forumThreads            ForumThread[]            @relation("ForumThreads")
   forumPosts              ForumPost[]              @relation("ForumPosts")
+  /// Equoria-puj1e.3 (owner ruling q382): forum posts this player reported.
+  forumReports            ForumReport[]            @relation("ForumReportsFiled")
   sentMessages            DirectMessage[]          @relation("SentMessages")
   receivedMessages        DirectMessage[]          @relation("ReceivedMessages")
   clubsLed                Club[]                   @relation("ClubsLed")
@@ -1855,6 +1857,8 @@ model ForumPost {
   /// Equoria-puj1e.3 (owner ruling q376): published | held. A held post is shown
   /// only to its author, marked as awaiting a moderator, until a moderator accepts it.
   status    String      @default("published")
+  /// Equoria-puj1e.3 (owner ruling q382): players' reports of this post.
+  reports   ForumReport[]
 
   /// Equoria-bvddn.23: FK index for thread-page post lookups.
   @@index([threadId])
@@ -1862,6 +1866,50 @@ model ForumPost {
   @@index([status, createdAt])
   /// Equoria-lffdv: the author's posts (profile page, account erasure).
   @@index([authorId])
+}
+
+/// Equoria-puj1e.3 (owner rulings q375, q380, q381): the forum's word lists, kept by
+/// the Owner and Admins in the Steward's Office (moderators cannot change them).
+/// list: blocked (a post containing the word is refused) | review (the post is
+/// held for a moderator). A word is stored lowercased with single spaces and
+/// matches only as a whole word, ignoring capitals (q380). Who added or removed a
+/// word is in the staff log.
+model ForumWord {
+  id        Int      @id @default(autoincrement())
+  list      String
+  word      String
+  createdAt DateTime @default(now())
+
+  @@unique([list, word])
+  @@map("forum_words")
+}
+
+/// Equoria-puj1e.3 (owner ruling q382): a player's report of someone else's forum
+/// post, for the moderators in the Steward's Office.
+/// reason: rudeOrBullying | spamOrSelling | personalInformation | other (with a note).
+/// status: open | resolved | dismissed. One OPEN report per player per post is a
+/// partial unique index in migration 20261118200000_forum_word_lists_and_reports
+/// (Prisma cannot express a partial index; see the kccmt note on Horse). Who decided
+/// a report, and why, is in the staff log; decidedById has no foreign key so the
+/// row outlives a steward's account, as the log does.
+model ForumReport {
+  id          Int       @id @default(autoincrement())
+  postId      Int
+  post        ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reporterId  String
+  reporter    User      @relation("ForumReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  reason      String
+  note        String?
+  status      String    @default("open")
+  createdAt   DateTime  @default(now())
+  decidedAt   DateTime?
+  decidedById String?
+
+  /// The moderators' list of open reports, oldest first.
+  @@index([status, createdAt])
+  @@index([postId])
+  @@index([reporterId])
+  @@map("forum_reports")
 }
 
 model DirectMessage {

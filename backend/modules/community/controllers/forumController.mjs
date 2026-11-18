@@ -26,7 +26,13 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 import { publishUserEvent } from '../../../services/eventBus.mjs';
 // Equoria-puj1e.3 (owner ruling q375): a steward's posting cooldown stops new threads
 // and replies until it ends.
-import { postingCooldownRefusal, postingCooldownUntil } from '../../staff/index.mjs';
+// Owner rulings q380/q381: a blocked word refuses the post; a review word holds it.
+import {
+  blockedWordRefusal,
+  forumWordVerdict,
+  postingCooldownRefusal,
+  postingCooldownUntil,
+} from '../../staff/index.mjs';
 
 /** In-memory dedup map: key = `${userId}:${threadId}`, value = timestamp of last view increment */
 const _viewLog = new Map();
@@ -45,6 +51,20 @@ const visibleTo = viewerId =>
   typeof viewerId === 'string' && viewerId !== ''
     ? { OR: [{ status: 'published' }, { authorId: viewerId }] }
     : { status: 'published' };
+
+/**
+ * Ask the word lists about a new thread or reply (Equoria-puj1e.3, q380). Answers
+ * the refusal and returns null for a blocked word (the player is never told which);
+ * otherwise returns the status to save: 'held' for a review word, else 'published'.
+ */
+async function statusForWords(res, texts) {
+  const verdict = await forumWordVerdict(prisma, texts);
+  if (verdict === 'blocked') {
+    res.status(blockedWordRefusal.status).json(blockedWordRefusal.body);
+    return null;
+  }
+  return verdict === 'review' ? 'held' : 'published';
+}
 
 /** Refuse when the author is on a posting cooldown; returns true when it answered. */
 async function refusedForCooldown(res, authorId) {
@@ -163,7 +183,17 @@ export async function getThread(req, res) {
     }
 
     const { posts, ...threadData } = thread;
-    return res.json({ success: true, data: { thread: threadData, posts } });
+    // q382: the viewer's own open reports, so a post they reported says so.
+    const reported =
+      typeof viewerId === 'string' && viewerId !== '' && posts.length > 0
+        ? await prisma.forumReport.findMany({
+            where: { reporterId: viewerId, status: 'open', postId: { in: posts.map(p => p.id) } },
+            select: { postId: true },
+          })
+        : [];
+    const reportedIds = new Set(reported.map(r => r.postId));
+    const shaped = posts.map(p => ({ ...p, reportedByMe: reportedIds.has(p.id) }));
+    return res.json({ success: true, data: { thread: threadData, posts: shaped } });
   } catch (error) {
     logger.error(`[forumController.getThread] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to fetch thread' });
@@ -183,15 +213,23 @@ export async function createThread(req, res) {
     if (await refusedForCooldown(res, authorId)) {
       return undefined;
     }
+    const status = await statusForWords(res, [
+      title,
+      content,
+      ...(Array.isArray(tags) ? tags : []),
+    ]);
+    if (status === null) {
+      return undefined;
+    }
     // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503 (catch honours error.status).
     const [thread, firstPost] = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
         const t = await tx.forumThread.create({
-          data: { section, title, authorId, tags },
+          data: { section, title, authorId, tags, status },
           include: { author: { select: { id: true, username: true } } },
         });
         const p = await tx.forumPost.create({
-          data: { threadId: t.id, authorId, content },
+          data: { threadId: t.id, authorId, content, status },
           include: { author: { select: { id: true, username: true } } },
         });
         return [t, p];
@@ -234,16 +272,25 @@ export async function createPost(req, res) {
     if (!thread || (thread.status === 'held' && thread.authorId !== authorId)) {
       return res.status(404).json({ success: false, message: 'Thread not found' });
     }
+    const status = await statusForWords(res, [content]);
+    if (status === null) {
+      return undefined;
+    }
 
+    // A held reply is not activity yet: accepting it bumps the thread (q376).
     const [post] = await prisma.$transaction([
       prisma.forumPost.create({
-        data: { threadId, authorId, content },
+        data: { threadId, authorId, content, status },
         include: { author: { select: { id: true, username: true } } },
       }),
-      prisma.forumThread.update({
-        where: { id: threadId },
-        data: { lastActivityAt: new Date() },
-      }),
+      ...(status === 'published'
+        ? [
+            prisma.forumThread.update({
+              where: { id: threadId },
+              data: { lastActivityAt: new Date() },
+            }),
+          ]
+        : []),
     ]);
 
     // Equoria-pwwuz (ADR-011): real-time receipt to the thread author AFTER the
@@ -251,7 +298,8 @@ export async function createPost(req, res) {
     // Only fire when the replier is NOT the thread author (no self-notify).
     // publishUserEvent never throws, but guard anyway so a future change cannot
     // couple the reply write to bus delivery.
-    if (thread.authorId && thread.authorId !== authorId) {
+    // Nobody else hears of a held reply until a moderator accepts it.
+    if (status === 'published' && thread.authorId && thread.authorId !== authorId) {
       try {
         publishUserEvent(thread.authorId, 'forumReply', {
           threadId,

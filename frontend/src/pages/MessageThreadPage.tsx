@@ -24,6 +24,7 @@ import { GameBadge } from '@/components/ui/game';
 import { Textarea } from '@/components/ui/form';
 import { Skeleton, ErrorState, InlineError } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
+import { PostReport } from '@/components/forum/PostReport';
 import { PostStewardTools } from '@/components/forum/PostStewardTools';
 import { forumPostErrorMessage, heldLabel } from '@/components/forum/forumModeration';
 import { useOptionalAuth } from '@/contexts/AuthContext';
@@ -47,8 +48,10 @@ const PostCard: React.FC<{
   isFirst: boolean;
   /** Stewards other than the author get the moderation tools (the server re-checks). */
   canModerate: boolean;
+  /** A signed-in player reading someone else's published post may report it (q382). */
+  canReport: boolean;
   onRemoved: (removed: 'post' | 'thread') => void;
-}> = ({ post, isFirst, canModerate, onRemoved }) => (
+}> = ({ post, isFirst, canModerate, canReport, onRemoved }) => (
   <Surface
     variant="panel"
     className={isFirst ? 'border-[var(--role-accent-border)]' : undefined}
@@ -84,6 +87,13 @@ const PostCard: React.FC<{
         <p className="text-sm text-role-secondary leading-relaxed whitespace-pre-wrap break-words">
           {post.content}
         </p>
+        {canReport && (
+          <PostReport
+            threadId={post.threadId}
+            postId={post.id}
+            reported={post.reportedByMe === true}
+          />
+        )}
         {canModerate && (
           <PostStewardTools
             key={post.content}
@@ -234,6 +244,9 @@ const MessageThreadPage: React.FC = () => {
                 post={post}
                 isFirst={idx === 0}
                 canModerate={isSteward && post.author.id !== viewerId}
+                canReport={
+                  viewerId !== undefined && post.author.id !== viewerId && post.status !== 'held'
+                }
                 onRemoved={onRemoved}
               />
             ))}

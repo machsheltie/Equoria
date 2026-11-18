@@ -7,10 +7,12 @@
  *   - useCreateThread()             → mutation(CreateThreadRequest)
  *   - useCreatePost()               → mutation({ threadId, content })
  *   - useIncrementView()            → mutation(threadId)
+ *   - useReportPost()               → mutation({ threadId, postId, reason, note? })
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { forumApi, ForumSection, CreateThreadRequest } from '@/lib/api-client';
+import type { ForumReportReason } from '@/lib/api/forum';
 
 /** Threads stay fresh for 60 s — active board, but no need to hammer the API */
 const threadsStaleTime = 60_000;
@@ -73,6 +75,23 @@ export function useCreatePost() {
   return useMutation({
     mutationFn: ({ threadId, content }: { threadId: number; content: string }) =>
       forumApi.createPost(threadId, content),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['forum', 'thread', variables.threadId] });
+    },
+  });
+}
+
+/** q382: report a post; the thread refetches so the post shows it was reported. */
+export function useReportPost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (args: {
+      threadId: number;
+      postId: number;
+      reason: ForumReportReason;
+      note?: string;
+    }) => forumApi.reportPost(args.postId, args.reason, args.note),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['forum', 'thread', variables.threadId] });
     },

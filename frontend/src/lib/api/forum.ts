@@ -52,7 +52,26 @@ export interface ForumPost {
   content: string;
   createdAt: string;
   status?: ForumStatus;
+  /** q382: the viewer has an open report on this post. */
+  reportedByMe?: boolean;
 }
+
+/**
+ * Owner ruling q382 (Equoria-puj1e.3): why a player reports a post. Other needs a
+ * note. Stored values; players see the labels in components/forum/forumModeration.ts.
+ */
+export type ForumReportReason =
+  | 'rudeOrBullying'
+  | 'spamOrSelling'
+  | 'personalInformation'
+  | 'other';
+
+export const forumReportReasons: readonly ForumReportReason[] = [
+  'rudeOrBullying',
+  'spamOrSelling',
+  'personalInformation',
+  'other',
+] as const;
 
 export interface ThreadsResponse {
   threads: ForumThread[];
@@ -86,6 +105,12 @@ export const forumApi = {
 
   createPost: (threadId: number, content: string) =>
     apiClient.post<{ post: ForumPost }>(`/api/v1/forum/threads/${threadId}/posts`, { content }),
+
+  reportPost: (postId: number, reason: ForumReportReason, note?: string) =>
+    apiClient.post<{ postId: number; reportedByMe: true }>(
+      `/api/v1/forum/posts/${postId}/report`,
+      note === undefined ? { reason } : { reason, note }
+    ),
 
   incrementView: (threadId: number) =>
     apiClient.post<Record<string, never>>(`/api/v1/forum/threads/${threadId}/view`, {}),

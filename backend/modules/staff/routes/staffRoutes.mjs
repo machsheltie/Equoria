@@ -59,6 +59,16 @@ import {
   removePost,
 } from '../controllers/staffForumController.mjs';
 import {
+  addForumWord,
+  listForumWords,
+  removeForumWord,
+} from '../controllers/staffForumWordsController.mjs';
+import {
+  dismissForumReport,
+  listForumReports,
+  resolveForumReport,
+} from '../controllers/staffForumReportsController.mjs';
+import {
   getFlaggedAddresses,
   getLinkedAccounts,
   getLoginHistory,
@@ -162,6 +172,26 @@ router.post('/forum/posts/:postId/remove', requireStaffCapability('post.moderate
 router.get('/forum/held', requireStaffCapability('post.review'), listHeldPosts);
 router.post('/forum/held/:postId/accept', requireStaffCapability('post.review'), acceptHeldPost);
 router.post('/forum/held/:postId/reject', requireStaffCapability('post.review'), rejectHeldPost);
+
+// The forum's word lists (Equoria-puj1e.3, owner rulings q380/q381): the Owner and
+// Admins only; whole words, ignoring capitals. Blocked refuses, review holds.
+router.get('/forum/words', requireStaffCapability('words.manage'), listForumWords);
+router.post('/forum/words', requireStaffCapability('words.manage'), addForumWord);
+router.post('/forum/words/:wordId/remove', requireStaffCapability('words.manage'), removeForumWord);
+
+// Players' reports of forum posts (Equoria-puj1e.3, owner ruling q382): moderators,
+// admins and the owner resolve or dismiss each open report.
+router.get('/forum/reports', requireStaffCapability('report.review'), listForumReports);
+router.post(
+  '/forum/reports/:reportId/resolve',
+  requireStaffCapability('report.review'),
+  resolveForumReport,
+);
+router.post(
+  '/forum/reports/:reportId/dismiss',
+  requireStaffCapability('report.review'),
+  dismissForumReport,
+);
 
 // Tickets: moderators file; both roles read and reply (a moderator only on
 // their own); only the admin changes status. Capability lists stay inline

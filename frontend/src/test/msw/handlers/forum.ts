@@ -168,4 +168,12 @@ export const forumHandlers = [
   http.get(`${base}/api/v1/staff/forum/held`, () =>
     HttpResponse.json({ posts: [], nextAfter: null })
   ),
+  // Equoria-puj1e.3 (q381/q382): reported posts (report.review) and the word lists
+  // (words.manage). Empty by default; a test that cares stubs its own.
+  http.get(`${base}/api/v1/staff/forum/reports`, () =>
+    HttpResponse.json({ reports: [], nextAfter: null })
+  ),
+  http.get(`${base}/api/v1/staff/forum/words`, () =>
+    HttpResponse.json({ blocked: [], review: [] })
+  ),
 ];

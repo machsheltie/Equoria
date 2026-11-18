@@ -24,6 +24,8 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import StaffActionLog from '@/components/staff/StaffActionLog';
 import StaffCheckIn from '@/components/staff/StaffCheckIn';
 import StaffConduct from '@/components/staff/StaffConduct';
+import StaffForumReports from '@/components/staff/StaffForumReports';
+import StaffForumWords from '@/components/staff/StaffForumWords';
 import StaffHeldPosts from '@/components/staff/StaffHeldPosts';
 import StaffHorseAges from '@/components/staff/StaffHorseAges';
 import StaffOutage from '@/components/staff/StaffOutage';
@@ -95,6 +97,8 @@ export default function StewardsOfficePage() {
             />
           )}
           {can('post.review') && <StaffHeldPosts onCheckinRequired={onCheckinRequired} />}
+          {can('report.review') && <StaffForumReports onCheckinRequired={onCheckinRequired} />}
+          {can('words.manage') && <StaffForumWords onCheckinRequired={onCheckinRequired} />}
           {can('rename') && <StaffRenames onCheckinRequired={onCheckinRequired} />}
           {can('accounts.linked.view') && (
             <StaffFlaggedAddresses onCheckinRequired={onCheckinRequired} />

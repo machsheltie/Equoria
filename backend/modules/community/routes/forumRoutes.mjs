@@ -8,6 +8,7 @@
  *   POST   /threads/:id/posts    → reply
  *   POST   /threads/:id/view     → increment view count
  *   PATCH  /threads/:id/pin      → toggle pin (admin only)
+ *   POST   /posts/:postId/report → report someone else's post (q382)
  */
 
 import express from 'express';
@@ -22,6 +23,7 @@ import {
   incrementView,
   pinThread,
 } from '../controllers/forumController.mjs';
+import { reportPost } from '../controllers/forumReportController.mjs';
 
 const router = express.Router();
 
@@ -89,6 +91,10 @@ router.post(
 );
 
 router.post('/threads/:id/view', incrementView);
+
+// Equoria-puj1e.3 (owner ruling q382): a player reports someone else's post to the
+// moderators. The controller checks the reason, the note and the post itself.
+router.post('/posts/:postId/report', reportPost);
 
 // Admin-only pin toggle.
 router.patch('/threads/:id/pin', requireRole('admin'), requireStaffCheckin('admin'), pinThread);

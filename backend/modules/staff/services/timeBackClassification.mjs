@@ -149,6 +149,10 @@ export const neverMovedFields = Object.freeze([
   'ForumThread.lastActivityAt',
   'ForumThread.createdAt',
   'ForumPost.createdAt',
+  // Equoria-puj1e.3 (q381/q382): word-list entries and post reports are records.
+  'ForumWord.createdAt',
+  'ForumReport.createdAt',
+  'ForumReport.decidedAt',
   'DirectMessage.createdAt',
   'Club.createdAt',
   'ClubMembership.joinedAt',

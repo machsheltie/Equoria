@@ -1,0 +1,59 @@
+/*
+ * Forum post report (Equoria-puj1e.3, owner ruling q382).
+ * A quiet disclosure under a post: four reasons as real radio choices, a note for
+ * Other, then send. Tokens only (DESIGN.md "Forms, Tables, Filters").
+ */
+
+.forum-report {
+  margin-top: var(--space-3);
+}
+
+.forum-report-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--alpha-gold-primary-10);
+}
+
+.forum-report-reasons {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.forum-report-reasons legend {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.forum-report-reason {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.forum-report-reason input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--gold-primary);
+}
+
+.forum-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.forum-report-done {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}

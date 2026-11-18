@@ -107,6 +107,13 @@ const targetWords: Record<string, string> = {
   device: 'a browser',
   groom: 'groom',
   rider: 'rider',
+  report: 'report',
+};
+
+/** The two forum word lists, in the ledger's words (Equoria-puj1e.3, q381). */
+const wordListWords: Record<string, string> = {
+  blocked: 'the blocked words',
+  review: 'the review words',
 };
 
 function targetText(entry: StaffLogEntry, nameOf: NameOf): string {
@@ -183,6 +190,19 @@ function describeEntry(
         return `${actor} test ran the failed payroll of ${target}`;
       }
       return `${actor} re-ran the failed payroll of ${target}`;
+    case 'words.manage': {
+      const before = entry.before ?? {};
+      const list = wordListWords[String(after.list ?? before.list)] ?? 'a word list';
+      if (after.removed === true) {
+        return `${actor} removed “${String(before.word ?? '')}” from ${list}`;
+      }
+      return `${actor} added “${String(after.word ?? '')}” to ${list}`;
+    }
+    case 'report.review':
+      if (after.status === 'resolved') {
+        return `${actor} resolved forum ${target}`;
+      }
+      return `${actor} dismissed forum ${target}`;
     default:
       // A staff tool the ledger has no sentence for yet: never show its stored code.
       return `${actor} took a staff action on ${target}`;

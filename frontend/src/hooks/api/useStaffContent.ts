@@ -5,11 +5,17 @@
  * the thread a steward is reading shows the change at once.
  */
 
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { staffContentApi } from '@/lib/api/staffContent';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  staffContentApi,
+  type ForumReportDecision,
+  type ForumWordList,
+} from '@/lib/api/staffContent';
 import { staffKeys } from './useStaff';
 
 export const heldPostsKey = ['staff', 'forum-held'] as const;
+export const forumWordsKey = ['staff', 'forum-words'] as const;
+export const forumReportsKey = ['staff', 'forum-reports'] as const;
 const forumKey = ['forum'] as const;
 
 function useRefresh() {
@@ -19,6 +25,7 @@ function useRefresh() {
     if (alsoForum) {
       queryClient.invalidateQueries({ queryKey: forumKey });
       queryClient.invalidateQueries({ queryKey: heldPostsKey });
+      queryClient.invalidateQueries({ queryKey: forumReportsKey });
     }
   };
 }
@@ -99,5 +106,57 @@ export function useDecideHeldPost() {
         ? staffContentApi.acceptPost(args.postId)
         : staffContentApi.rejectPost(args.postId, args.reason ?? ''),
     onSuccess: () => refresh(true),
+  });
+}
+
+/** q381: the forum's word lists (the Owner and Admins). */
+export function useForumWords() {
+  return useQuery({ queryKey: forumWordsKey, queryFn: () => staffContentApi.forumWords() });
+}
+
+function useWordsRefresh() {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: staffKeys.log });
+    queryClient.invalidateQueries({ queryKey: forumWordsKey });
+  };
+}
+
+export function useAddForumWord() {
+  const refresh = useWordsRefresh();
+  return useMutation({
+    mutationFn: (args: { list: ForumWordList; word: string }) =>
+      staffContentApi.addForumWord(args.list, args.word),
+    onSuccess: refresh,
+  });
+}
+
+export function useRemoveForumWord() {
+  const refresh = useWordsRefresh();
+  return useMutation({
+    mutationFn: (wordId: number) => staffContentApi.removeForumWord(wordId),
+    onSuccess: refresh,
+  });
+}
+
+/** q382: players' open reports of forum posts, oldest first. */
+export function useForumReports() {
+  return useInfiniteQuery({
+    queryKey: forumReportsKey,
+    queryFn: ({ pageParam }) => staffContentApi.forumReports(pageParam),
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextAfter ?? undefined,
+  });
+}
+
+export function useDecideForumReport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { reportId: number; decision: ForumReportDecision; reason?: string }) =>
+      staffContentApi.decideForumReport(args.reportId, args.decision, args.reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.log });
+      queryClient.invalidateQueries({ queryKey: forumReportsKey });
+    },
   });
 }

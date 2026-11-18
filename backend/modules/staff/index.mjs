@@ -31,6 +31,9 @@ export { registerQuarantinedShowTools } from './services/quarantinedShowToolsPor
 export { registerGroomPayrollRun } from './services/groomPayrollPort.mjs';
 // Equoria-puj1e.3: a steward's horse rename asks the horses module's name rule by port.
 export { registerHorseNameRule } from './services/contentRulesPort.mjs';
+// Equoria-puj1e.3 (owner rulings q380/q381): the forum asks the word lists whether a
+// new thread or reply is refused (blocked) or held for a moderator (review).
+export { blockedWordRefusal, forumWordVerdict } from './services/forumWordService.mjs';
 // Equoria-brh8c: payroll failures are recorded by the grooms and riders modules and
 // re-run through a port the app layer fills (staff cannot import either module).
 export { recordPayrollFailure } from './services/payrollFailureLog.mjs';
