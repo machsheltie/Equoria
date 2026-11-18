@@ -46,8 +46,6 @@ const adminOnly = [
   // Owner ruling q101 (2026-10-26, Equoria-w47x7): the Owner and Admins lift any
   // freeze or ban early; moderators cannot undo.
   'conduct.lift',
-  'jobs.hold',
-  'time-back',
   'horse.admin',
   'news.post',
   'news.adminLetter',
@@ -86,6 +84,11 @@ const ownerOnly = [
   // horse's age (set one horse's age; age every horse now) are kept for the Owner
   // alone, in the Steward's Office. Their routes are gated requireRole('owner').
   'horses.age.set',
+  // Owner rulings q377/q378 (2026-11-18, Equoria-puj1e.5): holding the nightly jobs
+  // and giving outage time back are the owner's alone; moderators and admins never
+  // see them. Apply and undo also need a fresh emailed code each time.
+  'jobs.hold',
+  'time-back',
 ];
 
 // Private and frozen (STAFF-CR-12): no importer can reach a mutable copy of

@@ -43,3 +43,5 @@ export {
 export { hasStaffCheckin, requireStaffCheckin } from './middleware/requireStaffCheckin.mjs';
 export { purgeStaleStaffCheckinRecords } from './services/staffCheckinRetentionService.mjs';
 export { purgeSettledEmails, runEmailOutbox } from './services/ticketEmailOutbox.mjs';
+// Equoria-puj1e.5 (owner ruling q377): every scheduled job reads the durable hold.
+export { isJobsHeld } from './services/jobHoldService.mjs';

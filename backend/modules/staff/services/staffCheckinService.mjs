@@ -38,6 +38,12 @@ export const checkinMaxAttempts = 5;
 export const checkinRequestLimit = 3;
 export const checkinRequestWindowMs = 15 * 60 * 1000;
 export const trustedDeviceTtlMs = 30 * 24 * 60 * 60 * 1000;
+/**
+ * The browser check-in's code purpose. Fresh one-time codes for a single owner
+ * action carry another purpose (staffFreshCodeService.mjs, Equoria-puj1e.5) and
+ * never count here: neither kind can stand in for the other.
+ */
+export const checkinPurpose = 'checkin';
 /** The check-in cookie (camelCase since Equoria-pjvp8.7). */
 export const staffDeviceCookie = 'staffDevice';
 
@@ -140,7 +146,7 @@ export async function isTrustedDevice(account, rawToken, now = new Date()) {
  * (staffChallengeRetirement.mjs), so the two serialize.
  * @returns {Promise<object|null>} fresh account, or null when it is gone
  */
-async function lockAccountTx(tx, userId) {
+export async function lockAccountTx(tx, userId) {
   await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
   return tx.user.findUnique({
     where: { id: userId },
@@ -156,11 +162,11 @@ async function lockAccountTx(tx, userId) {
 }
 
 /** Whether the locked account may still check in at all. */
-const mayCheckIn = account =>
+export const mayCheckIn = account =>
   Boolean(account) && isStaffRole(account.role) && account.emailVerified === true;
 
 /** A code issued at or before the last password or email change is void. */
-function issuedUnderCurrentState(account, code) {
+export function issuedUnderCurrentState(account, code) {
   const issued = code.createdAt.getTime();
   return [account.passwordChangedAt, account.emailVerifiedAt].every(
     at => !at || issued > at.getTime(),
@@ -168,13 +174,18 @@ function issuedUnderCurrentState(account, code) {
 }
 
 /**
- * The account's newest code, when it can still be used: unused, unexpired,
- * issued under the current security state and, with `requireAttemptLeft`,
- * below the guess cap. Only the newest code ever counts.
+ * The account's newest code of one purpose, when it can still be used: unused,
+ * unexpired, issued under the current security state and, with
+ * `requireAttemptLeft`, below the guess cap. Only the newest code ever counts.
  */
-async function newestLiveCodeTx(tx, account, now, { requireAttemptLeft }) {
+export async function newestLiveCodeTx(
+  tx,
+  account,
+  now,
+  { requireAttemptLeft, purpose = checkinPurpose },
+) {
   const newest = await tx.staffCheckinCode.findFirst({
-    where: { userId: account.id },
+    where: { userId: account.id, purpose },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
   // A retired code is dead whatever the clock says (q261, Equoria-8pzlg).
@@ -219,13 +230,14 @@ export async function requestCheckinCode(account) {
     const recent = await tx.staffCheckinCode.count({
       where: {
         userId: fresh.id,
+        purpose: checkinPurpose,
         createdAt: { gt: new Date(now.getTime() - checkinRequestWindowMs) },
       },
     });
     if (recent >= checkinRequestLimit) {
       throw new StaffCheckinError('rateLimited');
     }
-    await retireStaffCheckinCodesTx(tx, fresh.id, now);
+    await retireStaffCheckinCodesTx(tx, fresh.id, now, checkinPurpose);
     // createdAt from the same clock as passwordChangedAt/emailVerifiedAt, which
     // issuedUnderCurrentState compares it with.
     await tx.staffCheckinCode.create({

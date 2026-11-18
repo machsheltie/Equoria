@@ -13,6 +13,7 @@
 import express from 'express';
 import {
   requireAnyStaffCapability,
+  requireFreshStaffProof,
   requireStaffCapability,
   requireStaffRole,
 } from '../middleware/requireStaffCapability.mjs';
@@ -80,6 +81,16 @@ import {
   testRunPayroll,
 } from '../controllers/staffPayrollDiagnosticsController.mjs';
 import { fileServerHealth, getServerHealth } from '../controllers/staffServerHealthController.mjs';
+import {
+  applyTimeBackHandler,
+  getJobHold,
+  getTimeBackPreview,
+  getTimeBacks,
+  holdJobs,
+  releaseJobs,
+  sendTimeBackCode,
+  undoTimeBackHandler,
+} from '../controllers/staffTimeBackController.mjs';
 
 const router = express.Router();
 
@@ -242,5 +253,27 @@ router.post(
 );
 router.get('/server-health', requireStaffCapability('server.health.view'), getServerHealth);
 router.post('/server-health/file', requireStaffCapability('server.health.view'), fileServerHealth);
+
+// Owner only (Equoria-puj1e.5, owner rulings q377/q378): hold the nightly jobs, give
+// outage time back and undo it. Apply and undo each need a fresh emailed code
+// (requireFreshStaffProof), sent by POST /time-back/code; nothing else does.
+router.get('/jobs/hold', requireStaffCapability('jobs.hold'), getJobHold);
+router.post('/jobs/hold', requireStaffCapability('jobs.hold'), holdJobs);
+router.post('/jobs/release', requireStaffCapability('jobs.hold'), releaseJobs);
+router.get('/time-back', requireStaffCapability('time-back'), getTimeBacks);
+router.get('/time-back/preview', requireStaffCapability('time-back'), getTimeBackPreview);
+router.post('/time-back/code', requireStaffCapability('time-back'), sendTimeBackCode);
+router.post(
+  '/time-back/apply',
+  requireStaffCapability('time-back'),
+  requireFreshStaffProof('timeBackApply'),
+  applyTimeBackHandler,
+);
+router.post(
+  '/time-back/:timeBackId/undo',
+  requireStaffCapability('time-back'),
+  requireFreshStaffProof('timeBackUndo'),
+  undoTimeBackHandler,
+);
 
 export default router;

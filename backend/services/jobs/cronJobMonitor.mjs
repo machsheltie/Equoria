@@ -2,6 +2,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import logger from '../../utils/logger.mjs';
 import { withAdvisoryLock } from '../../utils/cronLock.mjs';
 import { cronJobRegistry } from './index.mjs';
+import { isJobsHeld } from '../../modules/staff/index.mjs';
 
 /**
  * Equoria-urqic.3.5 — CronJobMonitor: the run-observability collaborator.
@@ -156,6 +157,12 @@ export class CronJobMonitor {
    * `status: 'skipped-locked'` (recording success would lie). Production
    * schedules pass `applyLock: true`; tests can opt out.
    *
+   * Equoria-puj1e.5: before every run the durable nightly-job hold is read
+   * from the database (GameControl). While the owner holds the jobs, the run
+   * records 'skipped-held' (heartbeat and CronRunLog) and the handler never
+   * runs, so a hold survives a restart. A failed read takes the error path:
+   * the job does not run, and the failure shows on the cron-health page.
+   *
    * @param {string} jobName
    * @param {Function} handler - async () => Promise<result>
    * @param {Object}  [opts]
@@ -174,6 +181,19 @@ export class CronJobMonitor {
       lockHeld: applyLock ? true : null,
     });
     try {
+      if (await isJobsHeld()) {
+        const finishedAt = new Date();
+        this.recordHeartbeat(jobName, {
+          startedAt,
+          finishedAt,
+          status: 'skipped-held',
+          summary: null,
+          error: null,
+          lockHeld: false,
+        });
+        await this.persistRunLog({ jobName, startedAt, finishedAt, status: 'skipped-held' });
+        return null;
+      }
       let result;
       let acquired = true;
       if (applyLock) {
@@ -254,7 +274,7 @@ export class CronJobMonitor {
    * @param {string} entry.jobName
    * @param {Date} entry.startedAt
    * @param {Date} entry.finishedAt
-   * @param {'success'|'error'|'skipped-locked'} entry.status
+   * @param {'success'|'error'|'skipped-locked'|'skipped-held'} entry.status
    * @param {Object|null} [entry.summary]
    * @param {string|null} [entry.errorMessage]
    */

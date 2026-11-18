@@ -119,31 +119,7 @@ describe('check-staff-routes-guarded: guards', () => {
     expect(scan('d.mjs', file("router.get('/t', requireAnyStaffCapability(['a', 'b']), h);"))).toEqual([]);
   });
 
-  describe('capabilities that need a fresh-proof guard (STAFF-CR-06)', () => {
-    test.each(['time-back', 'jobs.hold'])('requireStaffCapability(%s) is refused', cap => {
-      const failures = scan('fresh.mjs', file(`router.post('/x', requireStaffCapability('${cap}'), h);`));
-      expect(lines(failures)).toEqual([5]);
-      expect(failures[0].reason).toContain(cap);
-      expect(failures[0].reason).toContain('requireFreshStaffProof');
-    });
-
-    test.each(['time-back', 'jobs.hold'])('%s inside requireAnyStaffCapability is refused', cap => {
-      const failures = scan(
-        'fresh-any.mjs',
-        file(`router.post('/x', requireAnyStaffCapability(['ticket.file', '${cap}']), h);`),
-      );
-      expect(lines(failures)).toEqual([5]);
-      expect(failures[0].reason).toContain('requireFreshStaffProof');
-    });
-
-    test('a router.use guarded by time-back is refused', () => {
-      expect(scan('fresh-use.mjs', file("router.use(requireStaffCapability('time-back'));"))).toHaveLength(1);
-    });
-
-    test('the real staff routes still pass', () => {
-      expect(scanStaffRoutes()).toEqual([]);
-    });
-  });
+  // The fresh-proof (STAFF-CR-06) cases live in staffRoutesFreshProof.sentinel.test.mjs.
 
   test('a supported multi-line route on an aliased Router passes', () => {
     const body = [
@@ -450,7 +426,7 @@ describe('check-staff-routes-guarded: importers of staff routes', () => {
   });
 });
 
-describe('check-staff-routes-guarded: time-back and jobs.hold are mounted nowhere in backend/ (STAFF-CR-06)', () => {
+describe('check-staff-routes-guarded: time-back and jobs.hold are mounted only in the staff routes (STAFF-CR-06)', () => {
   const IMPORT = "import { requireStaffCapability, requireAnyStaffCapability } from '../../staff/index.mjs';\n";
   const where = failures => failures.map(f => `${path.basename(f.file)}:${f.line}`).sort();
 
@@ -557,7 +533,19 @@ describe('check-staff-routes-guarded: time-back and jobs.hold are mounted nowher
     expect(scanFreshProofCapabilityUse(root)).toEqual([]);
   });
 
-  test('the real backend mounts neither capability', () => {
+  // Equoria-puj1e.5: the staff routes (held to the grammar's fresh-proof rule) may
+  // mount them, and the staff module may name them; a guard call anywhere else in
+  // the staff module still fails.
+  test('the staff routes may mount them and the staff module may name them; other staff files may not mount', () => {
+    const root = mirror({
+      'modules/staff/routes/staffRoutes.mjs': `${IMPORT}router.post('/jobs/hold', requireStaffCapability('jobs.hold'), h);\n`,
+      'modules/staff/services/timeBack.mjs': "const capability = 'time-back';\n",
+      'modules/staff/controllers/sneaky.mjs': `${IMPORT}router.post('/x', requireStaffCapability('time-back'), h);\n`,
+    });
+    expect(where(scanFreshProofCapabilityUse(root))).toEqual(['sneaky.mjs:2']);
+  });
+
+  test('the real backend mounts them only in the staff routes', () => {
     expect(scanFreshProofCapabilityUse()).toEqual([]);
   });
 });

@@ -13,6 +13,12 @@
  *   verified email, a valid trusted-device cookie for this account, and cap.
  *
  * Attaches `req.staff = { id, role }`.
+ *
+ * - requireFreshStaffProof(purpose) (Equoria-puj1e.5, STAFF-CR-06): placed right
+ *   after a capability guard on an action that needs a fresh emailed code each
+ *   time (outage time-back apply and undo, owner ruling q378). It checks the
+ *   typed code (`req.body.code`) against the newest code of that purpose and
+ *   attaches `req.freshProof`; the action consumes it in its own transaction.
  */
 
 import logger from '../../../utils/logger.mjs';
@@ -22,7 +28,9 @@ import {
   isTrustedDevice,
   loadStaffAccount,
   staffDeviceTokenFrom,
+  StaffCheckinError,
 } from '../services/staffCheckinService.mjs';
+import { checkFreshCode } from '../services/staffFreshCodeService.mjs';
 
 // Same handler app.mjs mounts as its catch-all; staff paths are under /api so
 // it always answers with the JSON 404, never SPA html.
@@ -113,4 +121,30 @@ export function requireStaffCapability(capability) {
  */
 export function requireAnyStaffCapability(capabilities) {
   return buildCapabilityGuard(capabilities);
+}
+
+/** The refusal code for a missing, wrong, used or expired fresh code. */
+export const freshCodeInvalidCode = 'staffFreshCodeInvalid';
+
+/**
+ * Fresh one-time code for one action. Mount only after a capability guard
+ * (it reads `req.staffAccount`); the doctrine check pins that order.
+ * @param {string} purpose e.g. 'timeBackApply'
+ */
+export function requireFreshStaffProof(purpose) {
+  return async (req, res, next) => {
+    try {
+      req.freshProof = await checkFreshCode(req.staffAccount, purpose, req.body?.code);
+      return next();
+    } catch (error) {
+      if (error instanceof StaffCheckinError) {
+        return res.status(403).json({
+          success: false,
+          code: freshCodeInvalidCode,
+          message: 'That code is not right, or it has run out. Send a new code and try again.',
+        });
+      }
+      return respondGuardFailure(res, error);
+    }
+  };
 }

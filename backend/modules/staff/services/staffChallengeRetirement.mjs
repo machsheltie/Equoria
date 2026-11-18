@@ -24,14 +24,18 @@
  */
 
 /**
+ * Every purpose by default: a security change voids the check-in code and any
+ * fresh one-time code alike. Issuing a new code passes its own purpose, so it
+ * retires only the older codes of that purpose (Equoria-puj1e.5).
  * @param {import('@prisma/client').Prisma.TransactionClient} tx
  * @param {string} userId
  * @param {Date} [now]
+ * @param {string} [purpose] only codes of this purpose; all when omitted
  * @returns {Promise<number>} how many live codes were retired
  */
-export async function retireStaffCheckinCodesTx(tx, userId, now = new Date()) {
+export async function retireStaffCheckinCodesTx(tx, userId, now = new Date(), purpose = undefined) {
   const { count } = await tx.staffCheckinCode.updateMany({
-    where: { userId, usedAt: null, retiredAt: null },
+    where: { userId, usedAt: null, retiredAt: null, ...(purpose ? { purpose } : {}) },
     data: { retiredAt: now, expiresAt: now },
   });
   return count;

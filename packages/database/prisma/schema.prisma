@@ -2121,7 +2121,8 @@ model CronRunLog {
   finishedAt            DateTime?
   /// 'success' | 'error' | 'skipped-locked' (Equoria-iot0h: skipped-locked is
   /// recorded when the replica lost a pg_try_advisory_xact_lock race and
-  /// yielded to a peer replica that ran the side-effect).
+  /// yielded to a peer replica that ran the side-effect) | 'skipped-held'
+  /// (Equoria-puj1e.5: the owner held nightly jobs, GameControl.jobsHeld).
   status                String
   horsesProcessed       Int?
   birthdaysFound        Int?
@@ -2228,6 +2229,57 @@ model StaffActionLog {
   @@map("staff_action_log")
 }
 
+/// The durable nightly-job hold (Equoria-puj1e.5, owner ruling q377). One row,
+/// id 1; no row means jobs run. Every scheduled job reads it before each run, so a
+/// hold survives a restart. Held and released only by the owner, in the staff log.
+model GameControl {
+  id       Int       @id @default(1)
+  jobsHeld Boolean   @default(false)
+  heldAt   DateTime?
+  heldById String?
+  reason   String?
+  updatedAt DateTime @updatedAt
+
+  @@map("game_control")
+}
+
+/// One outage given back (Equoria-puj1e.5, docs/features/admin-time-back.md): the
+/// window, who applied it, and when it was undone. Permanent, like the staff log.
+model TimeBack {
+  id            Int              @id @default(autoincrement())
+  windowStart   DateTime
+  windowEnd     DateTime
+  pauseSeconds  Int
+  appliedById   String
+  appliedAt     DateTime         @default(now())
+  applyLogId    Int?
+  summary       Json
+  reversedAt    DateTime?
+  reversedById  String?
+  reverseLogId  Int?
+  reverseSummary Json?
+  changes       TimeBackChange[]
+
+  @@index([windowStart, windowEnd])
+  @@map("time_backs")
+}
+
+/// Every field value a time-back changed (table, row, field, old, new), so the
+/// undo restores exactly what it wrote and nothing a player changed since.
+model TimeBackChange {
+  id         Int      @id @default(autoincrement())
+  timeBackId Int
+  timeBack   TimeBack @relation(fields: [timeBackId], references: [id], onDelete: Restrict)
+  tableName  String
+  rowId      String
+  field      String
+  oldValue   Json?
+  newValue   Json?
+
+  @@index([timeBackId, tableName, field])
+  @@map("time_back_changes")
+}
+
 model StaffCheckinCode {
   id        Int       @id @default(autoincrement())
   userId    String
@@ -2239,9 +2291,14 @@ model StaffCheckinCode {
   // Set when a password, email or role change cancels the code (q261, Equoria-8pzlg):
   // a retired code never checks in, whatever the clock says.
   retiredAt DateTime?
+  /// What the code is for (Equoria-puj1e.5, owner ruling q378): 'checkin' for the
+  /// browser check-in, or a one-time fresh code for one owner action
+  /// ('timeBackApply', 'timeBackUndo'). A code only ever works for its own purpose.
+  purpose   String    @default("checkin")
   createdAt DateTime  @default(now())
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, purpose, createdAt(sort: Desc)])
   // Retention purge (STAFF-CR-18): used or expired more than 1 day ago.
   @@index([usedAt])
   @@index([expiresAt])

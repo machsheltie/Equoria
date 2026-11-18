@@ -13,7 +13,7 @@
  *   GET  /api/admin/traits/definitions   — get all trait definitions
  *   POST /api/admin/horses/age           — manually trigger horse aging for all horses (Owner only, q341)
  *   POST /api/admin/horses/:id/set-age   — set a specific horse's game age (Owner only, q341)
- *   POST /api/admin/foaling/trigger      — force-run foaling job with advanced clock
+ *   POST /api/admin/foaling/trigger      — deliver overdue foals now (real time; no fast-forward)
  *   POST /api/admin/docs/generate        — regenerate the OpenAPI spec (Equoria-7osu4)
  *   POST /api/admin/docs/endpoints       — register an API endpoint for docs (Equoria-7osu4)
  *   POST /api/admin/docs/schemas         — register a schema for docs (Equoria-7osu4)
@@ -329,26 +329,40 @@ export async function setHorseAge(req, res) {
 }
 
 /**
- * POST /api/v1/admin/foaling/trigger
- * Force-run the foaling job with a time-advanced clock so recently-started
- * pregnancies (gestation = 7 days) are treated as due.
+ * POST /api/v1/admin/foaling/trigger — "Deliver overdue foals now"
+ * (Equoria-puj1e.5, docs/features/admin-time-back.md; owner ruling 2026-10-05:
+ * foals wait the full 7 days). Runs the foaling job at the real time, so only
+ * mares already past their due day foal. The old clock fast-forward is gone:
+ * a body naming `advanceDays` is refused.
  *
- * Body: { advanceDays?: number }  — days to add to "now" (default 8)
+ * It runs like the scheduled job: under the same advisory lock, written to the
+ * cron run log, and refused while the owner holds the nightly jobs.
  */
 export async function triggerFoaling(req, res) {
   try {
-    const advanceDays = Number(req.body?.advanceDays ?? 8);
-    if (!Number.isFinite(advanceDays) || advanceDays < 0 || advanceDays > 365) {
-      return res.status(400).json({ success: false, message: 'advanceDays must be 0–365' });
+    if (req.body?.advanceDays !== undefined) {
+      return res.status(400).json({
+        success: false,
+        code: 'foalingFastForwardRemoved',
+        message: 'Foals arrive only when they are due; the clock cannot be moved forward.',
+      });
     }
-    logger.info(
-      `[adminController] POST /api/v1/admin/foaling/trigger — advanceDays=${advanceDays}`,
-    );
-    const now = new Date(Date.now() + advanceDays * 24 * 60 * 60 * 1000);
-    const result = await runFoalingJob({ now });
+    logger.info('[adminController] POST /api/v1/admin/foaling/trigger — overdue foals only');
+    const result = await cronJobService.runWithHeartbeat('foaling', () => runFoalingJob(), {
+      applyLock: true,
+      lockKey: 'cronJobService:foaling',
+    });
+    if (result === null) {
+      return res.status(409).json({
+        success: false,
+        code: 'jobsHeld',
+        message:
+          'The nightly jobs are held, or another run is in progress. Try again once they run.',
+      });
+    }
     res.json({
       success: true,
-      message: `Foaling job ran with clock advanced by ${advanceDays} day(s). Foals born: ${result.foalsBorn}.`,
+      message: `Overdue foals delivered: ${result.foalsBorn}.`,
       data: result,
     });
   } catch (error) {

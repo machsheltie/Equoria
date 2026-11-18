@@ -31,7 +31,10 @@ to fix the underlying problem. It is not a license to weaken the check.
   `backend/modules/staff/routes/*.mjs` names `requireStaffCapability(` or
   `requireAnyStaffCapability(`; `requireStaffRole` alone is allowed only for
   `POST /checkin/request`, `POST /checkin/verify` and `GET /me`; `router.use(`
-  (non-guard) and `router.route(` are rejected (Equoria-puj1e.1).
+  (non-guard) and `router.route(` are rejected (Equoria-puj1e.1). The owner-only
+  `time-back` and `jobs.hold` capabilities are mounted only there, and a
+  `time-back` write needs `requireFreshStaffProof('<purpose>')` directly after
+  its guard (STAFF-CR-06, Equoria-puj1e.5).
 - `check-audit-level.sh` — every `npm audit` step in `.github/workflows/`
   uses `--audit-level=moderate` or stricter (`low`).
 - `check-gates-run-on-prs.sh` — every job named `*-gate` (except those in

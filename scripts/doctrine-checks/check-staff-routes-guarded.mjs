@@ -24,6 +24,14 @@
 //    import. Anything else - other statements, imports, methods, computed or
 //    chained members, calls, inline functions, spreads, parse errors - fails.
 //
+//    STAFF-CR-06 (Equoria-puj1e.5, owner rulings q377/q378): a route guarded by
+//    'time-back' that is not a GET (other than POST /time-back/code, which sends
+//    the code) must name requireFreshStaffProof('<literal purpose>') directly
+//    after its guard: a trusted 30-day browser alone never authorizes apply or
+//    undo. requireFreshStaffProof is allowed nowhere else. 'jobs.hold' needs only
+//    its capability (the owner ruled one fresh code at apply and at undo, not at
+//    holding the jobs). Neither capability may guard a router.use.
+//
 // 2. No file under backend/ (tests and node_modules aside) may reference a file
 //    in staff/routes/ except backend/app/routers.mjs, so nothing else can reach
 //    the mounted Router and register on it. (The staff barrel does not export
@@ -31,9 +39,10 @@
 //    check-staff-routes-mount.mjs.
 //
 // 3. STAFF-CR-06, repo-wide: no file under backend/ (tests and node_modules
-//    aside) may call requireStaffCapability / requireAnyStaffCapability naming
-//    'time-back' or 'jobs.hold' - imported, aliased or reached as a member -
-//    so neither capability can be mounted on an admin or any other route.
+//    aside) outside modules/staff/routes/ may call requireStaffCapability /
+//    requireAnyStaffCapability naming 'time-back' or 'jobs.hold' - imported,
+//    aliased or reached as a member - so neither capability can be mounted on
+//    an admin or any other route; the staff routes are held to rule 1.
 //    What the scan cannot read fails closed (Equoria-fvdru): a capability
 //    that is not a string literal (a const, a spread, a template with
 //    expressions), or a guard read other than as a call's callee (aliased,
@@ -41,7 +50,7 @@
 //    STAFF-RR-13: files that never name a staff guard are scanned too. Any
 //    string or template text naming 'time-back', 'jobs.hold' or '/jobs/hold'
 //    outside a guard call fails (an admin-only route at /time-back, say), except
-//    in modules/staff/capabilities.mjs, which defines the capability map.
+//    inside modules/staff/, which defines the capability map and owns the tools.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,6 +70,7 @@ const guardNames = new Set([
   'requireStaffCapability',
   'requireAnyStaffCapability',
   'requireStaffRole',
+  'requireFreshStaffProof',
 ]);
 const routeMethods = new Set(['get', 'post', 'put', 'patch', 'delete']);
 const sourceFileRe = /\.(?:js|mjs|cjs)$/;
@@ -70,17 +80,25 @@ const testFileRe = /\.(?:test|spec)\.[cm]?js$/;
 const roleOnlyAllowed = new Set(['POST /checkin/request', 'POST /checkin/verify', 'GET /me']);
 
 // Extra rules on the capabilities a guard names: each is
-// (capabilities: string[], routeKey: string) => reason | null.
+// (capabilities: string[], routeKey: string, freshProof: boolean) => reason | null.
 const freshProofCapabilities = ['time-back', 'jobs.hold'];
+// The one time-back write that cannot need a fresh code: it sends the code.
+const freshProofExempt = new Set(['POST /time-back/code']);
 const capabilityRules = [
-  // STAFF-CR-06: these capabilities need a purpose-bound, one-time fresh
-  // check-in proof that the 30-day device cookie cannot stand in for. Refused
-  // outright until requireFreshStaffProof exists; then relax this to "must be
-  // preceded by requireFreshStaffProof".
-  (capabilities) => {
+  // STAFF-CR-06: neither owner-only outage capability may guard a whole router.
+  (capabilities, routeKey) => {
     const hit = capabilities.find((c) => freshProofCapabilities.includes(c));
-    return hit
-      ? `capability '${hit}' needs a fresh-proof guard (requireFreshStaffProof), which does not exist yet; ` +
+    return hit && routeKey === 'USE'
+      ? `capability '${hit}' may not guard router.use; name it per route (time-back writes behind requireFreshStaffProof)`
+      : null;
+  },
+  // STAFF-CR-06: a time-back write needs a purpose-bound, one-time fresh code
+  // that the 30-day device cookie cannot stand in for.
+  (capabilities, routeKey, freshProof) => {
+    const write =
+      routeKey !== 'USE' && !routeKey.startsWith('GET ') && !freshProofExempt.has(routeKey);
+    return capabilities.includes('time-back') && write && !freshProof
+      ? "capability 'time-back' on a write needs requireFreshStaffProof('<purpose>') directly after its guard; " +
           'a trusted 30-day device alone must not authorize it (see docs/features/admin-time-back.md, "Blocking dependency")'
       : null;
   },
@@ -92,13 +110,22 @@ const parse = (src) =>
   espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', loc: true });
 
 /** Apply capabilityRules to a recognized guard; returns the first reason or null. */
-function capabilityRuleViolation(guard, routeKey) {
+function capabilityRuleViolation(guard, routeKey, freshProof = false) {
   for (const rule of capabilityRules) {
-    const reason = rule(guard.capabilities, routeKey);
+    const reason = rule(guard.capabilities, routeKey, freshProof);
     if (reason) return reason;
   }
   return null;
 }
+
+/** `requireFreshStaffProof('<literal purpose>')` imported from the guard module. */
+const isFreshProof = (arg, guards) =>
+  arg?.type === 'CallExpression' &&
+  !arg.optional &&
+  arg.callee.type === 'Identifier' &&
+  guards.get(arg.callee.name) === 'requireFreshStaffProof' &&
+  arg.arguments.length === 1 &&
+  isStringLiteral(arg.arguments[0]);
 
 /** A DIRECT guard argument -> { kind: 'capability' | 'role', capabilities } or null. */
 function recognizeGuard(arg, guards) {
@@ -251,9 +278,15 @@ function registrationViolation(expr, b) {
       (later ? ' (the guard must be the first argument after the path)' : '')
     );
   }
-  const ruled = capabilityRuleViolation(guard, routeKey);
+  const freshProof = isFreshProof(args[2], b.guards);
+  if (freshProof && !guard.capabilities.includes('time-back')) {
+    return `${routeKey}: requireFreshStaffProof is allowed only directly after a 'time-back' guard`;
+  }
+  const ruled = capabilityRuleViolation(guard, routeKey, freshProof);
   if (ruled) return `${routeKey}: ${ruled}`;
-  if (!args.slice(2).every((a) => isHandler(a, b.controllers))) {
+  const handlers = args.slice(freshProof ? 3 : 2);
+  if (handlers.length === 0) return `${routeKey}: a handler must follow the guards`;
+  if (!handlers.every((a) => isHandler(a, b.controllers))) {
     return `${routeKey}: every argument after the guard must be a controller import (no calls, inline functions or other values)`;
   }
   return null;
@@ -417,7 +450,7 @@ export function scanRouteImporters(backendRoot = backendDir) {
 const capabilityGuardNames = new Set(['requireStaffCapability', 'requireAnyStaffCapability']);
 // STAFF-RR-13: the capability names and their route paths, in any text.
 const freshProofTextRe = /time-back|jobs[./]hold/;
-const capabilityMapRel = path.join('modules', 'staff', 'capabilities.mjs');
+const staffModuleRel = path.join('modules', 'staff');
 
 /** Backend source files outside tests and node_modules. */
 function backendSourceFiles(dir, out = []) {
@@ -444,7 +477,12 @@ function backendSourceFiles(dir, out = []) {
  */
 export function scanFreshProofCapabilityUse(backendRoot = backendDir) {
   const failures = [];
-  const capabilityMap = path.join(backendRoot, capabilityMapRel);
+  const staffModule = path.join(backendRoot, staffModuleRel);
+  const staffRoutes = path.join(backendRoot, staffRoutesRel);
+  const inside = (dir, file) => {
+    const rel = path.relative(dir, file);
+    return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+  };
   for (const file of backendSourceFiles(backendRoot)) {
     const src = fs.readFileSync(file, 'utf8');
     // Every route to a guard - import, alias or member - spells its name; every
@@ -513,12 +551,12 @@ export function scanFreshProofCapabilityUse(backendRoot = backendDir) {
         continue;
       }
       const hit = named.find((cap) => freshProofCapabilities.includes(cap));
-      if (hit) {
+      if (hit && !inside(staffRoutes, file)) {
         failures.push({
           file,
           line: n.loc.start.line,
           reason:
-            `capability '${hit}' must not be mounted on any route until requireFreshStaffProof exists ` +
+            `capability '${hit}' may be mounted only in the staff routes, time-back writes behind requireFreshStaffProof ` +
             '(STAFF-CR-06; see docs/features/admin-time-back.md, "Blocking dependency")',
         });
       }
@@ -535,7 +573,7 @@ export function scanFreshProofCapabilityUse(backendRoot = backendDir) {
       }
       return p?.type === 'CallExpression' && p.arguments.includes(arg) && isGuardRef(p.callee);
     };
-    if (failures.length === guardFailuresBefore && !samePath(file, capabilityMap)) {
+    if (failures.length === guardFailuresBefore && !inside(staffModule, file)) {
       for (const n of parsed.nodes) {
         const text = isStringLiteral(n)
           ? n.value
@@ -547,8 +585,8 @@ export function scanFreshProofCapabilityUse(backendRoot = backendDir) {
             file,
             line: n.loc.start.line,
             reason:
-              `'${text}' names time-back or jobs.hold outside the capability map; no route may serve either ` +
-              'until requireFreshStaffProof exists (STAFF-RR-13; see docs/features/admin-time-back.md)',
+              `'${text}' names time-back or jobs.hold outside the staff module; only the staff routes serve them, ` +
+              'time-back writes behind requireFreshStaffProof (STAFF-RR-13; see docs/features/admin-time-back.md)',
           });
         }
       }

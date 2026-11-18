@@ -525,12 +525,16 @@ If this was not you, change your password now — doing so cancels the pending c
  *
  * @param {string} email - The staff account's verified address.
  * @param {string} code - The 6-digit check-in code.
+ * @param {string} [action] - A one-time code's owner action in words (Equoria-puj1e.5).
  * @returns {Promise<Object>} Send result
  */
-export async function sendStaffCheckinCodeEmail(email, code) {
+export async function sendStaffCheckinCodeEmail(email, code, action = null) {
   const subject = "Your Steward's Office code";
   const heading = "Steward's Office";
-  const line = `Your Steward's Office code is ${code}. It expires in 10 minutes.`;
+  const line = action
+    ? `Your code to ${action} is ${code}. It works once and expires in 10 minutes.`
+    : `Your Steward's Office code is ${code}. It expires in 10 minutes.`;
+  const kind = action ? 'staff-action-code' : 'staff-checkin';
   const bodyHtml = `<p>${line}</p><p>If you did not ask for this code, change your password.</p>`;
   const bodyText = `${line}\n\nIf you did not ask for this code, change your password.`;
 
@@ -538,7 +542,7 @@ export async function sendStaffCheckinCodeEmail(email, code) {
   const plainTextEmail = generatePlainTextEmail(heading, bodyText);
 
   if (process.env.NODE_ENV !== 'production') {
-    captureEmailPreview('staff-checkin', { to: email, subject, preview: line });
+    captureEmailPreview(kind, { to: email, subject, preview: line });
 
     logger.info("[EmailService] Steward's Office code (DEV MODE - not sent)", {
       to: maskEmailAddress(email), // Equoria-5vyuh: never a raw address
