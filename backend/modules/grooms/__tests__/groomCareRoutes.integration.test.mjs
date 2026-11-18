@@ -30,6 +30,7 @@ import {
 } from '../../../__tests__/helpers/rowLockBarrier.mjs';
 import { gameCalendarDate, gameDayBounds } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { giveStaffGrowthProfile } from '../../../__tests__/helpers/staffGrowthFixture.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const runTag = `care-${randomBytes(4).toString('hex')}`;
@@ -92,6 +93,8 @@ async function makeGroom(owner, label, extra = {}) {
     },
   });
   groomIds.push(groom.id);
+  // No hidden growth items (q331): each grooming here is exactly +5 bond.
+  await giveStaffGrowthProfile(prisma, 'groom', groom.id);
   return groom;
 }
 

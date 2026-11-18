@@ -23,6 +23,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { giveStaffGrowthProfile } from '../../../__tests__/helpers/staffGrowthFixture.mjs';
 import { groomHorse } from '../services/groomCareService.mjs';
 import { foalCareToday } from '../services/foalCareSchedule.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
@@ -99,6 +100,8 @@ describe('Equoria-9rhf6 — groom horse records the foal bond milestone it cross
         userId: user.id,
       },
     });
+    // No hidden growth items (q331): each grooming is exactly +5 bond here.
+    await giveStaffGrowthProfile(prisma, 'groom', groom.id);
     for (const horse of [foal, grown]) {
       await prisma.groomAssignment.create({
         data: { groomId: groom.id, foalId: horse.id, userId: user.id, isActive: true },

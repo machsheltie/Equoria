@@ -29,6 +29,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { randomBytes } from 'node:crypto';
 import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
+import { giveStaffGrowthProfile } from '../../__tests__/helpers/staffGrowthFixture.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -318,6 +319,8 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         isActive: true,
       },
     });
+    // No hidden growth items (q331): the grooming below is exactly +5 bond.
+    await giveStaffGrowthProfile(prisma, 'groom', playerGroom.id);
     const { assignGroomToFoal } = await import('../../utils/groomSystem.mjs');
     const assignmentResult = await assignGroomToFoal(foal.id, playerGroom.id, testUser.id);
 

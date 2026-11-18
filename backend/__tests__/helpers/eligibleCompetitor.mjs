@@ -16,6 +16,7 @@
  */
 
 import { birthDateForAge } from '../../utils/horseAge.mjs';
+import { giveStaffGrowthProfile } from './staffGrowthFixture.mjs';
 
 /**
  * A dateOfBirth that reads `years` game years today on the Eastern calendar.
@@ -39,10 +40,16 @@ export function healthyAndFed() {
 /**
  * Create a rider employed by `userId` and actively assign it to `horseId`.
  *
+ * The rider gets an empty hidden growth profile (Equoria-xlw03, owner ruling q331):
+ * otherwise its first show draws twelve random items that add or take flat points, and
+ * a fixture's score would be random. Pass `growthItems` for a test about those items.
+ *
  * @param {object} db - prisma client
- * @param {{ horseId: number, userId: string, rider?: object, assignment?: object }} input
+ * @param {{ horseId: number, userId: string, rider?: object, assignment?: object,
+ *   growthItems?: Array<object> }} input
  *   `rider` / `assignment` override fields (e.g. `{ retired: true }`,
- *   `{ userId: otherUser }`, `{ isActive: false }`).
+ *   `{ userId: otherUser }`, `{ isActive: false }`); `growthItems` the rider's
+ *   growth items (default none).
  * @param {number[]|{add: Function}} [cleanupOrIds] - an id collector array, or a
  *   failLoudCleanup tracker that gets the rider's delete registered (deleting the
  *   rider cascades its assignment)
@@ -50,7 +57,7 @@ export function healthyAndFed() {
  */
 export async function giveEligibleRider(
   db,
-  { horseId, userId, rider = {}, assignment = {} },
+  { horseId, userId, rider = {}, assignment = {}, growthItems = [] },
   cleanupOrIds,
 ) {
   const created = await db.rider.create({
@@ -70,6 +77,7 @@ export async function giveEligibleRider(
       `rider ${created.id}`,
     );
   }
+  await giveStaffGrowthProfile(db, 'rider', created.id, growthItems);
   const createdAssignment = await db.riderAssignment.create({
     data: { riderId: created.id, horseId, userId, isActive: true, ...assignment },
   });

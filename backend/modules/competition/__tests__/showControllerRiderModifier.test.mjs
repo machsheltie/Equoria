@@ -24,6 +24,7 @@ import { executeClosedShows } from '../shows/showExecutionService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { giveStaffGrowthProfile } from '../../../__tests__/helpers/staffGrowthFixture.mjs';
 
 const TAG = `RiderModFix-${randomBytes(4).toString('hex')}`;
 
@@ -117,6 +118,9 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+  // No hidden growth items (q331): the model below is the rider's percent alone, so a
+  // randomly drawn profile must not add or take flat points.
+  await giveStaffGrowthProfile(prisma, 'rider', elitRider.id);
 
   await prisma.riderAssignment.create({
     data: {
