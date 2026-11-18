@@ -10,8 +10,8 @@
  * and the staff action log entry. Undo restores each recorded value only where
  * the field still holds what the time-back wrote, once, with its own fresh code.
  *
- * Not built here (see the issue notes): the owed weekly bank claims for bank
- * weeks fully inside an outage.
+ * Bank weeks fully inside the outage are given back as owed weekly claims
+ * (owner ruling 2026-10-12, timeBackBankClaims.mjs); undo removes the unpaid ones.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -26,6 +26,12 @@ import { recordStaffActionTx } from './staffActionLogService.mjs';
 import { consumeFreshCodeTx } from './staffFreshCodeService.mjs';
 import { lockJobHoldTx } from './jobHoldService.mjs';
 import { unruledFields } from './timeBackClassification.mjs';
+import {
+  countOwedWeeklyClaims,
+  grantOwedWeeklyClaimsTx,
+  owedClaimsSummaryKey,
+  removeOwedWeeklyClaimsTx,
+} from './timeBackBankClaims.mjs';
 import {
   applyCounterRuleTx,
   applyDerivedRulesTx,
@@ -183,6 +189,7 @@ export async function previewTimeBack(input, now = new Date()) {
   for (const rule of jobCounterRules) {
     fields[rule.key] = await countCounterRule(prisma, rule, runTimesFor(runs, rule.jobName));
   }
+  fields[owedClaimsSummaryKey] = await countOwedWeeklyClaims(prisma, window);
   const overlap = await findOverlap(prisma, window);
   return {
     windowStart: window.start,
@@ -248,6 +255,7 @@ export async function applyTimeBack({ actor, input, proof }, now = new Date()) {
       for (const derived of await applyDerivedRulesTx(tx, record.id, w)) {
         fields[derived.key] = derived.changed;
       }
+      fields[owedClaimsSummaryKey] = await grantOwedWeeklyClaimsTx(tx, record.id, window);
       const summary = {
         pauseDays: w.days,
         fields,
@@ -311,6 +319,9 @@ export async function undoTimeBack({ actor, timeBackId, proof }) {
           skippedRows[column.key] = outcome.skippedRows;
         }
       }
+      const owed = await removeOwedWeeklyClaimsTx(tx, timeBackId);
+      restored[owedClaimsSummaryKey] = owed.restored;
+      skipped[owedClaimsSummaryKey] = owed.skipped;
       const log = await recordStaffActionTx(tx, {
         actorId: owner.id,
         actorRole: owner.role,

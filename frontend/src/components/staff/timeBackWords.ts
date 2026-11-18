@@ -32,6 +32,7 @@ const fieldWords: Record<string, string> = {
   'Trainer.careerWeeks': 'trainers’ years',
   'Horse.age': 'horse ages',
   'FoalDevelopment.currentDay': 'foal development days',
+  'User.owedWeeklyClaims': 'weekly bank claims owed to players',
 };
 
 /** Values the owner has not ruled on yet, which a time-back leaves alone. */

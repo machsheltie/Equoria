@@ -144,6 +144,53 @@ describe('BankPage — weekly reward claim status (Equoria-ffj5j)', () => {
   });
 });
 
+describe('BankPage — weeks lost to an outage (Equoria-puj1e.5, owner ruling 2026-10-12)', () => {
+  const owedStatus = (owedClaims: number, claimAmount: number) =>
+    HttpResponse.json({
+      success: true,
+      data: { canClaim: true, nextClaimDate: null, rewardAmount: 5000, owedClaims, claimAmount },
+    });
+
+  const renderOwed = () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    stubTransactions();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MockAuthProvider userOverrides={{ id: userId, money: 15000 }}>
+          <MemoryRouter initialEntries={['/bank']}>
+            <BankPage />
+          </MemoryRouter>
+        </MockAuthProvider>
+      </QueryClientProvider>
+    );
+  };
+
+  it('puts this week and the owed week on the button, with the whole amount', async () => {
+    server.use(http.get(claimStatusPath, () => owedStatus(1, 10000)));
+
+    renderOwed();
+
+    expect(
+      await screen.findByText('Claim this week’s reward and 1 week lost while the game was down.')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('claim-button')).toHaveTextContent('Claim +10,000');
+    expect(screen.getByTestId('claim-button')).toBeEnabled();
+  });
+
+  it('offers the owed weeks alone once this week is already claimed', async () => {
+    server.use(http.get(claimStatusPath, () => owedStatus(2, 10000)));
+
+    renderOwed();
+
+    expect(
+      await screen.findByText('Claim the rewards for 2 weeks lost while the game was down.')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('claim-button')).toHaveTextContent('Claim +10,000');
+  });
+});
+
 describe('BankPage — balance is not fabricated (Equoria-bvddn.39)', () => {
   it('shows an unknown marker, not 0, when the profile carries no balance', async () => {
     const queryClient = new QueryClient({

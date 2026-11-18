@@ -48,3 +48,6 @@ export { purgeStaleStaffCheckinRecords } from './services/staffCheckinRetentionS
 export { purgeSettledEmails, runEmailOutbox } from './services/ticketEmailOutbox.mjs';
 // Equoria-puj1e.5 (owner ruling q377): every scheduled job reads the durable hold.
 export { isJobsHeld } from './services/jobHoldService.mjs';
+// Equoria-puj1e.5 (owner ruling 2026-10-12): a time-back owes players the bank weeks an
+// outage covered; the bank pays them from this settings key with the weekly claim.
+export { owedWeeklyClaimsKey } from './services/timeBackBankClaims.mjs';

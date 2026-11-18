@@ -58,6 +58,17 @@ const BankPage: React.FC = () => {
     retry: false,
   });
   const claimed = claimedUserId === user?.id || claimStatus.data?.canClaim === false;
+  // Weeks an outage took whole are owed back and paid with this claim (Equoria-puj1e.5).
+  const rewardAmount = claimStatus.data?.rewardAmount ?? 5000;
+  const owedWeeks = claimStatus.data?.owedClaims ?? 0;
+  const claimAmount = claimStatus.data?.claimAmount ?? rewardAmount;
+  const lostWeeks = `${owedWeeks} ${owedWeeks === 1 ? 'week' : 'weeks'}`;
+  const claimInvite =
+    owedWeeks === 0
+      ? 'Claim your 5,000 coin weekly reward. Resets every Sunday.'
+      : claimAmount > owedWeeks * rewardAmount
+        ? `Claim this week’s reward and ${lostWeeks} lost while the game was down.`
+        : `Claim the rewards for ${lostWeeks} lost while the game was down.`;
 
   const handleClaim = async () => {
     setClaiming(true);
@@ -148,7 +159,7 @@ const BankPage: React.FC = () => {
                   {claimed
                     ? 'Claimed! Come back next week for your next reward.'
                     : claimStatus.isSuccess
-                      ? 'Claim your 5,000 coin weekly reward. Resets every Sunday.'
+                      ? claimInvite
                       : claimStatus.isError
                         ? "We couldn't check your weekly reward."
                         : 'Checking your weekly reward…'}
@@ -173,7 +184,7 @@ const BankPage: React.FC = () => {
               ) : (
                 <>
                   <Gift className="w-4 h-4" aria-hidden="true" />
-                  Claim +5,000
+                  Claim +{claimAmount.toLocaleString('en-US')}
                 </>
               )}
             </Button>

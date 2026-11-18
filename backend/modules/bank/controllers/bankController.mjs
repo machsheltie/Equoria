@@ -3,18 +3,22 @@
  *
  * Handles the weekly coin reward system. Users can claim 5,000 coins once per week
  * (2026-07-07 economy ruling; previously 500), resetting every Sunday at midnight Eastern (the game clock).
- * Missed weeks do not roll over.
+ * Missed weeks do not roll over, with one exception: a bank week an outage took
+ * whole, which the owner's outage time-back owes back (owner ruling 2026-10-12,
+ * Equoria-puj1e.5). Owed claims wait in User.settings.owedWeeklyClaims and are
+ * paid by the next claim, on top of that week's own reward, each its own ledger row.
  *
  * Uses atomic SQL (jsonb_set) to prevent TOCTOU race conditions and JSONB clobber.
  * Stores last claim date in User.settings.lastWeeklyClaimDate (ISO string).
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { InvalidCursorError } from '../../../utils/paginationHelper.mjs';
 import { gameDayIndex, startOfGameDayIndex, startOfGameWeek } from '../../../utils/gameTime.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { getTransactionsForUser, recordTransactionTx } from '../../economy/index.mjs';
+import { owedWeeklyClaimsKey } from '../../staff/index.mjs';
 
 /** Amount of coins awarded per weekly claim (2026-07-07 economy ruling) */
 const weeklyRewardAmount = 5_000;
@@ -26,6 +30,54 @@ const weeklyRewardAmount = 5_000;
  */
 export function getCurrentWeekStart() {
   return startOfGameWeek(new Date(), 0);
+}
+
+/** How many owed claims a settings document holds (a time-back's lost weeks). */
+function owedClaimCount(settings) {
+  const owed = settings[owedWeeklyClaimsKey];
+  return Array.isArray(owed) ? owed.length : 0;
+}
+
+/**
+ * Pay every owed claim, one at a time, inside the claim transaction: each pops
+ * the oldest from the list under the row's own write lock and adds one weekly
+ * reward, and is recorded in the ledger against the week it gives back.
+ * @returns {Promise<number[]>} the balance after each payment
+ */
+async function payOwedClaimsTx(tx, userId) {
+  const balances = [];
+  const key = Prisma.sql`${owedWeeklyClaimsKey}::text`;
+  for (;;) {
+    const rows = await tx.$queryRaw`
+      WITH cur AS (
+        SELECT "id", "settings" -> ${key} -> 0 AS claim FROM "User"
+        WHERE "id" = ${userId}
+          AND jsonb_typeof("settings" -> ${key}) = 'array'
+          AND jsonb_array_length("settings" -> ${key}) > 0
+        FOR UPDATE
+      )
+      UPDATE "User" u
+      SET money = u.money + ${weeklyRewardAmount},
+          settings = CASE WHEN jsonb_array_length(u.settings -> ${key}) <= 1
+            THEN u.settings - ${key}
+            ELSE jsonb_set(u.settings, ARRAY[${key}], (u.settings -> ${key}) - 0) END,
+          "updatedAt" = NOW()
+      FROM cur WHERE u."id" = cur."id"
+      RETURNING u.money, cur.claim`;
+    if (rows.length === 0) {
+      return balances;
+    }
+    const claim = rows[0].claim !== null && typeof rows[0].claim === 'object' ? rows[0].claim : {};
+    await recordTransactionTx(tx, {
+      userId,
+      type: 'credit',
+      amount: weeklyRewardAmount,
+      category: 'weeklyReward',
+      description: 'Weekly reward for a week lost to an outage',
+      metadata: { weekStart: claim.weekStart ?? null, owed: true },
+    });
+    balances.push(rows[0].money);
+  }
 }
 
 /** 00:00 Eastern on the Sunday after `weekStart` (7 game days, DST-safe). */
@@ -57,7 +109,7 @@ export async function claimWeeklyReward(req, res) {
 
     // Equoria-7x9po: a transient P2028 tx-timeout maps to a retryable 503
     // (not 500) via the shared wrapper; the catch below honours error.status.
-    const updatedRows = await withRetryableTxMapping(
+    const { updatedRows, owedBalances } = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
         // Atomic check-and-update: only succeeds if not already claimed this week.
         // Uses jsonb_set to avoid clobbering other settings fields.
@@ -103,13 +155,15 @@ export async function claimWeeklyReward(req, res) {
           });
         }
 
-        return rows;
+        // Any weeks an outage took whole, paid on top of this week's reward.
+        return { updatedRows: rows, owedBalances: await payOwedClaimsTx(tx, userId) };
       }),
       { message: 'Reward service is busy right now, please retry in a moment.' },
     );
 
-    if (updatedRows.length === 0) {
-      // Either user not found or already claimed
+    const claims = updatedRows.length + owedBalances.length;
+    if (claims === 0) {
+      // Either user not found or already claimed (and nothing owed)
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { id: true },
@@ -131,17 +185,18 @@ export async function claimWeeklyReward(req, res) {
     }
 
     const nextSunday = nextWeekStart(weekStart);
-    const newBalance = updatedRows[0].money;
+    const newBalance = owedBalances.length > 0 ? owedBalances.at(-1) : updatedRows[0].money;
+    const amount = weeklyRewardAmount * claims;
 
     logger.info(
-      `Weekly reward claimed: userId=${userId}, amount=${weeklyRewardAmount}, newBalance=${newBalance}`,
+      `Weekly reward claimed: userId=${userId}, amount=${amount}, owedWeeks=${owedBalances.length}, newBalance=${newBalance}`,
     );
 
     return res.status(200).json({
       success: true,
-      message: `Claimed ${weeklyRewardAmount} coins!`,
+      message: `Claimed ${amount} coins!`,
       data: {
-        amount: weeklyRewardAmount,
+        amount,
         newBalance,
         nextClaimDate: nextSunday.toISOString(),
       },
@@ -232,7 +287,9 @@ export async function getClaimStatus(req, res) {
       typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
     const lastClaim = settings.lastWeeklyClaimDate ? new Date(settings.lastWeeklyClaimDate) : null;
     const weekStart = getCurrentWeekStart();
-    const canClaim = !lastClaim || lastClaim < weekStart;
+    const weekOpen = !lastClaim || lastClaim < weekStart;
+    const owedClaims = owedClaimCount(settings);
+    const canClaim = weekOpen || owedClaims > 0;
     const nextSunday = nextWeekStart(weekStart);
 
     return res.status(200).json({
@@ -241,6 +298,9 @@ export async function getClaimStatus(req, res) {
         canClaim,
         nextClaimDate: canClaim ? null : nextSunday.toISOString(),
         rewardAmount: weeklyRewardAmount,
+        // Weeks an outage took whole, paid with the next claim (Equoria-puj1e.5).
+        owedClaims,
+        claimAmount: weeklyRewardAmount * ((weekOpen ? 1 : 0) + owedClaims),
       },
     });
   } catch (error) {

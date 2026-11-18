@@ -18,6 +18,10 @@ export interface ClaimStatusResponse {
   canClaim: boolean;
   nextClaimDate: string | null;
   rewardAmount: number;
+  /** Bank weeks an outage took whole, paid with the next claim (Equoria-puj1e.5). */
+  owedClaims?: number;
+  /** Everything the next claim pays: this week's reward if open, plus owed weeks. */
+  claimAmount?: number;
 }
 
 export interface TransactionHistoryItem {

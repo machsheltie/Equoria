@@ -1,7 +1,7 @@
 # Outage Time-Back Contract
 
 - **Status:** Active contract — implemented 2026-11-18 (Equoria-puj1e.5) except
-  the owed weekly bank claims and the horse lookup (see "Not yet built")
+  the horse lookup (see "Not yet built")
 - **Owner:** Project owner (Stacey)
 - **Last verified:** 2026-11-18
 - **Load only when:** designing, planning, implementing, or reviewing the admin
@@ -107,6 +107,19 @@ the normal weekly claim (same amount, ledger-recorded), on top of that week's
 own claim; it is recorded per player in the change set so a reversal removes any
 owed claim not yet redeemed.
 
+Built 2026-11-18 (`backend/modules/staff/services/timeBackBankClaims.mjs`): a
+bank week is Sunday 00:00 to Sunday 00:00 Eastern, fully covered when the window
+begins at or before its start and ends at or after its end. A player had already
+claimed it when the ledger holds a weekly reward for that week
+(`metadata.weekStart`), when their claim marker falls inside it, or when an owed
+claim for it is already waiting; accounts created after the week ended are owed
+nothing. Owed claims wait in `User.settings.owedWeeklyClaims` as
+`{ timeBackId, weekStart }` (server-written only; the players' settings writes
+are allow-listed) and each grant is one `time_back_changes` row. One press of
+the normal claim pays this week's reward if open plus every owed claim, each its
+own ledger row (`metadata.owed: true`); the bank page puts the whole amount on
+the button. Undo removes the owed claims still waiting; paid ones stand.
+
 **Time zone — owner ruling (repeated 2026-10-09):** all game timing runs on
 Eastern time, never UTC. The window `S`/`E`, calendar-day ages, bank weeks and
 job schedules are read in Eastern; the UTC wording in the code survey above
@@ -190,7 +203,6 @@ traits already revealed, payroll already charged.
 
 ## Not yet built (2026-11-18)
 
-- The owed weekly bank claim for bank weeks fully inside an outage.
 - The horse lookup.
 - Fields added to the schema after the 2026-10-06 survey that drive play are
   listed as `unruled` in `backend/modules/staff/services/timeBackClassification.mjs`
