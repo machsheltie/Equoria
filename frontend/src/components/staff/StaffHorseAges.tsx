@@ -26,6 +26,8 @@ const setAgeMessages = {
 
 const ageEveryMessages = {
   403: 'Only the Owner can age every horse.',
+  // Equoria-puj1e.5: it runs like the nightly job, so a hold (or a run already going) stops it.
+  409: 'The nightly jobs are held, or they are running now. Release them or wait, then try again.',
 };
 
 function wholeNumber(text: string): number | null {

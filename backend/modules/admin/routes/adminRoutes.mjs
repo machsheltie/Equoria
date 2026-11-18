@@ -23,10 +23,12 @@ import {
   setHorseAge,
   triggerFoaling,
   backfillPruneNotifications,
+} from '../controllers/adminController.mjs';
+import {
   generateApiDocumentation,
   registerApiEndpoint,
   registerApiSchema,
-} from '../controllers/adminController.mjs';
+} from '../controllers/adminDocsController.mjs';
 
 const router = express.Router();
 

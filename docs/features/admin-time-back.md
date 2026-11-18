@@ -150,9 +150,12 @@ minutes. A hold must therefore be durable:
   `skipped-held` and does nothing. (`showScheduler` no longer exists: shows
   settle only in the nightly run.)
 - Hold and release are admin actions recorded in the staff action log.
-- Both registries write `CronRunLog` rows. Of the admin manual triggers, only
-  "deliver overdue foals now" runs through the monitor (run log + hold); the
-  owner's "age every horse now" and the trait-evaluation trigger do not yet.
+- Both registries write `CronRunLog` rows. The admin manual triggers ("deliver
+  overdue foals now", the owner's "age every horse now" and the trait-evaluation
+  trigger) run through the monitor under their scheduled job's name
+  (`foaling`, `dailyHorseAging`, `dailyTraitEvaluation`) and advisory lock: each
+  run is in the run log a time-back reads, and each is refused (409) while the
+  jobs are held.
 
 ## Operation
 

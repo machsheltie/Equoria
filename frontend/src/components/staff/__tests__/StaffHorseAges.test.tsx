@@ -99,6 +99,28 @@ describe('StaffHorseAges', () => {
     expect(await screen.findByText('Only the Owner can age every horse.')).toBeInTheDocument();
   });
 
+  it('says the nightly jobs are held when the server refuses the run (Equoria-puj1e.5)', async () => {
+    server.use(
+      http.post(`${ADMIN}/horses/age`, () =>
+        HttpResponse.json(
+          { success: false, code: 'jobsHeld', message: 'server words never shown' },
+          { status: 409 }
+        )
+      )
+    );
+    const user = userEvent.setup();
+    renderWithClient(<StaffHorseAges onCheckinRequired={() => undefined} />);
+
+    await user.click(screen.getByRole('button', { name: 'Age every horse now' }));
+
+    expect(
+      await screen.findByText(
+        'The nightly jobs are held, or they are running now. Release them or wait, then try again.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText('server words never shown')).not.toBeInTheDocument();
+  });
+
   it('says no horse has that number when the server finds none (Equoria-0ro0p)', async () => {
     server.use(
       http.post(`${ADMIN}/horses/9999/set-age`, () =>
