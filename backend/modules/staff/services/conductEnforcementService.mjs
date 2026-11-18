@@ -93,6 +93,42 @@ function formatEnd(endsAt) {
 }
 
 /**
+ * When a steward's posting cooldown on this account ends (Equoria-puj1e.3, owner
+ * ruling q375), or null when the account may post on the forum. A cooldown is a
+ * conduct record of kind postingCooldown; the latest active one wins. It stands
+ * apart from the account's standing: a lift ends freezes and bans, not this.
+ * @param {object} client prisma or a transaction client
+ * @param {string} userId
+ * @param {Date} [now]
+ * @returns {Promise<Date | null>}
+ */
+export async function postingCooldownUntil(client, userId, now = new Date()) {
+  const row = await client.conductRecord.findFirst({
+    where: { userId, kind: 'postingCooldown', endsAt: { gt: now } },
+    orderBy: { endsAt: 'desc' },
+    select: { endsAt: true },
+  });
+  return row?.endsAt ?? null;
+}
+
+/**
+ * The forum's refusal while a posting cooldown runs. Authored words, never the code.
+ * @param {Date} endsAt
+ */
+export function postingCooldownRefusal(endsAt) {
+  return {
+    status: 403,
+    body: {
+      success: false,
+      status: 'error',
+      code: 'forumPostingCooldown',
+      message: `A steward has paused your forum posting until ${formatEnd(endsAt)}.`,
+      until: endsAt.toISOString(),
+    },
+  };
+}
+
+/**
  * The refusal for an account standing, or null. Authored words, never the code.
  * @returns {{ status: number, body: object } | null}
  */

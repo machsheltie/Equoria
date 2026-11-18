@@ -24,10 +24,12 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import StaffActionLog from '@/components/staff/StaffActionLog';
 import StaffCheckIn from '@/components/staff/StaffCheckIn';
 import StaffConduct from '@/components/staff/StaffConduct';
+import StaffHeldPosts from '@/components/staff/StaffHeldPosts';
 import StaffHorseAges from '@/components/staff/StaffHorseAges';
 import { StaffFlaggedAddresses } from '@/components/staff/StaffLinkedAccounts';
 import StaffPayrollDiagnostics from '@/components/staff/StaffPayrollDiagnostics';
 import StaffQuarantinedShows from '@/components/staff/StaffQuarantinedShows';
+import StaffRenames from '@/components/staff/StaffRenames';
 import StaffServerHealth from '@/components/staff/StaffServerHealth';
 import StaffRoles from '@/components/staff/StaffRoles';
 import StaffTickets from '@/components/staff/StaffTickets';
@@ -86,10 +88,13 @@ export default function StewardsOfficePage() {
             <StaffConduct
               onCheckinRequired={onCheckinRequired}
               canLift={can('conduct.lift')}
+              canCoolDown={can('post.moderate')}
               canSeeLinked={can('accounts.linked.view')}
               canSeeIdentity={can('view.identity')}
             />
           )}
+          {can('post.review') && <StaffHeldPosts onCheckinRequired={onCheckinRequired} />}
+          {can('rename') && <StaffRenames onCheckinRequired={onCheckinRequired} />}
           {can('accounts.linked.view') && (
             <StaffFlaggedAddresses onCheckinRequired={onCheckinRequired} />
           )}

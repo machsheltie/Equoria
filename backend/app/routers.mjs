@@ -97,9 +97,12 @@ import staffRoutes from '../modules/staff/routes/staffRoutes.mjs';
 // cannot import competition without a cycle).
 import {
   registerGroomPayrollRun,
+  registerHorseNameRule,
   registerPayrollReplays,
   registerQuarantinedShowTools,
 } from '../modules/staff/index.mjs';
+// Equoria-puj1e.3: a steward's horse rename obeys the players' horse-name rule.
+import { horseNameRejectionReason } from '../modules/horses/index.mjs';
 // Equoria-opdt7 (owner ruling q262): the owner's manual groom payday, by the same kind of port.
 import { processWeeklySalaries, replayGroomPayrollTx } from '../modules/grooms/index.mjs';
 // Equoria-brh8c: the owner's payroll re-run for one groom or rider, by the same kind of port.
@@ -144,6 +147,7 @@ export function buildRouters() {
   // Unscoped on purpose: the owner's run is the whole weekly payday.
   registerGroomPayrollRun(() => processWeeklySalaries());
   registerPayrollReplays({ groom: replayGroomPayrollTx, rider: replayRiderPayrollTx });
+  registerHorseNameRule(horseNameRejectionReason);
 
   // Public router - No authentication required
   const publicRouter = express.Router();

@@ -23,10 +23,18 @@ import {
 } from '../../../utils/notificationService.mjs';
 import { staffRoles, staffTargetRefusal } from '../capabilities.mjs';
 import { recordStaffActionTx } from '../services/staffActionLogService.mjs';
-import { accountStanding, evictStandingCache } from '../services/conductEnforcementService.mjs';
+import {
+  accountStanding,
+  evictStandingCache,
+  postingCooldownUntil,
+} from '../services/conductEnforcementService.mjs';
 
 export const freezeLengths = Object.freeze([1, 3, 7]);
-const msPerDay = 24 * 60 * 60 * 1000;
+// Equoria-puj1e.3 (owner ruling q375, issue lengths 1h/12h/1d/3d/7d): forum posting
+// cooldowns, in hours.
+export const postingCooldownHours = Object.freeze([1, 12, 24, 72, 168]);
+const msPerHour = 60 * 60 * 1000;
+const msPerDay = 24 * msPerHour;
 const maxText = 100;
 const maxReason = 1000;
 const recordPage = 50;
@@ -395,3 +403,61 @@ export const liftDevice = liftConnection('device');
 export const banIp = banConnection('ip', 'ban.ip');
 /** POST /api/v1/staff/conduct/:userId/ban/device { reason } */
 export const banDevice = banConnection('device', 'ban.device');
+
+/**
+ * POST /api/v1/staff/conduct/:userId/posting-cooldown { hours: 1|12|24|72|168, reason }
+ * (Equoria-puj1e.3, owner ruling q375). The player keeps playing but cannot start a
+ * thread or reply on the forum until it ends. Refused while one already runs.
+ */
+export const coolDownPosting = (req, res, next) => {
+  const hours = req.body?.hours;
+  if (!postingCooldownHours.includes(hours)) {
+    return fail(
+      res,
+      400,
+      'A posting cooldown lasts 1 hour, 12 hours, 1 day, 3 days or 7 days',
+      'conductCooldownLength',
+    );
+  }
+  return runAction(req, res, next, {
+    capability: 'post.moderate',
+    input: { hours },
+    async apply(tx, { target, reason, actor, input }) {
+      const running = await postingCooldownUntil(tx, target.id);
+      if (running) {
+        throw new Refusal(
+          409,
+          'This player is already on a posting cooldown.',
+          'conductAlreadyCoolingDown',
+        );
+      }
+      const endsAt = new Date(Date.now() + input.hours * msPerHour);
+      const record = await tx.conductRecord.create({
+        data: {
+          userId: target.id,
+          kind: 'postingCooldown',
+          reason,
+          issuedById: actor.id,
+          issuedByRole: actor.role,
+          endsAt,
+        },
+      });
+      return {
+        before: null,
+        after: {
+          kind: 'postingCooldown',
+          hours: input.hours,
+          endsAt: endsAt.toISOString(),
+          recordId: record.id,
+        },
+        body: {
+          id: target.id,
+          kind: 'postingCooldown',
+          hours: input.hours,
+          endsAt,
+          recordId: record.id,
+        },
+      };
+    },
+  });
+};

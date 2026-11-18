@@ -12,6 +12,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import {
   staffApi,
   type ConductAction,
+  type CooldownHours,
   type OwnerFiling,
   type PayrollStaffType,
   type FileTicketPayload,
@@ -236,8 +237,12 @@ export function useConductAction(userId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: [...staffKeys.all, 'conduct-act'],
-    mutationFn: (args: { action: ConductAction; reason: string; days?: 1 | 3 | 7 }) =>
-      staffApi.conductAct(userId, args.action, args.reason, args.days),
+    mutationFn: (args: {
+      action: ConductAction;
+      reason: string;
+      days?: 1 | 3 | 7;
+      hours?: CooldownHours;
+    }) => staffApi.conductAct(userId, args.action, args.reason, args.days, args.hours),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: staffKeys.conduct(userId) });
       queryClient.invalidateQueries({ queryKey: staffKeys.log });

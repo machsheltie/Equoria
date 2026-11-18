@@ -444,6 +444,27 @@ const ConductWarningRow: React.FC<{ notif: GameNotification }> = ({ notif }) => 
   );
 };
 
+/** Owner ruling q376 (Equoria-puj1e.3): a moderator did not accept a held post. */
+const ForumPostRejectedRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
+  const title = typeof notif.payload?.threadTitle === 'string' ? notif.payload.threadTitle : null;
+  const startedThread = notif.payload?.startedThread === true;
+  let what = startedThread ? 'Your new thread' : 'Your reply';
+  if (title) {
+    what = startedThread ? `Your new thread “${title}”` : `Your reply in “${title}”`;
+  }
+  return (
+    <GameNotifShell
+      notif={notif}
+      iconBg="bg-[var(--role-neutral-bg)]"
+      emoji="✉️"
+      badgeLabel="Message board"
+      badgeVariant="secondary"
+      title="A post was not accepted"
+      body={<p>{what} was not accepted by a moderator and has been removed.</p>}
+    />
+  );
+};
+
 /**
  * Equoria-q4uem.9: breeding at stud, said in plain words. A gold star for now
  * (owner ruling q110, 2026-10-27). Decline reasons are read as codes for the
@@ -535,6 +556,8 @@ export const GameNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) =
       return <StudNotifRow notif={notif} />;
     case 'conductWarning':
       return <ConductWarningRow notif={notif} />;
+    case 'forumPostRejected':
+      return <ForumPostRejectedRow notif={notif} />;
     default:
       return <UnknownNotifRow notif={notif} />;
   }

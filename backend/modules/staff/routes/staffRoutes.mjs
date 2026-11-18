@@ -41,7 +41,22 @@ import {
   getConductRecord,
   lookupPlayer,
   warnPlayer,
+  coolDownPosting,
 } from '../controllers/staffConductController.mjs';
+import {
+  lookupHorse,
+  lookupShow,
+  renameHorse,
+  renamePlayer,
+  renameShow,
+} from '../controllers/staffRenameController.mjs';
+import {
+  acceptHeldPost,
+  editPost,
+  listHeldPosts,
+  rejectHeldPost,
+  removePost,
+} from '../controllers/staffForumController.mjs';
 import {
   getFlaggedAddresses,
   getLinkedAccounts,
@@ -92,6 +107,13 @@ router.post('/conduct/:userId/ban/account', requireStaffCapability('ban.account'
 router.post('/conduct/:userId/ban/ip', requireStaffCapability('ban.ip'), banIp);
 router.post('/conduct/:userId/ban/device', requireStaffCapability('ban.device'), banDevice);
 
+// Forum posting cooldown, 1 hour to 7 days (Equoria-puj1e.3, owner ruling q375).
+router.post(
+  '/conduct/:userId/posting-cooldown',
+  requireStaffCapability('post.moderate'),
+  coolDownPosting,
+);
+
 // Lifting (owner ruling q101): the Owner and Admins only; a moderator cannot undo.
 router.post('/conduct/:userId/lift/account', requireStaffCapability('conduct.lift'), liftAccount);
 router.post('/conduct/:userId/lift/ip', requireStaffCapability('conduct.lift'), liftIp);
@@ -116,6 +138,19 @@ router.get(
   requireStaffCapability('accounts.linked.view'),
   getFlaggedAddresses,
 );
+
+// Content moderation (Equoria-puj1e.3, owner rulings q375/q376): rename a horse, a
+// show or a player; edit or remove a forum post; accept or reject held posts.
+router.get('/content/horses/:horseId', requireStaffCapability('rename'), lookupHorse);
+router.post('/content/horses/:horseId/rename', requireStaffCapability('rename'), renameHorse);
+router.get('/content/shows/:showId', requireStaffCapability('rename'), lookupShow);
+router.post('/content/shows/:showId/rename', requireStaffCapability('rename'), renameShow);
+router.post('/content/players/rename', requireStaffCapability('rename'), renamePlayer);
+router.post('/forum/posts/:postId/edit', requireStaffCapability('post.moderate'), editPost);
+router.post('/forum/posts/:postId/remove', requireStaffCapability('post.moderate'), removePost);
+router.get('/forum/held', requireStaffCapability('post.review'), listHeldPosts);
+router.post('/forum/held/:postId/accept', requireStaffCapability('post.review'), acceptHeldPost);
+router.post('/forum/held/:postId/reject', requireStaffCapability('post.review'), rejectHeldPost);
 
 // Tickets: moderators file; both roles read and reply (a moderator only on
 // their own); only the admin changes status. Capability lists stay inline

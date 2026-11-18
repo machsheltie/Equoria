@@ -199,7 +199,9 @@ export const getUserActivity = async (req, res, next) => {
 export const getCommunityActivity = async (req, res, next) => {
   try {
     // 1. Get latest forum threads
+    // Equoria-puj1e.3 (q376): a held thread is nobody else's news until it is accepted.
     const threads = await prisma.forumThread.findMany({
+      where: { status: 'published' },
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: { author: { select: { username: true } } },

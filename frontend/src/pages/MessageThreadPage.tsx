@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, Link, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, ArrowLeft, Send, Pin, Clock } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
@@ -23,8 +23,10 @@ import { Button } from '@/components/ui/button';
 import { GameBadge } from '@/components/ui/game';
 import { Textarea } from '@/components/ui/form';
 import { Skeleton, ErrorState, InlineError } from '@/components/ui/state';
-import { userMessageFor } from '@/lib/http/userMessage';
 import EmptyState from '@/components/ui/EmptyState';
+import { PostStewardTools } from '@/components/forum/PostStewardTools';
+import { forumPostErrorMessage, heldLabel } from '@/components/forum/forumModeration';
+import { useOptionalAuth } from '@/contexts/AuthContext';
 import { useThread, useCreatePost, useIncrementView } from '@/hooks/api/useForum';
 import type { ForumPost } from '@/lib/api-client';
 
@@ -38,7 +40,15 @@ function relativeTime(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-const PostCard: React.FC<{ post: ForumPost; isFirst: boolean }> = ({ post, isFirst }) => (
+const stewardRoles = ['moderator', 'admin', 'owner'];
+
+const PostCard: React.FC<{
+  post: ForumPost;
+  isFirst: boolean;
+  /** Stewards other than the author get the moderation tools (the server re-checks). */
+  canModerate: boolean;
+  onRemoved: (removed: 'post' | 'thread') => void;
+}> = ({ post, isFirst, canModerate, onRemoved }) => (
   <Surface
     variant="panel"
     className={isFirst ? 'border-[var(--role-accent-border)]' : undefined}
@@ -65,10 +75,24 @@ const PostCard: React.FC<{ post: ForumPost; isFirst: boolean }> = ({ post, isFir
             <Clock className="w-3 h-3" aria-hidden="true" />
             {relativeTime(post.createdAt)}
           </span>
+          {post.status === 'held' && (
+            <GameBadge variant="secondary" className="text-[10px]">
+              {heldLabel}
+            </GameBadge>
+          )}
         </div>
         <p className="text-sm text-role-secondary leading-relaxed whitespace-pre-wrap break-words">
           {post.content}
         </p>
+        {canModerate && (
+          <PostStewardTools
+            key={post.content}
+            postId={post.id}
+            content={post.content}
+            isFirst={isFirst}
+            onRemoved={onRemoved}
+          />
+        )}
       </div>
     </div>
   </Surface>
@@ -82,6 +106,13 @@ const MessageThreadPage: React.FC = () => {
   const createPost = useCreatePost();
   const incrementView = useIncrementView();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const auth = useOptionalAuth();
+  const isSteward = stewardRoles.includes(auth?.userRole ?? 'user');
+  const viewerId = auth?.user?.id === undefined ? undefined : String(auth.user.id);
+  const onRemoved = (removed: 'post' | 'thread') => {
+    if (removed === 'thread') navigate('/message-board');
+  };
 
   const [reply, setReply] = useState('');
 
@@ -198,7 +229,13 @@ const MessageThreadPage: React.FC = () => {
         {!isLoading && !error && posts.length > 0 && (
           <div className="space-y-3 mb-8" data-testid="post-list">
             {posts.map((post, idx) => (
-              <PostCard key={post.id} post={post} isFirst={idx === 0} />
+              <PostCard
+                key={post.id}
+                post={post}
+                isFirst={idx === 0}
+                canModerate={isSteward && post.author.id !== viewerId}
+                onRemoved={onRemoved}
+              />
             ))}
           </div>
         )}
@@ -217,7 +254,7 @@ const MessageThreadPage: React.FC = () => {
               aria-label="Reply"
             />
             {createPost.isError && (
-              <InlineError message={userMessageFor(createPost.error).message} className="mb-3" />
+              <InlineError message={forumPostErrorMessage(createPost.error)} className="mb-3" />
             )}
             <div className="flex items-center justify-between">
               <span className="text-xs text-role-muted">{reply.length}/10000</span>

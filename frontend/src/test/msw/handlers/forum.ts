@@ -161,4 +161,11 @@ export const forumHandlers = [
       },
     });
   }),
+
+  // Equoria-puj1e.3: the Steward's Office reads the held-post queue whenever a steward
+  // holding post.review opens it. By default nothing is waiting; a test that cares
+  // stubs its own queue.
+  http.get(`${base}/api/v1/staff/forum/held`, () =>
+    HttpResponse.json({ posts: [], nextAfter: null })
+  ),
 ];

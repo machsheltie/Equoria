@@ -17,7 +17,7 @@ import {
   useConductRecord,
   useLookupConductPlayer,
 } from '@/hooks/api/useStaff';
-import type { ConductAction, ConductEntry, StaffMember } from '@/lib/api/staff';
+import type { ConductAction, ConductEntry, CooldownHours, StaffMember } from '@/lib/api/staff';
 import { formatDateTime } from '@/lib/formatDate';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { LinkedAccountsForPlayer } from './StaffLinkedAccounts';
@@ -44,6 +44,18 @@ const actionOptions = [
   { value: 'ban/device', label: 'Ban the device they last signed in from' },
 ];
 
+// Equoria-puj1e.3 (owner ruling q375): stewards who moderate posts may pause a
+// player's forum posting for a while; the player keeps playing.
+const cooldownOption = { value: 'posting-cooldown', label: 'Pause their forum posting' };
+
+const cooldownOptions = [
+  { value: '1', label: '1 hour' },
+  { value: '12', label: '12 hours' },
+  { value: '24', label: '1 day' },
+  { value: '72', label: '3 days' },
+  { value: '168', label: '7 days' },
+];
+
 // Owner and Admins only (q101): a moderator cannot undo.
 const liftOptions = [
   { value: 'lift/account', label: 'Lift the freeze or ban on the account' },
@@ -66,7 +78,18 @@ const entryWords: Record<ConductEntry['kind'], string> = {
   freeze: 'Frozen',
   ban: 'Banned',
   lift: 'Lifted',
+  postingCooldown: 'Forum posting paused',
 };
+
+function entryDetail(entry: ConductEntry): string {
+  if (entry.kind === 'freeze' && entry.freezeDays) {
+    return ` for ${entry.freezeDays} day${entry.freezeDays === 1 ? '' : 's'}`;
+  }
+  if (entry.kind === 'postingCooldown' && entry.endsAt) {
+    return ` until ${formatDateTime(entry.endsAt, gameClockFormat)}`;
+  }
+  return '';
+}
 
 const lookupMessages = { 400: 'Enter a username.', 404: 'No player goes by that name.' };
 
@@ -88,11 +111,13 @@ function standingLine(standing: { state: string; endsAt?: string }): string {
 function ConductPanel({
   member,
   canLift,
+  canCoolDown,
   canSeeLinked,
   canSeeIdentity,
 }: {
   member: StaffMember;
   canLift: boolean;
+  canCoolDown: boolean;
   canSeeLinked: boolean;
   canSeeIdentity: boolean;
 }) {
@@ -100,6 +125,12 @@ function ConductPanel({
   const act = useConductAction(member.id);
   const [action, setAction] = useState<ConductAction>('warn');
   const [days, setDays] = useState<'1' | '3' | '7'>('1');
+  const [hours, setHours] = useState('1');
+  const options = [
+    ...actionOptions,
+    ...(canCoolDown ? [cooldownOption] : []),
+    ...(canLift ? liftOptions : []),
+  ];
   const [reason, setReason] = useState('');
   const trimmed = reason.trim();
 
@@ -111,6 +142,7 @@ function ConductPanel({
         action,
         reason: trimmed,
         ...(action === 'freeze' ? { days: Number(days) as 1 | 3 | 7 } : {}),
+        ...(action === 'posting-cooldown' ? { hours: Number(hours) as CooldownHours } : {}),
       },
       { onSuccess: () => setReason('') }
     );
@@ -136,9 +168,7 @@ function ConductPanel({
               <li key={entry.id} className="py-2 text-sm">
                 <span className="text-[var(--text-primary)]">
                   {entryWords[entry.kind]}
-                  {entry.kind === 'freeze' && entry.freezeDays
-                    ? ` for ${entry.freezeDays} day${entry.freezeDays === 1 ? '' : 's'}`
-                    : ''}
+                  {entryDetail(entry)}
                 </span>{' '}
                 <span className="text-role-secondary">
                   ({formatDateTime(entry.createdAt, gameClockFormat)}): {entry.reason}
@@ -162,7 +192,7 @@ function ConductPanel({
             <Select
               {...field}
               value={action}
-              options={canLift ? [...actionOptions, ...liftOptions] : actionOptions}
+              options={options}
               onChange={(event) => setAction(event.target.value as ConductAction)}
             />
           )}
@@ -184,6 +214,18 @@ function ConductPanel({
             )}
           </FormField>
         )}
+        {action === 'posting-cooldown' && (
+          <FormField label="Pause for">
+            {(field) => (
+              <Select
+                {...field}
+                value={hours}
+                options={cooldownOptions}
+                onChange={(event) => setHours(event.target.value)}
+              />
+            )}
+          </FormField>
+        )}
         <FormField label="Reason" required>
           {(field) => (
             <Textarea
@@ -198,12 +240,15 @@ function ConductPanel({
         <div className="flex flex-col items-start gap-2">
           <Button
             type="submit"
-            variant={action === 'warn' || action.startsWith('lift/') ? 'default' : 'destructive'}
+            variant={
+              action === 'warn' || action === 'posting-cooldown' || action.startsWith('lift/')
+                ? 'default'
+                : 'destructive'
+            }
             pending={act.isPending}
             disabled={trimmed === ''}
           >
-            {[...actionOptions, ...liftOptions].find((option) => option.value === action)?.label ??
-              'Confirm'}
+            {options.find((option) => option.value === action)?.label ?? 'Confirm'}
           </Button>
           {act.isError && <InlineError message={staffErrorMessage(act.error, actMessages)} />}
           {act.isSuccess && (
@@ -219,6 +264,8 @@ export interface StaffConductProps {
   onCheckinRequired: () => void;
   /** The viewer holds conduct.lift (the owner and admins). */
   canLift?: boolean;
+  /** The viewer holds post.moderate: pause a player's forum posting. */
+  canCoolDown?: boolean;
   /** The viewer holds accounts.linked.view (the owner and admins). */
   canSeeLinked?: boolean;
   /** The viewer holds view.identity (the owner and admins): sign-in history. */
@@ -228,6 +275,7 @@ export interface StaffConductProps {
 export function StaffConduct({
   onCheckinRequired,
   canLift = false,
+  canCoolDown = false,
   canSeeLinked = false,
   canSeeIdentity = false,
 }: StaffConductProps) {
@@ -253,7 +301,7 @@ export function StaffConduct({
   return (
     <StaffSection
       title="Conduct"
-      intro="Warn a player, freeze them for a day, three or seven, or ban them. Every action is written to the ledger."
+      intro="Warn a player, pause their forum posting, freeze them for a day, three or seven, or ban them. Every action is written to the ledger."
     >
       <form onSubmit={find} className="flex flex-col gap-2" noValidate>
         <div className="flex flex-wrap items-end gap-3">
@@ -285,6 +333,7 @@ export function StaffConduct({
           key={found.id}
           member={found}
           canLift={canLift}
+          canCoolDown={canCoolDown}
           canSeeLinked={canSeeLinked}
           canSeeIdentity={canSeeIdentity}
         />

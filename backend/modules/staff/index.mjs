@@ -17,6 +17,8 @@ export { recordStaffActionTx, recordStaffFailure } from './services/staffActionL
 export {
   accountStanding,
   cachedAccountStanding,
+  postingCooldownRefusal,
+  postingCooldownUntil,
   recordLoginSighting,
   refuseSignIn,
   standingRefusal,
@@ -27,6 +29,8 @@ export {
 } from './services/deviceAccountLimitService.mjs';
 export { registerQuarantinedShowTools } from './services/quarantinedShowToolsPort.mjs';
 export { registerGroomPayrollRun } from './services/groomPayrollPort.mjs';
+// Equoria-puj1e.3: a steward's horse rename asks the horses module's name rule by port.
+export { registerHorseNameRule } from './services/contentRulesPort.mjs';
 // Equoria-brh8c: payroll failures are recorded by the grooms and riders modules and
 // re-run through a port the app layer fills (staff cannot import either module).
 export { recordPayrollFailure } from './services/payrollFailureLog.mjs';

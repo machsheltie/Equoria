@@ -297,6 +297,16 @@ export function useAuth(): AuthContextValue {
 }
 
 /**
+ * The auth context, or null outside an AuthProvider. For a surface that only adds
+ * something for a signed-in role (a steward's forum tools, Equoria-puj1e.3) and
+ * must still render where no provider is mounted.
+ */
+export function useOptionalAuth(): AuthContextValue | null {
+  const context = useContext(AuthContext);
+  return context === defaultContextValue ? null : context;
+}
+
+/**
  * Export context for testing
  */
 export { AuthContext };

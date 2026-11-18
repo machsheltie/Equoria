@@ -56,11 +56,16 @@ export type ConductAction =
   | 'ban/device'
   | 'lift/account'
   | 'lift/ip'
-  | 'lift/device';
+  | 'lift/device'
+  // Equoria-puj1e.3 (owner ruling q375): pause the player's forum posting.
+  | 'posting-cooldown';
+
+/** Posting cooldown lengths, in hours: 1 hour, 12 hours, 1, 3 or 7 days. */
+export type CooldownHours = 1 | 12 | 24 | 72 | 168;
 
 export interface ConductEntry {
   id: number;
-  kind: 'warning' | 'freeze' | 'ban' | 'lift';
+  kind: 'warning' | 'freeze' | 'ban' | 'lift' | 'postingCooldown';
   reason: string;
   issuedByRole: string;
   freezeDays: number | null;
@@ -431,10 +436,17 @@ export const staffApi = {
     apiClient.get<LoginHistoryView>(`${BASE}/conduct/${encodeURIComponent(userId)}/login-history`),
   flaggedAddresses: () =>
     apiClient.get<{ addresses: FlaggedAddress[] }>(`${BASE}/flagged-addresses`),
-  conductAct: (userId: string, action: ConductAction, reason: string, days?: 1 | 3 | 7) =>
+  conductAct: (
+    userId: string,
+    action: ConductAction,
+    reason: string,
+    days?: 1 | 3 | 7,
+    hours?: CooldownHours
+  ) =>
     apiClient.post<{ id: string }>(`${BASE}/conduct/${encodeURIComponent(userId)}/${action}`, {
       reason,
       ...(action === 'freeze' ? { days } : {}),
+      ...(action === 'posting-cooldown' ? { hours } : {}),
     }),
 
   listTickets: (cursor?: string) =>

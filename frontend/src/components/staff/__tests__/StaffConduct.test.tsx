@@ -141,4 +141,58 @@ describe('StaffConduct', () => {
     expect(screen.queryByText('internal wording')).not.toBeInTheDocument();
     expect(screen.getByLabelText(/Reason/)).toHaveValue('A note');
   });
+
+  // Equoria-puj1e.3 (owner ruling q375): a posting cooldown of 1 hour to 7 days.
+  it('pauses forum posting for the chosen length and shows it on the record', async () => {
+    let sent: unknown = null;
+    server.use(
+      http.post(`${CONDUCT}/lookup`, () => HttpResponse.json(player)),
+      http.get(`${CONDUCT}/p-1`, () =>
+        HttpResponse.json({
+          player,
+          standing: { state: 'good' },
+          records: [
+            {
+              id: 3,
+              kind: 'postingCooldown',
+              reason: 'Flooding the board',
+              issuedByRole: 'moderator',
+              freezeDays: null,
+              endsAt: '2026-11-19T15:00:00.000Z',
+              createdAt: '2026-11-18T15:00:00.000Z',
+            },
+          ],
+        })
+      ),
+      http.post(`${CONDUCT}/p-1/posting-cooldown`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json({ id: 'p-1' });
+      })
+    );
+    const user = userEvent.setup();
+    const { unmount } = renderIt();
+    await user.type(screen.getByLabelText(/Player to review/), 'Willow');
+    await user.click(screen.getByRole('button', { name: 'Find player' }));
+    await screen.findByText(/In good standing/);
+    expect(screen.queryByRole('option', { name: 'Pause their forum posting' })).toBeNull();
+    unmount();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StaffConduct onCheckinRequired={() => undefined} canCoolDown />
+      </QueryClientProvider>
+    );
+    await user.type(screen.getByLabelText(/Player to review/), 'Willow');
+    await user.click(screen.getByRole('button', { name: 'Find player' }));
+    expect(await screen.findByText(/Forum posting paused until/)).toBeInTheDocument();
+    expect(screen.queryByText(/postingCooldown/)).toBeNull();
+
+    await user.selectOptions(screen.getByLabelText('Action'), 'posting-cooldown');
+    await user.selectOptions(screen.getByLabelText('Pause for'), '72');
+    await user.type(screen.getByLabelText(/Reason/), 'Flooding the board');
+    await user.click(screen.getByRole('button', { name: 'Pause their forum posting' }));
+
+    expect(await screen.findByText(/It is in the ledger/)).toBeInTheDocument();
+    expect(sent).toEqual({ reason: 'Flooding the board', hours: 72 });
+  });
 });

@@ -1835,6 +1835,9 @@ model ForumThread {
   viewCount      Int          @default(0)
   lastActivityAt DateTime     @default(now())
   createdAt      DateTime     @default(now())
+  /// Equoria-puj1e.3 (owner ruling q376): published | held. A thread whose opening
+  /// post waits for a moderator is held: only its author sees it until accepted.
+  status         String       @default("published")
   posts          ForumPost[]
 
   /// Equoria-lffdv: the author's threads (profile page, account erasure).
@@ -1849,9 +1852,14 @@ model ForumPost {
   author    User        @relation("ForumPosts", fields: [authorId], references: [id])
   content   String
   createdAt DateTime    @default(now())
+  /// Equoria-puj1e.3 (owner ruling q376): published | held. A held post is shown
+  /// only to its author, marked as awaiting a moderator, until a moderator accepts it.
+  status    String      @default("published")
 
   /// Equoria-bvddn.23: FK index for thread-page post lookups.
   @@index([threadId])
+  /// Equoria-puj1e.3: the moderators' queue of held posts, oldest first.
+  @@index([status, createdAt])
   /// Equoria-lffdv: the author's posts (profile page, account erasure).
   @@index([authorId])
 }

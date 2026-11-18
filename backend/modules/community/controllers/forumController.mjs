@@ -24,6 +24,9 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 // producer (Equoria-lewrv). Fire-and-forget — the DB write is the source of
 // truth and must never be coupled to bus delivery.
 import { publishUserEvent } from '../../../services/eventBus.mjs';
+// Equoria-puj1e.3 (owner ruling q375): a steward's posting cooldown stops new threads
+// and replies until it ends.
+import { postingCooldownRefusal, postingCooldownUntil } from '../../staff/index.mjs';
 
 /** In-memory dedup map: key = `${userId}:${threadId}`, value = timestamp of last view increment */
 const _viewLog = new Map();
@@ -31,6 +34,28 @@ const viewCooldownMs = 60 * 60 * 1000; // 1 hour
 
 const validSections = ['general', 'art', 'sales', 'services', 'venting'];
 const threadsPerPage = 20;
+
+/**
+ * Owner ruling q376 (Equoria-puj1e.3): a held post or thread is shown only to its
+ * author, marked as awaiting a moderator; nobody else sees it until a moderator
+ * accepts it. These are the read filters every forum read applies. A missing viewer
+ * must never reach `authorId: undefined`, which Prisma reads as no filter at all.
+ */
+const visibleTo = viewerId =>
+  typeof viewerId === 'string' && viewerId !== ''
+    ? { OR: [{ status: 'published' }, { authorId: viewerId }] }
+    : { status: 'published' };
+
+/** Refuse when the author is on a posting cooldown; returns true when it answered. */
+async function refusedForCooldown(res, authorId) {
+  const until = await postingCooldownUntil(prisma, authorId);
+  if (!until) {
+    return false;
+  }
+  const refusal = postingCooldownRefusal(until);
+  res.status(refusal.status).json(refusal.body);
+  return true;
+}
 
 // Pinned threads first, then the most recently active, ties broken by id
 // (Equoria-cmw85.21). A thread that is bumped or pinned while a player pages moves to the
@@ -61,7 +86,7 @@ export async function getThreads(req, res) {
       message: `Invalid section. Valid sections: ${validSections.join(', ')}`,
     });
   }
-  const where = section ? { section } : {};
+  const where = { ...(section ? { section } : {}), ...visibleTo(req.user?.id) };
 
   try {
     const [{ items: threads, pageInfo }, total] = await Promise.all([
@@ -74,7 +99,7 @@ export async function getThreads(req, res) {
         extra: {
           include: {
             author: { select: { id: true, username: true } },
-            _count: { select: { posts: true } },
+            _count: { select: { posts: { where: { status: 'published' } } } },
           },
         },
       }),
@@ -88,6 +113,7 @@ export async function getThreads(req, res) {
       author: t.author,
       tags: t.tags,
       isPinned: t.isPinned,
+      status: t.status,
       viewCount: t.viewCount,
       replyCount: t._count.posts,
       lastActivityAt: t.lastActivityAt,
@@ -118,18 +144,21 @@ export async function getThread(req, res) {
   }
 
   try {
+    const viewerId = req.user?.id;
     const thread = await prisma.forumThread.findUnique({
       where: { id },
       include: {
         author: { select: { id: true, username: true } },
         posts: {
+          where: visibleTo(viewerId),
           orderBy: { createdAt: 'asc' },
           include: { author: { select: { id: true, username: true } } },
         },
       },
     });
 
-    if (!thread) {
+    // A held thread answers exactly like a missing one to everyone but its author.
+    if (!thread || (thread.status === 'held' && thread.authorId !== viewerId)) {
       return res.status(404).json({ success: false, message: 'Thread not found' });
     }
 
@@ -151,6 +180,9 @@ export async function createThread(req, res) {
   const authorId = req.user.id;
 
   try {
+    if (await refusedForCooldown(res, authorId)) {
+      return undefined;
+    }
     // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503 (catch honours error.status).
     const [thread, firstPost] = await withRetryableTxMapping(
       prisma.$transaction(async tx => {
@@ -194,8 +226,12 @@ export async function createPost(req, res) {
   }
 
   try {
+    if (await refusedForCooldown(res, authorId)) {
+      return undefined;
+    }
     const thread = await prisma.forumThread.findUnique({ where: { id: threadId } });
-    if (!thread) {
+    // A held thread is missing to everyone but its author (q376).
+    if (!thread || (thread.status === 'held' && thread.authorId !== authorId)) {
       return res.status(404).json({ success: false, message: 'Thread not found' });
     }
 

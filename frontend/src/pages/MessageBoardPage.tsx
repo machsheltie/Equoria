@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/game';
 import { FormField, Input, Textarea } from '@/components/ui/form';
 import { Skeleton, ErrorState, InlineError } from '@/components/ui/state';
-import { userMessageFor } from '@/lib/http/userMessage';
+import { forumPostErrorMessage, heldLabel } from '@/components/forum/forumModeration';
 import EmptyState from '@/components/ui/EmptyState';
 import { useThreads, useCreateThread } from '@/hooks/api/useForum';
 import { forumSections } from '@/lib/api-client';
@@ -314,7 +314,7 @@ const MessageBoardPage: React.FC = () => {
               )}
             </FormField>
             {createThread.isError && (
-              <InlineError message={userMessageFor(createThread.error).message} />
+              <InlineError message={forumPostErrorMessage(createThread.error)} />
             )}
             <div className="flex gap-3 justify-end">
               <Button type="button" variant="secondary" onClick={closeNewThread}>
@@ -358,6 +358,11 @@ const ThreadRow: React.FC<{ thread: ForumThread }> = ({ thread }) => (
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-0.5">
               {thread.isPinned && <GameBadge className="text-[10px]">Pinned</GameBadge>}
+              {thread.status === 'held' && (
+                <GameBadge variant="secondary" className="text-[10px]">
+                  {heldLabel}
+                </GameBadge>
+              )}
               <h3 className="text-sm font-semibold text-role-primary break-words min-w-0">
                 {thread.title}
               </h3>

@@ -20,6 +20,12 @@ export const forumSections: readonly ForumSection[] = [
   'venting',
 ] as const;
 
+/**
+ * Owner ruling q376 (Equoria-puj1e.3): a held post or thread is shown only to its
+ * author until a moderator accepts it.
+ */
+export type ForumStatus = 'published' | 'held';
+
 export interface ForumAuthor {
   id: string;
   username: string;
@@ -32,6 +38,7 @@ export interface ForumThread {
   author: ForumAuthor;
   tags: string[];
   isPinned: boolean;
+  status?: ForumStatus;
   viewCount: number;
   replyCount: number;
   lastActivityAt: string;
@@ -44,6 +51,7 @@ export interface ForumPost {
   author: ForumAuthor;
   content: string;
   createdAt: string;
+  status?: ForumStatus;
 }
 
 export interface ThreadsResponse {
