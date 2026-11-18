@@ -428,8 +428,8 @@ async function keyboardSweep(page: Page, label: string, maxStops = 15) {
  * scroll container is listed in `clippedOut`, not sampled): `worstRatio` uses
  * the backdrop pixel closest in
  * luminance to the text (5th percentile of ratios, so a stray icon pixel does
- * not decide it) and `medianRatio` the typical pixel. Evidence only: attached
- * so the contrast record covers the whole page, not asserted (Equoria-oey96.10).
+ * not decide it) and `medianRatio` the typical pixel. Attached as evidence, and
+ * a text box whose `worstRatio` is below its minimum fails (q345, Equoria-oey96.10).
  */
 async function sampledContrast(page: Page, label: string) {
   const axe = await new AxeBuilder({ page }).withRules(['color-contrast']).analyze();
@@ -617,6 +617,17 @@ async function sampledContrast(page: Page, label: string) {
     ),
     contentType: 'application/json',
   });
+
+  // Owner ruling q345: measured text contrast was record-only until the color
+  // fixes (Equoria-oey96.74-.78) landed; now a text box whose worst sampled
+  // backdrop pixel is under its WCAG 1.4.3 minimum (4.5:1, 3:1 for large text)
+  // fails the page.
+  const failing = rows.filter((row) => !row.meetsAtWorst);
+  expect(
+    failing,
+    `${label}: sampled text below its WCAG 1.4.3 minimum:
+${JSON.stringify(failing, null, 2)}`
+  ).toEqual([]);
 }
 
 test.describe('a11y — Story 30.5 key pages (real login, real DB)', () => {

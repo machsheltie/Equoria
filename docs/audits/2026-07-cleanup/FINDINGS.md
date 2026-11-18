@@ -4062,3 +4062,5 @@ The emulation was confirmed in effect on every page (`matchMedia('(forced-colors
 - Production build (`vite build` + preview) measurement: **not done.** The dev server was measured.
 - Screen-reader (NVDA) pass: **not done.**
 - eslint-plugin-jsx-a11y enablement: **not done** (unchanged).
+
+**2026-11-18 update (Equoria-oey96.10, owner q345).** The backdrop-sampled text contrast is now a failing assertion, not a record: `sampledContrast` fails a page when any measured text box has a worst sampled ratio under 4.5:1 (3:1 for large text). The color fixes Equoria-oey96.74 to .78 are on master, and the competitions chips now pass. Run on chromium: `npx playwright test --project=a11y tests/e2e/accessibility.spec.ts --workers=1 --retries=0` gave 19 passed, 0 failed (2.0m). Guard check: with the threshold temporarily raised by 100 the forced-colors tests failed (8 of them), so the assertion does bite. Lighthouse stays not done (owner q343: our own measuring is enough).
