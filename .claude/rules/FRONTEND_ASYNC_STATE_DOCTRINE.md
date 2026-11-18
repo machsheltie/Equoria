@@ -60,14 +60,14 @@ return <HorseList items={query.data.items} />;
 - Telemetry or global cache handlers are safety nets, never replacements for a
   visible local error state.
 
-## 3. Mutation feedback: Surface-Owned + Stable Log
+## 3. Mutation feedback: Surface-Owned
 
 There is no general floating-toast layer:
 
 | Event | Destination |
 | --- | --- |
-| Failure | `InlineError` at the failed control, announced accessibly |
-| Routine success | Visible state change on the affected surface plus a durable StableLog entry when the change is not self-evident or is off-screen |
+| Failure | Words beside the button or control that failed (`InlineError`), announced accessibly |
+| Routine success | A visible change on the page itself. No diary, log entry, or receipt (owner rulings 2026-10-26 and q374, 2026-11-18) |
 | Major ceremony | `CinematicMoment` for births, discoveries, championships, and major rewards |
 
 - Do not import `sonner`, add `toast()` calls, or extend `RewardToast` as a
