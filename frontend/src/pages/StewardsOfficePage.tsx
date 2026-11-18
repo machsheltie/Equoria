@@ -28,6 +28,7 @@ import StaffForumReports from '@/components/staff/StaffForumReports';
 import StaffForumWords from '@/components/staff/StaffForumWords';
 import StaffHeldPosts from '@/components/staff/StaffHeldPosts';
 import StaffHorseAges from '@/components/staff/StaffHorseAges';
+import StaffHorseLookup from '@/components/staff/StaffHorseLookup';
 import StaffOutage from '@/components/staff/StaffOutage';
 import { StaffFlaggedAddresses } from '@/components/staff/StaffLinkedAccounts';
 import StaffPayrollDiagnostics from '@/components/staff/StaffPayrollDiagnostics';
@@ -116,6 +117,7 @@ export default function StewardsOfficePage() {
             <StaffPayrollDiagnostics onCheckinRequired={onCheckinRequired} />
           )}
           {can('server.health.view') && <StaffServerHealth onCheckinRequired={onCheckinRequired} />}
+          {can('horse.admin') && <StaffHorseLookup onCheckinRequired={onCheckinRequired} />}
           {can('horses.age.set') && <StaffHorseAges onCheckinRequired={onCheckinRequired} />}
           {can('time-back') && <StaffOutage onCheckinRequired={onCheckinRequired} />}
           {(can('log.view.own') || can('log.view.all')) && (

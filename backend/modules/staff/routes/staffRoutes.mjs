@@ -101,6 +101,7 @@ import {
   sendTimeBackCode,
   undoTimeBackHandler,
 } from '../controllers/staffTimeBackController.mjs';
+import { lookupHorsesHandler } from '../controllers/staffHorseLookupController.mjs';
 
 const router = express.Router();
 
@@ -305,5 +306,9 @@ router.post(
   requireFreshStaffProof('timeBackUndo'),
   undoTimeBackHandler,
 );
+
+// Owner and Admins (Equoria-puj1e.5): look a horse up by number or name to check its
+// clocks. Hidden traits are named for the Owner alone (traits.hidden.view).
+router.get('/horses/lookup', requireStaffCapability('horse.admin'), lookupHorsesHandler);
 
 export default router;

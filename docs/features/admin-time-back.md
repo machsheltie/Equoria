@@ -1,7 +1,7 @@
 # Outage Time-Back Contract
 
-- **Status:** Active contract — implemented 2026-11-18 (Equoria-puj1e.5) except
-  the horse lookup (see "Not yet built")
+- **Status:** Active contract — implemented 2026-11-18 (Equoria-puj1e.5); the
+  clocks still awaiting an owner ruling are under "Not yet built"
 - **Owner:** Project owner (Stacey)
 - **Last verified:** 2026-11-18
 - **Load only when:** designing, planning, implementing, or reviewing the admin
@@ -199,11 +199,15 @@ traits already revealed, payroll already charged.
   8-day fast-forward: it runs the foaling job at real time, so only mares
   already past their due time foal. The fast-forward is removed.
 - **Horse lookup** by id or name shows owner, birth date, age, retired or not,
-  pregnancy and due time, and foal development day.
+  pregnancy and due time, and foal development day. Built 2026-11-18:
+  `GET /api/v1/staff/horses/lookup?q=` behind `horse.admin` (the Owner and
+  Admins; moderators are refused), at most 20 horses, ages read from the birth
+  date on the Eastern calendar. It also shows the horse's traits by their
+  authored names; hidden traits are named for the Owner alone
+  (`traits.hidden.view`), everyone else sees how many are hidden.
 
 ## Not yet built (2026-11-18)
 
-- The horse lookup.
 - Fields added to the schema after the 2026-10-06 survey that drive play are
   listed as `unruled` in `backend/modules/staff/services/timeBackClassification.mjs`
   and are not moved until the owner rules (hunger, rider unpaid fees and
