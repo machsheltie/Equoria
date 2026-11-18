@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/IconButton';
 import { EntityHeader } from '@/components/layout/EntityHeader';
 import { Surface } from '@/components/ui/Surface';
+import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
 import HealthBadge from '../../components/horse/HealthBadge';
 import PregnancyFeedingPanel from '../../components/horse/PregnancyFeedingPanel';
 import { getHorseImage, getHorseImageStyle } from '@/lib/breed-images';
@@ -248,86 +249,90 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
   );
 
   return (
-    <Surface variant="panel" className="p-6">
-      {/* EntityHeader (D-01) — canonical identity header: portrait, h1 name
+    <div data-testid="horse-profile-gold-frame">
+      <GoldBorderFrame className="rounded-[var(--radius-lg)]">
+        <Surface variant="panel" className="p-6">
+          {/* EntityHeader (D-01) — canonical identity header: portrait, h1 name
           (wraps, no truncation), metadata badges, back link, edit action.
           While editing, titleSlot swaps the h1 for the inline rename form and
           the edit action is hidden (the form carries its own cancel/save). */}
-      <EntityHeader
-        name={horse.name}
-        titleSlot={
-          visit ? undefined : isEditing ? renameForm : horseIsUnnamed ? unnamedTitle : undefined
-        }
-        backLink={{ to: '/stable', label: 'Back to Horse List' }}
-        className="py-0"
-        image={
-          <div className="w-32 h-32 md:w-48 md:h-48 rounded-[var(--radius-lg)] border border-[var(--glass-hover)] overflow-hidden bg-[var(--glass-bg)]">
-            <img
-              src={getHorseImage(horse.imageUrl, horse.breed)}
-              alt={horseIsUnnamed ? 'A horse who has not been named yet' : horse.name}
-              className="w-full h-full object-cover"
-              style={getHorseImageStyle(horse.imageUrl, horse.breed)}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
-              }}
-            />
-          </div>
-        }
-        metadata={identityMetadata}
-        actions={
-          isEditing || visit ? undefined : (
-            <IconButton
-              ref={pencilRef}
-              type="button"
-              /* No age gate: the owner ruled a horse may be renamed at will.
+          <EntityHeader
+            name={horse.name}
+            titleSlot={
+              visit ? undefined : isEditing ? renameForm : horseIsUnnamed ? unnamedTitle : undefined
+            }
+            backLink={{ to: '/stable', label: 'Back to Horse List' }}
+            className="py-0"
+            image={
+              <div className="w-32 h-32 md:w-48 md:h-48 rounded-[var(--radius-lg)] border border-[var(--glass-hover)] overflow-hidden bg-[var(--glass-bg)]">
+                <img
+                  src={getHorseImage(horse.imageUrl, horse.breed)}
+                  alt={horseIsUnnamed ? 'A horse who has not been named yet' : horse.name}
+                  className="w-full h-full object-cover"
+                  style={getHorseImageStyle(horse.imageUrl, horse.breed)}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
+                  }}
+                />
+              </div>
+            }
+            metadata={identityMetadata}
+            actions={
+              isEditing || visit ? undefined : (
+                <IconButton
+                  ref={pencilRef}
+                  type="button"
+                  /* No age gate: the owner ruled a horse may be renamed at will.
                  The label changes for a horse who has never been named, because
                  for her this is naming, not editing. */
-              aria-label={horseIsUnnamed ? 'Name this horse' : 'Edit horse name'}
-              onClick={handleStartEdit}
-              icon={<Edit className="w-5 h-5 text-[var(--text-secondary)]" />}
-            />
-          )
-        }
-      />
-
-      {/* Description */}
-      {horse.description && (
-        <p className="fantasy-body text-[var(--text-primary)] mb-4">{horse.description}</p>
-      )}
-
-      {/* In-foal panel — feed-system redesign 2026-04-29 (B6, Equoria-ta4s). */}
-      {horse.inFoalSinceDate && (
-        <div className="mb-4">
-          <PregnancyFeedingPanel
-            inFoalSinceDate={horse.inFoalSinceDate}
-            feedings={horse.pregnancyFeedingsByTier ?? {}}
-            sireName={sireName}
-            pregnancySireId={horse.pregnancySireId ?? null}
+                  aria-label={horseIsUnnamed ? 'Name this horse' : 'Edit horse name'}
+                  onClick={handleStartEdit}
+                  icon={<Edit className="w-5 h-5 text-[var(--text-secondary)]" />}
+                />
+              )
+            }
           />
-        </div>
-      )}
 
-      {/* Quick Stats Summary */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-        {Object.entries(horse.stats).map(([statName, value]) => (
-          <div
-            key={statName}
-            className="flex flex-col items-center p-3 bg-[var(--bg-midnight)] rounded-[var(--radius-sm)] border border-[var(--glass-border)]"
-          >
-            <div className={`mb-1 ${getStatColor(value)}`}>{getStatIcon(statName)}</div>
-            <span className="text-xs fantasy-caption text-[var(--text-secondary)] capitalize">
-              {statName}
-            </span>
-            <span
-              className="text-lg font-semibold tabular-nums text-[var(--text-primary)]"
-              data-testid={`horse-quick-stat-${statName}`}
-            >
-              {value}
-            </span>
+          {/* Description */}
+          {horse.description && (
+            <p className="fantasy-body text-[var(--text-primary)] mb-4">{horse.description}</p>
+          )}
+
+          {/* In-foal panel — feed-system redesign 2026-04-29 (B6, Equoria-ta4s). */}
+          {horse.inFoalSinceDate && (
+            <div className="mb-4">
+              <PregnancyFeedingPanel
+                inFoalSinceDate={horse.inFoalSinceDate}
+                feedings={horse.pregnancyFeedingsByTier ?? {}}
+                sireName={sireName}
+                pregnancySireId={horse.pregnancySireId ?? null}
+              />
+            </div>
+          )}
+
+          {/* Quick Stats Summary */}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            {Object.entries(horse.stats).map(([statName, value]) => (
+              <div
+                key={statName}
+                className="flex flex-col items-center p-3 bg-[var(--bg-midnight)] rounded-[var(--radius-sm)] border border-[var(--glass-border)]"
+              >
+                <div className={`mb-1 ${getStatColor(value)}`}>{getStatIcon(statName)}</div>
+                <span className="text-xs fantasy-caption text-[var(--text-secondary)] capitalize">
+                  {statName}
+                </span>
+                <span
+                  className="text-lg font-semibold tabular-nums text-[var(--text-primary)]"
+                  data-testid={`horse-quick-stat-${statName}`}
+                >
+                  {value}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </Surface>
+        </Surface>
+      </GoldBorderFrame>
+    </div>
   );
 };
 
