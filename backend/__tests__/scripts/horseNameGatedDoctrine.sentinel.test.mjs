@@ -202,4 +202,36 @@ describe('check-horse-name-gated.mjs (Equoria-qkgfh.1; WS4 S5 review M5 arms)', 
     const res = runCheck();
     expect(res.status).toBe(0);
   });
+
+  it('puj1e.3: importing the staff port rule (horseNameRejection) gates a writer while the app layer wires it', () => {
+    plantFile(
+      `staff/${plantToken}portgated_${runId}.mjs`,
+      `${prismaFromHorseRoutes}import { horseNameRejection } from './services/contentRulesPort.mjs';
+${WRITER}`,
+    );
+    const res = runCheck();
+    expect(res.status).toBe(0);
+  });
+
+  it('puj1e.3: importing anything else from the staff port (registerHorseNameRule) does not gate a writer', () => {
+    const plant = plantFile(
+      `staff/${plantToken}portungated_${runId}.mjs`,
+      `${prismaFromHorseRoutes}import { registerHorseNameRule } from './services/contentRulesPort.mjs';
+${WRITER}`,
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toContain(relPosix(plant));
+  });
+
+  it('puj1e.3: a port-importing writer with only a comment mention of horseNameRejection does not gate', () => {
+    const plant = plantFile(
+      `staff/${plantToken}portcomment_${runId}.mjs`,
+      `${prismaFromHorseRoutes}import { registerHorseNameRule /* horseNameRejection */ } from './services/contentRulesPort.mjs';
+${WRITER}`,
+    );
+    const res = runCheck();
+    expect(res.status).toBe(1);
+    expect(res.out).toContain(relPosix(plant));
+  });
 });

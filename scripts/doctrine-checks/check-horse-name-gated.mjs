@@ -123,6 +123,14 @@ const policyBarrelSuffix = 'horses/index.mjs';
 //   routes/_validators.mjs re-exports three policy functions and defines the
 //   express-validator chain horseNameBodyRule on top of the rule.
 const barrelPolicySymbols = new Set(['firstHorseNameRejectionMessage', 'horseNameRejectionReason']);
+// The staff module cannot import horses (module cycle), so a steward's rename asks the
+// rule through a port the app layer fills (Equoria-puj1e.3). Importing the port's
+// `horseNameRejection` gates a writer ONLY while backend/app/routers.mjs still hands
+// the real horses-barrel rule to registerHorseNameRule (see portIsWiredToPolicy).
+const policyPortSuffix = 'staff/services/contentRulesPort.mjs';
+const policyPortRelative = 'services/contentRulesPort.mjs';
+const portPolicySymbols = new Set(['horseNameRejection']);
+const appRoutersPath = path.join(repoRoot, 'backend', 'app', 'routers.mjs');
 const validatorsPolicySymbols = new Set([
   'firstHorseNameRejectionMessage',
   'horseNameRejectionReason',
@@ -392,6 +400,27 @@ function importedNames(clause) {
 }
 
 /**
+ * Is the staff port still filled with the real rule? True when app/routers.mjs, in real
+ * (comment-stripped) code, imports horseNameRejectionReason from the horses barrel and
+ * passes it to registerHorseNameRule(...). Evaluated once.
+ */
+let portWiredCache = null;
+function portIsWiredToPolicy() {
+  if (portWiredCache !== null) return portWiredCache;
+  portWiredCache = false;
+  if (fs.existsSync(appRoutersPath)) {
+    const { code } = stripComments(fs.readFileSync(appRoutersPath, 'utf8'));
+    const importsRule =
+      /import\s*\{[^}]*\bhorseNameRejectionReason\b[^}]*\}\s*from\s*['"][^'"]*horses\/index\.mjs['"]/.test(
+        code
+      );
+    const registers = /\bregisterHorseNameRule\s*\(\s*horseNameRejectionReason\s*\)/.test(code);
+    portWiredCache = importsRule && registers;
+  }
+  return portWiredCache;
+}
+
+/**
  * Does this file route through the shared policy at all?
  *
  * Only REAL import/export statements count: matched at statement boundaries (line
@@ -417,6 +446,13 @@ function importsPolicy(source) {
     if (
       spec.endsWith(policyReexportBasename) &&
       names.some((nm) => validatorsPolicySymbols.has(nm))
+    )
+      return true;
+    // The staff port: only its exact rule function, and only while the app layer wires it.
+    if (
+      (spec.endsWith(policyPortSuffix) || spec.endsWith(`/${policyPortRelative}`)) &&
+      names.some((nm) => portPolicySymbols.has(nm)) &&
+      portIsWiredToPolicy()
     )
       return true;
     // So does importing one of the EXACT policy names from the horses barrel (the
