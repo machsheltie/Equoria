@@ -16,7 +16,10 @@
  *   scheduling and housekeeping. Never touched.
  * - unruled: added to the schema after the owner's survey and not yet ruled on.
  *   Not moved (as neverMoved) until the owner decides; the time-back preview
- *   names them so the owner can see what was left alone.
+ *   names them so the owner can see what was left alone. Empty since owner
+ *   ruling q383 (2026-11-18): hunger, rider unpaid-fee and free-agent time,
+ *   rider retirement notices, Hall of Fame voting rounds and a foal's final
+ *   development day get the time back like every other game clock.
  *
  * Rule 3 (job counters) moves integers, not DateTime fields; see
  * timeBackRules.mjs.
@@ -36,6 +39,11 @@ export const pastEventFields = Object.freeze([
   'GroomInteraction.timestamp',
   'GroomInteraction.createdAt',
   'StaffMarketplaceState.lastRefresh',
+  // Owner ruling q383 (2026-11-18).
+  'Horse.hungerSince',
+  'Rider.freeAgentSince',
+  'RiderRetirementSchedule.noticeSentAt',
+  'FoalDevelopment.finalDayEvaluatedAt',
 ]);
 
 export const pendingDeadlineFields = Object.freeze([
@@ -45,20 +53,13 @@ export const pendingDeadlineFields = Object.freeze([
   'ClubElection.startsAt',
   'ClubElection.endsAt',
   'Groom.feeUnpaidSince',
-]);
-
-export const unruledFields = Object.freeze([
-  'Horse.hungerSince',
-  'FoalDevelopment.finalDayEvaluatedAt',
+  // Owner ruling q383 (2026-11-18).
   'Rider.feeUnpaidSince',
-  'Rider.freeAgentSince',
-  'RiderRetirementSchedule.noticeSentAt',
-  'RiderRetirementSchedule.assignedAt',
-  'HallOfFameNomination.weekStart',
-  'HallOfFameRound.weekStart',
   'HallOfFameRound.startsAt',
   'HallOfFameRound.endsAt',
 ]);
+
+export const unruledFields = Object.freeze([]);
 
 export const neverMovedFields = Object.freeze([
   'User.passwordChangedAt',
@@ -200,6 +201,13 @@ export const neverMovedFields = Object.freeze([
   'LoginSighting.lastSeenAt',
   'ConductBlock.createdAt',
   'UserPresence.lastActiveAt',
+  // q383 (2026-11-18): the Hall of Fame week names (00:00 Eastern Sunday) are
+  // labels, not clocks: the round's voting time is startsAt/endsAt, and a
+  // round's weekStart is the unique one-round-per-week key. The rider
+  // retirement roll time is a record, like GroomRetirementSchedule.assignedAt.
+  'HallOfFameNomination.weekStart',
+  'HallOfFameRound.weekStart',
+  'RiderRetirementSchedule.assignedAt',
   'HallOfFameNomination.createdAt',
   'HallOfFameRound.closedAt',
   'HallOfFameVote.createdAt',

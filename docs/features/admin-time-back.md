@@ -1,9 +1,9 @@
 # Outage Time-Back Contract
 
 - **Status:** Active contract — implemented 2026-11-18 (Equoria-puj1e.5); the
-  clocks still awaiting an owner ruling are under "Not yet built"
+  newer clocks move too since owner ruling q383 (2026-11-18)
 - **Owner:** Project owner (Stacey)
-- **Last verified:** 2026-11-18
+- **Last verified:** 2026-11-19
 - **Load only when:** designing, planning, implementing, or reviewing the admin
   "give time back after an outage" operation, the durable nightly-job hold, or
   the overdue-only foaling control
@@ -84,6 +84,23 @@ earlier in its life), `StaffMarketplaceState.lastRefresh`.
 `Show.runDate` (status `open` only), `ClubElection.startsAt` / `endsAt` (status
 not `closed`), `Groom.feeUnpaidSince` (bucketed by pay week — a pause under 7 days changes
 nothing). `Show.openDate` is always the creation time, so it is never pending.
+
+**Owner ruling q383 (2026-11-18): the clocks added after the survey get the
+time back too, the same as every other game clock.**
+
+- Rule 1: `Horse.hungerSince` (hunger), `Rider.freeAgentSince` (time in the
+  riders-for-hire pool), `RiderRetirementSchedule.noticeSentAt` (a rider's
+  retirement notice), `FoalDevelopment.finalDayEvaluatedAt` (a foal's final
+  development day).
+- Rule 2: `Rider.feeUnpaidSince` (a rider's unpaid pay week; like the groom's,
+  moved in whole weeks only), `HallOfFameRound.startsAt` / `endsAt` (voting
+  rounds and run-offs not yet decided, `closedAt` null).
+- Never moved: `HallOfFameRound.weekStart` and `HallOfFameNomination.weekStart`
+  are week names (00:00 Eastern Sunday), not clocks — a round's voting time is
+  `startsAt`/`endsAt`, and `weekStart` is the one-round-per-week key, so moving
+  it would let a second round open in the same week.
+  `RiderRetirementSchedule.assignedAt` is when the hidden age was rolled, a
+  record like `GroomRetirementSchedule.assignedAt`.
 
 **Rule 3 — job counters:** `Groom.careerWeeks` (groomCareerProgression, Mon
 09:45 UTC), `Rider.careerWeeks` and `Trainer.careerWeeks`
@@ -206,13 +223,12 @@ traits already revealed, payroll already charged.
   authored names; hidden traits are named for the Owner alone
   (`traits.hidden.view`), everyone else sees how many are hidden.
 
-## Not yet built (2026-11-18)
+## Fields not yet ruled on
 
-- Fields added to the schema after the 2026-10-06 survey that drive play are
-  listed as `unruled` in `backend/modules/staff/services/timeBackClassification.mjs`
-  and are not moved until the owner rules (hunger, rider unpaid fees and
-  free-agent time, rider retirement notices, Hall of Fame rounds, a foal's last
-  development day).
+A `DateTime` field added later that drives play goes in `unruledFields` in
+`backend/modules/staff/services/timeBackClassification.mjs` until the owner
+rules; it is not moved, and the preview names it as left alone. The list is
+empty since owner ruling q383 (2026-11-18).
 
 ## Tests the implementation must provide
 

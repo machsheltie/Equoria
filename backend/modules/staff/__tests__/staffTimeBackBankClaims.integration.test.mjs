@@ -14,6 +14,9 @@
  * the last three days). Apply moves every matching row in the shared database,
  * so the suite always undoes what it applied (the undo test, and the afterAll
  * safety net if a test failed first).
+ *
+ * Owner ruling q383 (2026-11-18): a rider's unpaid pay week gets the time back
+ * like a groom's, in whole weeks, so this week-long window covers it too.
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
@@ -36,6 +39,7 @@ import {
   staffApi,
   startEmailCapture,
   stopEmailCapture,
+  uid,
 } from './helpers/staffFixtures.mjs';
 import { actionCodesFor, easternWall, freshCode, restoreHold, snapshotHold } from './helpers/timeBackFixtures.mjs';
 
@@ -60,6 +64,8 @@ let owner;
 let device;
 const players = {};
 let applied;
+const riders = {};
+const unpaidKey = 'Rider.feeUnpaidSince';
 
 const settingsOf = async user => (await prisma.user.findUnique({ where: { id: user.id } })).settings;
 const moneyOf = async user => (await prisma.user.findUnique({ where: { id: user.id } })).money;
@@ -77,6 +83,7 @@ beforeAll(async () => {
     await prisma.timeBack.deleteMany({ where: { id: { in: ids } } });
   }, 'time-backs');
   cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: scope() } }), 'ledger rows');
+  cleanup.add(() => prisma.rider.deleteMany({ where: { userId: scope() } }), 'riders');
   cleanup.add(() => prisma.staffActionLog.deleteMany({ where: { actorId: scope() } }), 'action log');
   cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: scope() } }), 'checkin codes');
   cleanup.add(() => prisma.staffTrustedDevice.deleteMany({ where: { userId: scope() } }), 'devices');
@@ -118,6 +125,24 @@ beforeAll(async () => {
   });
   // Joined after the week ended: lost nothing.
   players.newcomer = await makeUser('user', { money: 1_000 });
+
+  // q383: riders on a player's staff whose pay week went unpaid.
+  const rider = async feeUnpaidSince =>
+    prisma.rider.create({
+      data: {
+        firstName: 'TestFixture',
+        lastName: `tb-bank-${uid()}`,
+        personality: 'methodical',
+        userId: players.waiting.id,
+        feeUnpaidSince,
+      },
+    });
+  // Went unpaid during the outage: the unpaid week moves a week on.
+  riders.unpaid = await rider(new Date(S.getTime() + day));
+  // Went unpaid during the outage, then paid after the time-back: undo leaves it paid.
+  riders.paidLater = await rider(new Date(S.getTime() + day));
+  // Went unpaid before the outage began: a deadline already running stays as it is.
+  riders.unpaidBefore = await rider(new Date(S.getTime() - 6 * day));
 }, 120_000);
 
 // Safety net: never leave a time-back applied in the shared database.
@@ -160,7 +185,12 @@ describe('Owed weekly bank claims (Owner time-back, player bank claim)', () => {
     );
     expect(res.status).toBe(200);
     expect(res.body.data.fields[owedKey]).toBeGreaterThanOrEqual(3);
+    expect(res.body.data.fields[unpaidKey]).toBeGreaterThanOrEqual(2);
+    expect(res.body.data.unruledFields).toEqual([]);
     expect(await owedOf(players.lost)).toBeUndefined();
+    expect((await prisma.rider.findUnique({ where: { id: riders.unpaid.id } })).feeUnpaidSince).toEqual(
+      riders.unpaid.feeUnpaidSince,
+    );
   }, 60_000);
 
   it('apply grants one owed claim per lost week, only to players who lost it, and records each', async () => {
@@ -184,6 +214,13 @@ describe('Owed weekly bank claims (Owner time-back, player bank claim)', () => {
       where: { timeBackId: applied.id, tableName: 'User', rowId: players.lost.id },
     });
     expect(changes).toEqual([expect.objectContaining({ field: 'owedWeeklyClaims', oldValue: null, newValue: claim })]);
+
+    // q383: unpaid rider weeks move by the whole week the outage took.
+    const unpaidOf = async who => (await prisma.rider.findUnique({ where: { id: riders[who].id } })).feeUnpaidSince;
+    expect(applied.summary.fields[unpaidKey]).toBeGreaterThanOrEqual(2);
+    expect(await unpaidOf('unpaid')).toEqual(new Date(riders.unpaid.feeUnpaidSince.getTime() + 7 * day));
+    expect(await unpaidOf('paidLater')).toEqual(new Date(riders.paidLater.feeUnpaidSince.getTime() + 7 * day));
+    expect(await unpaidOf('unpaidBefore')).toEqual(riders.unpaidBefore.feeUnpaidSince);
     expect((await post(`${staffApi}/jobs/release`, owner, {}, device)).status).toBe(200);
   }, 120_000);
 
@@ -243,6 +280,8 @@ describe('Owed weekly bank claims (Owner time-back, player bank claim)', () => {
 
   it('undo removes the owed claims still waiting and leaves the paid ones paid', async () => {
     expect(applied?.id).toBeDefined();
+    // q383: the player pays one rider after the time-back.
+    await prisma.rider.update({ where: { id: riders.paidLater.id }, data: { feeUnpaidSince: null } });
     const res = await post(
       `${staffApi}/time-back/${applied.id}/undo`,
       owner,
@@ -258,5 +297,13 @@ describe('Owed weekly bank claims (Owner time-back, player bank claim)', () => {
     expect((await get(STATUS, players.waiting)).body.data).toMatchObject({ owedClaims: 0, claimAmount: weeklyReward });
     expect(await moneyOf(players.lost)).toBe(1_000 + 2 * weeklyReward);
     expect(await moneyOf(players.claimedThisWeek)).toBe(1_000 + weeklyReward);
+
+    // q383: the untouched unpaid week is restored; the one paid since stays paid.
+    expect(summary.restored[unpaidKey]).toBeGreaterThanOrEqual(1);
+    expect(summary.skippedRows[unpaidKey]).toContain(String(riders.paidLater.id));
+    const unpaidOf = async who => (await prisma.rider.findUnique({ where: { id: riders[who].id } })).feeUnpaidSince;
+    expect(await unpaidOf('unpaid')).toEqual(riders.unpaid.feeUnpaidSince);
+    expect(await unpaidOf('paidLater')).toBeNull();
+    expect(await unpaidOf('unpaidBefore')).toEqual(riders.unpaidBefore.feeUnpaidSince);
   }, 120_000);
 });

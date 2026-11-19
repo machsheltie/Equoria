@@ -25,8 +25,9 @@ const daysUntilRetirement = 21 * 7; // a horse retires at 21 game-years; 7 days 
 
 /**
  * The moved fields. `key` is the classification key ('Model.field'); `table`,
- * `column` and `id` are the database names. `type` is the SQL type a recorded
- * value is cast back to on undo.
+ * `column` and `id` (the primary key column, 'id' unless given) are the
+ * database names. `type` is the SQL type a recorded value is cast back to on
+ * undo.
  */
 const fieldRules = Object.freeze([
   // Rule 1: past events.
@@ -66,6 +67,20 @@ const fieldRules = Object.freeze([
     table: 'staff_marketplace_state',
     column: 'lastRefresh',
   },
+  // Owner ruling q383 (2026-11-18): the clocks added after the survey.
+  { key: 'Horse.hungerSince', table: 'horses', column: 'hungerSince' },
+  { key: 'Rider.freeAgentSince', table: 'riders', column: 'freeAgentSince' },
+  {
+    key: 'RiderRetirementSchedule.noticeSentAt',
+    table: 'rider_retirement_schedules',
+    column: 'noticeSentAt',
+    id: 'riderId',
+  },
+  {
+    key: 'FoalDevelopment.finalDayEvaluatedAt',
+    table: 'foal_development',
+    column: 'finalDayEvaluatedAt',
+  },
   // Rule 2: pending deadlines.
   { key: 'Horse.trainingCooldown', table: 'horses', column: 'trainingCooldown' },
   {
@@ -94,6 +109,21 @@ const fieldRules = Object.freeze([
   },
   // Bucketed by pay week: the pause moves it in whole weeks only.
   { key: 'Groom.feeUnpaidSince', table: 'grooms', column: 'feeUnpaidSince', weekly: true },
+  // q383: mirrors Groom.feeUnpaidSince (a rider's unpaid pay week).
+  { key: 'Rider.feeUnpaidSince', table: 'riders', column: 'feeUnpaidSince', weekly: true },
+  // q383: a Hall of Fame round (weekly or run-off) still being voted on.
+  {
+    key: 'HallOfFameRound.startsAt',
+    table: 'HallOfFameRound',
+    column: 'startsAt',
+    extra: () => Prisma.sql`t."closedAt" IS NULL`,
+  },
+  {
+    key: 'HallOfFameRound.endsAt',
+    table: 'HallOfFameRound',
+    column: 'endsAt',
+    extra: () => Prisma.sql`t."closedAt" IS NULL`,
+  },
 ]);
 
 const ruleOf = key =>
@@ -111,7 +141,7 @@ for (const rule of fieldRules) {
 
 /** Every moved field's rule, with its classification attached. */
 export const movedFieldRules = Object.freeze(
-  fieldRules.map(rule => Object.freeze({ ...rule, rule: ruleOf(rule.key), id: 'id' })),
+  fieldRules.map(rule => Object.freeze({ id: 'id', ...rule, rule: ruleOf(rule.key) })),
 );
 
 /**
@@ -157,10 +187,17 @@ export const restorableColumns = Object.freeze([
     key: r.key,
     table: r.table,
     column: r.column,
+    id: r.id,
     type: r.type ?? 'timestamp(3)',
   })),
-  ...jobCounterRules.map(r => ({ key: r.key, table: r.table, column: r.column, type: 'int' })),
-  ...derivedRules,
+  ...jobCounterRules.map(r => ({
+    key: r.key,
+    table: r.table,
+    column: r.column,
+    id: 'id',
+    type: 'int',
+  })),
+  ...derivedRules.map(r => ({ ...r, id: 'id' })),
 ]);
 
 const ident = name => Prisma.raw(`"${name}"`);
@@ -222,13 +259,14 @@ export function ruleIsIdle(rule, w) {
  * `select` yields (rid, old, nv) rows from alias t; the rows are locked FOR
  * UPDATE OF t and their new values are recomputed on the locked version.
  */
-async function updateAndRecordTx(tx, timeBackId, { table, column, key }, select) {
+async function updateAndRecordTx(tx, timeBackId, { table, column, key, id = 'id' }, select) {
+  const pk = ident(id);
   const recorded = await tx.$executeRaw`
     WITH target AS (${select}),
     upd AS (
       UPDATE ${ident(table)} u SET ${ident(column)} = target.nv
-      FROM target WHERE u."id" = target.rid
-      RETURNING u."id" AS rid, target.old AS old, u.${ident(column)} AS new
+      FROM target WHERE u.${pk} = target.rid
+      RETURNING u.${pk} AS rid, target.old AS old, u.${ident(column)} AS new
     )
     INSERT INTO "time_back_changes" ("timeBackId", "tableName", "rowId", "field", "oldValue", "newValue")
     SELECT ${timeBackId}, ${table}, upd.rid::text, ${column}, to_jsonb(upd.old), to_jsonb(upd.new) FROM upd`;
@@ -239,7 +277,7 @@ async function updateAndRecordTx(tx, timeBackId, { table, column, key }, select)
 export function applyFieldRuleTx(tx, timeBackId, rule, w) {
   const { newValue, condition } = fieldExpressions(rule, w);
   const select = Prisma.sql`
-    SELECT t."id" AS rid, t.${ident(rule.column)} AS old, ${newValue} AS nv
+    SELECT t.${ident(rule.id)} AS rid, t.${ident(rule.column)} AS old, ${newValue} AS nv
     FROM ${ident(rule.table)} t WHERE ${condition} FOR UPDATE OF t`;
   return updateAndRecordTx(tx, timeBackId, rule, select);
 }
@@ -340,8 +378,9 @@ export async function countHorsesUnretired(client, w) {
  * holds the value the time-back wrote. Returns restored and skipped counts and
  * up to 50 skipped row ids.
  */
-export async function restoreColumnTx(tx, timeBackId, { table, column, type }) {
+export async function restoreColumnTx(tx, timeBackId, { table, column, id = 'id', type }) {
   const cast = Prisma.raw(type);
+  const pk = ident(id);
   const changes = Prisma.sql`
     SELECT "rowId", "oldValue", "newValue" FROM "time_back_changes"
     WHERE "timeBackId" = ${timeBackId} AND "tableName" = ${table} AND "field" = ${column}`;
@@ -354,20 +393,20 @@ export async function restoreColumnTx(tx, timeBackId, { table, column, type }) {
   const restored = await tx.$executeRaw`
     WITH c AS (${changes}),
     locked AS (
-      SELECT u."id" FROM ${ident(table)} u JOIN c ON u."id"::text = c."rowId"
+      SELECT u.${pk} AS "lockedId" FROM ${ident(table)} u JOIN c ON u.${pk}::text = c."rowId"
       WHERE u.${ident(column)} IS NOT DISTINCT FROM (c."newValue" #>> '{}')::${cast}
       FOR UPDATE OF u
     )
     UPDATE ${ident(table)} u SET ${ident(column)} = (c."oldValue" #>> '{}')::${cast}
-    FROM c WHERE u."id"::text = c."rowId" AND u."id" IN (SELECT "id" FROM locked)`;
+    FROM c WHERE u.${pk}::text = c."rowId" AND u.${pk} IN (SELECT "lockedId" FROM locked)`;
   const skippedRows =
     restored === total
       ? []
       : (
           await tx.$queryRaw`
             SELECT c."rowId" FROM (${changes}) c
-            LEFT JOIN ${ident(table)} u ON u."id"::text = c."rowId"
-            WHERE u."id" IS NULL OR u.${ident(column)} IS DISTINCT FROM (c."oldValue" #>> '{}')::${cast}
+            LEFT JOIN ${ident(table)} u ON u.${pk}::text = c."rowId"
+            WHERE u.${pk} IS NULL OR u.${ident(column)} IS DISTINCT FROM (c."oldValue" #>> '{}')::${cast}
             ORDER BY c."rowId" LIMIT 50`
         ).map(row => row.rowId);
   return { restored, skipped: total - restored, skippedRows };

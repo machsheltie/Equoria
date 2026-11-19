@@ -27,26 +27,19 @@ const fieldWords: Record<string, string> = {
   'ClubElection.startsAt': 'club election openings',
   'ClubElection.endsAt': 'club election closings',
   'Groom.feeUnpaidSince': 'unpaid groom fees',
+  'Horse.hungerSince': 'hunger clocks',
+  'FoalDevelopment.finalDayEvaluatedAt': 'foals’ last development days',
+  'Rider.feeUnpaidSince': 'unpaid rider fees',
+  'Rider.freeAgentSince': 'riders’ times as free agents',
+  'RiderRetirementSchedule.noticeSentAt': 'rider retirement notices',
+  'HallOfFameRound.startsAt': 'Hall of Fame round openings',
+  'HallOfFameRound.endsAt': 'Hall of Fame round closings',
   'Groom.careerWeeks': 'grooms’ years',
   'Rider.careerWeeks': 'riders’ years',
   'Trainer.careerWeeks': 'trainers’ years',
   'Horse.age': 'horse ages',
   'FoalDevelopment.currentDay': 'foal development days',
   'User.owedWeeklyClaims': 'weekly bank claims owed to players',
-};
-
-/** Values the owner has not ruled on yet, which a time-back leaves alone. */
-const unruledWords: Record<string, string> = {
-  'Horse.hungerSince': 'hunger',
-  'FoalDevelopment.finalDayEvaluatedAt': 'a foal’s last development day',
-  'Rider.feeUnpaidSince': 'unpaid rider fees',
-  'Rider.freeAgentSince': 'riders’ time as free agents',
-  'RiderRetirementSchedule.noticeSentAt': 'rider retirement notices',
-  'RiderRetirementSchedule.assignedAt': 'rider retirement notices',
-  'HallOfFameNomination.weekStart': 'Hall of Fame rounds',
-  'HallOfFameRound.weekStart': 'Hall of Fame rounds',
-  'HallOfFameRound.startsAt': 'Hall of Fame rounds',
-  'HallOfFameRound.endsAt': 'Hall of Fame rounds',
 };
 
 /** "3 groomings" lines for every field with a non-zero count, in a stable order. */
@@ -57,8 +50,12 @@ export function movedLines(fields: Record<string, number> | undefined): string[]
     .map(([key, count]) => `${count.toLocaleString()} ${fieldWords[key] ?? 'other dates'}`);
 }
 
+/**
+ * Values the owner has not ruled on yet, which a time-back leaves alone. None
+ * since owner ruling q383 (2026-11-18); a later one is named by its words above.
+ */
 export function unruledLine(keys: string[]): string | null {
-  const words = [...new Set(keys.map((key) => unruledWords[key] ?? 'other dates'))];
+  const words = [...new Set(keys.map((key) => fieldWords[key] ?? 'other dates'))];
   return words.length === 0 ? null : `Left alone until you rule on them: ${words.join(', ')}.`;
 }
 

@@ -9,6 +9,11 @@
  * end exactly as they started.
  *
  * Window: from 3 days ago to 1 day ago (a 2-day pause), in Eastern wall time.
+ *
+ * Owner ruling q383 (2026-11-18): hunger, riders' free-agent time, rider
+ * retirement notices, Hall of Fame voting rounds and a foal's final development
+ * day get the time back like every other clock. (Rider unpaid fees move by
+ * whole pay weeks, so the 7-day bank suite covers them.)
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
@@ -53,11 +58,20 @@ const plus = (date, ms) => new Date(date.getTime() + ms);
 let holdBefore;
 let owner;
 let device;
-const made = { horses: [], groomId: null, showId: null, runLogId: null };
+const made = { horses: [], groomId: null, showId: null, runLogId: null, riders: [], rounds: [] };
 let foal;
 let elder;
 let ancient;
 let applied;
+// q383 fixtures: in each pair the first is restored by undo, the second is
+// changed by play after apply and left alone.
+let riderKept;
+let riderRehired;
+let roundKept;
+let roundChanged;
+let roundClosed;
+// Far past every Hall of Fame suite's synthetic weeks, so no round runner closes it.
+const farEnd = new Date(Date.UTC(2200, 0, 1));
 
 beforeAll(async () => {
   holdBefore = await snapshotHold();
@@ -73,6 +87,8 @@ beforeAll(async () => {
   cleanup.add(() => prisma.cronRunLog.deleteMany({ where: { id: made.runLogId ?? -1 } }), 'planted run');
   cleanup.add(() => prisma.show.deleteMany({ where: { id: made.showId ?? -1 } }), 'show');
   cleanup.add(() => prisma.groom.deleteMany({ where: { id: made.groomId ?? -1 } }), 'groom');
+  cleanup.add(() => prisma.hallOfFameRound.deleteMany({ where: { id: { in: made.rounds } } }), 'rounds');
+  cleanup.add(() => prisma.rider.deleteMany({ where: { id: { in: made.riders } } }), 'riders');
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: made.horses } } }), 'horses');
   cleanup.add(() => prisma.staffActionLog.deleteMany({ where: { actorId: scope() } }), 'action log');
   cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: scope() } }), 'checkin codes');
@@ -103,8 +119,12 @@ beforeAll(async () => {
     lastFedDate: plus(S, 3_600_000),
     trainingCooldown: new Date(now + day),
     lastShod: new Date(now - 3_600_000),
+    hungerSince: plus(S, -2 * day),
   });
-  await prisma.foalDevelopment.create({ data: { foalId: foal.id, currentDay: 5 } });
+  // Her final development day was evaluated during the outage (q383).
+  await prisma.foalDevelopment.create({
+    data: { foalId: foal.id, currentDay: 5, finalDayEvaluatedAt: plus(S, 3_600_000) },
+  });
   // Turned 21 during the outage: goes back to 20. Her cooldown passed before it.
   elder = await horse({
     sex: 'Mare',
@@ -112,9 +132,44 @@ beforeAll(async () => {
     dateOfBirth: gameCalendarDate(new Date(now), -147),
     inFoalSinceDate: plus(S, -2 * day),
     trainingCooldown: plus(S, -day),
+    hungerSince: plus(S, -day),
   });
   // Already 21 before the outage: never moves.
   ancient = await horse({ sex: 'Mare', age: 24, dateOfBirth: gameCalendarDate(new Date(now), -170) });
+  await prisma.foalDevelopment.create({
+    data: { foalId: ancient.id, currentDay: 6, finalDayEvaluatedAt: plus(S, -day) },
+  });
+
+  // On the player's staff (not in the hiring pool), each with a retirement notice.
+  const rider = async (freeAgentSince, noticeSentAt) => {
+    const row = await prisma.rider.create({
+      data: {
+        firstName: 'TestFixture',
+        lastName: `tb-${uid()}`,
+        personality: 'methodical',
+        startAge: 20,
+        userId: player.id,
+        freeAgentSince,
+        riderRetirementSchedule: { create: { retirementAge: 60, noticeSentAt } },
+      },
+    });
+    made.riders.push(row.id);
+    return row;
+  };
+  riderKept = await rider(plus(S, -day), plus(S, 3_600_000));
+  riderRehired = await rider(plus(S, -2 * day), plus(S, -day));
+
+  // Hall of Fame rounds that open after the outage began (no player sees them yet).
+  const round = async data => {
+    const row = await prisma.hallOfFameRound.create({
+      data: { startsAt: new Date(now + day), endsAt: farEnd, ...data },
+    });
+    made.rounds.push(row.id);
+    return row;
+  };
+  roundKept = await round({});
+  roundChanged = await round({});
+  roundClosed = await round({ closedAt: new Date(now) });
 
   const groom = await prisma.groom.create({
     data: {
@@ -173,6 +228,17 @@ beforeEach(() => startEmailCapture());
 afterEach(() => stopEmailCapture());
 
 const reload = id => prisma.horse.findUnique({ where: { id } });
+const reloadDev = foalId => prisma.foalDevelopment.findUnique({ where: { foalId } });
+const reloadRider = id => prisma.rider.findUnique({ where: { id }, include: { riderRetirementSchedule: true } });
+const reloadRound = id => prisma.hallOfFameRound.findUnique({ where: { id } });
+const newClocks = [
+  'Horse.hungerSince',
+  'FoalDevelopment.finalDayEvaluatedAt',
+  'Rider.freeAgentSince',
+  'RiderRetirementSchedule.noticeSentAt',
+  'HallOfFameRound.startsAt',
+  'HallOfFameRound.endsAt',
+];
 
 describe('Outage time-back (Owner, fresh code each time)', () => {
   it('preview names what would change and writes nothing', async () => {
@@ -193,7 +259,11 @@ describe('Outage time-back (Owner, fresh code each time)', () => {
     expect(preview.jobRuns).toEqual(
       expect.arrayContaining([expect.objectContaining({ jobName: 'groomCareerProgression' })]),
     );
-    expect(preview.unruledFields).toContain('Horse.hungerSince');
+    // q383: the newer clocks are counted as moved; nothing is left unruled.
+    for (const key of newClocks) {
+      expect(preview.fields[key]).toBeGreaterThanOrEqual(key.startsWith('HallOfFame') ? 2 : 1);
+    }
+    expect(preview.unruledFields).toEqual([]);
     expect(await Promise.all(made.horses.map(reload))).toEqual(before);
     expect(await prisma.timeBack.count({ where: { appliedById: owner.id } })).toBe(0);
   }, 60_000);
@@ -258,6 +328,33 @@ describe('Outage time-back (Owner, fresh code each time)', () => {
     const show = await prisma.show.findUnique({ where: { id: made.showId } });
     expect(show.runDate.getTime()).toBe(now + 7 * day + pauseMs);
 
+    // q383 clocks. Hunger and free-agent time are past events (rule 1).
+    expect(f.hungerSince).toEqual(plus(foal.hungerSince, pauseMs));
+    expect(el.hungerSince).toEqual(plus(elder.hungerSince, pauseMs));
+    // A final development day evaluated inside the window lands on its end.
+    expect((await reloadDev(foal.id)).finalDayEvaluatedAt).toEqual(E);
+    expect((await reloadDev(ancient.id)).finalDayEvaluatedAt).toEqual(plus(S, pauseMs - day));
+    const [rk, rr] = await Promise.all([riderKept.id, riderRehired.id].map(reloadRider));
+    expect(rk.freeAgentSince).toEqual(plus(riderKept.freeAgentSince, pauseMs));
+    expect(rr.freeAgentSince).toEqual(plus(riderRehired.freeAgentSince, pauseMs));
+    expect(rk.riderRetirementSchedule.noticeSentAt).toEqual(E);
+    expect(rr.riderRetirementSchedule.noticeSentAt).toEqual(plus(S, pauseMs - day));
+    // A round still being voted on is a pending deadline (rule 2); a decided one stays.
+    for (const r of [roundKept, roundChanged]) {
+      const moved = await reloadRound(r.id);
+      expect(moved.startsAt).toEqual(plus(r.startsAt, pauseMs));
+      expect(moved.endsAt).toEqual(plus(farEnd, pauseMs));
+    }
+    expect(await reloadRound(roundClosed.id)).toEqual(roundClosed);
+    for (const key of newClocks) {
+      expect(applied.summary.fields[key]).toBeGreaterThanOrEqual(1);
+    }
+    expect(applied.summary.unruledFields).toEqual([]);
+    const noticeChange = await prisma.timeBackChange.findMany({
+      where: { timeBackId: applied.id, tableName: 'rider_retirement_schedules', rowId: String(riderKept.id) },
+    });
+    expect(noticeChange).toEqual([expect.objectContaining({ field: 'noticeSentAt' })]);
+
     expect(applied.summary.fields['Horse.lastGroomed']).toBeGreaterThanOrEqual(1);
     expect(applied.summary.horsesUnretired).toBeGreaterThanOrEqual(1);
     const changes = await prisma.timeBackChange.findMany({
@@ -287,6 +384,22 @@ describe('Outage time-back (Owner, fresh code each time)', () => {
     // A player grooms the foal after the time-back.
     const groomedNow = new Date();
     await prisma.horse.update({ where: { id: foal.id }, data: { lastGroomed: groomedNow } });
+    // q383: play changes one value of each newer clock after the time-back.
+    const fedNow = new Date();
+    await prisma.horse.update({ where: { id: elder.id }, data: { hungerSince: fedNow } });
+    const evaluatedNow = new Date();
+    await prisma.foalDevelopment.update({
+      where: { foalId: ancient.id },
+      data: { finalDayEvaluatedAt: evaluatedNow },
+    });
+    await prisma.rider.update({ where: { id: riderRehired.id }, data: { freeAgentSince: null } });
+    const noticedNow = new Date();
+    await prisma.riderRetirementSchedule.update({
+      where: { riderId: riderRehired.id },
+      data: { noticeSentAt: noticedNow },
+    });
+    const rescheduled = { startsAt: new Date(now + 2 * day), endsAt: new Date(now + 9 * day) };
+    await prisma.hallOfFameRound.update({ where: { id: roundChanged.id }, data: rescheduled });
 
     const undoUrl = `${staffApi}/time-back/${applied.id}/undo`;
     const res = await post(undoUrl, owner, { code: await freshCode(owner, device, 'timeBackUndo') }, device);
@@ -294,6 +407,18 @@ describe('Outage time-back (Owner, fresh code each time)', () => {
     const summary = res.body.data.reverseSummary;
     expect(summary.skipped['Horse.lastGroomed']).toBeGreaterThanOrEqual(1);
     expect(summary.skippedRows['Horse.lastGroomed']).toContain(String(foal.id));
+    const skippedByPlay = {
+      'Horse.hungerSince': elder.id,
+      'FoalDevelopment.finalDayEvaluatedAt': (await reloadDev(ancient.id)).id,
+      'Rider.freeAgentSince': riderRehired.id,
+      'RiderRetirementSchedule.noticeSentAt': riderRehired.id,
+      'HallOfFameRound.startsAt': roundChanged.id,
+      'HallOfFameRound.endsAt': roundChanged.id,
+    };
+    for (const [key, rowId] of Object.entries(skippedByPlay)) {
+      expect(summary.restored[key]).toBeGreaterThanOrEqual(1);
+      expect(summary.skippedRows[key]).toContain(String(rowId));
+    }
 
     const [f, el] = await Promise.all([foal.id, elder.id].map(reload));
     expect(f.lastGroomed).toEqual(groomedNow);
@@ -305,6 +430,20 @@ describe('Outage time-back (Owner, fresh code each time)', () => {
     expect((await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } })).currentDay).toBe(5);
     expect((await prisma.groom.findUnique({ where: { id: made.groomId } })).careerWeeks).toBe(3);
     expect((await prisma.show.findUnique({ where: { id: made.showId } })).runDate.getTime()).toBe(now + 7 * day);
+
+    // q383: untouched values are restored; the ones play changed keep play's value.
+    expect(f.hungerSince).toEqual(foal.hungerSince);
+    expect(el.hungerSince).toEqual(fedNow);
+    expect((await reloadDev(foal.id)).finalDayEvaluatedAt).toEqual(plus(S, 3_600_000));
+    expect((await reloadDev(ancient.id)).finalDayEvaluatedAt).toEqual(evaluatedNow);
+    const [rk, rr] = await Promise.all([riderKept.id, riderRehired.id].map(reloadRider));
+    expect(rk.freeAgentSince).toEqual(riderKept.freeAgentSince);
+    expect(rk.riderRetirementSchedule.noticeSentAt).toEqual(plus(S, 3_600_000));
+    expect(rr.freeAgentSince).toBeNull();
+    expect(rr.riderRetirementSchedule.noticeSentAt).toEqual(noticedNow);
+    expect(await reloadRound(roundKept.id)).toEqual(roundKept);
+    expect(await reloadRound(roundChanged.id)).toMatchObject(rescheduled);
+    expect(await reloadRound(roundClosed.id)).toEqual(roundClosed);
 
     const reversal = await prisma.staffActionLog.findFirst({ where: { reversesId: applied.applyLogId } });
     expect(reversal).toMatchObject({ actorId: owner.id, capability: 'time-back' });

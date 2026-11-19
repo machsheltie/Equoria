@@ -76,7 +76,13 @@ describe('StaffOutage', () => {
           windowEnd: '2026-11-17T14:00:00.000Z',
           pauseSeconds: 172_800,
           pauseDays: 2,
-          fields: { 'Horse.lastGroomed': 3, 'Horse.dateOfBirth': 2, 'Show.runDate': 0 },
+          // Owner ruling q383 (2026-11-18): hunger moves like every other clock.
+          fields: {
+            'Horse.lastGroomed': 3,
+            'Horse.dateOfBirth': 2,
+            'Show.runDate': 0,
+            'Horse.hungerSince': 4,
+          },
           horsesUnretired: 1,
           jobRuns: [
             {
@@ -86,7 +92,8 @@ describe('StaffOutage', () => {
               effect: 'Shows were run and their prizes paid.',
             },
           ],
-          unruledFields: ['Horse.hungerSince'],
+          // A clock added later and not yet ruled on is still named, in words.
+          unruledFields: ['Horse.futureClock'],
           overlapsTimeBackId: null,
         })
       ),
@@ -145,17 +152,19 @@ describe('StaffOutage', () => {
 
     const preview = await screen.findByLabelText('What would move');
     expect(
-      within(preview).getByText(/Gives back 2 days\. Moves 3 groomings, 2 birth dates\./)
+      within(preview).getByText(
+        /Gives back 2 days\. Moves 3 groomings, 2 birth dates, 4 hunger clocks\./
+      )
     ).toBeInTheDocument();
     expect(
       within(preview).getByText(/1 horse that turned 21 during the outage goes back to 20/)
     ).toBeInTheDocument();
     expect(within(preview).getByText(/Shows were run and their prizes paid\./)).toBeInTheDocument();
     expect(
-      within(preview).getByText(/Left alone until you rule on them: hunger\./)
+      within(preview).getByText(/Left alone until you rule on them: other dates\./)
     ).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(
-      /Horse\.|lastGroomed|nightlyShowExecution|hungerSince/
+      /Horse\.|lastGroomed|nightlyShowExecution|hungerSince|futureClock/
     );
   });
 
