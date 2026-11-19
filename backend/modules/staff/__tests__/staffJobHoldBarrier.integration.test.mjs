@@ -46,6 +46,7 @@ beforeAll(async () => {
   cleanup.add(() => observer.$disconnect(), 'observer client');
   cleanup.add(() => restoreHold(holdBefore), 'job hold');
   cleanup.add(() => prisma.cronRunLog.deleteMany({ where: { jobName: { startsWith: probeJob } } }), 'probe runs');
+  cleanup.add(() => prisma.timeBack.deleteMany({ where: { appliedById: scope() } }), 'time-backs');
   cleanup.add(() => prisma.staffActionLog.deleteMany({ where: { actorId: scope() } }), 'action log');
   cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: scope() } }), 'checkin codes');
   cleanup.add(() => prisma.staffTrustedDevice.deleteMany({ where: { userId: scope() } }), 'devices');
@@ -244,5 +245,44 @@ describe('Giving time back never overlaps a running job', () => {
     expect(d.ran).toBe(1);
     expect(events).toEqual([`${probeJob}D:bodyStart`, `${probeJob}D:bodyEnd`, 'applyReturned']);
     expect(await prisma.timeBack.count({ where: { appliedById: owner.id } })).toBe(0);
+  }, 60_000);
+
+  it("undo's transaction waits for a running job body before it restores anything", async () => {
+    const owner = await makeUser('owner');
+    const device = await checkIn(owner);
+    const now = Date.now();
+    // An applied time-back with nothing recorded: undo has nothing to restore, only to mark.
+    const record = await prisma.timeBack.create({
+      data: {
+        windowStart: toMinute(now - 3 * day),
+        windowEnd: toMinute(now - day),
+        pauseSeconds: (2 * day) / 1000,
+        appliedById: owner.id,
+        summary: {},
+      },
+    });
+    const code = await freshCode(owner, device, 'timeBackUndo');
+    const sendUndo = await preparePost(`${staffApi}/time-back/${record.id}/undo`, owner, { code }, device);
+    const events = [];
+
+    const running = startBlockingJob(`${probeJob}E`, events);
+    let undo;
+    try {
+      await running.started;
+      const holderPid = await jobLockHolderPid(`${probeJob}E`);
+
+      undo = Promise.resolve(sendUndo()).then(res => {
+        events.push('undoReturned');
+        return res;
+      });
+      await queuedBehindJob(holderPid, 1, undo, 'undo');
+    } finally {
+      await endJob(running);
+    }
+    const [e, undone] = await Promise.all([running.done, undo]);
+    expect(undone.status).toBe(200);
+    expect(undone.body.data.reversedAt).not.toBeNull();
+    expect(e.ran).toBe(1);
+    expect(events).toEqual([`${probeJob}E:bodyStart`, `${probeJob}E:bodyEnd`, 'undoReturned']);
   }, 60_000);
 });

@@ -168,6 +168,50 @@ describe('StaffOutage', () => {
     );
   });
 
+  // Codex r2 #2/#3: when the record of which staff aged does not cover the
+  // outage, their years are left alone, and the Owner reads that in words on
+  // the preview and on the given-back entry.
+  it('says plainly which career years cannot be given back, on the preview and the entry', async () => {
+    const counters = ['Groom.careerWeeks', 'Rider.careerWeeks', 'Trainer.careerWeeks'];
+    const words =
+      "Can't be given back for this outage, because the record of which staff aged is incomplete: grooms’ years, riders’ years, trainers’ years. They stay as they are.";
+    list = [
+      {
+        ...record(8),
+        summary: {
+          fields: { 'Horse.lastGroomed': 3 },
+          horsesUnretired: 0,
+          unprovableCounters: counters,
+        },
+      } as ReturnType<typeof record>,
+    ];
+    server.use(
+      http.get(`${STAFF}/time-back/preview`, () =>
+        ok({
+          windowStart: '2026-11-15T14:00:00.000Z',
+          windowEnd: '2026-11-17T14:00:00.000Z',
+          pauseSeconds: 172_800,
+          pauseDays: 2,
+          fields: { 'Horse.lastGroomed': 3, 'Groom.careerWeeks': 0 },
+          horsesUnretired: 0,
+          jobRuns: [],
+          unruledFields: [],
+          unprovableCounters: counters,
+          overlapsTimeBackId: null,
+        })
+      )
+    );
+    const user = userEvent.setup();
+    renderWithClient(<StaffOutage onCheckinRequired={() => undefined} />);
+
+    enterOutage();
+    await user.click(screen.getByRole('button', { name: 'Show what moves' }));
+    const preview = await screen.findByLabelText('What would move');
+    expect(within(preview).getByText(words)).toBeInTheDocument();
+    expect(await screen.findAllByText(words)).toHaveLength(2);
+    expect(document.body.textContent).not.toMatch(/careerWeeks|Groom\.|Rider\.|Trainer\./);
+  });
+
   // Codex r2 #4: Eastern time has a 1:xx a.m. that happens twice (the night the
   // clocks go back, 1 Nov 2026) and a 2:xx a.m. that never happens (8 Mar 2026).
   const enterTimes = (began: string, ended: string) => {

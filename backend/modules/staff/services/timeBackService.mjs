@@ -9,7 +9,10 @@
  * that ends in the past, is at most 30 days and overlaps no applied time-back,
  * and a fresh emailed code it consumes in the same transaction as every change
  * and the staff action log entry. Undo restores each recorded value only where
- * the field still holds what the time-back wrote, once, with its own fresh code.
+ * the field still holds what the time-back wrote, once, with its own fresh code,
+ * and never while a job body runs. Career weeks are given back only where the
+ * weekly pass recorded adding them inside the window; a window the record does
+ * not cover leaves them alone and names them (unprovableCounters).
  *
  * Bank weeks fully inside the outage are given back as owed weekly claims
  * (owner ruling 2026-10-12, timeBackBankClaims.mjs); undo removes the unpaid ones.
@@ -32,6 +35,7 @@ import {
   applyCounterRuleTx,
   applyDerivedRulesTx,
   applyFieldRuleTx,
+  careerTicksCoverWindow,
   countCounterRule,
   countFieldRule,
   countHorsesUnretired,
@@ -187,8 +191,13 @@ async function jobRunsInWindow(client, window) {
   return runs;
 }
 
-function runTimesFor(runs, jobName) {
-  return runs.filter(r => r.jobName === jobName && r.status === 'success').map(r => r.startedAt);
+/**
+ * The job counters whose evidence this window lacks: the career-week record
+ * does not cover all of it, so which staff aged is unknown and their weeks are
+ * left alone (named on the preview and in the summary). Otherwise none.
+ */
+async function unprovableCounters(client, window) {
+  return (await careerTicksCoverWindow(client, window)) ? [] : jobCounterRules.map(r => r.key);
 }
 
 function describeRuns(runs) {
@@ -222,8 +231,9 @@ export async function previewTimeBack(input, now = new Date()) {
     fields[rule.key] = ruleIsIdle(rule, w) ? 0 : await countFieldRule(prisma, rule, w);
   }
   const runs = await jobRunsInWindow(prisma, window);
+  const unprovable = await unprovableCounters(prisma, window);
   for (const rule of jobCounterRules) {
-    fields[rule.key] = await countCounterRule(prisma, rule, runTimesFor(runs, rule.jobName));
+    fields[rule.key] = unprovable.includes(rule.key) ? 0 : await countCounterRule(prisma, rule, w);
   }
   fields[owedClaimsSummaryKey] = await countOwedWeeklyClaims(prisma, window);
   const overlap = await findOverlap(prisma, window);
@@ -236,6 +246,7 @@ export async function previewTimeBack(input, now = new Date()) {
     horsesUnretired: await countHorsesUnretired(prisma, w),
     jobRuns: describeRuns(runs),
     unruledFields: [...unruledFields],
+    unprovableCounters: unprovable,
     overlapsTimeBackId: overlap?.id ?? null,
   };
 }
@@ -268,6 +279,7 @@ export async function applyTimeBack({ actor, input, proof }, now = new Date()) {
       const owner = await consumeFreshCodeTx(tx, actor, proof);
       const horsesUnretired = await countHorsesUnretired(tx, w);
       const runs = await jobRunsInWindow(tx, window);
+      const unprovable = await unprovableCounters(tx, window);
       const record = await tx.timeBack.create({
         data: {
           windowStart: window.start,
@@ -284,9 +296,9 @@ export async function applyTimeBack({ actor, input, proof }, now = new Date()) {
           : (await applyFieldRuleTx(tx, record.id, rule, w)).changed;
       }
       for (const rule of jobCounterRules) {
-        fields[rule.key] = (
-          await applyCounterRuleTx(tx, record.id, rule, runTimesFor(runs, rule.jobName))
-        ).changed;
+        fields[rule.key] = unprovable.includes(rule.key)
+          ? 0
+          : (await applyCounterRuleTx(tx, record.id, rule, w)).changed;
       }
       for (const derived of await applyDerivedRulesTx(tx, record.id, w)) {
         fields[derived.key] = derived.changed;
@@ -298,6 +310,7 @@ export async function applyTimeBack({ actor, input, proof }, now = new Date()) {
         horsesUnretired,
         jobRuns: describeRuns(runs).map(r => ({ ...r, startedAt: r.startedAt.toISOString() })),
         unruledFields: [...unruledFields],
+        unprovableCounters: unprovable,
       };
       const log = await recordStaffActionTx(tx, {
         actorId: owner.id,
@@ -325,12 +338,17 @@ export async function applyTimeBack({ actor, input, proof }, now = new Date()) {
 /**
  * Undo an applied time-back once. Restores each recorded old value only where
  * the field still holds the value the time-back wrote; the rest are left alone
- * and counted.
+ * and counted. Like apply, it first takes the nightly-job barrier exclusively,
+ * so no job body runs while it restores (refused with 409 jobsRunning after the
+ * bounded wait); it does not need the jobs held.
  * @param {{ actor: object, timeBackId: number, proof: object }} params
  */
 export async function undoTimeBack({ actor, timeBackId, proof }) {
   return prisma.$transaction(
     async tx => {
+      // Like apply: wait out any running job body and keep new ones from
+      // starting until the undo commits (the nightly-job barrier, first lock).
+      await lockJobHoldTx(tx);
       const [row] = await tx.$queryRaw`
         SELECT "id", "reversedAt", "applyLogId" FROM "time_backs" WHERE "id" = ${timeBackId} FOR UPDATE`;
       if (!row) {

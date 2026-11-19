@@ -26,9 +26,11 @@
  *     table; startedAt is the semantically correct retention axis.
  *   - Retention default 90 days — matches the auditLog/docCoverage defaults so the
  *     three observability windows stay consistent.
- *   - Sourced from CRON_RUN_LOG_RETENTION_DAYS env if set, clamped to a 7-day
+ *   - Sourced from CRON_RUN_LOG_RETENTION_DAYS env if set, clamped to a 45-day
  *     floor so a misconfigured env can never effectively disable the history or
- *     wipe it near-instantly.
+ *     wipe it near-instantly, and so the run list an outage time-back shows
+ *     covers its longest window (30 days) with margin (Equoria-puj1e.5, Codex
+ *     r2 #3).
  *   - Scoped DELETE only: `where: { startedAt: { lt: cutoff } }`. NEVER an
  *     unscoped deleteMany() (forbidden by CLAUDE.md real-DB rule #2). Recent rows
  *     are always retained so the cron-health last-N view still has data.
@@ -40,8 +42,11 @@
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
-/** Floor so a misconfigured env can never wipe near-current cron history. */
-export const minRetentionDays = 7;
+/**
+ * Floor so a misconfigured env can never wipe near-current cron history; longer
+ * than the 30-day outage time-back window, plus margin (Equoria-puj1e.5).
+ */
+export const minRetentionDays = 45;
 
 /** Default retention window (days) — aligned with the audit/doc-coverage defaults. */
 export const defaultRetentionDays = 90;

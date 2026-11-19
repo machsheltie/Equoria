@@ -3,7 +3,7 @@
 - **Status:** Active contract — implemented 2026-11-18 (Equoria-puj1e.5); the
   newer clocks move too since owner ruling q383 (2026-11-18)
 - **Owner:** Project owner (Stacey)
-- **Last verified:** 2026-11-19
+- **Last verified:** 2026-11-19 (career-week evidence, undo barrier)
 - **Load only when:** designing, planning, implementing, or reviewing the admin
   "give time back after an outage" operation, the durable nightly-job hold, or
   the overdue-only foaling control
@@ -59,7 +59,7 @@ raw `Date` binds — Equoria-7uphu).
 | ---------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
 | **1 Past event**       | anchors whose elapsed time drives play              | `t ≤ S → t + N`; `S < t < E → E`; `t ≥ E → t`                            |
 | **2 Pending deadline** | future unlock/close times                           | `t > S → t + N`; otherwise unchanged (nothing already finished re-locks) |
-| **3 Job counter**      | integers a scheduled job advanced inside the window | reverse the ticks that ran inside the window (from the run log)          |
+| **3 Job counter**      | integers a scheduled job advanced inside the window | give back the weeks the job recorded adding to each row in the window    |
 | **4 Never moved**      | security, accounting, records, history displays     | unchanged                                                                |
 
 `@db.Date` columns (`Horse.dateOfBirth`, `Horse.lastBredDate`,
@@ -115,6 +115,32 @@ time back too, the same as every other game clock.**
 (weeklyRiderTrainerCareerWeeks, Mon 00:15 UTC), `FoalDevelopment.currentDay`
 (dailyTraitEvaluation — clamp to the foal's new age, Equoria-3i34b).
 `Horse.age` is recomputed from the shifted birth date in the same transaction.
+
+Career weeks are given back from per-row evidence, never from the run log
+(Codex r2 #2/#3, 2026-11-19). Every week a weekly pass adds is recorded in
+`staff_career_ticks` (staff kind, staff id, when) in the same SQL statement as
+the increment (`backend/utils/staffCareerTicks.mjs`), so a record exists exactly
+when the week was added. A time-back takes from each groom, rider or trainer
+exactly the weeks recorded for it inside the window: an inactive groom the pass
+skipped, a groom whose own increment failed, and the trainers when their half
+of the pass failed after the riders' half committed keep their weeks. A retired
+staff member keeps its weeks (its retirement stands). The run log is no longer
+evidence: it is written after the pass commits, a failed insert is swallowed,
+and a rider/trainer pass that fails half-way logs `error`.
+
+The record is complete from the moment its migration ran
+(`staff_career_tick_ledger.completeSince`; nothing before it was recorded). A
+window that starts earlier cannot prove which staff aged, so apply leaves all
+three career counts alone, the preview says so in words ("Can't be given back
+for this outage, because the record of which staff aged is incomplete: grooms’
+years, riders’ years, trainers’ years."), and the summary lists them as
+`unprovableCounters`. The rest of the time-back applies as usual. Residual
+risk: a weekly pass run by an older server still up during the deploy that
+added the record, after the migration committed, would be unrecorded.
+
+Run logs are kept at least 45 days (`CRON_RUN_LOG_RETENTION_DAYS` cannot go
+lower), longer than the longest window, so the preview's list of jobs that ran
+during an outage that ended recently is complete.
 
 **Rule 4 — never moved:** login/refresh/verification/reset tokens,
 `User.passwordChangedAt`, `User.emailVerifiedAt`, `User.dateOfBirth`,
@@ -193,7 +219,9 @@ minutes. A hold must therefore be durable:
   apply take the barrier exclusively first, so a hold never commits while a job
   body is mid-run, a job that has not yet read the hold waits and then skips,
   and no job runs during apply. If a job is still running after 10 seconds, the
-  hold or apply is refused (409 `jobsRunning`) and nothing changes.
+  hold or apply is refused (409 `jobsRunning`) and nothing changes. Undo takes
+  the same barrier first (it does not need the jobs held), so no job body runs
+  while it restores (Codex r2, 2026-11-19).
 - Hold and release are admin actions recorded in the staff action log.
 - Both registries write `CronRunLog` rows. The admin manual triggers ("deliver
   overdue foals now", the owner's "age every horse now" and the trait-evaluation
@@ -264,7 +292,12 @@ Real database and real admin HTTP path (role, CSRF, MFA); no mocks.
 - Apply refuses without a hold, without MFA, for a non-admin, for an overlapping
   window, a future end, and a window over 30 days.
 - A player action during apply is neither overwritten nor double-shifted.
-- Reverse restores, skips values changed by play, and cannot run twice.
+- Reverse restores, skips values changed by play, and cannot run twice; it
+  waits for a running job body.
+- Career weeks come back only where a pass recorded adding them: not for an
+  inactive groom, a failed increment, or trainers after a half-failed pass; a
+  pass with no run-log row still counts; a window before the record leaves the
+  counts alone and names them (`staffTimeBackCareerWeeks.integration.test.mjs`).
 - A held job skips after a simulated restart, including `showScheduler` and
   Registry B jobs.
 - Overdue foaling foals only past-due mares; the fast-forward endpoint is gone.

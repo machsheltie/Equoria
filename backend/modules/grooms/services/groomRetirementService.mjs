@@ -99,6 +99,8 @@ import {
 // same 1-week-is-1-game-year clock horses use (backend/utils/horseAge.mjs). Not
 // secret, unlike the retirement age above; see groomAgeService.mjs.
 import { groomAgeYears } from './groomAgeService.mjs';
+// Equoria-puj1e.5: each career week is recorded with its increment (outage time-back).
+import { tickOneStaff } from '../../../utils/staffCareerTicks.mjs';
 // Equoria-bgdfb (F3): the arrears vocabulary, so a career ending also ends the debt.
 import { arrearsOwedStatuses, arrearsWrittenOffStatus } from './groomFeeBasisService.mjs';
 // Equoria-ypb7d.2: retirement CLOSES the engagement (players never own grooms).
@@ -177,13 +179,13 @@ export async function incrementCareerWeeks(groomId) {
     throw new Error(`Groom with ID ${groomId} not found`);
   }
 
-  const updatedGroom = await prisma.groom.update({
+  // Equoria-puj1e.5 (Codex r2 #2/#3): the week and its record commit in one
+  // statement, so an outage time-back gives back exactly the weeks this pass added.
+  if ((await tickOneStaff(prisma, 'groom', groomId)) !== 1) {
+    throw new Error(`Groom with ID ${groomId} not found`);
+  }
+  const updatedGroom = await prisma.groom.findUnique({
     where: { id: groomId },
-    data: {
-      careerWeeks: {
-        increment: 1,
-      },
-    },
     include: {
       groomAssignmentLogs: true,
     },

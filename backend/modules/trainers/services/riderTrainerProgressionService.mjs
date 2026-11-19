@@ -16,27 +16,36 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { tickEveryActiveStaff } from '../../../utils/staffCareerTicks.mjs';
 
 /**
  * Increment careerWeeks for every active (non-retired) rider AND trainer.
  * Intended for invocation from a weekly cron, alongside groom career
  * progression. Returns counts for audit logging.
+ *
+ * Equoria-puj1e.5 (Codex r2 #3): each half adds its weeks and records them in
+ * one statement, so the record matches what committed even when one half fails
+ * after the other committed. Both halves always finish before the pass reports,
+ * and a failure in either fails the pass (the run log says 'error').
  */
 export async function incrementWeeklyCareerWeeks() {
-  const [riderResult, trainerResult] = await Promise.all([
-    prisma.rider.updateMany({
-      where: { retired: false },
-      data: { careerWeeks: { increment: 1 } },
-    }),
-    prisma.trainer.updateMany({
-      where: { retired: false },
-      data: { careerWeeks: { increment: 1 } },
-    }),
+  const at = new Date();
+  const [riders, trainers] = await Promise.allSettled([
+    tickEveryActiveStaff(prisma, 'rider', at),
+    tickEveryActiveStaff(prisma, 'trainer', at),
   ]);
+  const failed = [riders, trainers].find(half => half.status === 'rejected');
+  if (failed) {
+    const outcome = half => (half.status === 'fulfilled' ? `${half.value} aged` : 'failed');
+    logger.error(
+      `[riderTrainerProgressionService.incrementWeeklyCareerWeeks] riders ${outcome(riders)}, trainers ${outcome(trainers)}.`,
+    );
+    throw failed.reason;
+  }
   logger.info(
-    `[riderTrainerProgressionService.incrementWeeklyCareerWeeks] ${riderResult.count} riders + ${trainerResult.count} trainers ticked.`,
+    `[riderTrainerProgressionService.incrementWeeklyCareerWeeks] ${riders.value} riders + ${trainers.value} trainers ticked.`,
   );
-  return { ridersTicked: riderResult.count, trainersTicked: trainerResult.count };
+  return { ridersTicked: riders.value, trainersTicked: trainers.value };
 }
 
 export default {

@@ -2327,6 +2327,31 @@ model TimeBackChange {
   @@map("time_back_changes")
 }
 
+/// One career week a weekly staff pass added to one groom, rider or trainer
+/// (Equoria-puj1e.5, Codex r2 #2/#3). Written in the same statement or
+/// transaction as the increment, so it exists exactly when the week was added;
+/// a time-back gives back only these weeks. Raw SQL only (no client reads).
+model StaffCareerTick {
+  id        Int      @id @default(autoincrement())
+  /// 'groom' | 'rider' | 'trainer'
+  staffKind String
+  staffId   Int
+  tickedAt  DateTime
+
+  @@index([staffKind, tickedAt])
+  @@map("staff_career_ticks")
+}
+
+/// Since when staff_career_ticks holds every career week added (one row, id 1,
+/// written by the migration that created the ledger). A time-back window that
+/// starts earlier cannot prove which staff aged, so it leaves the counters alone.
+model StaffCareerTickLedger {
+  id            Int      @id @default(1)
+  completeSince DateTime
+
+  @@map("staff_career_tick_ledger")
+}
+
 model StaffCheckinCode {
   id        Int       @id @default(autoincrement())
   userId    String

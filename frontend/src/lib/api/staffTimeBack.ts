@@ -44,6 +44,8 @@ export interface TimeBackPreview {
   horsesUnretired: number;
   jobRuns: TimeBackJobRun[];
   unruledFields: string[];
+  /** Career counts left alone: the record of which staff aged does not cover the window. */
+  unprovableCounters: string[];
   overlapsTimeBackId: number | null;
 }
 
@@ -53,7 +55,11 @@ export interface TimeBackRecord {
   windowEnd: string;
   pauseSeconds: number;
   appliedAt: string;
-  summary: { fields?: Record<string, number>; horsesUnretired?: number } | null;
+  summary: {
+    fields?: Record<string, number>;
+    horsesUnretired?: number;
+    unprovableCounters?: string[];
+  } | null;
   reversedAt: string | null;
   reverseSummary: { restored?: Record<string, number>; skipped?: Record<string, number> } | null;
 }

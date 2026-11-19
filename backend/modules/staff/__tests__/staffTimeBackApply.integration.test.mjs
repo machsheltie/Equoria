@@ -254,7 +254,6 @@ describe('Outage time-back (Owner, fresh code each time)', () => {
     expect(preview.pauseDays).toBe(2);
     expect(preview.fields['Horse.lastGroomed']).toBeGreaterThanOrEqual(1);
     expect(preview.fields['Horse.dateOfBirth']).toBeGreaterThanOrEqual(2);
-    expect(preview.fields['Groom.careerWeeks']).toBeGreaterThanOrEqual(1);
     expect(preview.horsesUnretired).toBeGreaterThanOrEqual(1);
     expect(preview.jobRuns).toEqual(
       expect.arrayContaining([expect.objectContaining({ jobName: 'groomCareerProgression' })]),
@@ -322,9 +321,16 @@ describe('Outage time-back (Owner, fresh code each time)', () => {
     expect(el.age).toBe(20);
     expect(an.dateOfBirth).toEqual(ancient.dateOfBirth);
     expect(an.age).toBe(24);
-    // Derived and job counters.
+    // Derived and job counters. A logged groom pass alone gives back no career
+    // week: only the weeks a pass recorded adding to a groom are given back
+    // (Codex r2 #2/#3; staffTimeBackCareerWeeks covers the ones that are).
     expect((await prisma.foalDevelopment.findUnique({ where: { foalId: foal.id } })).currentDay).toBe(3);
-    expect((await prisma.groom.findUnique({ where: { id: made.groomId } })).careerWeeks).toBe(2);
+    expect((await prisma.groom.findUnique({ where: { id: made.groomId } })).careerWeeks).toBe(3);
+    expect(
+      await prisma.timeBackChange.count({
+        where: { timeBackId: applied.id, tableName: 'grooms', rowId: String(made.groomId) },
+      }),
+    ).toBe(0);
     const show = await prisma.show.findUnique({ where: { id: made.showId } });
     expect(show.runDate.getTime()).toBe(now + 7 * day + pauseMs);
 

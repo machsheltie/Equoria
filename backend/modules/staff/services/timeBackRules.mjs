@@ -20,6 +20,7 @@
 
 import { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { gameDateParts, gameTimeZone, sameGameClockDaysLater } from '../../../utils/gameTime.mjs';
+import { careerTickTables } from '../../../utils/staffCareerTicks.mjs';
 import { pastEventFields, pendingDeadlineFields } from './timeBackClassification.mjs';
 
 const daysUntilRetirement = 21 * 7; // a horse retires at 21 game-years; 7 days each
@@ -168,30 +169,36 @@ export const movedFieldRules = Object.freeze(
 );
 
 /**
- * Rule 3: job counters, reversed by the ticks their job ran inside the window
- * (from the cron run log). Only rows that existed at a tick, and are not
- * retired, were ticked by it.
+ * Rule 3: job counters. Each row gives back exactly the career weeks the weekly
+ * pass recorded for it inside the window (staff_career_ticks, written with each
+ * increment; backend/utils/staffCareerTicks.mjs), never a week the pass did not
+ * add (Codex r2 #2/#3). A retired staff member keeps its weeks: its retirement
+ * stands, like every other irreversible effect.
  */
-export const jobCounterRules = Object.freeze([
-  {
-    key: 'Groom.careerWeeks',
-    table: 'grooms',
-    column: 'careerWeeks',
-    jobName: 'groomCareerProgression',
-  },
-  {
-    key: 'Rider.careerWeeks',
-    table: 'riders',
-    column: 'careerWeeks',
-    jobName: 'weeklyRiderTrainerCareerWeeks',
-  },
-  {
-    key: 'Trainer.careerWeeks',
-    table: 'trainers',
-    column: 'careerWeeks',
-    jobName: 'weeklyRiderTrainerCareerWeeks',
-  },
-]);
+export const jobCounterRules = Object.freeze(
+  [
+    { key: 'Groom.careerWeeks', staffKind: 'groom' },
+    { key: 'Rider.careerWeeks', staffKind: 'rider' },
+    { key: 'Trainer.careerWeeks', staffKind: 'trainer' },
+  ].map(rule =>
+    Object.freeze({ ...rule, table: careerTickTables[rule.staffKind], column: 'careerWeeks' }),
+  ),
+);
+
+/**
+ * Whether the career-week record is complete for the whole window: it starts
+ * no earlier than the record does (staff_career_tick_ledger). Otherwise a pass
+ * may have added weeks nobody recorded, so the counters are left alone.
+ */
+export async function careerTicksCoverWindow(client, window) {
+  const rows = await client.$queryRaw`
+    SELECT "completeSince" FROM "staff_career_tick_ledger" WHERE "id" = 1`;
+  const since = rows[0]?.completeSince;
+  // No `instanceof Date`: a Prisma Date may come from another realm (Equoria-s20o).
+  return (
+    since !== null && since !== undefined && window.start.getTime() >= new Date(since).getTime()
+  );
+}
 
 /** Values recomputed from a moved birth date, recorded like every other change. */
 export const derivedRules = Object.freeze([
@@ -328,39 +335,34 @@ export async function countFieldRule(client, rule, w) {
   return n;
 }
 
-/** Ticks a counter row received from runs at `runTimes`, as SQL over alias t. */
-function ticksExpression(runTimes) {
-  const parts = runTimes.map(
-    at =>
-      Prisma.sql`(CASE WHEN t."createdAt" <= (${at.toISOString()}::timestamptz AT TIME ZONE 'UTC') THEN 1 ELSE 0 END)`,
-  );
-  return Prisma.join(parts, ' + ');
+/**
+ * The rows of one counter that the weekly pass aged inside the window, with
+ * how many weeks it added to each, as FROM-clause SQL over aliases t and k.
+ */
+function tickedRows(rule, w) {
+  return Prisma.sql`
+    ${ident(rule.table)} t
+    JOIN (
+      SELECT "staffId", count(*)::int AS weeks FROM "staff_career_ticks"
+      WHERE "staffKind" = ${rule.staffKind} AND "tickedAt" >= ${w.s} AND "tickedAt" < ${w.e}
+      GROUP BY "staffId"
+    ) k ON k."staffId" = t."id"
+    WHERE t."retired" = false AND t.${ident(rule.column)} > 0`;
 }
 
-/** Reverse one job counter by the ticks its job ran inside the window. */
-export function applyCounterRuleTx(tx, timeBackId, rule, runTimes) {
-  if (runTimes.length === 0) {
-    return Promise.resolve({ key: rule.key, changed: 0 });
-  }
-  const ticks = ticksExpression(runTimes);
+/** Give back the career weeks one counter's pass recorded inside the window. */
+export function applyCounterRuleTx(tx, timeBackId, rule, w) {
   const col = Prisma.sql`t.${ident(rule.column)}`;
   const select = Prisma.sql`
-    SELECT t."id" AS rid, ${col} AS old, GREATEST(${col} - (${ticks}), 0) AS nv
-    FROM ${ident(rule.table)} t
-    WHERE t."retired" = false AND (${ticks}) > 0 AND ${col} > 0
+    SELECT t."id" AS rid, ${col} AS old, GREATEST(${col} - k.weeks, 0) AS nv
+    FROM ${tickedRows(rule, w)}
     FOR UPDATE OF t`;
   return updateAndRecordTx(tx, timeBackId, rule, select);
 }
 
-/** How many counter rows the reversal would change. */
-export async function countCounterRule(client, rule, runTimes) {
-  if (runTimes.length === 0) {
-    return 0;
-  }
-  const ticks = ticksExpression(runTimes);
-  const [{ n }] = await client.$queryRaw`
-    SELECT count(*)::int AS n FROM ${ident(rule.table)} t
-    WHERE t."retired" = false AND (${ticks}) > 0 AND t.${ident(rule.column)} > 0`;
+/** How many counter rows giving the weeks back would change. */
+export async function countCounterRule(client, rule, w) {
+  const [{ n }] = await client.$queryRaw`SELECT count(*)::int AS n FROM ${tickedRows(rule, w)}`;
   return n;
 }
 

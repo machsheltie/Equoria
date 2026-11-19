@@ -171,6 +171,9 @@ export const neverMovedFields = Object.freeze([
   'TimeBack.windowEnd',
   'TimeBack.appliedAt',
   'TimeBack.reversedAt',
+  // Equoria-puj1e.5 (Codex r2 #2/#3): the career-week record and since when it is complete.
+  'StaffCareerTick.tickedAt',
+  'StaffCareerTickLedger.completeSince',
   'StaffCheckinCode.expiresAt',
   'StaffCheckinCode.usedAt',
   'StaffCheckinCode.retiredAt',

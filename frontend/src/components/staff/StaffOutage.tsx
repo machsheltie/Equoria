@@ -37,6 +37,7 @@ import {
   pauseWords,
   skippedTimeWords,
   timeBackError,
+  unprovableLine,
   unruledLine,
 } from './timeBackWords';
 
@@ -117,6 +118,7 @@ function Preview({ outage }: { outage: TimeBackWindow | null }) {
   const { data } = preview;
   const lines = movedLines(data.fields);
   const unruled = unruledLine(data.unruledFields);
+  const unprovable = unprovableLine(data.unprovableCounters);
   return (
     <div
       className="flex flex-col gap-2 text-sm text-[var(--text-primary)]"
@@ -145,6 +147,7 @@ function Preview({ outage }: { outage: TimeBackWindow | null }) {
           </ul>
         </div>
       )}
+      {unprovable && <p>{unprovable}</p>}
       {data.overlapsTimeBackId !== null && <p>Part of this outage has already been given back.</p>}
       {unruled && <p className="text-role-secondary">{unruled}</p>}
     </div>
@@ -295,6 +298,7 @@ function TimeBackEntry({ record }: { record: TimeBackRecord }) {
   const sendCode = useSendTimeBackCode();
   const undo = useUndoTimeBack();
   const moved = movedLines(record.summary?.fields);
+  const unprovable = unprovableLine(record.summary?.unprovableCounters);
   return (
     <li className="flex flex-col gap-2 border-t border-[var(--border-muted)] pt-3">
       <p className="text-sm text-[var(--text-primary)]">
@@ -302,6 +306,7 @@ function TimeBackEntry({ record }: { record: TimeBackRecord }) {
         given back on {when(record.appliedAt)}.
         {moved.length > 0 ? ` Moved ${moved.join(', ')}.` : ''}
       </p>
+      {unprovable && <p className="text-sm text-role-secondary">{unprovable}</p>}
       {record.reversedAt ? (
         <p className="text-sm text-role-secondary">Undone on {when(record.reversedAt)}.</p>
       ) : (

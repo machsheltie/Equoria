@@ -42,8 +42,13 @@ describe('getRetentionDays', () => {
   });
 
   it('honours a valid CRON_RUN_LOG_RETENTION_DAYS override', () => {
+    process.env.CRON_RUN_LOG_RETENTION_DAYS = '60';
+    expect(getRetentionDays()).toBe(60);
+  });
+
+  it('keeps more than the 30 days an outage time-back can give back, whatever the env says', () => {
     process.env.CRON_RUN_LOG_RETENTION_DAYS = '30';
-    expect(getRetentionDays()).toBe(30);
+    expect(getRetentionDays()).toBeGreaterThan(30);
   });
 
   it('clamps to minRetentionDays when env is below the floor', () => {
@@ -126,8 +131,8 @@ describe('purgeExpiredCronRunLogs — real DB', () => {
 
   it('clamps a sub-floor retentionDays so near-current rows are NOT wiped', async () => {
     const now = new Date('2026-05-18T12:00:00.000Z');
-    // 5 days old. With retentionDays=1 (sub-floor) clamped to MIN (7d) the cutoff
-    // is ~11 days back, so this row survives. Proves the floor guards against an
+    // 5 days old. With retentionDays=1 (sub-floor) clamped to MIN (45d) the cutoff
+    // is ~40 days before this row, so it survives. Proves the floor guards against an
     // env that would otherwise wipe near-current history.
     await prisma.cronRunLog.create({
       data: row(`${SENTINEL}-fivedays`, new Date('2026-05-13T12:00:00.000Z')),

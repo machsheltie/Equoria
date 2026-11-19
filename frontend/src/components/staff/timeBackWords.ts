@@ -59,6 +59,17 @@ export function unruledLine(keys: string[]): string | null {
   return words.length === 0 ? null : `Left alone until you rule on them: ${words.join(', ')}.`;
 }
 
+/**
+ * Career counts a time-back leaves alone because the record of which staff aged
+ * does not cover the whole outage (it started before that record was kept).
+ */
+export function unprovableLine(keys: string[] | undefined): string | null {
+  const words = [...new Set((keys ?? []).map((key) => fieldWords[key] ?? 'other counts'))];
+  return words.length === 0
+    ? null
+    : `Can't be given back for this outage, because the record of which staff aged is incomplete: ${words.join(', ')}. They stay as they are.`;
+}
+
 /** "2 days" / "5 hours" / "40 minutes" for a pause. */
 export function pauseWords(seconds: number): string {
   const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`;
