@@ -15,6 +15,7 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { checkEntryEligibility } from '../services/entryEligibility.mjs';
 import {
@@ -197,43 +198,72 @@ export function enterShowAtomicTx({ show, showId, horseId, userId }) {
  * User.money; if the creator was GDPR-deleted, they move into
  * SystemAccount[burn]. Either path keeps money conservation constant.
  *
- * The feeEscrow read and the settlement write are separate DB round-trips; the
- * write must use a RELATIVE decrement (not an absolute reset) so an increment
- * that raced in between read and write is preserved rather than erased. The
- * `client` param defaults to the shared prisma singleton and is injectable so a
- * test can interpose a concurrent increment between the two.
+ * Exactly once (Equoria-mwjst.1, Codex #1): recovery does not claim the show,
+ * so an admin run and the nightly run can settle the same show at once. The
+ * read before the transaction is only a fast path; inside the transaction the
+ * show row is locked and feeEscrow re-read, and only what is still there is
+ * settled, by a decrement that cannot take the column below zero. A second
+ * settlement queues on the lock, then finds nothing left: a no-op, not an
+ * error. It never settles more than the fast path read, so an increment that
+ * raced in after that read stays in the column for a later pass
+ * (Equoria-8pb6w). The `client` param defaults to the shared prisma singleton
+ * and is injectable so a test can interpose a concurrent increment.
+ *
+ * Lock order: the creator's User row, then the show row, as the entry takes
+ * the entrant's User row before the escrow and the show.
  */
 export async function settleShowFeeEscrow(showId, client = prisma) {
-  const settled = await readUnsettledFeeEscrow(client, showId);
-  if (!settled) {
+  const read = await readUnsettledFeeEscrow(client, showId);
+  if (!read) {
     return;
   }
-  await client.$transaction(tx => moveFeeEscrow(tx, showId, settled));
+  await client.$transaction(async tx => {
+    await lockUserRowTx(tx, read.createdByUserId);
+    await settleLockedFeeEscrow(tx, showId, read.feeEscrow);
+  });
 }
 
 /**
  * The same fee-escrow settlement, run inside the CALLER's transaction
  * (Equoria-mwjst). The conformation settlement pays the escrow in the same
  * transaction as its claim and rewards, so a failure anywhere in it leaves the
- * escrow unsettled and the show open — never paid-but-unscored.
+ * escrow unsettled and the show open — never paid-but-unscored. Settles
+ * whatever the locked show row holds (Equoria-mwjst.1).
  *
  * @param {import('@prisma/client').Prisma.TransactionClient} tx
  * @param {number} showId
  */
 export async function settleShowFeeEscrowInTx(tx, showId) {
-  const settled = await readUnsettledFeeEscrow(tx, showId);
-  if (!settled) {
-    return;
+  await settleLockedFeeEscrow(tx, showId, Number.POSITIVE_INFINITY);
+}
+
+/**
+ * Lock a player's User row for the rest of the transaction, as an UPDATE of it
+ * would (FOR NO KEY UPDATE: rows that only reference the player are not held
+ * up). A settlement takes it BEFORE its show, horse and groom rows, so it runs
+ * in the entry's order, User first (Equoria-mwjst.1, Codex #2). No-op for a
+ * null id (an erased creator, or a seeded show).
+ *
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx
+ * @param {string|null|undefined} userId
+ */
+export async function lockUserRowTx(tx, userId) {
+  if (userId) {
+    await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${userId} FOR NO KEY UPDATE`;
   }
-  await moveFeeEscrow(tx, showId, settled);
 }
 
 /**
  * Refund a show's unpaid prize share to its creator (Equoria-w7fnz; owner ruling
  * 2026-10-19: with fewer than 3 entrants the unpaid share goes back to the
- * creator). Runs inside the caller's payout transaction: debits
- * SystemAccount[showEscrow], decrements the show's prizeEscrow and credits the
- * creator by `amount`, all with `tx`.
+ * creator). Runs inside the caller's payout transaction: decrements the show's
+ * prizeEscrow, debits SystemAccount[showEscrow] and credits the creator by
+ * `amount`, all with `tx`.
+ *
+ * The decrement is guarded (Equoria-mwjst.1, as Equoria-law5w guards a prize):
+ * it takes the whole amount only while the live prizeEscrow still holds it, so
+ * two settlements that both decide to refund pay it once and the escrow never
+ * goes below zero. One that finds it gone moves nothing.
  *
  * No creator (a GDPR-erased creator, or a seeded show) is unruled: the amount is
  * left where it is.
@@ -245,15 +275,21 @@ export async function refundUnpaidPrizeShareInTx(tx, { showId, creatorId, amount
   if (!creatorId || amount <= 0) {
     return;
   }
+  const taken = await tx.show.updateMany({
+    where: { id: showId, prizeEscrow: { gte: amount } },
+    data: { prizeEscrow: { decrement: amount } },
+  });
+  if (taken.count !== 1) {
+    logger.warn(
+      `[showEscrowTx] Show ${showId}: escrow no longer holds the ${amount}-coin unpaid prize share; nothing refunded`,
+    );
+    return;
+  }
   await debitSystemAccountOrThrow(tx, systemAccountShowEscrow, amount, {
     category: 'showRefundUnpaidPrize',
     description: `Unpaid prize share refund for show ${showId}`,
     linkedUserId: creatorId,
     metadata: { showId },
-  });
-  await tx.show.update({
-    where: { id: showId },
-    data: { prizeEscrow: { decrement: amount } },
   });
   await creditCreatorInTx(tx, {
     userId: creatorId,
@@ -290,7 +326,7 @@ async function creditCreatorInTx(tx, { userId, amount, category, description, me
   );
 }
 
-/** The show's fee escrow and creator, or null when there is nothing to settle. */
+/** The show's fee escrow and creator as last committed, or null when there is nothing to settle. */
 async function readUnsettledFeeEscrow(client, showId) {
   const settled = await client.show.findUnique({
     where: { id: showId },
@@ -303,12 +339,37 @@ async function readUnsettledFeeEscrow(client, showId) {
 }
 
 /**
- * Move `settled.feeEscrow` out of SystemAccount[showEscrow] to the creator
- * (or to SystemAccount[burn] when the creator was GDPR-deleted), and decrement
- * the show's feeEscrow by exactly that amount. Every write uses `tx`.
+ * Lock the show row, re-read its feeEscrow and creator, and settle what it
+ * still holds, up to `limit` (Equoria-mwjst.1). The decrement is guarded as
+ * well as locked, so the column can never go below zero. Every write uses `tx`.
+ */
+async function settleLockedFeeEscrow(tx, showId, limit) {
+  const rows = await tx.$queryRaw`
+    SELECT "feeEscrow", "createdByUserId" FROM "shows" WHERE "id" = ${showId} FOR NO KEY UPDATE`;
+  if (rows.length !== 1) {
+    return;
+  }
+  const amount = Math.min(Number(rows[0].feeEscrow), limit);
+  if (!(amount > 0)) {
+    return; // a settlement that held the lock first already paid it
+  }
+  const taken = await tx.show.updateMany({
+    where: { id: showId, feeEscrow: { gte: amount } },
+    data: { feeEscrow: { decrement: amount } },
+  });
+  if (taken.count !== 1) {
+    return;
+  }
+  await moveFeeEscrow(tx, showId, { feeEscrow: amount, createdByUserId: rows[0].createdByUserId });
+}
+
+/**
+ * Move `settled.feeEscrow`, already taken off the show's feeEscrow, out of
+ * SystemAccount[showEscrow] to the creator (or to SystemAccount[burn] when the
+ * creator was GDPR-deleted). Every write uses `tx`.
  */
 async function moveFeeEscrow(tx, showId, settled) {
-  // Always debit the escrow account by the full feeEscrow amount.
+  // Always debit the escrow account by the full settled amount.
   await debitSystemAccountOrThrow(tx, systemAccountShowEscrow, settled.feeEscrow, {
     category: settled.createdByUserId ? 'showSettleFeesToCreator' : 'showSettleFeesToBurn',
     description: `Fee settlement for show ${showId}`,
@@ -334,14 +395,4 @@ async function moveFeeEscrow(tx, showId, settled) {
       description: `Burn orphaned fees for show ${showId} (creator GDPR-deleted)`,
     });
   }
-  // Equoria-8pb6w: decrement by the amount we READ + settled, NOT an absolute
-  // reset to 0. The read (above) and this write are separate round-trips; an
-  // absolute `feeEscrow: 0` would erase any increment that raced in between,
-  // breaking the SystemAccount[showEscrow] == SUM(prizeEscrow + feeEscrow)
-  // reconciliation invariant. A relative decrement leaves the raced residual
-  // in the column for a later settlement pass.
-  await tx.show.update({
-    where: { id: showId },
-    data: { feeEscrow: { decrement: settled.feeEscrow } },
-  });
 }
