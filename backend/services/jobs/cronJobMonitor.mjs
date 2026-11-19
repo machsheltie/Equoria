@@ -1,8 +1,8 @@
 import prisma from '../../../packages/database/prismaClient.mjs';
 import logger from '../../utils/logger.mjs';
-import { withAdvisoryLock } from '../../utils/cronLock.mjs';
+import { withAdmission, withAdvisoryLock } from '../../utils/cronLock.mjs';
 import { cronJobRegistry } from './index.mjs';
-import { isJobsHeld } from '../../modules/staff/index.mjs';
+import { admitJobRunTx } from '../../modules/staff/index.mjs';
 
 /**
  * Equoria-urqic.3.5 — CronJobMonitor: the run-observability collaborator.
@@ -157,11 +157,14 @@ export class CronJobMonitor {
    * `status: 'skipped-locked'` (recording success would lie). Production
    * schedules pass `applyLock: true`; tests can opt out.
    *
-   * Equoria-puj1e.5: before every run the durable nightly-job hold is read
-   * from the database (GameControl). While the owner holds the jobs, the run
-   * records 'skipped-held' (heartbeat and CronRunLog) and the handler never
-   * runs, so a hold survives a restart. A failed read takes the error path:
-   * the job does not run, and the failure shows on the cron-health page.
+   * Equoria-puj1e.5: every run reads the durable nightly-job hold
+   * (GameControl) AFTER taking its lock, inside the lock's transaction, under
+   * the nightly-job barrier that hold, release and time-back apply take
+   * exclusively (admitJobRunTx; Codex r2 #1). While the owner holds the jobs,
+   * the run records 'skipped-held' (heartbeat and CronRunLog) and the handler
+   * never runs, so a hold survives a restart; a hold cannot commit while a
+   * handler is mid-run. A failed read takes the error path: the job does not
+   * run, and the failure shows on the cron-health page.
    *
    * @param {string} jobName
    * @param {Function} handler - async () => Promise<result>
@@ -181,8 +184,15 @@ export class CronJobMonitor {
       lockHeld: applyLock ? true : null,
     });
     try {
-      if (await isJobsHeld()) {
-        const finishedAt = new Date();
+      const admission = { admit: admitJobRunTx };
+      const outcome = applyLock
+        ? await withAdvisoryLock(opts.lockKey ?? jobName, handler, admission)
+        : await withAdmission(handler, admission);
+      const { acquired, result } = outcome;
+
+      const finishedAt = new Date();
+
+      if (outcome.admitted === false) {
         this.recordHeartbeat(jobName, {
           startedAt,
           finishedAt,
@@ -194,17 +204,6 @@ export class CronJobMonitor {
         await this.persistRunLog({ jobName, startedAt, finishedAt, status: 'skipped-held' });
         return null;
       }
-      let result;
-      let acquired = true;
-      if (applyLock) {
-        const outcome = await withAdvisoryLock(opts.lockKey ?? jobName, handler);
-        acquired = outcome.acquired;
-        result = outcome.result;
-      } else {
-        result = await handler();
-      }
-
-      const finishedAt = new Date();
 
       if (!acquired) {
         // Equoria-iot0h: loser-of-the-lock path. Record an explicit

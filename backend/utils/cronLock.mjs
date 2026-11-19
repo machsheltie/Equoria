@@ -123,6 +123,11 @@ export function jobNameToLockKey(jobName) {
  *                            `{ acquired: false, result: null }`.
  * - Acquire THREW         → rethrows (caller treats as status:'error').
  * - Handler THREW         → txn rolls back, lock released, error rethrown.
+ * - `opts.admit` given   → after the lock, `admit(tx)` runs on the lock's own
+ *                            transaction; false → the handler never runs and the
+ *                            outcome is `{ acquired: true, admitted: false,
+ *                            result: null }` (Equoria-puj1e.5: the nightly-job
+ *                            hold is checked here, under the lock, not before it).
  *
  * @template T
  * @param {string} jobName
@@ -130,10 +135,27 @@ export function jobNameToLockKey(jobName) {
  * @param {Object} [opts]
  * @param {number} [opts.timeoutMs]  - transaction body timeout (default 60min)
  * @param {number} [opts.maxWaitMs]  - max wait to start the txn (default 5s)
- * @returns {Promise<{acquired: boolean, result: T|null}>}
+ * @param {(tx: object) => Promise<boolean>} [opts.admit] - may this run start?
+ * @returns {Promise<{acquired: boolean, admitted?: boolean, result: T|null}>}
  */
 export async function withAdvisoryLock(jobName, handler, opts = {}) {
-  const key = jobNameToLockKey(jobName);
+  return runInLockTransaction(jobName, handler, opts);
+}
+
+/**
+ * Run `handler` inside the same kind of long transaction as withAdvisoryLock,
+ * without a per-job lock, after `opts.admit(tx)` agrees (Equoria-puj1e.5): the
+ * monitor's unlocked path still checks the nightly-job hold on the connection
+ * that holds the admission lock for the whole run.
+ * @returns {Promise<{acquired: true, admitted?: boolean, result: T|null}>}
+ */
+export async function withAdmission(handler, opts = {}) {
+  return runInLockTransaction(null, handler, opts);
+}
+
+/** withAdvisoryLock's transaction; `jobName` null takes no per-job lock. */
+async function runInLockTransaction(jobName, handler, opts) {
+  const key = jobName === null ? null : jobNameToLockKey(jobName);
   const timeout = opts.timeoutMs ?? defaultLockTxTimeoutMs;
   const maxWait = opts.maxWaitMs ?? defaultLockTxMaxWaitMs;
 
@@ -150,14 +172,19 @@ export async function withAdvisoryLock(jobName, handler, opts = {}) {
       // Acquire the TX-scoped lock on THIS transaction's connection.
       // pg_try_advisory_xact_lock returns true if acquired, false if
       // another transaction (on any replica) already holds it.
-      const rows = await tx.$queryRaw`SELECT pg_try_advisory_xact_lock(${key}::bigint) AS locked`;
-      const acquired = rows?.[0]?.locked === true;
-      if (!acquired) {
-        logger.info(
-          `[cronLock.withAdvisoryLock] Lock NOT acquired for job '${jobName}' (key=${key.toString()}) — another replica is running; skipping.`,
-        );
-        outcome = { acquired: false, result: null };
-        return; // commit empty txn → releases nothing (nothing held)
+      if (key !== null) {
+        const rows = await tx.$queryRaw`SELECT pg_try_advisory_xact_lock(${key}::bigint) AS locked`;
+        if (rows?.[0]?.locked !== true) {
+          logger.info(
+            `[cronLock.withAdvisoryLock] Lock NOT acquired for job '${jobName}' (key=${key.toString()}) — another replica is running; skipping.`,
+          );
+          outcome = { acquired: false, result: null };
+          return; // commit empty txn → releases nothing (nothing held)
+        }
+      }
+      if (opts.admit && !(await opts.admit(tx))) {
+        outcome = { acquired: true, admitted: false, result: null };
+        return; // commit: the run never started
       }
       // Acquired — run handler inside the same txn so the lock is held
       // for the full duration. Lock auto-releases on COMMIT (returning

@@ -179,6 +179,13 @@ minutes. A hold must therefore be durable:
   through `CronJobMonitor.runWithHeartbeat`, which reads it. A held job records
   `skipped-held` and does nothing. (`showScheduler` no longer exists: shows
   settle only in the nightly run.)
+- The hold is a barrier, not only a flag (Codex r2 #1). Each run reads it after
+  taking its own lock, inside that lock's transaction, holding the nightly-job
+  barrier lock in shared mode until its body ends. Hold, release and time-back
+  apply take the barrier exclusively first, so a hold never commits while a job
+  body is mid-run, a job that has not yet read the hold waits and then skips,
+  and no job runs during apply. If a job is still running after 10 seconds, the
+  hold or apply is refused (409 `jobsRunning`) and nothing changes.
 - Hold and release are admin actions recorded in the staff action log.
 - Both registries write `CronRunLog` rows. The admin manual triggers ("deliver
   overdue foals now", the owner's "age every horse now" and the trait-evaluation
