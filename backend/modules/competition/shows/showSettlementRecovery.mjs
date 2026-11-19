@@ -17,6 +17,7 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { lockUserRowsTx } from './showEscrowTx.mjs';
 
 /**
  * How long after a show's run began its payout is left alone. A healthy payout
@@ -113,6 +114,49 @@ export function planPlacementPayouts(show, stagedOrdering, settledHorseIds) {
       ? show.prizeEscrow - pendingTotal
       : 0;
   return { pending, unpaidPrizeShare };
+}
+
+/**
+ * The players one placement's payout writes: the entrant (the prize) and, when
+ * the winner's payout carries the unpaid prize share, the show's creator (the
+ * refund). The payout locks them FIRST, before the show and the escrow
+ * account, in the entry's order (Equoria-ifnhc).
+ *
+ * @param {{ createdByUserId: string|null }} show
+ * @param {{ userId: string, placement: number }} staged
+ * @param {number} unpaidPrizeShare
+ * @returns {string[]}
+ */
+export function payoutUserIds(show, staged, unpaidPrizeShare) {
+  const refunds = staged.placement === 1 && unpaidPrizeShare > 0 && show.createdByUserId;
+  return refunds ? [staged.userId, show.createdByUserId] : [staged.userId];
+}
+
+/**
+ * Claim one staged placement for a recovery's payout transaction
+ * (Equoria-ifnhc). Recovery has no show-level claim: an admin run and the
+ * nightly run can finish the same half-settled show at once. Each recovery
+ * payout locks its User rows (payoutUserIds), then the show row here, so they
+ * run one at a time; the one that finds the placement's result row already
+ * written (the first write of a settled payout) has nothing to pay. That is a
+ * no-op, not a failure: nothing is logged, counted toward quarantine or
+ * returned as an error. A first run is claimed by its open -> executing
+ * update instead, so a result row before its payout stays a failure.
+ *
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx
+ * @param {{ id: number, createdByUserId: string|null }} show
+ * @param {{ horseId: number, userId: string, placement: number }} staged
+ * @param {number} unpaidPrizeShare
+ * @returns {Promise<boolean>} true when the placement is still unpaid
+ */
+export async function claimUnsettledPlacementTx(tx, show, staged, unpaidPrizeShare) {
+  await lockUserRowsTx(tx, payoutUserIds(show, staged, unpaidPrizeShare));
+  await tx.$queryRaw`SELECT "id" FROM "shows" WHERE "id" = ${show.id} FOR NO KEY UPDATE`;
+  const settled = await tx.competitionResult.findUnique({
+    where: { showIdHorseId: { showId: show.id, horseId: staged.horseId } },
+    select: { id: true },
+  });
+  return settled === null;
 }
 
 /**

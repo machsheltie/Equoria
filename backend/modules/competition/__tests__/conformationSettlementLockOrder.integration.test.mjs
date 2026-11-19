@@ -107,6 +107,20 @@ function enterHttp(token, horse, groom, show) {
     .send({ horseId: horse.id, groomId: groom.id, showId: show.id });
 }
 
+async function makeGroom(user, label) {
+  const groom = await prisma.groom.create({
+    data: {
+      name: `${fixturePrefix}-${label}-${tag}`,
+      speciality: 'showHandling',
+      personality: 'gentle',
+      skillLevel: 'expert',
+      user: { connect: { id: user.id } },
+    },
+  });
+  groomIds.push(groom.id);
+  return groom;
+}
+
 async function money(userId) {
   const row = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
   return Number(row.money);
@@ -188,5 +202,60 @@ describe('conformation settlement lock order (Equoria-mwjst.1, Codex #2)', () =>
     expect(await prisma.showEntry.count({ where: { showId: otherShow.id, horseId: nextHorse.id } })).toBe(1);
     // The fee it paid into the other show is the fee it was paid back as creator.
     expect(await money(creator.id)).toBe(before);
+  }, 90000);
+
+  it('an entry landing at close time while the show settles: both finish (Equoria-ifnhc)', async () => {
+    const { user: host } = await makePlayer('closehost');
+    const { user: early, token: earlyToken } = await makePlayer('early');
+    const { user: late, token: lateToken } = await makePlayer('late');
+    const earlyGroom = await makeGroom(early, 'earlygroom');
+    const lateGroom = await makeGroom(late, 'lategroom');
+    const earlyHorse = await makeHorse(early, 'early');
+    const lateHorse = await makeHorse(late, 'late');
+    await assign(early, earlyGroom, earlyHorse);
+    await assign(late, lateGroom, lateHorse);
+
+    const show = await makeShow(host.id);
+    expect((await enterHttp(earlyToken, earlyHorse, earlyGroom, show)).status).toBe(201);
+    const hostBefore = await money(host.id);
+    // The late entry reads its clock just before the close; the settlement
+    // reads its clock just after it.
+    const settleAt = new Date(new Date(show.closeDate).getTime() + 1000);
+
+    // Hold the escrow account: the late entry queues on it first, then the
+    // settlement queues behind it. Released, the old entry took the escrow
+    // account and then wanted the show row, which the settlement had claimed
+    // while it waited for the escrow account: a deadlock.
+    const barrier = await holdLock(
+      barrierClient,
+      tx => tx.$queryRaw`SELECT "name" FROM "system_accounts" WHERE "name" = 'showEscrow' FOR UPDATE`,
+    );
+    let entering;
+    let settling;
+    try {
+      entering = Promise.resolve(enterHttp(lateToken, lateHorse, lateGroom, show));
+      await barrier.waitForQueued(1);
+      settling = executeConformationShow(show.id, { now: settleAt }).then(
+        results => ({ results }),
+        error => ({ error }),
+      );
+      await barrier.waitForQueued(2);
+    } finally {
+      await barrier.release();
+    }
+    const [entry, settled] = await Promise.all([entering, settling]);
+
+    // The entry was in before the close, so the settlement scored it and paid
+    // its fee to the host with the other one.
+    expect(entry.status).toBe(201);
+    expect(settled.error).toBeUndefined();
+    expect(settled.results.map(r => r.horseId).sort((a, b) => a - b)).toEqual(
+      [earlyHorse.id, lateHorse.id].sort((a, b) => a - b),
+    );
+    const closed = await prisma.show.findUnique({ where: { id: show.id } });
+    expect(closed.status).toBe('completed');
+    expect(closed.feeEscrow).toBe(0);
+    expect(await money(host.id)).toBe(hostBefore + 2 * entryFee);
+    expect(await money(late.id)).toBe(1000 - entryFee);
   }, 90000);
 });

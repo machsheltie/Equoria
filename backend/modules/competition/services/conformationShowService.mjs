@@ -378,7 +378,9 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
         // settlement writes is the creator's (the fee credit), so it is locked
         // FIRST, before the claim, the horses and the grooms. Taken last, a
         // creator entering their groom elsewhere while it presents here
-        // deadlocked with this settlement.
+        // deadlocked with this settlement. The claim below locks the show
+        // row before the fee settlement takes the escrow account, and the
+        // entry takes them in that order too (Equoria-ifnhc).
         await lockUserRowTx(tx, show.createdByUserId);
         const claim = await tx.show.updateMany({
           where: { id: showId, status: 'open', showType: 'conformation', closeDate: { lte: now } },

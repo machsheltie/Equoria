@@ -99,6 +99,31 @@ export function enterShowTx(
           if (debited.count === 0) {
             throw new Error('insufficientFunds');
           }
+        }
+        // Equoria-8pb6w: atomic entry-window guard. A status-scoped conditional
+        // updateMany (increment == entryFee, which is 0 for a free show) BOTH
+        // applies the feeEscrow increment AND re-checks status='open' INSIDE the
+        // tx, taking a row lock. count===0 => the executor already claimed the
+        // show ('open' -> 'executing') between the pre-tx guard and now => throw
+        // entryClosed to roll back the fee debit + entry (surfaced as HTTP 409).
+        // Free shows (entryFee 0) carry no natural increment, so the increment:0
+        // no-op still performs the status-scoped lock + recheck — without it a
+        // free entry would silently bypass the guard.
+        // Equoria-mwjst: the same predicate re-checks the open/close window.
+        //
+        // Lock order (Equoria-ifnhc): the show row BEFORE the escrow account, as
+        // every settlement takes them (its show claim or show row, then the
+        // escrow account). Taken after it, an entry landing at the close held
+        // the escrow account while it waited for the show the settlement had
+        // claimed, and the settlement waited for the escrow account: deadlock.
+        const stillOpen = await tx.show.updateMany({
+          where: openForEntriesWhere(showId),
+          data: { feeEscrow: { increment: show.entryFee } },
+        });
+        if (stillOpen.count === 0) {
+          throw new Error('entryClosed');
+        }
+        if (show.entryFee > 0) {
           // Equoria-si69u: route the entry fee to SystemAccount[showEscrow]
           // instead of directly to the creator's wallet. At show execute time
           // the accumulated feeEscrow is paid out to the creator IF they
@@ -119,23 +144,6 @@ export function enterShowTx(
             linkedUserId: userId,
             metadata: { showId, horseId },
           });
-        }
-        // Equoria-8pb6w: atomic entry-window guard. A status-scoped conditional
-        // updateMany (increment == entryFee, which is 0 for a free show) BOTH
-        // applies the feeEscrow increment AND re-checks status='open' INSIDE the
-        // tx, taking a row lock. count===0 => the executor already claimed the
-        // show ('open' -> 'executing') between the pre-tx guard and now => throw
-        // entryClosed to roll back the fee debit + escrow credit + entry
-        // (surfaced as HTTP 409). Free shows (entryFee 0) carry no natural
-        // increment, so the increment:0 no-op still performs the status-scoped
-        // lock + recheck — without it a free entry would silently bypass the guard.
-        // Equoria-mwjst: the same predicate re-checks the open/close window.
-        const stillOpen = await tx.show.updateMany({
-          where: openForEntriesWhere(showId),
-          data: { feeEscrow: { increment: show.entryFee } },
-        });
-        if (stillOpen.count === 0) {
-          throw new Error('entryClosed');
         }
 
         // groomId/groomSnapshot: the conformation entry's presenting groom and its
@@ -209,8 +217,9 @@ export function enterShowAtomicTx({ show, showId, horseId, userId }) {
  * (Equoria-8pb6w). The `client` param defaults to the shared prisma singleton
  * and is injectable so a test can interpose a concurrent increment.
  *
- * Lock order: the creator's User row, then the show row, as the entry takes
- * the entrant's User row before the escrow and the show.
+ * Lock order: the creator's User row, then the show row, then the escrow
+ * account, as the entry takes the entrant's User row, then the show, then the
+ * escrow account (Equoria-ifnhc).
  */
 export async function settleShowFeeEscrow(showId, client = prisma) {
   const read = await readUnsettledFeeEscrow(client, showId);
@@ -250,6 +259,20 @@ export async function settleShowFeeEscrowInTx(tx, showId) {
 export async function lockUserRowTx(tx, userId) {
   if (userId) {
     await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${userId} FOR NO KEY UPDATE`;
+  }
+}
+
+/**
+ * Lock several players' User rows, in ascending id order (the order the
+ * owner's Run Show takes them), so two settlements that pay the same players
+ * never take them crosswise (Equoria-ifnhc). Null ids and repeats are skipped.
+ *
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx
+ * @param {Array<string|null|undefined>} userIds
+ */
+export async function lockUserRowsTx(tx, userIds) {
+  for (const userId of [...new Set(userIds.filter(Boolean))].sort()) {
+    await lockUserRowTx(tx, userId);
   }
 }
 

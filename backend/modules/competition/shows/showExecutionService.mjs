@@ -20,11 +20,17 @@ import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { systemAccountShowEscrow, debitSystemAccountOrThrow } from '../../economy/index.mjs';
 // Equoria-8pb6w: the two escrow-touching transactions live in a sibling module
 // (extracted for deterministic testability + file-size discipline).
-import { refundUnpaidPrizeShareInTx, settleShowFeeEscrow } from './showEscrowTx.mjs';
+import {
+  lockUserRowsTx,
+  refundUnpaidPrizeShareInTx,
+  settleShowFeeEscrow,
+} from './showEscrowTx.mjs';
 import { settleDueConformationShows } from '../services/conformationShowService.mjs';
 import {
+  claimUnsettledPlacementTx,
   clearStagedOrdering,
   findPartiallySettledShowIds,
+  payoutUserIds,
   planPlacementPayouts,
   readRecoverableOrdering,
   recordFailedSettlementAttempt,
@@ -101,6 +107,10 @@ export async function settleEntryInTx(
   { prize, unpaidPrizeShare, now, statGainRng },
 ) {
   const { horseId, userId, horseName, placement, riderId } = staged;
+
+  // Lock order (Equoria-ifnhc): the User rows it credits FIRST, as the entry does; after the
+  // escrow account, a winner entering another paid show deadlocked with this payout.
+  await lockUserRowsTx(tx, payoutUserIds(show, staged, unpaidPrizeShare));
 
   // Equoria-law5w (owner ruling q52): a placement is paid only from the
   // show's escrow. The guarded decrement takes the whole share or nothing, so
@@ -245,9 +255,16 @@ export async function announceSettledEntry(show, staged, prize) {
   }
 }
 
-async function settleEntry(show, staged, options) {
-  const paid = await prisma.$transaction(tx => settleEntryInTx(tx, show, staged, options));
-  await announceSettledEntry(show, staged, paid);
+/** Pay one placement. A recovery that finds it paid by a concurrent run does nothing (Equoria-ifnhc). */
+async function settleEntry(show, staged, options, recovering) {
+  const paid = await prisma.$transaction(async tx =>
+    !recovering || (await claimUnsettledPlacementTx(tx, show, staged, options.unpaidPrizeShare))
+      ? settleEntryInTx(tx, show, staged, options)
+      : null,
+  );
+  if (paid !== null) {
+    await announceSettledEntry(show, staged, paid);
+  }
 }
 
 /**
@@ -299,7 +316,8 @@ async function finalEntriesAndOrdering(show, claimedOrdering, scoreRng, now) {
 /**
  * Pay the staged placements not in `settledHorseIds`, settle the fee escrow,
  * and discard the staged ordering once nothing failed. Returns the errors of
- * the entries whose transaction rolled back.
+ * the entries whose transaction rolled back (a placing a concurrent run paid
+ * first is not one, Equoria-ifnhc).
  *
  * Equoria-wmwbr + Equoria-cmw85.1: entries settle ONE AT A TIME and each failure
  * is held, not fatal: a Promise.all fan-out filled the three-connection pool, and
@@ -307,12 +325,13 @@ async function finalEntriesAndOrdering(show, claimedOrdering, scoreRng, now) {
  * 'completed'. A failed entry's prize stays in escrow and the show keeps its
  * staged ordering; the next run re-drives it (Equoria-cmw85.2).
  */
-async function payOutPlacements(show, stagedOrdering, settledHorseIds, { now, statGainRng }) {
+async function payOutPlacements(show, stagedOrdering, settledHorseIds, opts) {
+  const { now, statGainRng, recovering = false } = opts;
   const { pending, unpaidPrizeShare } = planPlacementPayouts(show, stagedOrdering, settledHorseIds);
   const failures = [];
   for (const { staged, prize } of pending) {
     try {
-      await settleEntry(show, staged, { prize, unpaidPrizeShare, now, statGainRng });
+      await settleEntry(show, staged, { prize, unpaidPrizeShare, now, statGainRng }, recovering);
     } catch (error) {
       logger.error(
         `[showExecutionService] Show ${show.id}: settlement of horse ${staged.horseId} (placement ${staged.placement}) failed and rolled back: ${error.message}`,
@@ -369,7 +388,8 @@ async function recoverPartiallySettledShow(show, { now, statGainRng }) {
   }
   const unpaid = stagedOrdering.length - stagedOrdering.filter(s => skipped.has(s.horseId)).length;
 
-  const failures = await payOutPlacements(show, stagedOrdering, skipped, { now, statGainRng });
+  const opts = { now, statGainRng, recovering: true };
+  const failures = await payOutPlacements(show, stagedOrdering, skipped, opts);
   logger.info(
     `Recovered show ${show.name} (id=${show.id}): ${unpaid} unpaid, ${failures.length} failed`,
   );
@@ -431,6 +451,8 @@ async function settleRiddenShow(show, { now, scoreRng, statGainRng }) {
     // completion. The status-scoped claim (executing -> completed) and the
     // live prizeEscrow read make a re-run refund nothing more.
     await prisma.$transaction(async tx => {
+      // The creator's User row first, as in the entry (Equoria-ifnhc).
+      await lockUserRowsTx(tx, [show.createdByUserId]);
       const completed = await tx.show.updateMany({
         where: { id: show.id, status: 'executing' },
         data: { status: 'completed', executedAt: now, claimedAt: null },
