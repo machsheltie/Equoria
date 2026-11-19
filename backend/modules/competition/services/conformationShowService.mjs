@@ -27,7 +27,7 @@ import logger from '../../../utils/logger.mjs';
 import { liveHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { recordSettledResultTotals } from '../../../utils/monthlyTotals.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
-import { settleShowFeeEscrowInTx } from '../shows/showEscrowTx.mjs';
+import { lockUserRowTx, settleShowFeeEscrowInTx } from '../shows/showEscrowTx.mjs';
 import { badHealthMessage, hasBadHealth } from '../../../utils/horseHealth.mjs';
 import { checkGroomMayWork } from '../../../utils/groomWorkRules.mjs';
 import { EntryRefusalError } from './entryEligibility.mjs';
@@ -373,6 +373,13 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
   return withRetryableTxMapping(
     prisma.$transaction(
       async tx => {
+        // Lock order (Equoria-mwjst.1, Codex #2): the entry takes the player's
+        // User row, then the Groom row, then the show. The only User row this
+        // settlement writes is the creator's (the fee credit), so it is locked
+        // FIRST, before the claim, the horses and the grooms. Taken last, a
+        // creator entering their groom elsewhere while it presents here
+        // deadlocked with this settlement.
+        await lockUserRowTx(tx, show.createdByUserId);
         const claim = await tx.show.updateMany({
           where: { id: showId, status: 'open', showType: 'conformation', closeDate: { lte: now } },
           data: { status: 'executing' },
