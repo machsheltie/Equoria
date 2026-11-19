@@ -12,7 +12,11 @@
  * stop, an apostrophe, an underscore) ends it. An entry may be a short phrase,
  * which matches with any spacing between its words.
  *
- * Words are stored lowercased with single spaces. The lists are read from the
+ * Spelling is compared after Unicode folding (foldForumText): compatibility forms
+ * (fullwidth letters), composed and decomposed accents, and full case folding
+ * (ß and SS) all read the same. No fuzzy or look-alike matching is done.
+ *
+ * Words are stored folded with single spaces. The lists are read from the
  * database for every post: at this game's scale that is one small query, and a
  * change made in the office applies to the very next post.
  */
@@ -29,7 +33,25 @@ const validWord = new RegExp(
 );
 
 /**
- * A list entry as stored: trimmed, single-spaced and lowercased, or null when it
+ * Fold text for comparison: NFKC (compatibility forms, composed accents), then a
+ * full case fold. JavaScript has no casefold(), so: lower-case (turns the capital
+ * sharp S into ß), upper-case (ß becomes SS), lower-case again, make final sigma
+ * an ordinary sigma, and a last NFKC recomposes anything the case change decomposed.
+ * @param {string} text
+ * @returns {string}
+ */
+export function foldForumText(text) {
+  return text
+    .normalize('NFKC')
+    .toLowerCase()
+    .toUpperCase()
+    .toLowerCase()
+    .replace(/ς/gu, 'σ')
+    .normalize('NFKC');
+}
+
+/**
+ * A list entry as stored: trimmed, single-spaced and folded, or null when it
  * is not a word or short phrase of letters and numbers (an apostrophe or hyphen
  * may join two parts of a word).
  * @param {unknown} raw
@@ -39,7 +61,7 @@ export function normalizeForumWord(raw) {
   if (typeof raw !== 'string') {
     return null;
   }
-  const word = raw.trim().replace(/\s+/gu, ' ').toLowerCase();
+  const word = foldForumText(raw.trim().replace(/\s+/gu, ' '));
   if (word === '' || word.length > maxForumWordLength || !validWord.test(word)) {
     return null;
   }
@@ -49,8 +71,8 @@ export function normalizeForumWord(raw) {
 const escapeRegExp = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
- * One case-insensitive pattern matching any of `words` as a whole word, or null
- * for an empty list.
+ * One pattern matching any of `words` as a whole word, or null for an empty list.
+ * It matches folded text: test it against foldForumText(text), not the raw text.
  * @param {string[]} words stored (normalised) entries
  * @returns {RegExp | null}
  */
@@ -59,11 +81,11 @@ export function wholeWordPattern(words) {
     return null;
   }
   const alternatives = words
-    .map(word => escapeRegExp(word).replace(/ /g, String.raw`\s+`))
+    .map(word => escapeRegExp(foldForumText(word)).replace(/ /g, String.raw`\s+`))
     // Longest first, so a phrase is tried before a word it starts with.
     .sort((a, b) => b.length - a.length)
     .join('|');
-  return new RegExp(`(?<!${wordChar})(?:${alternatives})(?!${wordChar})`, 'iu');
+  return new RegExp(`(?<!${wordChar})(?:${alternatives})(?!${wordChar})`, 'u');
 }
 
 /**
@@ -74,7 +96,10 @@ export function wholeWordPattern(words) {
  */
 export function containsListedWord(texts, words) {
   const pattern = wholeWordPattern(words);
-  return pattern !== null && texts.some(text => typeof text === 'string' && pattern.test(text));
+  return (
+    pattern !== null &&
+    texts.some(text => typeof text === 'string' && pattern.test(foldForumText(text)))
+  );
 }
 
 /**

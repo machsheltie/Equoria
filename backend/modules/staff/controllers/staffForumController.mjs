@@ -138,14 +138,24 @@ export async function listHeldPosts(req, res, next) {
         thread: { select: { id: true, title: true, section: true, status: true } },
       },
     });
-    const posts = rows.slice(0, heldPage).map(row => ({
+    const page = rows.slice(0, heldPage);
+    // A post starts its thread only when it is the thread's first post. A held
+    // reply in a held thread is held too (q388 as built), but rejecting it removes
+    // only the reply, never the thread.
+    const openings = await prisma.forumPost.groupBy({
+      by: ['threadId'],
+      where: { threadId: { in: [...new Set(page.map(row => row.thread.id))] } },
+      _min: { id: true },
+    });
+    const openingByThread = new Map(openings.map(o => [o.threadId, o._min.id]));
+    const posts = page.map(row => ({
       id: row.id,
       content: row.content,
       createdAt: row.createdAt,
       author: row.author,
       thread: { id: row.thread.id, title: row.thread.title, section: row.thread.section },
-      // A held thread is held for its opening post: accepting this post opens it.
-      startsThread: row.thread.status === 'held',
+      // Accepting the opening post of a held thread opens the thread.
+      startsThread: openingByThread.get(row.thread.id) === row.id,
     }));
     const nextAfter = rows.length > heldPage ? posts[posts.length - 1].id : null;
     return res.status(200).json({ posts, nextAfter });

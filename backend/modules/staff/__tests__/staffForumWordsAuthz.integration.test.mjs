@@ -21,6 +21,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+import { foldForumText } from '../services/forumWordService.mjs';
 import {
   checkIn,
   createUserFactory,
@@ -261,6 +262,44 @@ describe('Blocked words refuse a post, whole words only, ignoring capitals (q380
     const res = await newThread(author, `${review} title`, `and ${blocked} body`);
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('forumBlockedWord');
+  });
+});
+
+describe('Unicode-equivalent spellings are refused or held too (Codex r2 #6)', () => {
+  const stored = word => {
+    createdWords.push(foldForumText(word));
+    return word;
+  };
+
+  it('refuses STRASSE when straße is blocked, and a decomposed accent when the composed spelling is', async () => {
+    const root = `zq${uid()}`;
+    const blockedWord = `${root}straße`;
+    const accented = `${root}café`;
+    stored(blockedWord);
+    stored(accented);
+    await listWord('blocked', blockedWord);
+    await listWord('blocked', accented);
+    const author = await makeUser('user');
+    const thread = await publishedThread(await makeUser('user'));
+    for (const content of [`on ${root.toUpperCase()}STRASSE now`, `a ${root}café here`]) {
+      const res = await reply(author, thread.id, content);
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe('forumBlockedWord');
+    }
+    const longer = await reply(author, thread.id, `the ${root}cafés are open`);
+    expect(longer.status).toBe(201);
+    expect(longer.body.data.post.status).toBe('published');
+  });
+
+  it('holds a reply that spells a review word in Unicode-equivalent form', async () => {
+    const root = `zq${uid()}`;
+    stored(`${root}straße`);
+    await listWord('review', `${root}straße`);
+    const author = await makeUser('user');
+    const thread = await publishedThread(await makeUser('user'));
+    const res = await reply(author, thread.id, `down ${root.toUpperCase()}STRASSE`);
+    expect(res.status).toBe(201);
+    expect(res.body.data.post.status).toBe('held');
   });
 });
 

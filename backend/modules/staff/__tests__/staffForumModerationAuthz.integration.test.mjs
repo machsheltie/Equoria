@@ -254,6 +254,28 @@ describe('The held-post queue', () => {
     expect((await threadPage(author, thread.id)).status).toBe(404);
   });
 
+  it('lists a held reply in a held thread as not starting a thread, and rejecting it removes only the reply (Codex r2 #7)', async () => {
+    const author = await makeUser('user');
+    const replier = await makeUser('user');
+    const { thread, opening } = await heldThread(author);
+    const reply = await heldReply(thread.id, replier);
+    const res = await as(mod).get(`${api}/forum/held?after=${opening.id - 1}`);
+    expect(res.status).toBe(200);
+    const byId = new Map(res.body.posts.map(p => [p.id, p]));
+    expect(byId.get(opening.id).startsThread).toBe(true);
+    expect(byId.get(reply.id).startsThread).toBe(false);
+
+    const rejected = await as(mod).post(`${api}/forum/held/${reply.id}/reject`, { reason: 'Spam' });
+    expect(rejected.status).toBe(200);
+    expect(rejected.body.removed).toBe('post');
+    expect(await prisma.forumPost.findUnique({ where: { id: reply.id } })).toBeNull();
+    expect(await prisma.forumThread.findUnique({ where: { id: thread.id } })).not.toBeNull();
+    expect(await prisma.forumPost.findUnique({ where: { id: opening.id } })).not.toBeNull();
+
+    const again = await as(mod).get(`${api}/forum/held?after=${opening.id - 1}`);
+    expect(again.body.posts.find(p => p.id === opening.id).startsThread).toBe(true);
+  });
+
   it('of two stewards deciding one post at once, exactly one lands', async () => {
     const author = await makeUser('user');
     const { thread } = await publishedThread(author);

@@ -102,6 +102,18 @@ describe('StaffHeldPosts', () => {
     expect(sent).toEqual({ reason: 'Spam' });
   });
 
+  it('words a held reply in a held thread as removing only the reply (Codex r2 #7)', async () => {
+    const replyInHeldThread = { ...reply, id: 81, thread: newThread.thread, startsThread: false };
+    waiting = [newThread, replyInHeldThread];
+    const user = userEvent.setup();
+    renderIt();
+    const row = await screen.findByTestId('held-post-81');
+    expect(row).toHaveTextContent('Willow replied in Coins');
+    await user.click(within(row).getByRole('button', { name: 'Reject' }));
+    expect(within(row).getByRole('button', { name: 'Reject and remove' })).toBeInTheDocument();
+    expect(within(row).queryByRole('button', { name: 'Reject and remove the thread' })).toBeNull();
+  });
+
   it('says when another steward decided the post first', async () => {
     server.use(
       http.post(`${HELD}/72/accept`, () =>
