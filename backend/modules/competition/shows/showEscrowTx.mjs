@@ -90,6 +90,20 @@ export function enterShowTx(
         // moves — so a refusal leaves the wallet untouched and creates no
         // ShowEntry; INSIDE the tx so the reads are atomic with the entry.
         await checkEntryEligibility(tx, { show, showId, horseId, userId });
+        // Lock order (Equoria-qc7cx): the show row BEFORE the presenting groom
+        // prepareEntry locks, as the conformation settlement claims the show
+        // and then locks the grooms presenting in it. Taken after the groom, an
+        // entry at the close with a groom already presenting in this show held
+        // the groom while it waited for the claimed show, and the settlement
+        // waited for the groom: a deadlock. This only takes the lock (the mode
+        // the status-scoped update below takes); that update still decides
+        // whether the show takes entries, so the refusals keep their order.
+        // Its window is judged on the clock read here, before the entry can
+        // queue on the show: an entry queued before the close and let through
+        // while the show is still open is in, as when it queued on that update
+        // (Equoria-fzmiy).
+        const enteredAt = new Date();
+        await tx.$queryRaw`SELECT "id" FROM "shows" WHERE "id" = ${showId} FOR NO KEY UPDATE`;
         const extra = prepareEntry ? await prepareEntry(tx) : {};
         if (show.entryFee > 0) {
           const debited = await tx.user.updateMany({
@@ -111,13 +125,14 @@ export function enterShowTx(
         // free entry would silently bypass the guard.
         // Equoria-mwjst: the same predicate re-checks the open/close window.
         //
-        // Lock order (Equoria-ifnhc): the show row BEFORE the escrow account, as
-        // every settlement takes them (its show claim or show row, then the
-        // escrow account). Taken after it, an entry landing at the close held
-        // the escrow account while it waited for the show the settlement had
-        // claimed, and the settlement waited for the escrow account: deadlock.
+        // Lock order (Equoria-ifnhc): the show row (locked above) BEFORE the
+        // escrow account, as every settlement takes them (its show claim or show
+        // row, then the escrow account). Taken after it, an entry landing at the
+        // close held the escrow account while it waited for the show the
+        // settlement had claimed, and the settlement waited for the escrow
+        // account: deadlock.
         const stillOpen = await tx.show.updateMany({
-          where: openForEntriesWhere(showId),
+          where: openForEntriesWhere(showId, enteredAt),
           data: { feeEscrow: { increment: show.entryFee } },
         });
         if (stillOpen.count === 0) {

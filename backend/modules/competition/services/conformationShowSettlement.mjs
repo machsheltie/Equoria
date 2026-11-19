@@ -84,7 +84,13 @@ export async function activeGroomsForLegacyEntries(tx, entries) {
  *
  * - The entrants' rows are locked first, in ascending id order (the repository
  *   lock order), so two settlements sharing a horse queue instead of
- *   deadlocking on the grouped updates.
+ *   deadlocking on the grouped updates. FOR NO KEY UPDATE, the lock the
+ *   updates below take anyway (they change no key column): it still queues
+ *   every other writer of the horse, but not the key-share lock a row that
+ *   only references the horse takes (Equoria-qc7cx). With FOR UPDATE, an entry
+ *   of this horse into another conformation show queued its ShowEntry insert
+ *   behind this settlement while holding the groom this settlement locks next:
+ *   a deadlock.
  * - Equoria-mwjst: breedingValueBoost is a capped increment evaluated by the
  *   database on the row as it is now (the rule applyBreedingValueBoost states),
  *   never an absolute value from a row read earlier. One UPDATE per boost tier.
@@ -102,7 +108,7 @@ export async function activeGroomsForLegacyEntries(tx, entries) {
 export async function applyConformationRewards(tx, placed, { boostCap }) {
   const horseIds = placed.map(p => p.horse.id);
   const ascending = [...horseIds].sort((a, b) => a - b);
-  await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ANY(${ascending}) ORDER BY "id" FOR UPDATE`;
+  await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ANY(${ascending}) ORDER BY "id" FOR NO KEY UPDATE`;
 
   const boosted = placed.filter(p => p.reward.breedingBoostDelta > 0);
   for (const [delta, ids] of idsByTier(

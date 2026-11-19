@@ -238,7 +238,9 @@ export async function validateConformationEntry(horse, groom, userId, client = p
  *
  * The groom row is locked so a release or an unpaid-fee marking cannot land
  * between this check and the entry's commit (both write the Groom row; neither
- * takes the User row, so User -> Groom here cannot deadlock with them). Every
+ * takes the User row, so User -> Groom here cannot deadlock with them). The
+ * entry has locked the show row before this, as the settlement takes the show
+ * before the grooms (Equoria-qc7cx). Every
  * rule then reads the rows as they are now: the groom still on the entrant's
  * staff, allowed to work (checkGroomMayWork: not retired, active, fee paid),
  * assigned to the horse long enough, and the horse Fair or better (not Bad) and
@@ -373,9 +375,11 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
   return withRetryableTxMapping(
     prisma.$transaction(
       async tx => {
-        // Lock order (Equoria-mwjst.1, Codex #2): the entry takes the player's
-        // User row, then the Groom row, then the show. The only User row this
-        // settlement writes is the creator's (the fee credit), so it is locked
+        // Lock order (Equoria-mwjst.1, Codex #2; Equoria-qc7cx): the entry takes
+        // the player's User row, then the show, then the Groom row, then the
+        // escrow account; this settlement takes the show (its claim) before the
+        // horses and the grooms, and the escrow account last. The only User row
+        // this settlement writes is the creator's (the fee credit), so it is locked
         // FIRST, before the claim, the horses and the grooms. Taken last, a
         // creator entering their groom elsewhere while it presents here
         // deadlocked with this settlement. The claim below locks the show
