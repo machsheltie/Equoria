@@ -1,5 +1,5 @@
 /**
- * csrfBearerHeaderBinding.sentinel.test.mjs
+ * csrfBearerHeaderBinding.integration.test.mjs
  *
  * Equoria-lax36 — Bearer-header CSRF session-identifier symmetry.
  *
@@ -33,7 +33,7 @@
  *   Both PRE- and POST-fix: the cookie cross-user replay `it` stays 403
  *   (proves the fix did not regress plw0h's protection).
  *
- * @module __tests__/auth/csrfBearerHeaderBinding.sentinel
+ * @module __tests__/auth/csrfBearerHeaderBinding
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';

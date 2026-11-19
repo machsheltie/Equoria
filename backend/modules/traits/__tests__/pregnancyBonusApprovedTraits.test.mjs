@@ -1,5 +1,5 @@
 /**
- * pregnancyBonusApprovedTraits.sentinel.test.mjs (Equoria-9o3n7.4)
+ * pregnancyBonusApprovedTraits.test.mjs (Equoria-9o3n7.4)
  *
  * The pregnancy feed-tier bonus (premium feed during gestation biases foal
  * trait rolls) used to roll on an UNAPPROVED, dead trait pool:

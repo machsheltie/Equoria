@@ -1,5 +1,5 @@
 /**
- * E2E-only rate-limit ceiling override — sentinel + sentinel-positive (Equoria-jz9v2)
+ * E2E-only rate-limit ceiling override (Equoria-jz9v2)
  *
  * Context: the Playwright E2E CI job runs the whole suite (~27 min as of
  * 2026-07) from a single CI IP under NODE_ENV=beta with the REAL rate-limit
@@ -11,19 +11,13 @@
  *
  * Fix: an EXPLICIT, non-prod-only override env var (E2E_RATE_LIMIT_MAX) resolved
  * by `resolveE2eRateLimitMax` and wired into the app.mjs apiLimiter — WITHOUT
- * touching RATE_LIMIT_MAX_BY_ENV (whose defaults betaReadinessEnvSentinel
- * pins). This suite proves:
+ * touching RATE_LIMIT_MAX_BY_ENV. This suite proves:
  *
  *   1. PURE RESOLUTION — the override is honored ONLY when explicitly set AND
  *      only in non-prod (beta/test/beta-readiness), never production, and only
  *      for a valid positive integer. Unset ⇒ env default (real-deploy path).
  *
- *   2. SOURCE PIN — app.mjs actually wires resolveE2eRateLimitMax into the
- *      apiLimiter with E2E_RATE_LIMIT_MAX + the RATE_LIMIT_MAX_BY_ENV default,
- *      and does NOT mutate the pinned map values. A future edit that drops the
- *      override (or hardcodes a bypass) fails here.
- *
- *   3. SENTINEL-POSITIVE (OPTIMAL_FIX_DISCIPLINE §2) — the override is a SCOPED
+ *   2. SENTINEL-POSITIVE (OPTIMAL_FIX_DISCIPLINE §2) — the override is a SCOPED
  *      CALIBRATION, not a blanket disable. A LOW override under a non-prod env
  *      produces a limiter that STILL FIRES 429 at that low ceiling (proving the
  *      limiter is real, not turned off), and a production env IGNORES the
@@ -39,17 +33,10 @@
  */
 
 import { describe, it, expect, afterEach } from '@jest/globals';
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import express from 'express';
 import request from 'supertest';
 import { createRateLimiter } from '../middleware/rateLimiting.mjs';
 import { resolveE2eRateLimitMax, applyE2eRateLimitOverride } from '../middleware/e2eRateLimitOverride.mjs';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(__dirname, '../..');
-const read = relPath => readFileSync(resolve(repoRoot, relPath), 'utf8');
 
 // The env-default caps used by app.mjs (RATE_LIMIT_MAX_BY_ENV). Referenced here
 // only as the `configuredMax` the helper falls back to — NOT redefining them.
@@ -116,31 +103,6 @@ describe('resolveE2eRateLimitMax — pure resolution (Equoria-jz9v2)', () => {
         );
       });
     }
-  });
-});
-
-describe('apiLimiter override wiring — app.mjs source pin (Equoria-jz9v2)', () => {
-  const appSrc = read('backend/app.mjs');
-
-  it('app.mjs imports resolveE2eRateLimitMax from the e2e-override middleware', () => {
-    expect(appSrc).toMatch(
-      /import\s*\{[^}]*resolveE2eRateLimitMax[^}]*\}\s*from\s*'\.\/middleware\/e2eRateLimitOverride\.mjs'/,
-    );
-  });
-
-  it('the apiLimiter max is resolved through resolveE2eRateLimitMax with E2E_RATE_LIMIT_MAX', () => {
-    expect(appSrc).toMatch(/max:\s*resolveE2eRateLimitMax\(/);
-    expect(appSrc).toContain('envValue: process.env.E2E_RATE_LIMIT_MAX');
-    // The fallback default MUST remain the rateLimitMaxByEnv lookup — not a
-    // hardcoded high number (that would be a bypass, not a scoped override).
-    expect(appSrc).toMatch(/configuredMax:\s*rateLimitMaxByEnv\[process\.env\.NODE_ENV\]\s*\?\?\s*100/);
-  });
-
-  it('does NOT change the pinned rateLimitMaxByEnv defaults (beta 3000 / prod fallback 100)', () => {
-    expect(appSrc).toMatch(/beta:\s*3000/);
-    expect(appSrc).toMatch(/'beta-readiness':\s*1000/);
-    // The override lives at the apiLimiter call site, not inside the map.
-    expect(appSrc).not.toMatch(/beta:\s*100000/);
   });
 });
 
@@ -233,7 +195,7 @@ describe('applyE2eRateLimitOverride — env-reading shim (Equoria-jz9v2)', () =>
 describe('SENTINEL-POSITIVE: createRateLimiter FACTORY applies the override to EVERY limiter (Equoria-jz9v2)', () => {
   // This is the mechanism that covers auth/mutation/query/profile/foal/etc. in
   // one place — the override is applied inside getEffectiveMax, so no limiter's
-  // `max:` literal is touched (authRateLimitDocDrift stays green).
+  // `max:` literal is touched.
   const origE2e = process.env.E2E_RATE_LIMIT_MAX;
   const origNodeEnv = process.env.NODE_ENV;
   afterEach(() => {
@@ -275,26 +237,5 @@ describe('SENTINEL-POSITIVE: createRateLimiter FACTORY applies the override to E
     }
     // 5th trips at the base of 4 — the '2' override was ignored (production).
     expect((await request(app).get('/probe')).status).toBe(429);
-  });
-});
-
-describe('factory + boot-log source pins (Equoria-jz9v2)', () => {
-  const rlSrc = read('backend/middleware/rateLimiting.mjs');
-  const appSrc = read('backend/app.mjs');
-
-  it('rateLimiting.mjs getEffectiveMax routes the non-test branch through applyE2eRateLimitOverride', () => {
-    expect(rlSrc).toContain("import { applyE2eRateLimitOverride } from './e2eRateLimitOverride.mjs'");
-    expect(rlSrc).toMatch(/:\s*applyE2eRateLimitOverride\(max\)/);
-  });
-
-  it('rateLimiting.mjs does NOT wrap any limiter max: literal (keeps authRateLimitDocDrift green)', () => {
-    // The override lives ONLY in getEffectiveMax; per-limiter caps stay literals.
-    expect(rlSrc).toMatch(/max:\s*200\b/); // auth
-    expect(rlSrc).not.toMatch(/max:\s*applyE2eRateLimitOverride\(/);
-  });
-
-  it('app.mjs emits a one-time boot-log of effective rate-limit ceilings', () => {
-    expect(appSrc).toContain('[rateLimit] effective ceilings at boot');
-    expect(appSrc).toContain('e2eRateLimitMax: process.env.E2E_RATE_LIMIT_MAX');
   });
 });

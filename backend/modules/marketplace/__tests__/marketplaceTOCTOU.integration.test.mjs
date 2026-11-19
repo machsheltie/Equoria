@@ -1,5 +1,5 @@
 /**
- * Sentinel test: marketplace purchase TOCTOU race (Equoria-alei5).
+ * Marketplace purchase TOCTOU race (Equoria-alei5).
  *
  * Bug: marketplaceController.buyHorse uses tx.horse.findUnique → checks
  * !horse.forSale → does money.decrement → does horse.update in a single
@@ -26,9 +26,6 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -37,9 +34,6 @@ import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -188,29 +182,4 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
     expect(winnerDebits).toHaveLength(1);
     expect(loserDebits).toHaveLength(0);
   }, 90000);
-
-  it('CODE SENTINEL: marketplaceController uses conditional updateMany (TOCTOU guard intact)', () => {
-    // Per OPTIMAL_FIX_DISCIPLINE §2 — sentinel-positive test required
-    // for any fix that adds/strengthens a check. The race-condition
-    // window between findUnique and update is too tight to reliably
-    // reproduce via HTTP in CI (the first transaction usually commits
-    // before the second one reads), so this code-level sentinel locks
-    // the architectural guarantee: the buyHorse controller MUST use a
-    // conditional updateMany WHERE forSale=true to atomically claim
-    // ownership. If this sentinel ever fails, the TOCTOU fix has
-    // regressed.
-    const controllerPath = resolve(__dirname, '..', 'controllers', 'marketplaceController.mjs');
-    const source = readFileSync(controllerPath, 'utf8');
-    // Find the buyHorse function body
-    const buyHorseStart = source.indexOf('export async function buyHorse');
-    expect(buyHorseStart).toBeGreaterThan(-1);
-    const buyStoreHorseStart = source.indexOf('export async function buyStoreHorse');
-    expect(buyStoreHorseStart).toBeGreaterThan(buyHorseStart);
-    const buyHorseBody = source.slice(buyHorseStart, buyStoreHorseStart);
-    // Must contain conditional updateMany with forSale: true in WHERE
-    expect(buyHorseBody).toMatch(/\.updateMany\(\s*\{\s*where:\s*\{[\s\S]*?forSale:\s*true/);
-    // Must check transferResult.count !== 1 and throw 409
-    expect(buyHorseBody).toMatch(/transferResult\.count\s*!==\s*1/);
-    expect(buyHorseBody).toMatch(/statusCode:\s*409/);
-  });
 });

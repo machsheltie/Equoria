@@ -154,7 +154,7 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2; clos
     // `name` (pre-Equoria-4fnro), then `sex` (Equoria-4fnro). NEW RULING
     // (Equoria-bvddn.2, audit finding 2026-09-25): `sex`, `gender` and
     // `dateOfBirth` are OFF the allow-list too (see
-    // horseUpdateSexDobMassAssign.sentinel.test.mjs for that guard), so there
+    // horseUpdateSexDobMassAssign.integration.test.mjs for that guard), so there
     // is no non-genealogy field left for a "still works" sanity case to send.
     // An empty payload is a legitimate no-op PUT and proves the route itself
     // is still reachable and healthy after the allow-list narrowed.

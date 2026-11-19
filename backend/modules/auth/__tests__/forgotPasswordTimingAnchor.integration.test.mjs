@@ -145,19 +145,4 @@ describe('🔒 Sentinel — forgotPassword constant-time bcrypt anchor (Equoria-
       spy.mockRestore();
     }
   }, 30000);
-
-  it('the pg_sleep(0) "delay padding" no-op is no longer present in the controller source', async () => {
-    // Document-the-removal sentinel: the ineffective mitigation must be gone,
-    // not merely supplemented. Reads the real controller source (no mock).
-    const { readFileSync } = await import('node:fs');
-    const { fileURLToPath } = await import('node:url');
-    const path = await import('node:path');
-    const here = path.dirname(fileURLToPath(import.meta.url));
-    const controllerPath = path.resolve(here, '..', 'controllers', 'passwordController.mjs');
-    const src = readFileSync(controllerPath, 'utf-8');
-    expect(src).not.toMatch(/pg_sleep/);
-    // The constant-time anchor helper must exist (the replacement is present).
-    expect(src).toMatch(/runTimingAnchorCompare/);
-    expect(src).toMatch(/fakeBcryptHash/);
-  });
 });

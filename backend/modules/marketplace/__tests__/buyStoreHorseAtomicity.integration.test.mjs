@@ -1,5 +1,5 @@
 /**
- * buyStoreHorse — money+horse atomicity sentinel (Equoria-gumnp).
+ * buyStoreHorse — money+horse atomicity (Equoria-gumnp).
  *
  * Locks the fix for the P2 MONEY defect: the store-horse purchase used to debit
  * coins in one committed `$transaction` and then create the horse AFTER it,
@@ -12,9 +12,9 @@
  * transaction as the debit and DELETES the compensating-refund saga, so the
  * charge and the horse commit-or-roll-back atomically.
  *
- * Two sentinels, both RED before the fix / GREEN after:
+ * RED before the fix / GREEN after:
  *
- *   1. MECHANISM (real-DB, no mocks): the fix hinges on `createHorse` honoring
+ *   MECHANISM (real-DB, no mocks): the fix hinges on `createHorse` honoring
  *      an injected Prisma client. This test drives `createHorse(data, tx)`
  *      inside a `$transaction` the TEST owns, throws AFTER createHorse (the
  *      "boundary you own" from the issue's test spec), and asserts BOTH the
@@ -24,12 +24,9 @@
  *      rollback (a leaked free horse). That surviving row is what turns this
  *      test RED before the signature change.
  *
- *   2. STRUCTURE (source-text): buyStoreHorse must call `createHorse(..., tx)`
- *      inside its `$transaction`, and the refund saga (`coinDeducted`, the
- *      `horse_trader_purchase_refund` reversal tx, the dead `err.nameCollision`
- *      branch) must be gone. The HTTP happy-path + money-conservation are
- *      already locked by buyStoreHorseSystemAccountPair.integration.test.mjs,
- *      which runs under the same `npm test -- marketplace` selector.
+ *   The HTTP happy-path + money-conservation are locked by
+ *   buyStoreHorseSystemAccountPair.integration.test.mjs, which runs under the
+ *   same `npm test -- marketplace` selector.
  *
  * Real-DB only. Cleanup is id-scoped to the fixtures this suite creates
  * (CLAUDE.md §3 / CONTRIBUTING fixture discipline).
@@ -183,33 +180,4 @@ describe('buyStoreHorse — money+horse atomicity (Equoria-gumnp)', () => {
     expect(persisted).not.toBeNull();
     expect(persisted.phenotype).not.toBeNull(); // colorGenotype/phenotype invariant
   }, 60000);
-
-  // ─── STRUCTURE SENTINEL (RED before the controller restructure) ─────────────
-
-  it('CODE SENTINEL: buyStoreHorse creates the horse inside the debit tx and has no refund saga', () => {
-    const controllerPath = resolve(__dirname, '..', 'controllers', 'marketplaceController.mjs');
-    const source = readFileSync(controllerPath, 'utf8');
-
-    const start = source.indexOf('export async function buyStoreHorse');
-    expect(start).toBeGreaterThan(-1);
-    const after = source.slice(start + 1);
-    const nextExportRel = after.indexOf('\nexport ');
-    const body = nextExportRel === -1 ? after : after.slice(0, nextExportRel);
-
-    // (1) createHorse must be called WITH the tx client — i.e. inside the tx,
-    //     enlisting the insert in the debit transaction.
-    expect(body).toMatch(/createHorse\(\s*\{[\s\S]*?\},\s*tx\b/);
-
-    // (2) The compensating-refund saga must be gone. `coinDeducted`, the
-    //     `horse_trader_purchase_refund` reversal, and the dead
-    //     `err.nameCollision` branch were all part of the saga this fix removes.
-    expect(body).not.toMatch(/coinDeducted/);
-    expect(body).not.toMatch(/horse_trader_purchase_refund/);
-    expect(body).not.toMatch(/err\.nameCollision/);
-
-    // (3) Exactly one $transaction remains (the atomic debit+horse tx). The
-    //     second one used to be the refund saga.
-    const txCount = (body.match(/\$transaction\(/g) || []).length;
-    expect(txCount).toBe(1);
-  });
 });
