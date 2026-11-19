@@ -71,6 +71,10 @@ export function pauseWords(seconds: number): string {
   return plural(Math.max(1, Math.round(seconds / 60)), 'minute');
 }
 
+/** An outage time that never happened: 2:xx a.m. the night the clocks spring forward. */
+export const skippedTimeWords =
+  "That time doesn't exist on the night the clocks spring forward; pick a time outside 2:00–3:00 a.m.";
+
 const byCode: Record<string, string> = {
   staffFreshCodeInvalid: 'That code is not right, or it has run out. Email yourself a new one.',
   staffCheckinRateLimited: 'Too many codes asked for. Wait a few minutes and try again.',
@@ -80,6 +84,9 @@ const byCode: Record<string, string> = {
   timeBackEndInFuture: 'The outage end cannot be in the future.',
   timeBackWindowTooLong: 'An outage longer than 30 days cannot be given back.',
   timeBackWindowInvalid: 'Enter when the outage began and ended; it must end after it began.',
+  timeBackTimeSkipped: skippedTimeWords,
+  timeBackTimeAmbiguous:
+    'That time happens twice on the night the clocks go back; choose the first or the second.',
   timeBackAlreadyUndone: 'This one has already been undone.',
   timeBackNotFound: 'That time-back is no longer on the list.',
   jobsAlreadyHeld: 'The nightly jobs are already held.',

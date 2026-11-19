@@ -4,7 +4,8 @@
  *
  * The owner gives back the time an outage took: every game clock behaves as if
  * the outage never happened (a true pause). The window is entered in Eastern
- * game time. Preview reads only. Apply needs the nightly jobs held, a window
+ * game time: a time the clocks skip is refused, and a time they repeat needs
+ * the Owner to say which; the pause is the real time elapsed. Preview reads only. Apply needs the nightly jobs held, a window
  * that ends in the past, is at most 30 days and overlaps no applied time-back,
  * and a fresh emailed code it consumes in the same transaction as every change
  * and the staff action log entry. Undo restores each recorded value only where
@@ -16,12 +17,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import AppError from '../../../errors/AppError.mjs';
-import {
-  gameDateKey,
-  gameDateParts,
-  gameDayIndex,
-  startOfGameDayIndex,
-} from '../../../utils/gameTime.mjs';
+import { gameDateKey, gameDateParts } from '../../../utils/gameTime.mjs';
 import { recordStaffActionTx } from './staffActionLogService.mjs';
 import { consumeFreshCodeTx } from './staffFreshCodeService.mjs';
 import { lockJobHoldTx } from './jobHoldService.mjs';
@@ -78,38 +74,78 @@ const jobEffects = Object.freeze({
   dailyNewsPosting: 'Daily news was posted.',
 });
 
+/** Which of a time that happens twice the Owner means: before or after the clocks went back. */
+export const wallTimeOccurrences = Object.freeze(['first', 'second']);
+
+const skippedTimeWords =
+  "That time doesn't exist on the night the clocks spring forward; pick a time outside 2:00–3:00 a.m.";
+const twiceTimeWords =
+  'That time happens twice on the night the clocks go back; choose the first or the second.';
+
+/** The Eastern wall-clock reading of an instant, written as a UTC instant (ms). */
+function easternWallMs(ms) {
+  const p = gameDateParts(ms);
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+}
+
 /**
- * An Eastern wall-clock time 'YYYY-MM-DDTHH:mm' as an instant, or null.
- * A time that does not exist (02:xx on the spring-forward day) lands an hour
- * later, like the game clock elsewhere.
+ * Every instant at which the Eastern clock read 'YYYY-MM-DDTHH:mm', earliest
+ * first: none for a time the clocks skip (02:xx on the spring-forward night),
+ * two for a time they repeat (01:xx on the fall-back night), otherwise one.
  * @param {unknown} text
- * @returns {Date|null}
+ * @returns {Date[]|null} null when the text is not such a time
  */
-export function easternWallTime(text) {
+export function easternWallTimeInstants(text) {
   const match = typeof text === 'string' && /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(text);
   if (!match) {
     return null;
   }
   const [year, month, day, hour, minute] = match.slice(1).map(Number);
-  const dayMs = Date.UTC(year, month - 1, day);
-  const check = new Date(dayMs);
+  const check = new Date(Date.UTC(year, month - 1, day));
   if (check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day || hour > 23 || minute > 59) {
     return null;
   }
-  const index = dayMs / msPerDay;
-  const wallMs = (hour * 60 + minute) * 60_000;
-  const guess = startOfGameDayIndex(index).getTime() + wallMs;
-  const landed = gameDateParts(guess);
-  const landedMs =
-    (gameDayIndex(guess) - index) * msPerDay +
-    ((landed.hour * 60 + landed.minute) * 60 + landed.second) * 1000;
-  return new Date(guess - (landedMs - wallMs));
+  const wallMs = Date.UTC(year, month - 1, day, hour, minute);
+  // The Eastern offsets in force a day either side: at most one clock change lies between.
+  const offsets = new Set([-msPerDay, msPerDay].map(d => easternWallMs(wallMs + d) - (wallMs + d)));
+  return [...offsets]
+    .map(offset => wallMs - offset)
+    .filter(ms => easternWallMs(ms) === wallMs)
+    .sort((x, y) => x - y)
+    .map(ms => new Date(ms));
 }
 
-/** Validate and describe the window. Throws TimeBackError(400). */
-export function parseWindow({ start, end }, now = new Date()) {
-  const s = easternWallTime(start);
-  const e = easternWallTime(end);
+/**
+ * One end of the window as an instant, or null for text that is not a time.
+ * Refuses a time the clocks skip, and a time they repeat unless `occurrence`
+ * ('first' or 'second') says which; on any other time `occurrence` is ignored.
+ */
+function windowInstant(text, occurrence) {
+  const instants = easternWallTimeInstants(text);
+  if (instants === null) {
+    return null;
+  }
+  if (instants.length === 1) {
+    return instants[0];
+  }
+  if (instants.length === 0) {
+    throw new TimeBackError(skippedTimeWords, 400, 'timeBackTimeSkipped');
+  }
+  const pick = wallTimeOccurrences.indexOf(occurrence);
+  if (pick < 0) {
+    throw new TimeBackError(twiceTimeWords, 400, 'timeBackTimeAmbiguous');
+  }
+  return instants[pick];
+}
+
+/**
+ * Validate and describe the window. Throws TimeBackError(400). The pause is
+ * the real time that elapsed between the two instants.
+ * @param {{ start: string, end: string, startOccurrence?: string, endOccurrence?: string }} input
+ */
+export function parseWindow({ start, end, startOccurrence, endOccurrence }, now = new Date()) {
+  const s = windowInstant(start, startOccurrence);
+  const e = windowInstant(end, endOccurrence);
   if (!s || !e) {
     throw new TimeBackError(
       'Enter when the outage started and ended.',

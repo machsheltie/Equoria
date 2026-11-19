@@ -63,9 +63,17 @@ raw `Date` binds — Equoria-7uphu).
 | **4 Never moved**      | security, accounting, records, history displays     | unchanged                                                                |
 
 `@db.Date` columns (`Horse.dateOfBirth`, `Horse.lastBredDate`,
-`Horse.lastVettedDate`) move by `N` rounded to the nearest whole day. Ages are
-counted in whole UTC calendar days (`getHorseAgeDays`), so no precision is lost
-for play.
+`Horse.lastVettedDate`) move by the window's length on the Eastern clock rounded
+to the nearest whole day (a 23- or 25-hour daylight-saving day is one game day).
+Ages are counted in whole Eastern calendar days, so no precision is lost for
+play.
+
+The weekly-bucketed fields (`Groom.feeUnpaidSince`, `Rider.feeUnpaidSince`)
+move by the window's whole game weeks: the most `k` for which `k` Eastern
+calendar weeks after `S`, at the same Eastern clock time, is not after `E`. A
+value moves `k` calendar weeks and keeps its Eastern clock time, so Sunday
+midnight to Sunday midnight across spring-forward is one week though only 167
+hours long (Codex r2 #5, 2026-11-19).
 
 ### Classification (2026-10-06 code survey)
 
@@ -197,7 +205,15 @@ minutes. A hold must therefore be durable:
 ## Operation
 
 1. **Hold jobs** (required; the panel offers it).
-2. **Enter the window** (`S`, `E` in Eastern time).
+2. **Enter the window** (`S`, `E` in Eastern time). `N` is the real time that
+   elapsed between them. A time the clocks skip (2:00–3:00 a.m. the night they
+   spring forward) is refused in plain words, in the panel and by the server
+   (`timeBackTimeSkipped`). A time they repeat (1:00–2:00 a.m. the night they
+   go back) shows a small choice under that field, and only then: "first 1:xx
+   (before clocks went back)" or "second 1:xx (after)". The request carries it
+   as `startOccurrence` / `endOccurrence` (`first` | `second`); the server
+   refuses a repeated time without it (`timeBackTimeAmbiguous`) and ignores it
+   on any other time (Codex r2 #4, 2026-11-19).
 3. **Preview** — a dry run with no writes: counts per field, horses that
    un-retire, worked examples, and every job run inside the window with its
    irreversible effects.
@@ -209,7 +225,8 @@ minutes. A hold must therefore be durable:
 
 **Reverse** restores recorded old values only where the field still holds the
 value the time-back wrote; values changed by play since then are left alone and
-listed. It needs its own fresh emailed code, is recorded and linked to the
+listed — every one the undo did not restore, including a value play set back to
+exactly its pre-time-back value (Codex r2 #8). It needs its own fresh emailed code, is recorded and linked to the
 original, and runs once.
 
 **Irreversible effects** (named in the preview, never silently undone): shows

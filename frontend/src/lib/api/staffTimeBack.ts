@@ -11,7 +11,9 @@
  *   POST /api/v1/staff/time-back/apply { start, end, code } → TimeBackRecord
  *   POST /api/v1/staff/time-back/:id/undo { code } → TimeBackRecord
  *
- * `start` and `end` are Eastern wall-clock times, 'YYYY-MM-DDTHH:mm'.
+ * `start` and `end` are Eastern wall-clock times, 'YYYY-MM-DDTHH:mm'. A time
+ * the clocks repeat (1:xx a.m. the night they go back) also needs
+ * `startOccurrence` / `endOccurrence` ('first' | 'second'), on preview and apply.
  * POST /api/v1/admin/foaling/trigger → { foalsBorn } delivers overdue foals now.
  */
 
@@ -58,9 +60,14 @@ export interface TimeBackRecord {
 
 export type TimeBackCodePurpose = 'timeBackApply' | 'timeBackUndo';
 
+/** Which of a time that happens twice: before or after the clocks went back. */
+export type WallTimeOccurrence = 'first' | 'second';
+
 export interface TimeBackWindow {
   start: string;
   end: string;
+  startOccurrence?: WallTimeOccurrence;
+  endOccurrence?: WallTimeOccurrence;
 }
 
 export const staffTimeBackApi = {
@@ -68,10 +75,14 @@ export const staffTimeBackApi = {
   holdJobs: (reason: string) => apiClient.post<JobHold>(`${BASE}/jobs/hold`, { reason }),
   releaseJobs: () => apiClient.post<JobHold>(`${BASE}/jobs/release`, {}),
   timeBacks: () => apiClient.get<TimeBackRecord[]>(`${BASE}/time-back`),
-  preview: ({ start, end }: TimeBackWindow) =>
-    apiClient.get<TimeBackPreview>(
-      `${BASE}/time-back/preview?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`
-    ),
+  preview: (outage: TimeBackWindow) => {
+    const given = Object.entries(outage).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined
+    );
+    return apiClient.get<TimeBackPreview>(
+      `${BASE}/time-back/preview?${new URLSearchParams(given).toString()}`
+    );
+  },
   sendCode: (purpose: TimeBackCodePurpose) =>
     apiClient.post<{ success: boolean }>(`${BASE}/time-back/code`, { purpose }),
   apply: (outage: TimeBackWindow, code: string) =>

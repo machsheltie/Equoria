@@ -53,7 +53,14 @@ function respondKnown(res, error) {
 }
 
 const actorOf = req => ({ id: req.staff.id, role: req.staff.role });
-const windowOf = body => ({ start: body?.start, end: body?.end });
+// startOccurrence / endOccurrence ('first' | 'second') say which of a time that
+// happens twice (the night the clocks go back) the Owner means.
+const windowOf = body => ({
+  start: body?.start,
+  end: body?.end,
+  startOccurrence: body?.startOccurrence,
+  endOccurrence: body?.endOccurrence,
+});
 
 /** GET /api/v1/staff/jobs/hold */
 export async function getJobHold(req, res, next) {

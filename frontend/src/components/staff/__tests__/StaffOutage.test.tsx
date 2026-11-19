@@ -168,6 +168,84 @@ describe('StaffOutage', () => {
     );
   });
 
+  // Codex r2 #4: Eastern time has a 1:xx a.m. that happens twice (the night the
+  // clocks go back, 1 Nov 2026) and a 2:xx a.m. that never happens (8 Mar 2026).
+  const enterTimes = (began: string, ended: string) => {
+    fireEvent.change(screen.getByLabelText('Outage began (Eastern)'), {
+      target: { value: began },
+    });
+    fireEvent.change(screen.getByLabelText('Outage ended (Eastern)'), {
+      target: { value: ended },
+    });
+  };
+
+  it('asks which 1:xx a.m. only for a time that happened twice, and sends the choice', async () => {
+    const previews: string[] = [];
+    server.use(
+      http.get(`${STAFF}/time-back/preview`, ({ request }) => {
+        previews.push(new URL(request.url).search);
+        return refuse(400, 'timeBackWindowInvalid');
+      })
+    );
+    const user = userEvent.setup();
+    renderWithClient(<StaffOutage onCheckinRequired={() => undefined} />);
+
+    enterOutage();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(screen.getByRole('button', { name: 'Show what moves' })).toBeEnabled();
+
+    enterTimes('2026-11-01T01:15', '2026-11-01T02:15');
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    expect(screen.getByText('1:15 a.m. happened twice that night.')).toBeInTheDocument();
+    const first = screen.getByRole('radio', { name: 'first 1:15 (before clocks went back)' });
+    const second = screen.getByRole('radio', { name: 'second 1:15 (after)' });
+    expect(first).not.toBeChecked();
+    expect(second).not.toBeChecked();
+    await user.type(screen.getByLabelText('Code from the email'), '123456');
+    expect(screen.getByRole('button', { name: 'Show what moves' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Give the time back' })).toBeDisabled();
+
+    await user.click(second);
+    await user.click(screen.getByRole('button', { name: 'Show what moves' }));
+    await screen.findByText('Enter when the outage began and ended; it must end after it began.');
+    expect(previews).toEqual([
+      '?start=2026-11-01T01%3A15&end=2026-11-01T02%3A15&startOccurrence=second',
+    ]);
+    await user.click(screen.getByRole('button', { name: 'Give the time back' }));
+    await screen.findByRole('list', { name: 'Time given back' });
+    expect(posts).toEqual([
+      {
+        url: '/api/v1/staff/time-back/apply',
+        body: {
+          start: '2026-11-01T01:15',
+          end: '2026-11-01T02:15',
+          startOccurrence: 'second',
+          code: '123456',
+        },
+      },
+    ]);
+
+    // Changing the time asks again; a time that happened once asks nothing.
+    enterTimes('2026-11-01T01:40', '2026-11-01T03:00');
+    expect(
+      screen.getByRole('radio', { name: 'first 1:40 (before clocks went back)' })
+    ).not.toBeChecked();
+    enterTimes('2026-11-01T03:00', '2026-11-01T04:00');
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+  });
+
+  it('refuses a time the clocks skipped, beside the field', () => {
+    renderWithClient(<StaffOutage onCheckinRequired={() => undefined} />);
+    enterTimes('2026-03-08T02:30', '2026-03-08T04:00');
+    expect(
+      screen.getByText(
+        "That time doesn't exist on the night the clocks spring forward; pick a time outside 2:00–3:00 a.m."
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(screen.getByRole('button', { name: 'Show what moves' })).toBeDisabled();
+  });
+
   it('gives the time back with an emailed code; the new entry appears in the list', async () => {
     const user = userEvent.setup();
     renderWithClient(<StaffOutage onCheckinRequired={() => undefined} />);

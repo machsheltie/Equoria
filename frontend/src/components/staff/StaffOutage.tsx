@@ -28,10 +28,19 @@ import {
   useTimeBacks,
   useUndoTimeBack,
 } from '@/hooks/api/useStaffTimeBack';
-import type { TimeBackRecord, TimeBackWindow } from '@/lib/api/staffTimeBack';
+import type { TimeBackRecord, TimeBackWindow, WallTimeOccurrence } from '@/lib/api/staffTimeBack';
+import { easternWallTimeCount } from '@/lib/gameTime';
 import { staffTimeOptions } from './staffMessages';
 import StaffSection from './StaffSection';
-import { movedLines, pauseWords, timeBackError, unruledLine } from './timeBackWords';
+import {
+  movedLines,
+  pauseWords,
+  skippedTimeWords,
+  timeBackError,
+  unruledLine,
+} from './timeBackWords';
+
+const occurrences: WallTimeOccurrence[] = ['first', 'second'];
 
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, staffTimeOptions);
 const sixDigits = (text: string) => /^\d{6}$/.test(text.trim());
@@ -142,9 +151,85 @@ function Preview({ outage }: { outage: TimeBackWindow | null }) {
   );
 }
 
+interface OutageTimeValue {
+  text: string;
+  occurrence: WallTimeOccurrence | null;
+}
+
+const noTime: OutageTimeValue = { text: '', occurrence: null };
+
+/**
+ * Whether an outage end is usable: entered, a time the clocks did not skip,
+ * and, for a time they repeated, the Owner has said which.
+ */
+function timeReady({ text, occurrence }: OutageTimeValue): boolean {
+  const count = easternWallTimeCount(text);
+  return count === 1 || (count === 2 && occurrence !== null);
+}
+
+/**
+ * One end of the outage, in Eastern time. Only on the night the clocks go back
+ * does a small choice appear, for a 1:xx a.m. that happened twice.
+ */
+function OutageTime({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: OutageTimeValue;
+  onChange: (next: OutageTimeValue) => void;
+}) {
+  const count = easternWallTimeCount(value.text);
+  const clock = value.text.slice(11).replace(/^0/, '');
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <FormField label={label}>
+        {(field) => (
+          <Input
+            {...field}
+            type="datetime-local"
+            value={value.text}
+            onChange={(e) => onChange({ text: e.target.value, occurrence: null })}
+          />
+        )}
+      </FormField>
+      {count === 0 && <InlineError message={skippedTimeWords} />}
+      {count === 2 && (
+        <fieldset className="flex flex-col gap-1 text-sm text-[var(--text-primary)]">
+          <legend>{clock} a.m. happened twice that night.</legend>
+          {occurrences.map((choice) => (
+            <label key={choice} className="flex items-center gap-2">
+              <input
+                type="radio"
+                name={label}
+                checked={value.occurrence === choice}
+                onChange={() => onChange({ text: value.text, occurrence: choice })}
+              />
+              {choice === 'first'
+                ? `first ${clock} (before clocks went back)`
+                : `second ${clock} (after)`}
+            </label>
+          ))}
+        </fieldset>
+      )}
+    </div>
+  );
+}
+
+/** The window as the server reads it; a choice is sent only for a time that happened twice. */
+function outageWindow(start: OutageTimeValue, end: OutageTimeValue): TimeBackWindow {
+  return {
+    start: start.text,
+    end: end.text,
+    ...(start.occurrence ? { startOccurrence: start.occurrence } : {}),
+    ...(end.occurrence ? { endOccurrence: end.occurrence } : {}),
+  };
+}
+
 function GiveBack({ onCheckinRequired }: { onCheckinRequired: () => void }) {
-  const [start, setStart] = useState('');
-  const [end, setEnd] = useState('');
+  const [start, setStart] = useState(noTime);
+  const [end, setEnd] = useState(noTime);
   const [shown, setShown] = useState<TimeBackWindow | null>(null);
   const [code, setCode] = useState('');
   const sendCode = useSendTimeBackCode();
@@ -155,31 +240,13 @@ function GiveBack({ onCheckinRequired }: { onCheckinRequired: () => void }) {
     if (lapsed) onCheckinRequired();
   }, [lapsed, onCheckinRequired]);
 
-  const ready = start !== '' && end !== '';
-  const outage = { start, end };
+  const ready = timeReady(start) && timeReady(end);
+  const outage = outageWindow(start, end);
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end gap-3">
-        <FormField label="Outage began (Eastern)" className="min-w-0 flex-1">
-          {(field) => (
-            <Input
-              {...field}
-              type="datetime-local"
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
-            />
-          )}
-        </FormField>
-        <FormField label="Outage ended (Eastern)" className="min-w-0 flex-1">
-          {(field) => (
-            <Input
-              {...field}
-              type="datetime-local"
-              value={end}
-              onChange={(e) => setEnd(e.target.value)}
-            />
-          )}
-        </FormField>
+        <OutageTime label="Outage began (Eastern)" value={start} onChange={setStart} />
+        <OutageTime label="Outage ended (Eastern)" value={end} onChange={setEnd} />
         <Button variant="secondary" disabled={!ready} onClick={() => setShown(outage)}>
           Show what moves
         </Button>

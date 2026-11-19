@@ -19,9 +19,32 @@
  */
 
 import { Prisma } from '../../../../packages/database/prismaClient.mjs';
+import { gameDateParts, gameTimeZone, sameGameClockDaysLater } from '../../../utils/gameTime.mjs';
 import { pastEventFields, pendingDeadlineFields } from './timeBackClassification.mjs';
 
 const daysUntilRetirement = 21 * 7; // a horse retires at 21 game-years; 7 days each
+const msPerDay = 86_400_000;
+const careWindowDays = 60; // the longest trailing care window
+
+/** An instant's Eastern wall-clock reading, written as a UTC instant (ms). */
+function easternWallMs(date) {
+  const p = gameDateParts(date);
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+}
+
+/**
+ * Whole game weeks from `start` to `end`: the most k for which k Eastern
+ * calendar weeks after `start`, at the same Eastern clock time, is not after
+ * `end`. Sunday midnight to Sunday midnight is one week even when the clocks
+ * sprang forward in between (167 hours).
+ */
+export function wholeGameWeeks(start, end) {
+  let weeks = 0;
+  while (sameGameClockDaysLater(start, 7 * (weeks + 1)).getTime() <= end.getTime()) {
+    weeks += 1;
+  }
+  return weeks;
+}
 
 /**
  * The moved fields. `key` is the classification key ('Model.field'); `table`,
@@ -205,23 +228,38 @@ const ident = name => Prisma.raw(`"${name}"`);
 /**
  * The window's bound values for SQL. `start`/`end` are Dates; `startDate` /
  * `endDate` are the Eastern calendar dates of the window as 'YYYY-MM-DD'.
+ *
+ * `pause` is the real time elapsed (instants move by it). Day and week counts
+ * are read on the Eastern clock, never as a millisecond delta, so a 23- or
+ * 25-hour daylight-saving day is still one game day: `days` is the window's
+ * Eastern wall-clock length rounded to whole days, `weeks` its whole game weeks.
  */
 export function windowParams({ start, end, startDate, endDate, pauseMs, todayDate }) {
-  const days = Math.round(pauseMs / 86_400_000);
-  const weeks = Math.floor(pauseMs / (7 * 86_400_000));
+  const days = Math.round((easternWallMs(end) - easternWallMs(start)) / msPerDay);
+  const weeks = wholeGameWeeks(start, end);
   const at = date => Prisma.sql`(${date.toISOString()}::timestamptz AT TIME ZONE 'UTC')`;
   return {
     s: at(start),
     e: at(end),
-    careWindowStart: at(new Date(start.getTime() - 60 * 86_400_000)),
+    careWindowStart: at(sameGameClockDaysLater(start, -careWindowDays)),
     pause: Prisma.sql`make_interval(secs => ${pauseMs / 1000}::double precision)`,
-    weeklyPause: Prisma.sql`make_interval(days => ${weeks * 7}::int)`,
     weeks,
     days,
     startDate,
     endDate,
     todayDate,
   };
+}
+
+/**
+ * A UTC timestamp column moved `weeks` Eastern calendar weeks at the same
+ * Eastern clock time (not 168 hours each). Postgres reads a moved time that
+ * the clocks skip an hour later, and one they repeat as the second.
+ */
+function inGameWeeks(col, weeks) {
+  const zone = Prisma.sql`${gameTimeZone}::text`;
+  const wall = Prisma.sql`((${col} AT TIME ZONE 'UTC') AT TIME ZONE ${zone})`;
+  return Prisma.sql`(((${wall} + make_interval(days => ${weeks * 7}::int)) AT TIME ZONE ${zone}) AT TIME ZONE 'UTC')`;
 }
 
 /** The new-value expression and the WHERE condition of a moved field. */
@@ -238,7 +276,7 @@ function fieldExpressions(rule, w) {
     newValue = Prisma.sql`CASE WHEN ${col} <= ${w.s} THEN ${col} + ${w.pause} ELSE ${w.e} END`;
     condition = Prisma.sql`${col} IS NOT NULL AND ${col} < ${w.e}`;
   } else {
-    newValue = Prisma.sql`${col} + ${rule.weekly ? w.weeklyPause : w.pause}`;
+    newValue = rule.weekly ? inGameWeeks(col, w.weeks) : Prisma.sql`${col} + ${w.pause}`;
     condition = Prisma.sql`${col} IS NOT NULL AND ${col} > ${w.s}`;
   }
   if (rule.extra) {
@@ -376,7 +414,8 @@ export async function countHorsesUnretired(client, w) {
 /**
  * Undo one column: restore each recorded old value only where the field still
  * holds the value the time-back wrote. Returns restored and skipped counts and
- * up to 50 skipped row ids.
+ * up to 50 skipped row ids: every recorded row the undo did not restore (play
+ * changed it since, even back to its old value, or it is gone).
  */
 export async function restoreColumnTx(tx, timeBackId, { table, column, id = 'id', type }) {
   const cast = Prisma.raw(type);
@@ -390,24 +429,22 @@ export async function restoreColumnTx(tx, timeBackId, { table, column, id = 'id'
   if (total === 0) {
     return { restored: 0, skipped: 0, skippedRows: [] };
   }
-  const restored = await tx.$executeRaw`
+  const [{ restored, skippedRows }] = await tx.$queryRaw`
     WITH c AS (${changes}),
     locked AS (
       SELECT u.${pk} AS "lockedId" FROM ${ident(table)} u JOIN c ON u.${pk}::text = c."rowId"
       WHERE u.${ident(column)} IS NOT DISTINCT FROM (c."newValue" #>> '{}')::${cast}
       FOR UPDATE OF u
+    ),
+    upd AS (
+      UPDATE ${ident(table)} u SET ${ident(column)} = (c."oldValue" #>> '{}')::${cast}
+      FROM c WHERE u.${pk}::text = c."rowId" AND u.${pk} IN (SELECT "lockedId" FROM locked)
+      RETURNING u.${pk}::text AS "rowId"
     )
-    UPDATE ${ident(table)} u SET ${ident(column)} = (c."oldValue" #>> '{}')::${cast}
-    FROM c WHERE u.${pk}::text = c."rowId" AND u.${pk} IN (SELECT "lockedId" FROM locked)`;
-  const skippedRows =
-    restored === total
-      ? []
-      : (
-          await tx.$queryRaw`
-            SELECT c."rowId" FROM (${changes}) c
-            LEFT JOIN ${ident(table)} u ON u.${pk}::text = c."rowId"
-            WHERE u.${pk} IS NULL OR u.${ident(column)} IS DISTINCT FROM (c."oldValue" #>> '{}')::${cast}
-            ORDER BY c."rowId" LIMIT 50`
-        ).map(row => row.rowId);
+    SELECT (SELECT count(*)::int FROM upd) AS restored,
+      ARRAY(
+        SELECT c."rowId" FROM c WHERE c."rowId" NOT IN (SELECT "rowId" FROM upd)
+        ORDER BY c."rowId" LIMIT 50
+      ) AS "skippedRows"`;
   return { restored, skipped: total - restored, skippedRows };
 }
