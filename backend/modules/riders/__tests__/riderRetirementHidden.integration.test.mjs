@@ -237,6 +237,9 @@ describe('rider payloads never carry the retirement age (Equoria-or2ua)', () => 
       join('modules', 'riders', 'services', 'riderRetirementScheduleService.mjs'),
       join('modules', 'riders', 'services', 'riderRetirementService.mjs'),
       join('modules', 'riders', 'services', 'riderRetirementBackfillService.mjs'),
+      // Owner q383 (2026-11-18): outage time-back moves the retirement notice
+      // time (noticeSentAt only; never the hidden retirement age).
+      join('modules', 'staff', 'services', 'timeBackRules.mjs'),
     ]);
     const offenders = [];
     const walk = dir => {
