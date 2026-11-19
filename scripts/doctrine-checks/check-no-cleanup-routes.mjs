@@ -46,8 +46,61 @@ const scanRoots = [
   path.join(repoRoot, 'backend', 'app'),
 ];
 
-// Strip comments, keeping strings verbatim and every newline (so line numbers
-// hold), then yield each string literal with its offset. A small lexer, not a
+// Decode the escapes a JS string or template literal body can carry, so the
+// forbidden patterns see the text the runtime registers. Without this,
+// '/reset\x2dlast-fed' (Equoria-mwjst.1, Codex #3) passed the scan while
+// Express routed /reset-last-fed. Handles \xHH, \uHHHH, \u{...}, legacy octal
+// (\0-\377), line continuations and identity escapes (\- \/ \8 \9).
+const simpleEscapes = { b: '\b', f: '\f', n: '\n', r: '\r', t: '\t', v: '\v' };
+function decodeEscapes(raw) {
+  if (!raw.includes('\\')) return raw;
+  let out = '';
+  const n = raw.length;
+  let i = 0;
+  while (i < n) {
+    const ch = raw[i];
+    if (ch !== '\\' || i + 1 >= n) {
+      out += ch;
+      i++;
+      continue;
+    }
+    const e = raw[i + 1];
+    i += 2;
+    if (e === '\r') {
+      if (raw[i] === '\n') i++; // backslash + CRLF is one line continuation
+    } else if (e === '\n' || e === ' ' || e === ' ') {
+      // line continuation: contributes nothing
+    } else if (e === 'x') {
+      const m = /^[0-9a-fA-F]{2}/.exec(raw.slice(i, i + 2));
+      if (m) {
+        out += String.fromCharCode(parseInt(m[0], 16));
+        i += 2;
+      } else out += 'x';
+    } else if (e === 'u') {
+      let m = /^\{([0-9a-fA-F]+)\}/.exec(raw.slice(i));
+      if (m && parseInt(m[1], 16) <= 0x10ffff) {
+        out += String.fromCodePoint(parseInt(m[1], 16));
+        i += m[0].length;
+      } else if ((m = /^[0-9a-fA-F]{4}/.exec(raw.slice(i, i + 4)))) {
+        out += String.fromCharCode(parseInt(m[0], 16));
+        i += 4;
+      } else out += 'u';
+    } else if (e >= '0' && e <= '7') {
+      const max = e <= '3' ? 2 : 1; // legacy octal: up to \377
+      let digits = e;
+      while (digits.length <= max && raw[i] >= '0' && raw[i] <= '7') digits += raw[i++];
+      out += String.fromCharCode(parseInt(digits, 8));
+    } else if (simpleEscapes[e] !== undefined) {
+      out += simpleEscapes[e];
+    } else {
+      out += e; // identity escape: \- \/ \8 \9 \' ...
+    }
+  }
+  return out;
+}
+
+// Strip comments, keeping every newline (so line numbers hold), then yield each
+// string literal, escapes decoded, with its offset. A small lexer, not a
 // regex over raw text: a quote inside a comment, or `//` inside a string,
 // must not derail it.
 function* stringLiterals(source) {
@@ -73,7 +126,7 @@ function* stringLiterals(source) {
         else if (ch !== '`' && source[i] === '\n') break; // unterminated: stop at line end
         i++;
       }
-      yield { text: source.slice(start + 1, i), index: start };
+      yield { text: decodeEscapes(source.slice(start + 1, i)), index: start };
       i++;
       continue;
     }
