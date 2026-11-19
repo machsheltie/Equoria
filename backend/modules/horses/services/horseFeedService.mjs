@@ -164,8 +164,7 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
   //   broadened sentinel regex /FOR\s+UPDATE/i can't trip on this comment.)
   const result = await withRetryableTxMapping(
     prisma.$transaction(async tx => {
-      // Equoria-lmer7 lock order (User -> Horse, txUserBeforeHorseLockOrder
-      // sentinel): a guarded no-op update takes the owner's User row lock
+      // Equoria-lmer7 lock order (User -> Horse): a guarded no-op update takes the owner's User row lock
       // BEFORE the fed-today claim locks the horse. Equip, crafting and the
       // shops lock User first; claiming the horse first let a feed and an
       // equip on one horse each hold one row and deadlock (40P01). The reads

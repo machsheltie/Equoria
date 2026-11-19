@@ -27,9 +27,8 @@
  *   // doctrine-allow: playwright-workers-exception Equoria-<id> <reason>
  * (no current holders).
  *
- * Sentinel hook: pass a config path as argv[2] to validate ONLY that file
- * (used by backend/__tests__/playwrightWorkersBudgetDoctrine.sentinel.test.mjs
- * to prove the check FIRES on planted violations, per OPTIMAL_FIX §2).
+ * Test hook: pass a config path as argv[2] to validate ONLY that file
+ * (to prove the check FIRES on planted violations, per OPTIMAL_FIX §2).
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';

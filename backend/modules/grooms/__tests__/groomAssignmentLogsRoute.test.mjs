@@ -13,7 +13,7 @@ import request from 'supertest';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import app from '../../../app.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';

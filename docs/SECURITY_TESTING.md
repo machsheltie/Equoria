@@ -79,19 +79,13 @@ exactly as above. Add a token to this table and to `MODULE_CONTROL_TOKENS` in th
 in the same commit.
 
 **3 — Explicit list.** `EXPLICIT_MODULE_CONTROL_TESTS` in the config, for control suites
-the convention cannot name (parentage hijack, the two mass-assignment sentinels,
+the convention cannot name (parentage hijack, the two mass-assignment suites,
 deliberately closed endpoints, an environment-gated bypass route). Add to it rather than
 renaming a suite whose name already means something — `horseUpdateBreedMassAssign` is
 spelled `MassAssign`, its sibling `userUpdateMassAssignment` is not, and neither spelling
-is a token. Add the file to `REQUIRED_MODULE_CONTROL_TESTS` in the sentinel at the same
-time, or the list is unguarded.
+is a token.
 
-`backend/__tests__/securitySuiteScope.sentinel.test.mjs` pins all three. It asks Jest
-itself (`--listTests`) what the config selects, and fails if the selection is empty, if a
-pattern escapes the backend test trees, if the `modules/auth` scope is dropped, if a
-pinned control suite or a convention match is not selected, or if the domain suites are
-swept back in. Its list of required control suites is deliberately independent of the
-config, so deleting a token cannot quietly shrink the gate.
+To check the selection, ask Jest itself (`--listTests` with this config) what it selects.
 
 Everything outside these three layers is a domain test and still runs, blocking, in the
 `Backend Tests` shard matrix. Selection is a scope, never a way to make a red gate green.

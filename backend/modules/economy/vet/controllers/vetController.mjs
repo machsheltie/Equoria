@@ -208,8 +208,7 @@ export async function bookVetAppointment(req, res) {
           // the previous Horse-then-User order deadlocked against buyHorse
           // (which holds User(owner) and waits for Horse) whenever an owner
           // booked a vet service on a horse being bought. No data dependency
-          // between the two statements; only the order moved. Guarded by
-          // backend/__tests__/txUserBeforeHorseLockOrder.sentinel.test.mjs.
+          // between the two statements; only the order moved.
           // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
           const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,

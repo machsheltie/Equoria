@@ -12,7 +12,7 @@ import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mj
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';

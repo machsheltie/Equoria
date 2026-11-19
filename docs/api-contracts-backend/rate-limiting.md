@@ -3,10 +3,9 @@
 **Updated:** 2026-08-19
 **Implementation authority:** `backend/middleware/rateLimiting.mjs` and the
 mounting route/application source
-**Drift gate:** `backend/__tests__/authRateLimitDocDrift.sentinel.test.mjs`
 
 Load this file only for rate-limit values, counting semantics, environment
-overrides, Redis failure posture, limiter mounting, or the drift sentinel. It
+overrides, Redis failure posture, or limiter mounting. It
 does not describe endpoint authorization, gameplay cooldowns, or API response
 contracts. Verify effective values in source because environment-specific and
 E2E-only overrides exist.
@@ -27,8 +26,7 @@ Owner ruling 2026-10-27: players enter hundreds of shows and move around the gam
 day; the earlier caps (global 100, query 100 per 15 minutes) locked the owner out
 during ordinary play.
 
-These rows intentionally preserve the exact source-to-document assertions in
-the drift sentinel. They are selected limiter defaults, not a complete list:
+These rows are selected limiter defaults, not a complete list:
 global, profile, query, admin, test, beta, beta-readiness, and explicit E2E
 ceilings must be read from current source. Authentication, breeding,
 competition, and financial limiters fail closed when Redis is unexpectedly

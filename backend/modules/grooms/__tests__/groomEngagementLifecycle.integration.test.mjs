@@ -49,9 +49,8 @@
  * would have been the wrong answer anyway.
  *
  * Real DB, no mocks. This file does not call `processWeeklySalaries` at all any more —
- * the split moved every fee call to the sibling, which carries the scoping note and is
- * the file `groomSalaryPassScoped.sentinel` guards. (Round 3: that sentence was left
- * here describing a call this file no longer makes.)
+ * the split moved every fee call to the sibling, which carries the scoping note.
+ * (Round 3: that sentence was left here describing a call this file no longer makes.)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';

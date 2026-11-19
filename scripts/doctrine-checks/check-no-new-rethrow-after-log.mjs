@@ -65,8 +65,8 @@ import {
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..', '..');
-// Equoria-fefh2.11: argv[2] optionally overrides the baseline path so the
-// doctrineBaselineStale sentinel can prove stale-entry detection FIRES
+// Equoria-fefh2.11: argv[2] optionally overrides the baseline path so a
+// planted baseline can prove stale-entry detection FIRES
 // against a planted baseline. Production callers pass no argument.
 const baselinePath = process.argv[2]
   ? path.resolve(process.argv[2])

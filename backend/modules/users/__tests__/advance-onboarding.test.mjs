@@ -15,7 +15,7 @@ import bcrypt from 'bcryptjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
@@ -389,7 +389,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   // produce a horse born with a valid colorGenotype + phenotype using the SAME
   // generator chain createHorse uses (generateGenotype → calculatePhenotype →
   // generateMarkings). Before the fix, this branch omitted the color fields and
-  // the row was born phenotype = NULL, tripping horseColorNullSentinel.test.mjs.
+  // the row was born phenotype = NULL.
   // SENTINEL-POSITIVE: this test FAILS against the buggy code (NULL phenotype)
   // and PASSES after the fix.
   it('creates the starter horse with a non-NULL, well-formed colorGenotype + phenotype (no prior horse)', async () => {

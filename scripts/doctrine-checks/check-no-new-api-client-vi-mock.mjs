@@ -78,7 +78,7 @@ const canonicalBaseline = [
 ];
 
 // Equoria-fefh2.11: optional baseline-path override (argv[2], a JSON array of
-// repo-relative paths) so the doctrineBaselineStale sentinel can prove the
+// repo-relative paths) so a planted baseline can prove the
 // stale-entry detection FIRES against a planted baseline without editing this
 // file. Production callers (run-all.sh, CI) pass no argument and get the
 // canonical inline list.

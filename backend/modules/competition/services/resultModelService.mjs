@@ -181,8 +181,7 @@ async function getUserResultsSummary(userId) {
  *
  * TRANSACTION. The update is a player-state mutation, so it commits inside a
  * transaction and a transient timeout is mapped to a retryable 503 rather than a
- * 500 (the same treatment every other client-facing mutation gets; pinned by
- * backend/__tests__/retryableTransactionWrapping.sentinel.test.mjs). It writes
+ * 500 (the same treatment every other client-facing mutation gets). It writes
  * exactly one table, so no lock-ordering question arises.
  *
  * @param {string} userId - Owner id, always derived from req.user.id.

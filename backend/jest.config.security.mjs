@@ -42,8 +42,7 @@
  * tests/config/testRateLimitProfile.mjs, tests/setup.mjs with 'relaxed' and
  * __tests__/setup.mjs (this config) with 'production' — every limiter at the
  * cap players get. A control suite here that needs more headroom sets its own
- * TEST_RATE_LIMIT_* value in its file.
- * __tests__/testRateLimitProfile.sentinel.test.mjs pins both selections. What was
+ * TEST_RATE_LIMIT_* value in its file. What was
  * wrong is that a security gate was running domain suites at all. The defect was
  * the SELECTION, and selection is now three explicit layers:
  *
@@ -70,10 +69,6 @@
  * Everything outside these three layers is a domain test, not a security-control
  * test, and still runs — blocking — in the Backend Tests shard matrix. Nothing
  * here is skipped, weakened or bypassed.
- *
- * backend/__tests__/securitySuiteScope.sentinel.test.mjs pins all of this:
- * it asks Jest itself (`--listTests`) what this config selects and fails if a
- * convention match, an explicit entry, or the auth-module scope is missing.
  *
  * ──────────────────────────────────────────────────────────────────────────
  * WHY testMatch IS ROOTED AT AN ABSOLUTE FORWARD-SLASH PATH (Equoria-43y7o)
@@ -147,7 +142,7 @@ export const explicitModuleControlTests = [
   // breedId mass assignment on PUT /horses/:id (Equoria-tmyd2). Same class as
   // the entry above; the file is spelled "MassAssign", not "MassAssignment",
   // so no token reaches it. Exactly what this list exists for.
-  '<rootDir>/modules/horses/__tests__/horseUpdateBreedMassAssign.sentinel.test.mjs',
+  '<rootDir>/modules/horses/__tests__/horseUpdateBreedMassAssign.integration.test.mjs',
   // Attack surface closed: free horse creation (2026-09-05 audit finding 2).
   '<rootDir>/modules/horses/__tests__/horseCreationEndpointClosed.integration.test.mjs',
   // Attack surface closed: player horse deletion (Equoria-9tque).

@@ -148,8 +148,7 @@ export async function shoeHorse(req, res) {
     try {
       ({ updatedHorse, moneyAfter } = await withRetryableTxMapping(
         prisma.$transaction(async tx => {
-          // Lock order User -> Horse (Equoria-6p398.9; guarded by
-          // txUserBeforeHorseLockOrder.sentinel.test.mjs): the debit writes the
+          // Lock order User -> Horse (Equoria-6p398.9): the debit writes the
           // User row first. Equoria-kl16c: paired SystemAccount burn credit.
           const balance = await debitMoneyOrThrow(tx, {
             userId,

@@ -39,9 +39,9 @@ import { endSession, forceLogoutStorageKey } from '../lib/sessionEnd';
  *     `.env` accidentally carries `VITE_DEV_BYPASS_AUTH=true`, the second
  *     conjunct is never evaluated — the bypass cannot reactivate.
  *   - The leading `import.meta.env.DEV === true` conjunct MUST stay first and
- *     literal for this static elimination to hold. The sibling sentinel test
- *     `AuthContext.devBypass.sentinel.test.tsx` FAILS if this guard is removed,
- *     reordered, or otherwise made reachable in production mode.
+ *     literal for this static elimination to hold. The sibling test
+ *     `AuthContext.devBypass.test.tsx` FAILS if `isDevBypassActive` drops
+ *     the DEV guard.
  *
  * Defense-in-depth (Equoria-o7c0x L6): the bypass user is 'user' role, not
  * 'admin', so a misconfigured dev build cannot grant admin UI surfaces.

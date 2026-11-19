@@ -14,7 +14,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import { trainHorse } from '../../modules/training/controllers/trainingController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup — a failed delete must turn the suite
 // RED so leaked fixtures don't silently pollute the canonical DB (CLAUDE.md §2).

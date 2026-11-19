@@ -5,9 +5,8 @@ bytes and stores the hash in `_prisma_migrations` when the migration is applied,
 `migration.sql` after it has been applied anywhere — comments included — breaks
 `prisma migrate dev` for every database that applied the old bytes.**
 
-Prisma reads only `migration.sql` from this directory, and
-`backend/__tests__/scripts/appliedMigrationChecksumIntegrity.sentinel.test.mjs` hashes only that
-file, so notes here are safe to edit forever.
+Prisma reads and checksums only `migration.sql` from this directory, so notes here are safe
+to edit forever.
 
 ## Do not edit `migration.sql`
 
@@ -59,8 +58,7 @@ scratch and does not survive the branch merge.
 
 **Both halves are false as of Equoria-69gip (2026-09-09), and those bytes can never be fixed.** They
 are inside the hash stored in `_prisma_migrations`, so editing them — comments included — would break
-`prisma migrate dev` for every database that applied the old bytes and would trip
-`backend/__tests__/scripts/appliedMigrationChecksumIntegrity.sentinel.test.mjs`. The line numbers
+`prisma migrate dev` for every database that applied the old bytes. The line numbers
 above are therefore permanently stable, and this note is the only available correction. Read that
 block as history, not as instruction.
 

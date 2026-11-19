@@ -40,8 +40,7 @@
  * User row. If either side flipped, two concurrent transactions on one account
  * could deadlock (T1: User(u) then token X; T2: token X then User(u)): Postgres
  * aborts one with 40P01, and that request fails (as a retryable 503 since
- * Equoria-l9bde, but it still fails). `txTokenBeforeUserLockOrder.sentinel.test.mjs`
- * pins the order in all three files.
+ * Equoria-l9bde, but it still fails). Keep the order in all three files.
  *
  * Tokens stay hashed at rest per ADR-006 — the raw value exists only in the
  * return value of `requestEmailChange` and in the outbound email. Delivery

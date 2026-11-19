@@ -33,8 +33,7 @@
  * live in backend/node_modules (this script already requires cwd=backend and
  * reads backend/.env.test), so we anchor a createRequire to backend's
  * package.json and resolve both from there, independent of where Node's
- * default ESM resolver would look. Guarded by
- * preflightScriptDepResolution.sentinel.test.mjs.
+ * default ESM resolver would look.
  */
 
 import { createRequire } from 'node:module';

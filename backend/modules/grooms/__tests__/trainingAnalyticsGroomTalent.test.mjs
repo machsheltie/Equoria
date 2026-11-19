@@ -18,7 +18,7 @@ import {
 } from '../services/groomTalentService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 import { createSequentially } from '../../../tests/helpers/createSequentially.mjs';

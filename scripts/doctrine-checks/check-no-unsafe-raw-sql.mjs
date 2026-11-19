@@ -39,8 +39,7 @@
 // with no review. This check FAILS (exit 1) on stale entries, names them,
 // and instructs that the allowlist may only SHRINK — mirroring the gates
 // allowlist (Equoria-iz9gp) and the three baseline-delta checks
-// (Equoria-fefh2.11), proven by
-// backend/__tests__/scripts/unsafeRawSqlAllowlistStale.sentinel.test.mjs.
+// (Equoria-fefh2.11).
 //
 // Optional argv[2]: alternate allowlist path (sentinel-test hook,
 // Equoria-pc042) — production callers (run-all.sh, CI) pass no argument.

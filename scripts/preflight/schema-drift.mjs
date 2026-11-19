@@ -65,9 +65,7 @@
  * would resolve from this file's own directory tree. Same reasoning as the
  * sibling db-probe.mjs / db-health.mjs scripts, different anchor. Nothing at
  * module scope imports anything but Node builtins, so the pure functions
- * below are importable from the backend Jest sentinel
- * (backend/__tests__/scripts/liveSchemaDrift.sentinel.test.mjs) without
- * dragging a client in.
+ * below are importable without dragging a client in.
  */
 
 import { createRequire } from 'node:module';

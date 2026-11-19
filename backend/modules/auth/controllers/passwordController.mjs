@@ -75,7 +75,7 @@ const passwordResetTokenTtlMs = 60 * 60 * 1000;
 // not read from env, for the same reason the anchor cost is pinned. Basis:
 // measured p99 of the whole request is ~361 ms on the dev laptop (80 quiet
 // samples, 2026-10-19), and the worst ever logged under contention was 612 ms.
-// forgotPasswordResponseFloor.sentinel.test.mjs reads this export.
+// forgotPasswordResponseFloor.integration.test.mjs reads this export.
 export const forgotPasswordMinResponseMs = 1000;
 
 // Equoria-jeci6 fix round 1: the registered branch's token save is bounded so

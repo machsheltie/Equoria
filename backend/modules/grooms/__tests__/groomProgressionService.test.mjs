@@ -16,7 +16,7 @@ import { randomBytes } from 'node:crypto';
 import { updateGroomSynergy, logGroomAssignment, getGroomProfile } from '../services/groomProgressionService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup. Previously each afterAll swallowed
 // its prisma deletes with a silent no-op catch arm, so a delete failure left

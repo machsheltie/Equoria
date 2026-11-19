@@ -204,8 +204,8 @@ export default [
     // so the cap should ratchet DOWN over time — never up. (skipBlankLines +
     // skipComments mirror the pages rule above so the count tracks real code.)
     // The glob also covers a dedicated sentinel-plant path
-    // (api-client._maxLinesDoctrineSentinelPlant.ts) so the
-    // apiClientMaxLinesDoctrine sentinel can prove the rule FIRES on a planted
+    // (api-client._maxLinesDoctrineSentinelPlant.ts) so a planted-file test
+    // can prove the rule FIRES on a planted
     // oversize file WITHOUT ever mutating the real barrel (per OPTIMAL_FIX §2:
     // a check needs a sentinel-positive test, and that test must not risk the
     // production file). The plant file does not exist in the tree at rest.

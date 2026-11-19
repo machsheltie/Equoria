@@ -8,9 +8,7 @@
  * scoped to the rows the fixtures created — never unscoped.
  *
  * Reusing these helpers (instead of inlining where-clauses) keeps the scope in
- * one place and lets the sentinel test (modules/users/__tests__/scopedTestCleanup.sentinel.test.mjs)
- * exercise the REAL cleanup code: if anyone reverts a helper back to `{}`, the
- * sentinel's non-fixture row gets deleted and the sentinel fails.
+ * one place: never revert a helper back to `{}`.
  */
 
 /** Fixed string PKs created by modules/users/__tests__/progression.integration.test.mjs. */

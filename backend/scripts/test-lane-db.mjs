@@ -313,8 +313,8 @@ function runSeedScript(script, databaseUrl, signal) {
 /**
  * Canonical data a lane needs to satisfy the suite: the minimal seed (breeds
  * used by fixtures) plus the complete 312-breed roster with genetic profiles
- * from backend/data/breeds (breedCountSentinel, breedProfileLoader and the
- * renderable-profile suites assert against it). Measured: ~1s per lane.
+ * from backend/data/breeds (breedProfileLoader and the renderable-profile
+ * suites assert against it). Measured: ~1s per lane.
  */
 async function runSeed(databaseUrl, signal) {
   throwIfCancelled(signal, 'before the canonical seed');

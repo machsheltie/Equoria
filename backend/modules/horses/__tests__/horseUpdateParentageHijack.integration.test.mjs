@@ -239,7 +239,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v; closed 410,
     // `dateOfBirth` are off the allow-list too — sireId/damId were the
     // ONLY fields PUT accepted (since removed too, owner ruling 2026-09-30, Equoria-bvddn.2). This case now proves the opposite: `sex` is
     // rejected and nothing is mutated. Full sentinel coverage for this class
-    // of finding lives in horseUpdateSexDobMassAssign.sentinel.test.mjs.
+    // of finding lives in horseUpdateSexDobMassAssign.integration.test.mjs.
     const before = await prisma.horse.findUnique({
       where: { id: horseA.id },
       select: { name: true, sex: true },

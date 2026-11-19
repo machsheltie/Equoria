@@ -34,7 +34,7 @@ import dotenv from 'dotenv';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // Equoria-cfv3c: fail-loud, FK-ordered scoped cleanup. The prior swallowed
 // try/catch hid a delete failure: if the user delete tripped the

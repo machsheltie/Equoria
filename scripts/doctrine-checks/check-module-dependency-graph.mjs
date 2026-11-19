@@ -80,7 +80,6 @@
  *       or controller file (WS4 acceptance criterion 3).
  *
  * Exit codes: 0 pass, 1 violation(s), 2 usage or parse-sanity failure.
- * Sentinel: backend/__tests__/scripts/moduleDependencyGraphDoctrine.sentinel.test.mjs.
  * Auto-runs via scripts/doctrine-checks/run-all.sh by file-name pattern (pre-push, CI).
  */
 

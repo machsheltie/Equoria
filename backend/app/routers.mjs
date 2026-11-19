@@ -194,8 +194,7 @@ export function buildRouters() {
   // Core game features
   // Equoria-q4uem.4 (WS4 S3): the application query router shares a prefix with
   // the module router. Its relative order reproduces the base first-match
-  // behaviour exactly and is pinned by backend/__tests__/
-  // appQueryRoutesMounting.sentinel.test.mjs:
+  // behaviour exactly:
   //   /horses — query router FIRST. Its paths (/trainable/:userId, /:id/<sub>)
   //     have no competing two-segment pattern in horseRoutes, and at base they
   //     were reached before any other two-segment route could match.

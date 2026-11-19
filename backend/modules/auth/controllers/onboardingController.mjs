@@ -494,7 +494,7 @@ export const advanceOnboarding = async (req, res, next) => {
 
             // Equoria-vbrc4: a brand-new starter horse created via this branch must
             // be born with a valid colorGenotype + phenotype (omitting them produced
-            // a NULL-phenotype row, tripping backend/__tests__/horseColorNullSentinel).
+            // a NULL-phenotype row).
             // The breed-aware color is pre-computed BEFORE the transaction (see above)
             // so the genotype/phenotype generation never runs inside the 5s tx budget.
             // Equoria-f5372: brand-new horse — assign temperament from the chosen breed.

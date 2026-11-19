@@ -9,8 +9,8 @@
  *   instead of the `createHorse()` model fn. `createHorse()` (Equoria-ennm)
  *   auto-generates colorGenotype + phenotype; raw create does not. That left
  *   fixtures born with NULL phenotype, which — when cleanup leaked rows —
- *   tripped the canonical-DB invariant asserted by
- *   backend/__tests__/horseColorNullSentinel.test.mjs (Equoria-lfj5).
+ *   broke the canonical-DB invariant that every horse has a color
+ *   (Equoria-lfj5).
  *
  *   Routing every such fixture through the full `createHorse()` pipeline is
  *   invasive (it requires breedId, runs genotype/trait generation, conformation

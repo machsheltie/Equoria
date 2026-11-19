@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 
 // Suppress console output during tests to reduce noise (except errors and warnings).
 // Equoria-326tg: computed-key assignment so this source does not contain the
-// literal bare-console-log token gated by the noConsoleLogInTestsDirs sentinel.
+// literal bare-console-log token.
 // Functionally identical to the previous direct property assignments.
 if (process.env.NODE_ENV === 'test') {
   const noop = () => {};

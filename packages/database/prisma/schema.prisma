@@ -451,8 +451,7 @@ model Horse {
   /// TrainerAssignment / GroomAssignment) — verified by isolating the single
   /// variable: two unique indexes on one table differing ONLY in a `WHERE`
   /// predicate, where the plain one was proposed for DROP and the partial one
-  /// was ignored. Those three are additionally guarded by
-  /// backend/__tests__/scripts/freshDbMigrationReplay.sentinel.test.mjs.
+  /// was ignored.
   /// Everything else in this set IS expressible on Prisma 6.8.2 with no
   /// `previewFeatures`: GIN access methods (`type: Gin`), array and jsonb
   /// operator classes, composite column order, `sort: Desc`, and two indexes

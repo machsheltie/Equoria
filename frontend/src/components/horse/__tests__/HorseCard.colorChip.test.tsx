@@ -65,8 +65,8 @@ describe('HorseCard color chip (Equoria-fhag layer 1)', () => {
   });
 
   it('does NOT render the chip when phenotype.colorName is empty string', () => {
-    // Edge: a horse with phenotype set but colorName === '' is the failure
-    // mode the backend sentinel (horseColorNullSentinel.test.mjs) catches.
+    // Edge: a horse with phenotype set but colorName === '' is a broken
+    // color record.
     // The chip must also not render in that state — never display an empty
     // pill, never display "Unknown" or "undefined".
     render(<HorseCard horse={makeHorse({ phenotype: { colorName: '' } })} onClick={() => {}} />);

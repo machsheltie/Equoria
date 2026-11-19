@@ -28,7 +28,7 @@ import bcrypt from 'bcryptjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud, scoped cleanup. The old afterAll wrapped its
 // deletes in a swallowed empty catch arm + an outer try/catch console.warn, so

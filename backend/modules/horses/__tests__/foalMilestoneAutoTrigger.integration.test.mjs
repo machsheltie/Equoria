@@ -23,7 +23,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processFoalMilestoneEvaluations } from '../../../utils/horseAgingSystem.mjs';
 import { developmentalWindows, milestoneTypes } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 // Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks

@@ -13,8 +13,8 @@
  * auth + CSRF) against the real database: POST /api/v1/grooms/assign,
  * POST /api/v1/groom-assignments, POST /api/v1/riders/assignments and
  * POST /api/v1/trainers/assignments. A 20-year-old is the control on each door.
- * The weekly fee pass is the real one, scoped to this suite's own user
- * (groomSalaryPassScoped sentinel). No mocks.
+ * The weekly fee pass is the real one, scoped to this suite's own user.
+ * No mocks.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';

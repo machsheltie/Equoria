@@ -38,7 +38,7 @@ function isInteractiveTransaction(tx) {
  * Move `amount` coins from one player to another inside the caller's
  * transaction, and write the paired debit and credit ledger rows.
  *
- * Lock order (the repository ruling, txUserBeforeHorseLockOrder.sentinel):
+ * Lock order (the repository ruling, User before Horse):
  * the two User rows are locked in ascending id order, before the caller
  * touches any Horse row. No coin is credited before the guarded debit has
  * succeeded: when the payee's id sorts first, its row is locked with a no-op

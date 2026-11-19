@@ -5,9 +5,8 @@ bytes and stores the hash in `_prisma_migrations` when the migration is applied,
 `migration.sql` after it has been applied anywhere — comments included — breaks
 `prisma migrate dev` for every database that applied the old bytes.**
 
-Prisma reads only `migration.sql` from this directory, and
-`backend/__tests__/scripts/appliedMigrationChecksumIntegrity.sentinel.test.mjs` hashes only that
-file, so notes here are safe to edit forever.
+Prisma reads and checksums only `migration.sql` from this directory, so notes here are safe
+to edit forever.
 
 ## Do not edit `migration.sql`
 

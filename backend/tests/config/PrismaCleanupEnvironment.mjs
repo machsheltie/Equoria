@@ -23,7 +23,6 @@
  * Known limitation: timers created through `import { setTimeout } from
  * 'node:timers'` or restored raw by fake-timer uninstall bypass the sandbox
  * global and are not tracked. The measured retainers use the globals.
- * Sentinel: backend/__tests__/testEnvironmentTimerRelease.sentinel.test.mjs.
  */
 import v8 from 'node:v8';
 import { TestEnvironment as NodeEnvironment } from 'jest-environment-node';

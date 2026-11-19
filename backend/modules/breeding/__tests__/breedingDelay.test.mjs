@@ -26,10 +26,10 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { gameCalendarDate, gameDayIndex, startOfGameDayIndex } from '../../../utils/gameTime.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud, scoped cleanup — a failed delete reds afterEach
-// instead of being swallowed (the leak class that trips horseColorNullSentinel).
+// instead of being swallowed (the NULL-phenotype leak class).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 

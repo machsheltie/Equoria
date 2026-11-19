@@ -8,11 +8,10 @@
  *   `prisma.horse.create()`. The `createHorse()` model fn (Equoria-ennm)
  *   auto-generates colorGenotype + phenotype; a raw create does NOT, so the
  *   row is born with NULL phenotype. While each suite's scoped/cascade
- *   cleanup currently works (so the canonical `horseColorNullSentinel`
- *   stays green), ANY suite whose afterAll cleanup ever fails (silent
- *   `.catch(() => {})`, missing cascade, timeout) leaks a NULL-phenotype
- *   row and trips the sentinel — exactly the Equoria-lfj5 16-NULL
- *   regression.
+ *   cleanup currently works, ANY suite whose afterAll cleanup ever fails
+ *   (silent `.catch(() => {})`, missing cascade, timeout) leaks a
+ *   NULL-phenotype row into the shared database — exactly the Equoria-lfj5
+ *   16-NULL regression.
  *
  *   This helper closes the class at the point of creation:
  *     1. It spreads the SAME CI-proven `fixtureColor()` generator the

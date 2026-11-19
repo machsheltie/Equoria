@@ -51,9 +51,8 @@
  * (Vitest 4's memoryLimit recycle applies only to vmThreads/vmForks), so the
  * enforceable budget here is: worker cap + per-fork heap ceiling + isolate.
  *
- * Sentinel hook: pass a config path as argv[2] to validate ONLY that file
- * (used by backend/__tests__/vitestMemoryBudgetDoctrine.sentinel.test.mjs to
- * prove the check FIRES on a planted violation, per OPTIMAL_FIX §2).
+ * Test hook: pass a config path as argv[2] to validate ONLY that file
+ * (to prove the check FIRES on a planted violation, per OPTIMAL_FIX §2).
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';

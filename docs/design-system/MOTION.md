@@ -3,7 +3,6 @@
 **Status:** Adopted 2026-06-10 · **Reviewed:** 2026-08-19
 **Authority:** `PRODUCT.md` → `DESIGN.md` → this policy
 **Tracking:** `Equoria-o5hub.9`
-**Enforcement:** `frontend/src/components/ui/__tests__/motionPolicy.sentinel.test.ts`
 
 Every transition/animation in the frontend belongs to exactly one class, and
 each class has a defined reduced-motion behavior. Two switches turn it on:

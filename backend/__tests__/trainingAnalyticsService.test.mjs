@@ -17,7 +17,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import { trainingAnalyticsService } from '../modules/training/index.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud, scoped cleanup. The prior best-effort try/catch +
 // silent no-op catch arms swallowed delete failures, leaking the fixture horse

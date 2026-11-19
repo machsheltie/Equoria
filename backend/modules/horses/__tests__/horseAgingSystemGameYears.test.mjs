@@ -16,7 +16,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { calculateAgeInGameYears, updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-dm1i: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';

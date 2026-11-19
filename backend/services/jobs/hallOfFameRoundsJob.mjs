@@ -10,7 +10,7 @@
  * Schedule: hourly at :13, so a run-off (one game day from the moment it opens)
  * is decided within the hour after it ends, and the Sunday 00:00 Eastern week
  * turn within 13 minutes; :13 is a minute no other job in either registry
- * starts on (cronScheduleCollision sentinel). Advisory-locked; the guarded
+ * starts on. Advisory-locked; the guarded
  * round claim and the unique weekStart keep a re-run from deciding or opening
  * a round twice. Hourly cadence: 2h staleness budget.
  */

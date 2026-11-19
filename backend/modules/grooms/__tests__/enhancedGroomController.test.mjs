@@ -14,7 +14,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
@@ -74,8 +74,7 @@ afterAll(() => cleanup.run(), 30000);
 // GET /interactions/types, /relationship-levels and /special-events were removed
 // (Equoria-a7f1p): the catalogue of the retired enhanced interaction door. Old
 // contract: each answered 200 with its definitions. New ruling (owner, 2026-10-20
-// and 2026-10-26, q87): "groom horse" is the only way to groom; their absence is
-// pinned in duplicateLookupsRetired.sentinel.test.mjs.
+// and 2026-10-26, q87): "groom horse" is the only way to groom.
 
 describe('GET /api/grooms/enhanced/interactions/:groomId/:horseId', () => {
   it('returns 200 with available interactions for owned groom and horse', async () => {

@@ -25,7 +25,7 @@ import {
   detectTemperamentChanges,
 } from '../../modules/horses/services/horseTemperamentAnalysis.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 import { createSequentially } from '../helpers/createSequentially.mjs';

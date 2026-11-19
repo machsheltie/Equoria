@@ -13,8 +13,7 @@
 // gate that happens to reuse that key would be auto-exempted with no review.
 // This check FAILS (exit 1) on stale entries, names them, and instructs that
 // the allowlist may only SHRINK — mirroring the three baseline-delta checks
-// (silent-cleanup-catch / rethrow-after-log / api-client-vi-mock) and proven
-// by backend/__tests__/scripts/doctrineBaselineStale.sentinel.test.mjs.
+// (silent-cleanup-catch / rethrow-after-log / api-client-vi-mock).
 //
 // Optional argv[2]: alternate allowlist path (sentinel-test hook,
 // Equoria-iz9gp) — production callers (run-all.sh, CI) pass no argument.

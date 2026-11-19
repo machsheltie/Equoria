@@ -8,7 +8,7 @@
  * after its last attempt (modules/staff/services/ticketEmailOutbox.mjs).
  *
  * Schedule: every 5 minutes at :01, :06, ... :56 — minutes no other job in
- * either registry starts on (cronScheduleCollision sentinel). Advisory-locked
+ * either registry starts on. Advisory-locked
  * so only one replica runs it; the per-row claim (FOR UPDATE SKIP LOCKED)
  * also keeps the kick and the job from sending the same row twice.
  * runWithHeartbeat puts each run's sent/retrying/failed counts on

@@ -11,7 +11,8 @@
  *      defect class is real and detectable.
  *   2. SENTINEL-POSITIVE — a horse inserted via `createTestHorse()` has a
  *      non-null phenotype whose colorName is a non-empty string, i.e. it
- *      satisfies the exact predicate `horseColorNullSentinel` asserts.
+ *      satisfies the invariant every horse must meet (phenotype NOT NULL,
+ *      colorName a non-empty string).
  *   3. createTestHorse RESPECTS caller-supplied color (does not clobber an
  *      intentional genotype/phenotype).
  *   4. cleanupTestHorses deletes ONLY the collected ids (scoped, not
@@ -87,9 +88,9 @@ describe('createTestHorse helper (Equoria-dm1i)', () => {
       SELECT phenotype FROM horses WHERE id = ${horse.id}
     `;
     expect(row.phenotype).toBeNull();
-    // Immediate cleanup so this row cannot trip the canonical sentinel.
+    // Immediate cleanup so this row cannot leak into the shared database.
     // Equoria-1ohys: this delete is load-bearing — if it fails, the
-    // NULL-phenotype row leaks and trips horseColorNullSentinel. It must
+    // NULL-phenotype row leaks. It must
     // therefore fail loud (no silent no-op catch arm) so the test surfaces a
     // cleanup failure at the source rather than hiding it.
     await prisma.horse.delete({ where: { id: horse.id } });

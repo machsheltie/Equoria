@@ -22,10 +22,10 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { calculateTemperamentInfluence, generateBreedingData } from '../services/breedingPredictionService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud, scoped cleanup — a failed delete reds afterAll
-// instead of being swallowed (the leak class that trips horseColorNullSentinel).
+// instead of being swallowed (the NULL-phenotype leak class).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 

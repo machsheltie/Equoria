@@ -352,7 +352,7 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
       // horseXp (0 → level 1). The show's advertised bracket is now enforced at
       // entry (levelMin <= floor(horseXp/100)+1 <= levelMax), so a level-1 show
       // is what those level-1 horses are eligible for. (Leveled-vs-mismatched
-      // entry is covered exhaustively by showEntryLevelBracket.sentinel.test.mjs;
+      // entry is covered exhaustively by showEntryLevelBracket.integration.test.mjs;
       // this suite is about the 7-day window + escrow flow, not the bracket.)
       name: `TestFixture-nx8-R7-${Date.now()}`,
       discipline: 'Show Jumping',

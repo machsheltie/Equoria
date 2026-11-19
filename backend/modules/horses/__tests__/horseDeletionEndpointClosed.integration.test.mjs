@@ -19,10 +19,8 @@
  *   server-owned GDPR erasure path still does. This file does NOT prove the
  *   broader claim that no player-facing HTTP entry point anywhere removes a
  *   horse row; it drives one route. That broader guarantee would need a
- *   route-table sentinel walking the mounted Express stack for horse-scoped
- *   DELETE handlers — it belongs beside
- *   `modules/horses/__tests__/horseRoutesMounting.sentinel.test.mjs`, which
- *   already enumerates this router's mounted routes, and it is not written.
+ *   route-table check walking the mounted Express stack for horse-scoped
+ *   DELETE handlers, and it is not written.
  *   At the time of this change the caller trace found no other such route:
  *   the only other horse DELETE is `/:id/stud-listing`, which delists rather
  *   than destroys, and the only code that deletes horse rows is

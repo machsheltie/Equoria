@@ -14,8 +14,7 @@
  *
  * This version drives the rule through the flat-config `Linter` API
  * (`new Linter({ configType: 'flat' })`) inside explicit jest `it()` blocks —
- * the same version-robust pattern the sibling
- * no-raw-test-horse-create.sentinelPositive.test.mjs uses. `configType: 'flat'`
+ * a version-robust pattern. `configType: 'flat'`
  * honors `languageOptions`, so the suite runs identically on ESLint 8.57 (the
  * currently-installed version) and on ESLint 9+ — no parserOptions/
  * languageOptions fork, no RuleTester top-level-property fragility.

@@ -24,8 +24,7 @@
  * SCHEDULE MINUTES: this registry and the function-based one in
  * backend/services/cron-job-service-jobs/index.mjs share ONE Postgres pool (3
  * connections by default) and every job holds a connection for its advisory
- * lock. No two jobs across BOTH registries may start in the same minute; the
- * backend/__tests__/cronScheduleCollision.sentinel.test.mjs sentinel enforces it
+ * lock. No two jobs across BOTH registries may start in the same minute
  * (Equoria-bvddn.15 / Equoria-cmw85.8). Pick a free minute when adding a job.
  *
  * ORDER IS PRESERVED from the pre-split `start()` registration sequence so the

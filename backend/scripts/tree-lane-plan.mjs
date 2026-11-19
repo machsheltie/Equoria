@@ -31,9 +31,7 @@
  *               --jest-shards contiguous slices (the same spreading Jest's own
  *               --shard used, minus the per-invocation discovery).
  *
- * treeLanePinning.sentinel.test.mjs keeps this honest: it fails when a planter
- * or whole-tree scanner exists OUTSIDE the TREE set, and when CI stops running
- * the TREE set serially.
+ * CI runs the TREE set serially (.github/workflows/test.yml, shard 3).
  *
  * Pure module: no I/O, no side effects; run-suite-sharded.mjs executes the plan.
  */
@@ -46,8 +44,6 @@ export const treeSuiteDirs = Object.freeze(['__tests__', 'modules/docs/__tests__
 
 /** Backend-relative single suites outside those directories that walk the real tree. */
 export const treeSuiteFiles = Object.freeze([
-  'modules/grooms/__tests__/groomSalaryPassScoped.sentinel.test.mjs',
-  'modules/traits/__tests__/flagEngineSingleSource.sentinel.test.mjs',
   // Equoria-or2ua: walks modules/ to prove no rider payload exposes the retirement age.
   'modules/riders/__tests__/riderRetirementHidden.integration.test.mjs',
 ]);
@@ -63,7 +59,7 @@ export const treeSuiteFiles = Object.freeze([
  */
 export const quietTimingSuites = Object.freeze([
   'modules/auth/__tests__/forgotPasswordTimingOracle.integration.test.mjs',
-  'modules/auth/__tests__/loginTimingOracle.sentinel.test.mjs',
+  'modules/auth/__tests__/loginTimingOracle.integration.test.mjs',
 ]);
 
 /**

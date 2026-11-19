@@ -18,7 +18,7 @@
  *
  * Money and races (design ws9 v4 §3.2-3.6): every failure after a snapshot
  * read THROWS (a returned value commits); User rows before Horse rows, each in
- * ascending id, inline here so txUserBeforeHorseLockOrder sees them; the
+ * ascending id, inline here; the
  * BreedingRecord insert or request claim is the last claim write. A decline is
  * a SECOND short transaction after the approval rolled back, and only for a
  * 400-class reason about the mare or the stallion, or insufficient funds; a

@@ -24,7 +24,7 @@ import { fileURLToPath } from 'url';
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // Equoria-4dva: real production SSRF-guard — A10 tests now exercise this
 // instead of the previous assertion-free placeholder it() bodies.

@@ -15,7 +15,7 @@
  * is Math.random-driven so an end-to-end cron run cannot deterministically
  * guarantee a visible reveal; calling notifyTraitRevelation directly with a
  * controlled newTraits object proves the notification contract without flake.
- * This mirrors competitionNotification.sentinel.test.mjs.
+ * This mirrors competitionNotification.integration.test.mjs.
  *
  * Scoped cleanup only (CLAUDE.md §2).
  */

@@ -19,10 +19,9 @@
  *   - Every failure after the snapshot read THROWS: a value returned from the
  *     $transaction callback commits, and the debit and credit happen before the
  *     horse pins, so a return there would mint or burn coin.
- *   - User rows first, ascending id (the repository lock ruling; enforced by
- *     txUserBeforeHorseLockOrder.sentinel), then horse rows in ascending id,
- *     then the BreedingRecord insert. All writes are inline in this file so the
- *     sentinel sees them.
+ *   - User rows first, ascending id (the repository lock ruling), then horse
+ *     rows in ascending id, then the BreedingRecord insert. All writes are
+ *     inline in this file.
  *   - The fee moves through transferUserMoneyOrThrow (Equoria-e7tgc.3): a
  *     guarded debit (money >= fee), the credit and both ledger rows on this
  *     transaction; no row is locked with SELECT…FOR-UPDATE.

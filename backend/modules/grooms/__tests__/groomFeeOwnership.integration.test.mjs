@@ -17,7 +17,7 @@
  * controller, so one fixture proves all of them.
  *
  * Real DB, no mocks. Every `processWeeklySalaries` call is scoped to this
- * suite's own fixture user (`groomSalaryPassScoped.sentinel.test.mjs`).
+ * suite's own fixture user.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';

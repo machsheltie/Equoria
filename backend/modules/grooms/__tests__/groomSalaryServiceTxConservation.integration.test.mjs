@@ -40,8 +40,7 @@
  * grace period, and RELEASES the ones already in it — back to the grooms-for-hire pool,
  * assignments ended, gone from that player's staff. The shared development database
  * holds real player data. So every call below passes
- * `{ userId: <this suite's fixture user> }`, and
- * `groomSalaryPassScoped.sentinel.test.mjs` fails if one ever loses it again.
+ * `{ userId: <this suite's fixture user> }`; keep it that way.
  *
  * Nothing is weakened by the scope. Assertions that were `>= 1` purely to tolerate other
  * users' rows became exact, which is stronger.

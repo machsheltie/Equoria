@@ -7,8 +7,8 @@
  * Root cause (Equoria-g9sa): trait-discovery + training-controller test
  * suites create fixture horses via raw `prisma.horse.create()`, bypassing
  * `createHorse()`'s phenotype auto-generation (Equoria-ennm). Born
- * NULL-phenotype, those fixtures violate the canonical-DB invariant
- * asserted by horseColorNullSentinel.test.mjs whenever cleanup leaks a row.
+ * NULL-phenotype, those fixtures violate the canonical-DB invariant (every
+ * horse has a color) whenever cleanup leaks a row.
  *
  * This test proves:
  *   1. NEGATIVE (sentinel demonstrates the failure mode): a horse inserted
@@ -16,8 +16,8 @@
  *      the defect class is real and detectable.
  *   2. POSITIVE (the fix works): a horse inserted with `...fixtureColor()`
  *      spread in — the NEW pattern the suites now use — has a non-null
- *      phenotype whose colorName is a non-empty string, satisfying the
- *      exact predicate horseColorNullSentinel asserts.
+ *      phenotype whose colorName is a non-empty string, satisfying that
+ *      invariant.
  *
  * Real DB, scoped cleanup by unique userId (CLAUDE.md §2). No mocks.
  */
@@ -101,8 +101,8 @@ describe('fixtureColor() guard (Equoria-g9sa)', () => {
         gaitScores: { walk: 50, trot: 50, canter: 50, gallop: 50, gaiting: null },
       },
     });
-    // Assert exactly what horseColorNullSentinel asserts: phenotype NOT NULL
-    // AND phenotype->>'colorName' is a non-empty string.
+    // Assert the invariant: phenotype NOT NULL AND phenotype->>'colorName' is
+    // a non-empty string.
     const [row] = await prisma.$queryRaw`
       SELECT
         (phenotype IS NULL) AS "phenotypeIsNull",

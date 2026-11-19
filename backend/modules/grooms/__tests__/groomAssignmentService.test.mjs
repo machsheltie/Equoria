@@ -28,7 +28,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // fails despite identical names (2026-08-18 hygiene-set migration).
 import NotFoundError from '../../../errors/NotFoundError.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';

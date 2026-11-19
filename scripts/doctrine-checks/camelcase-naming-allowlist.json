@@ -22,12 +22,8 @@
       "reason": "Postgres constraint and index names (SQL layer kept snake_case by owner ruling)"
     },
     {
-      "regex": "^equoria_(test|lane|schema_ref|replay_sentinel)[a-z0-9_]*$",
+      "regex": "^equoria_(test|lane|schema_ref)[a-z0-9_]*$",
       "reason": "Postgres database names used by the test lanes and preflight"
-    },
-    {
-      "regex": "^lane_db_[0-9]+$",
-      "reason": "Postgres database names used by the gate-lock sentinel"
     },
     {
       "regex": "^[a-z][a-z0-9_]*_seq$",
@@ -116,18 +112,18 @@
     "UPDATED_AT": "Postgres column spelling in the breed seed SQL that sanitizeSql strips case-insensitively (populateBreedsFromSql test input)",
     "barn_management": "deliberately snake_case unknown value proving groomSpecialtyLabel humanizes values it has never seen (test input)",
     "advanced_showJumping": "deliberately mixed unknown value proving groomSpecialtyLabel humanizes values it has never seen (test input)",
-    "MOCK_HORSES": "planted input proving check-no-frontend-mocks.mjs still catches the MOCK_ prefix (doctrineScanPatterns sentinel)",
+    "MOCK_HORSES": "example MOCK_ prefix constant named in check-no-frontend-mocks.mjs",
     "key_with_colons": "generateCacheKey output: the Redis key sanitizer turns colons into underscores (cache-key data, not a name)",
-    "self_assured": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
-    "legendary_bloodline": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
-    "weather_immunity": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
-    "night_vision": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
-    "fire_resistance": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
-    "water_phobia": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (traits sentinels)",
+    "self_assured": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (trait roster tests)",
+    "legendary_bloodline": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (trait roster tests)",
+    "weather_immunity": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (trait roster tests)",
+    "night_vision": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (trait roster tests)",
+    "fire_resistance": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (trait roster tests)",
+    "water_phobia": "retired snake spelling a trait absence guard looks up in both casings, proving no map or normaliser still accepts it (trait roster tests)",
     "show_calm": "deliberately snake_case input proving humanizeTraitKey title-cases snake keys (useHorseTraits test)",
-    "GITHUB_OUTPUT": "GitHub Actions runner variable the changes-job script writes its result to (notesOnlyGateSkip sentinel)",
-    "RUNNER_TEMP": "GitHub Actions runner variable the changes-job script uses for scratch files (notesOnlyGateSkip sentinel)",
-    "pull_request": "GitHub Actions event name the workflow is triggered by (notesOnlyGateSkip sentinel)",
-    "workflow_dispatch": "GitHub Actions event name the workflow is triggered by (notesOnlyGateSkip sentinel)"
+    "GITHUB_OUTPUT": "GitHub Actions runner variable the changes-job script writes its result to (CI workflow changes-job script)",
+    "RUNNER_TEMP": "GitHub Actions runner variable the changes-job script uses for scratch files (CI workflow changes-job script)",
+    "pull_request": "GitHub Actions event name the workflow is triggered by (CI workflow changes-job script)",
+    "workflow_dispatch": "GitHub Actions event name the workflow is triggered by (CI workflow changes-job script)"
   }
 }

@@ -27,11 +27,10 @@
  * so the combined V8 cap never exceeds the single-process budget (768MB each
  * for two lanes; a shard measured 871MB peak tree RSS at that cap).
  *
- * CANONICAL-DATABASE PASS: a few sentinels assert properties of the LIVE
- * population (e.g. horseColorDiversitySentinel) and are meaningless on a fresh
- * lane database. With --lanes>1 they are excluded from the lane shards and run
- * afterwards in one short serial pass against the canonical DATABASE_URL; the
- * accounting below still requires every discovered suite to have run once.
+ * CANONICAL-DATABASE PASS: a few suites need the canonical database (the
+ * quiet timing suites below). With --lanes>1 they are excluded from the lane
+ * shards and run afterwards in one short serial pass against the canonical
+ * DATABASE_URL; the accounting below still requires every discovered suite to have run once.
  * The list is explicit and short by design (canonicalDbSuites).
  *
  * Timing sentinels (Equoria-jeci6) belong here too: an ABSOLUTE wall-clock
@@ -175,10 +174,8 @@ function normalizePath(p) {
   return path.resolve(p).replace(/\\/g, '/').toLowerCase();
 }
 
-// Suites that assert against the live population and must run on the canonical
-// database. Paths are backend-relative. Keep this list short and justified.
+// Suites that must run on the canonical database. Paths are backend-relative. Keep this list short and justified.
 const canonicalDbSuites = [
-  '__tests__/horseColorDiversitySentinel.test.mjs',
   // Equoria-jeci6: absolute wall-clock bounds need a quiet machine (see above).
   // One list, shared with CI's quiet step (tree-lane-plan.mjs, Equoria-xh7zd).
   ...quietTimingSuites,

@@ -39,7 +39,10 @@ import { acquireGateLock, defaultLockPath } from './gate-lock.mjs';
 const BACKEND = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RUNNER = path.join(BACKEND, 'scripts', 'run-suite-sharded.mjs');
 const childDeadlineMs = 5 * 60 * 1000;
-const PATTERN = 'gateLockOwnership';
+// A small, DB-free suite for the nested runner to select. It was the deleted
+// gate-lock ownership suite until the sentinel suites were removed (owner ruling
+// q384, Equoria-7efak).
+const PATTERN = 'canonicalTraitRoster';
 
 function spawnBounded(args, env, owned) {
   const child = spawn(process.execPath, args, {

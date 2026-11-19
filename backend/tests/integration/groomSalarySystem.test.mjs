@@ -14,7 +14,7 @@ import { calculateWeeklyFee } from '../../modules/grooms/services/groomFeeBasisS
 import { calculateUserSalaryCost } from '../../modules/grooms/services/groomSalaryReadService.mjs';
 
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { gameCalendarDate } from '../../utils/gameTime.mjs';
 import { testHorseData } from '../../__tests__/helpers/createTestHorse.mjs';
@@ -143,8 +143,7 @@ describe('Groom Salary System', () => {
     });
 
     // GET /summary and GET /status were removed (owner ruling 2026-10-28, q151,
-    // Equoria-a7f1p); their absence is pinned in groomSalaryController.test.mjs and
-    // duplicateLookupsRetired.sentinel.test.mjs.
+    // Equoria-a7f1p); their absence is pinned in groomSalaryController.test.mjs.
   });
 
   // Equoria-ypb7d.3 — BOTH CALLS BELOW ARE SCOPED TO `testUser`.
@@ -155,7 +154,7 @@ describe('Groom Salary System', () => {
   // `terminateGroomsForNonPayment` threw on a non-existent column and swallowed it, so
   // nothing was taken away). It can now put every underfunded player's grooms into the
   // one-week grace period and RELEASE the ones already in it, and this database holds
-  // real player data. `groomSalaryPassScoped.sentinel.test.mjs` guards it.
+  // real player data.
   describe('Salary Processing', () => {
     it('should process weekly salaries successfully', async () => {
       const results = await processWeeklySalaries(undefined, { userId: testUser.id });

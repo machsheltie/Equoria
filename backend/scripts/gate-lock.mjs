@@ -61,8 +61,7 @@
  * not dependency ownership. Making the others cooperate is not a drop-in: the
  * pre-push hook would nest doctrine inside the gate it later acquires, and a
  * targeted run that acquired the gate would deadlock against the runner it
- * spawns (backend/__tests__/gateRunnerShutdown.sentinel.test.mjs does exactly
- * that, from inside a targeted run). Resolving it needs an explicit decision
+ * spawns. Resolving it needs an explicit decision
  * about which outer operation owns the lock; until then, treat a green gate as
  * evidence about the runner only.
  *

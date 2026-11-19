@@ -24,9 +24,6 @@
 //      credential allowlist so legitimate dev creds don't false-positive. See
 //      the "Curated NON-env config-file scan" block below for the calibration
 //      rationale (a naive whole-tree scan is high-false-positive).
-//
-// Sentinel: backend/__tests__/scripts/noTrackedEnvSecrets.sentinel.test.mjs
-// (pure-function coverage + planted-violation proof + real-repo-clean check).
 
 import { execSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';

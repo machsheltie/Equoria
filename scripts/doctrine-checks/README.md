@@ -115,12 +115,9 @@ to fix the underlying problem. It is not a license to weaken the check.
   git the gate fails closed). Fewer than 10 modules or 50 files parsed, or a
   missing allow-list file, is a failure, not a pass. `--closure <file>` prints a
   file's transitive import closure.
-  Sentinel-positive:
-  `backend/__tests__/scripts/moduleDependencyGraphDoctrine.sentinel.test.mjs`.
 - `check-horse-name-gated.mjs` reads the import braces with comments stripped and
   matches the EXACT policy identifiers on the `horses/index.mjs` and
-  `routes/_validators.mjs` paths (WS4 S5 review M5). Sentinel-positive:
-  `backend/__tests__/scripts/horseNameGatedDoctrine.sentinel.test.mjs`.
+  `routes/_validators.mjs` paths (WS4 S5 review M5).
 - `check-railway-migrate-failfast.mjs` — the Railway start command in
   `.railway/railway.ts` (`start:` / `startCommand:`; plus a legacy
   `railway.toml` `startCommand =` while that file exists) must NOT swallow a
@@ -129,8 +126,7 @@ to fix the underlying problem. It is not a license to weaken the check.
   (`||`, `;`, a lone `|`, or a lone `&`) that lets the deploy proceed to
   `node server.mjs` despite a non-zero migrate exit. Only `&&` (fail-fast) is
   allowed. The `${DIRECT_URL:-$DATABASE_URL}` parameter-substitution fallback is
-  not a swallow and is unaffected. Sentinel-positive:
-  `backend/__tests__/railwayMigrateFailfastDoctrine.sentinel.test.mjs`.
+  not a swallow and is unaffected.
 - `check-camelcase-naming.mjs` — shrink-only ratchet for the owner's strict
   camelCase rule (Equoria-pjvp8). It counts snake_case and UPPER_SNAKE
   identifiers, whole string values, JSON data keys and values, breed-seed
@@ -141,8 +137,6 @@ to fix the underlying problem. It is not a license to weaken the check.
 --shrink-baseline`). Comments, env-var names, module specifiers, Postgres
   physical names and `camelcase-naming-allowlist.json` entries (each with a
   reason) are exempt. `--report <file>` writes every occurrence as JSON.
-  Sentinel-positive:
-  `backend/__tests__/scripts/camelcaseNaming.sentinel.test.mjs`.
 
 ## Adding a new check
 

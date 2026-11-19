@@ -172,8 +172,7 @@ const rateLimitMaxByEnv = {
 // ─── Per-environment cap divergence rationale (Equoria-aih8) ─────────────────
 // There are THREE distinct rate limiters with intentionally different
 // per-env caps. They are NOT redundant — each governs a different abuse
-// surface over a different window. This block + the sentinel
-// `backend/__tests__/betaReadinessEnvSentinel.test.mjs` pin the divergence
+// surface over a different window. This block documents the divergence
 // so it cannot silently drift or collapse into a bypass.
 //
 //   Limiter            Source                              Window  beta  beta-readiness  production
@@ -213,7 +212,7 @@ const rateLimitMaxByEnv = {
 // (beta / test / beta-readiness — NEVER production). This lets the ~27-min
 // Playwright E2E CI job (single CI IP, NODE_ENV=beta, real limiter + Redis)
 // raise the ceiling above the beta:3000/15min default WITHOUT changing the
-// rateLimitMaxByEnv map (pinned by betaReadinessEnvSentinel). Every real
+// rateLimitMaxByEnv map. Every real
 // deploy leaves E2E_RATE_LIMIT_MAX unset ⇒ identical behavior to today (beta
 // 3000, prod 100). It is a scoped calibration, not a bypass — the limiter
 // still fires at the (high, finite) overridden ceiling.

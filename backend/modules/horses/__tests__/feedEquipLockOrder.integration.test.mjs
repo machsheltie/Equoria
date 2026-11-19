@@ -1,8 +1,7 @@
 /**
  * Feeding takes the owner's User row before the Horse row (Equoria-lmer7).
  *
- * The repository lock order is User -> Horse -> staff rows
- * (txUserBeforeHorseLockOrder.sentinel). feedHorse claimed the horse row (the
+ * The repository lock order is User -> Horse -> staff rows. feedHorse claimed the horse row (the
  * guarded fed-today UPDATE) and only then wrote the owner's settings
  * inventory, while equipItem writes the inventory (User row) and then the
  * horse's tack. A feed and an equip on one horse could therefore each hold

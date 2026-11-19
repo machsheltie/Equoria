@@ -254,8 +254,7 @@ export function scanRetirementScheduleLeaks(repoRoot) {
 }
 
 // CONTRIBUTING.md "CLI scripts and destructive side effects": the scan runs only
-// when this file is the process entry point, so the sentinel
-// (backend/__tests__/noRetirementScheduleLeakDoctrine.sentinel.test.mjs) can
+// when this file is the process entry point, so a test can
 // IMPORT the exemption contract above and assert its narrowness directly,
 // without writing to a tracked source file to find out. run-all.sh invokes this
 // as `node <script>`, so the guard is satisfied there.

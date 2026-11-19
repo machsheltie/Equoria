@@ -15,7 +15,7 @@
  * The horse cap (case 5) is unchanged.
  *
  * Real DB, no mocks. Every `processWeeklySalaries` call is scoped to this suite's
- * own fixture user (`groomSalaryPassScoped.sentinel.test.mjs` enforces that).
+ * own fixture user.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';

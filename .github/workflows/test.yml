@@ -324,8 +324,7 @@ jobs:
       # catalog a fresh replay of the migration chain produces — failing on
       # drift in EITHER direction, across every table in `public`. It resolves
       # @prisma/client from packages/database, the only workspace this job
-      # installs. See scripts/preflight/schema-drift.mjs and its sentinel,
-      # backend/__tests__/scripts/liveSchemaDrift.sentinel.test.mjs.
+      # installs. See scripts/preflight/schema-drift.mjs.
       - name: Verify live schema matches the migration-applied structure
         run: node scripts/preflight/schema-drift.mjs
 
@@ -374,9 +373,9 @@ jobs:
           # anchored on `backend/` so it catches ONLY the top-level
           # scripts/eslint-plugins *.test.mjs (Equoria-axvnd: 4 files that
           # matched NO shard and never ran in CI) WITHOUT also grabbing the
-          # backend/__tests__/scripts/ sentinels that shard 3 already owns.
+          # backend/__tests__/scripts/ suites that shard 3 already owns.
           # Mutual exclusivity AND exhaustiveness are enforced by
-          # ciShardExclusivity.sentinel.test.mjs + check-ci-shard-exclusivity.mjs.
+          # scripts/doctrine-checks/check-ci-shard-exclusivity.mjs.
           - shard: 1
             pattern: 'tests/(?!integration/)|(models|seed)/[^/]+\.test\.mjs$|backend/(scripts|eslint-plugins)/[^/]+\.test\.mjs$'
           # Shard 2 — integration tests + module co-located tests
@@ -387,8 +386,8 @@ jobs:
           # worker and a heap grown over ~360 suites added ~75ms to one branch
           # (run 40802408751) with no code difference between the branches.
           - shard: 2
-            pattern: 'tests/integration|modules/(?!docs/__tests__/)(?!.*(?:groomSalaryPassScoped\.sentinel|flagEngineSingleSource\.sentinel|riderRetirementHidden\.integration|forgotPasswordTimingOracle\.integration|loginTimingOracle\.sentinel)\.test\.mjs$).*/__tests__'
-            quiet: 'modules/auth/__tests__/(?:forgotPasswordTimingOracle\.integration|loginTimingOracle\.sentinel)\.test\.mjs$'
+            pattern: 'tests/integration|modules/(?!docs/__tests__/)(?!.*(?:riderRetirementHidden\.integration|forgotPasswordTimingOracle\.integration|loginTimingOracle\.integration)\.test\.mjs$).*/__tests__'
+            quiet: 'modules/auth/__tests__/(?:forgotPasswordTimingOracle\.integration|loginTimingOracle\.integration)\.test\.mjs$'
           # Shard 3 — legacy/top-level __tests__ dirs (largest volume),
           # EXCLUDING the module co-located modules/<x>/__tests__ suites that
           # shard 2 owns. The old bare '__tests__/' substring also matched every
@@ -401,17 +400,16 @@ jobs:
           # modules/.../__tests__/ path; `.*` (not `[^/]+`) also covers nested
           # module dirs (modules/<x>/<sub>/__tests__). Verified via jest
           # --listTests: 0 files match >1 shard after this change (was 469),
-          # and 0 NEW orphans. Guarded by ciShardExclusivity.sentinel.test.mjs.
+          # and 0 NEW orphans. Guarded by check-ci-shard-exclusivity.mjs.
           # Equoria-rfv9j: shard 3 is the TREE set of backend/scripts/
           # tree-lane-plan.mjs (suites that plant files in, or walk, the shared
-          # tree): backend/__tests__/ plus modules/docs/__tests__/ and the two
-          # named module sentinels. It runs serially (serial: true selects
+          # tree): backend/__tests__/ plus modules/docs/__tests__/ and the one
+          # named module suite. It runs serially (serial: true selects
           # test:backend:ci:serial, one worker) because at --maxWorkers=2 a
           # planter and a scanner can run at the same moment, the race that
-          # broke the local two-lane gate (WS4 S6). Guarded by
-          # treeLanePinning.sentinel.test.mjs.
+          # broke the local two-lane gate (WS4 S6).
           - shard: 3
-            pattern: '^(?!.*modules/.*/__tests__/).*__tests__/|modules/docs/__tests__/|modules/grooms/__tests__/groomSalaryPassScoped\.sentinel\.test\.mjs$|modules/traits/__tests__/flagEngineSingleSource\.sentinel\.test\.mjs$|modules/riders/__tests__/riderRetirementHidden\.integration\.test\.mjs$'
+            pattern: '^(?!.*modules/.*/__tests__/).*__tests__/|modules/docs/__tests__/|modules/riders/__tests__/riderRetirementHidden\.integration\.test\.mjs$'
             serial: true
 
     steps:
@@ -427,11 +425,11 @@ jobs:
             packages/database/package-lock.json
 
       - name: Install root dependencies
-        # Backend Jest also runs sentinels over repo-root scripts, and those
-        # resolve their imports from root node_modules, not backend/:
-        # scripts/doctrine-checks/check-staff-routes-guarded.mjs imports
-        # espree. Without this step its sentinel fails with "Cannot find
-        # module 'espree'" (Equoria-5hdwr).
+        # Backend Jest suites that import repo-root scripts resolve those
+        # scripts' imports from root node_modules, not backend/ (Equoria-5hdwr:
+        # scripts/doctrine-checks/check-staff-routes-guarded.mjs imports espree;
+        # the suite that first hit it was deleted with the sentinel suites,
+        # owner ruling q384).
         run: npm ci --no-audit --no-fund
 
       - name: Install backend dependencies
@@ -449,8 +447,8 @@ jobs:
           npx prisma migrate deploy --schema=prisma/schema.prisma
 
       # Equoria-fefh2.36: the real-DB doctrine made suites canonical-data-
-      # coupled (e.g. breedCountSentinel asserts all 312 data/breeds rows with
-      # shadeBias). A freshly migrated DB has zero breeds; seed the base data
+      # coupled (fixtures read seeded breeds and their genetic profiles).
+      # A freshly migrated DB has zero breeds; seed the base data
       # then the full breed roster (both idempotent).
       - name: Seed canonical test data (base + 312-breed roster)
         working-directory: ./backend
@@ -643,14 +641,12 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install root dependencies
-        # Equoria-fefh2.28 (DoD-10b): the Vitest max-lines doctrine sentinels
-        # (apiClientMaxLinesDoctrine, pagesMaxLinesDoctrine) spawn ESLint with
-        # cwd=REPO_ROOT (spawnSync ... { cwd: REPO_ROOT }), which loads the
-        # root flat eslint.config.js. That config imports @eslint/js and
-        # typescript-eslint from root node_modules. Without this step the
-        # spawned ESLint crashes with ERR_MODULE_NOT_FOUND for @eslint/js and
-        # the sentinels error out instead of asserting. Mirrors the lint job's
-        # root-dep install (above).
+        # Equoria-fefh2.28 (DoD-10b): installs root node_modules (the root flat
+        # eslint.config.js imports @eslint/js and typescript-eslint from there).
+        # The Vitest suites that first needed it spawned ESLint and were deleted
+        # with every sentinel suite (owner ruling q384, Equoria-7efak); the step
+        # stays until nothing else in this job is shown to need root deps.
+        # Mirrors the lint job's root-dep install (above).
         run: npm ci --no-audit --no-fund
 
       - name: Install frontend dependencies
@@ -709,8 +705,8 @@ jobs:
     # unrelated specs. This EXPLICIT override (honored only in non-prod, only
     # when set — resolveE2eRateLimitMax in backend/middleware/e2eRateLimitOverride.mjs)
     # gives the CI suite headroom WITHOUT changing RATE_LIMIT_MAX_BY_ENV, so no
-    # real deploy's posture changes (betaReadinessEnvSentinel still pins beta
-    # 3000 / prod 100). 100000 / 15 min ≈ 111 req/s — ~33× the beta default:
+    # real deploy's posture changes (beta stays 3000 / prod 100).
+    # 100000 / 15 min ≈ 111 req/s — ~33× the beta default:
     # ample room for the suite to grow (plus retry amplification) while staying
     # a FINITE, firing ceiling (a runaway client is still throttled), NOT a
     # bypass/disable. The backend server (spawned by Playwright's webServer,
@@ -1078,9 +1074,9 @@ jobs:
             packages/database/package-lock.json
 
       - name: Install root dependencies
-        # test:security runs sentinels over repo-root scripts, which resolve
-        # their imports (e.g. espree in check-staff-routes-guarded.mjs) from
-        # root node_modules. See the backend-tests job (Equoria-5hdwr).
+        # Suites that import repo-root scripts resolve those scripts' imports
+        # (e.g. espree in check-staff-routes-guarded.mjs) from root
+        # node_modules. See the backend-tests job (Equoria-5hdwr).
         run: npm ci --no-audit --no-fund
 
       - name: Install backend dependencies

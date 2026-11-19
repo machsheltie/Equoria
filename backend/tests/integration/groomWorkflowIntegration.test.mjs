@@ -17,7 +17,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { assignGroom } from '../../modules/grooms/controllers/groomAssignmentHandlers.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import { birthDateForAge } from '../../utils/horseAge.mjs';

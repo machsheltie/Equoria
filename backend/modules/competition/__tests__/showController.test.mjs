@@ -13,7 +13,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { checkedInDeviceCookie } from '../../../tests/helpers/staffDeviceFixture.mjs';
-// Equoria-odjt: a valid colorGenotype+phenotype, so fixture horses never leak as NULL-phenotype rows (horseColorNullSentinel).
+// Equoria-odjt: a valid colorGenotype+phenotype, so fixture horses never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { releaseShowEscrow } from '../../../__tests__/helpers/releaseShowEscrow.mjs';

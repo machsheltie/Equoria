@@ -7,7 +7,7 @@
  * foal's first 21 days of life is rolled once against its grooming record.
  *
  * Schedule: 00:40 Eastern, after the game day has ended, on a minute no other
- * job in either registry starts on (cronScheduleCollision sentinel).
+ * job in either registry starts on.
  * Advisory-locked so only one replica runs it; the per-horse progress key and
  * row lock keep a re-run from rolling a day twice. 30h staleness, like the
  * other daily jobs.

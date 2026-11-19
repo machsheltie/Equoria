@@ -1,7 +1,7 @@
 /**
  * Pure-formula unit coverage for the Equoria-g8qg0 level-bracket mapping.
  *
- * The HTTP sentinel (modules/competition/__tests__/showEntryLevelBracket.sentinel.test.mjs)
+ * The HTTP suite (modules/competition/__tests__/showEntryLevelBracket.integration.test.mjs)
  * proves the bracket is enforced end-to-end on both entry paths. THIS suite
  * pins the pure math at the XP→level boundaries (which the HTTP test only
  * samples at the bracket edges) and the bracket-inclusivity + defensive guards.

@@ -19,7 +19,7 @@
  *
  * Real DB, real aging pass, real foaling, real feed service, the real vet route
  * via supertest and the real weekly groom fee pass (scoped to this suite's own
- * user, groomSalaryPassScoped sentinel); no mocks. Assignments are ENDED, never deleted: rows stay as history, exactly
+ * user); no mocks. Assignments are ENDED, never deleted: rows stay as history, exactly
  * as a sale ends them.
  */
 

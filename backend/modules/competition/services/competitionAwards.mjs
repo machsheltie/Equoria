@@ -17,9 +17,8 @@
  *      (`addXpToHorseCore` / `addXpToUserCore`). The executor calls it INSIDE its
  *      per-entry interactive tx; calling the public self-transacting writers there
  *      would open a nested tx on a second connection and self-deadlock on the
- *      user-row lock the outer tx already holds (P2028). Because this file holds
- *      no `$transaction`, it never enters the retryableTransactionWrapping pin
- *      table.
+ *      user-row lock the outer tx already holds (P2028). This file holds no
+ *      `$transaction` of its own.
  *   2. The award TABLE is the owner-ruled table (R8, 2026-10-15), frozen and pinned by a
  *      sentinel test — editing a constant away from the ruling fails CI.
  */

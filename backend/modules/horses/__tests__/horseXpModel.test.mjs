@@ -24,7 +24,7 @@ import {
 } from '../services/horseXpModelService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
 // fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).

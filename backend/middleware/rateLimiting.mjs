@@ -504,7 +504,7 @@ export function createRateLimiter(options = {}) {
   // flows through the E2E-only ceiling override — a no-op unless
   // E2E_RATE_LIMIT_MAX is set AND NODE_ENV is non-prod, so real deploys are
   // unchanged. Gives the ~27-min single-IP Playwright suite headroom on ALL
-  // limiters without touching any `max:` literal (authRateLimitDocDrift green).
+  // limiters without touching any `max:` literal.
   const getEffectiveMax = () =>
     isTestEnv && useEnvOverride
       ? parseInt(process.env.TEST_RATE_LIMIT_MAX_REQUESTS || `${max}`, 10)
@@ -747,7 +747,7 @@ export const profileRateLimiter = createRateLimiter({
  * never by per-request header. Production traffic still hits 30/min.
  */
 // Exported (Equoria-jz9v2) so the app.mjs boot-log can report the effective
-// mutation ceiling. Values UNCHANGED, still pinned by betaReadinessEnvSentinel.
+// mutation ceiling. Values UNCHANGED.
 export const mutationRateLimitMaxByEnv = {
   // Tests already short-circuit via TEST_RATE_LIMIT_* env knobs when
   // useEnvOverride:true is set — no test entry needed here.

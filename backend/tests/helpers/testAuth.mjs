@@ -182,7 +182,7 @@ export async function createTestHorse(horseData = {}) {
   const defaultData = {
     // Inject a non-NULL colorGenotype + phenotype so this helper never
     // creates a NULL-phenotype row (CLAUDE.md dm1i defect class). Without
-    // this, every horse from createTestHorse trips the horseColorNullSentinel
+    // this, every horse from createTestHorse leaks a NULL-phenotype row
     // (Equoria-a429) if its afterAll cleanup is ever skipped/interrupted.
     // Spread first so explicit horseData can still override if a test needs to.
     ...fixtureColor(),

@@ -23,8 +23,7 @@
  *
  * This override lets the CI job raise the ceiling WITHOUT changing
  * RATE_LIMIT_MAX_BY_ENV — the pinned defaults (beta 3000, beta-readiness 1000,
- * prod 100; enforced by backend/__tests__/betaReadinessEnvSentinel.test.mjs)
- * stay exactly as they are, and any deploy that never sets the env var behaves
+ * prod 100) stay exactly as they are, and any deploy that never sets the env var behaves
  * identically to today. It is a SCOPED CALIBRATION, not a bypass: the limiter
  * still fires at the (high, finite) overridden ceiling — a runaway client is
  * still throttled.

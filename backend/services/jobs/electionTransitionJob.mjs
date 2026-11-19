@@ -11,7 +11,7 @@
  *
  * Equoria-bvddn.15 / Equoria-cmw85.8 (owner ruling 2026-09-30): minutes shifted from :00/:15/:30/:45 to
  * :03/:18/:33/:48 (same 15-minute cadence) so it no longer starts in the same
- * minute as the daily/weekly locked jobs; see cronScheduleCollision sentinel.
+ * minute as the daily/weekly locked jobs.
  */
 
 export default Object.freeze({

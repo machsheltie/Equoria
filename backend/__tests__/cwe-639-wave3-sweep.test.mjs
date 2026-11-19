@@ -29,7 +29,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { createMockToken } from '../__tests__/factories/index.mjs';
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup. A cleanup delete that fails must
 // FAIL the suite (not be swallowed by a silent no-op catch arm), so a leaked

@@ -7,7 +7,7 @@
  * items) through the news module (modules/news/services/dailyNewsEntries.mjs).
  *
  * Schedule: 00:02 Eastern, at the start of the game day, on a minute no other
- * job in either registry starts on (cronScheduleCollision sentinel).
+ * job in either registry starts on.
  * Advisory-locked so only one replica runs it; the UNIQUE sourceKey keeps a
  * re-run from posting anything twice. 30h staleness, like the other daily jobs.
  */

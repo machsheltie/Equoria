@@ -63,13 +63,11 @@ function parseYamlScalar(raw) {
  * a targeted parse of `jobs.backend-tests.strategy.matrix.include`.
  *
  * Why a targeted parser and not js-yaml (Equoria-jgql9): this module is a ROOT
- * `scripts/` file, but it is imported by a jest sentinel
- * (backend/__tests__/ciShardExclusivity.sentinel.test.mjs) that runs in the
+ * `scripts/` file, but it was imported by a backend jest suite that ran in the
  * backend-shard + security-gate CI jobs — and those jobs `npm ci` only in
  * ./backend + ./packages/database, NOT at root. A top-level `import yaml from
  * 'js-yaml'` therefore failed to resolve there ("Cannot find module js-yaml"),
- * turning the sentinel into a suite-level FAILURE and reddening the Quality
- * Gate (master). Depending on zero extra packages makes this script resolve in
+ * turning that suite into a FAILURE and reddening the Quality Gate (master). Depending on zero extra packages makes this script resolve in
  * every job regardless of which node_modules a job installs.
  *
  * @param {string} workflowText - raw contents of .github/workflows/test.yml

@@ -17,8 +17,8 @@
  * Cases 2 and 3 pin the two properties a sleep-substitute or a sloppy count
  * would break: the wait never resolves when nothing is blocked, and sessions
  * blocked by SOMEONE ELSE are not counted. Case 4 guards the positive control's
- * own side effects, as in rawStatementsStayInTransaction.sentinel's third
- * case: no barrier from this file is left holding a lock or a waiter.
+ * own side effects: no barrier from this file is left holding a lock or a
+ * waiter.
  *
  * Real PostgreSQL, no mocks, no sleeps. The only rows touched are this file's
  * own two fixture users, deleted fail-loud in afterAll.

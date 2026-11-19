@@ -20,8 +20,7 @@
  *
  * SCHEDULE MINUTES: the CronJobService registry in backend/services/jobs/index.mjs
  * shares the same 3-connection pool and advisory-lock pinning. No two jobs across
- * BOTH registries may start in the same minute; the
- * backend/__tests__/cronScheduleCollision.sentinel.test.mjs sentinel enforces it
+ * BOTH registries may start in the same minute
  * (Equoria-bvddn.15 / Equoria-cmw85.8). Pick a free minute when adding a job.
  *
  * ORDER IS PRESERVED from the pre-split `runningJobs.set(...)` registration

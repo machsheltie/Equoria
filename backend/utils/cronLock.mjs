@@ -57,7 +57,7 @@
  * (2) The reproduced ways a "held" lock silently vanished mid-handler were two
  * client copies in one process (Equoria-fefh2.44, see prismaClient.mjs) and a
  * middleware that re-bound $queryRaw/$executeRaw to the root client (deleted,
- * Equoria-6q7wr; rawStatementsStayInTransaction.sentinel.test.mjs guards it). No
+ * Equoria-6q7wr). No
  * degradation under pool pressure alone has been demonstrated.
  * cronLockHeldDuringHandler.integration.test.mjs proves the production path keeps
  * a second session out for the full handler.

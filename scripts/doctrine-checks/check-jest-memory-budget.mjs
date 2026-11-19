@@ -62,8 +62,7 @@
  *
  * Sentinel hooks: pass a config path as argv[2] to validate ONLY that file;
  * pass `--spawner <path>` to validate ONLY that spawner script; pass
- * `--package <path>` to validate ONLY that package.json's scripts (all used
- * by backend/__tests__/jestMemoryBudgetDoctrine.sentinel.test.mjs to prove
+ * `--package <path>` to validate ONLY that package.json's scripts (to prove
  * the check FIRES on planted violations, per OPTIMAL_FIX §2).
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';

@@ -25,7 +25,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 
 import { eligibleFoalEnrichmentTasks, foalGroomingTasks } from '../../../config/groomConfig.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+// horses can never leak as NULL-phenotype rows.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup — a cleanup delete that fails must
 // turn the suite red so the leaked fixture is fixed at the source, not hidden

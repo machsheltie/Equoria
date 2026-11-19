@@ -37,9 +37,8 @@ export async function runFoalingJobScheduled() {
 export default Object.freeze({
   jobName: 'foaling',
   // Daily at 00:25 Eastern. Old: '5 0 * * *' (collided with dailyHorseAging).
-  // Keep it after aging (00:05) and off every other job's minute; the
-  // cronScheduleCollision sentinel enforces the latter across BOTH registries
-  // (this file and backend/services/jobs/index.mjs).
+  // Keep it after aging (00:05) and off every other job's minute across BOTH
+  // registries (this file and backend/services/jobs/index.mjs).
   schedule: '25 0 * * *',
   lockKey: 'cronJobService:foaling',
   // Heartbeat staleness budget (Equoria-cmw85.9): 24h period + 6h tolerance, as the primary registry.

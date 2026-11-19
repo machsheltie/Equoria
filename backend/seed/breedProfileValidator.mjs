@@ -21,12 +21,8 @@
  *
  * Equoria-f8qew (2026-06-02) added `topline` as the 8th region across all
  * 312 backend/data/breeds/*.txt source files. This list is the single
- * source of truth for "what regions a complete profile has" — exported
- * (Equoria-9cpop) so the source-completeness sentinel
- * (breedSourceConformationRegions.sentinel.test.mjs) asserts the .txt
- * files against the SAME list this runtime validator uses, rather than
- * duplicating the eight strings (which would re-introduce the drift class
- * the sentinel exists to catch).
+ * source of truth for "what regions a complete profile has" (exported,
+ * Equoria-9cpop); never duplicate the eight strings elsewhere.
  *
  * @type {readonly string[]}
  */
@@ -47,11 +43,8 @@ export const expectedConformationRegions = Object.freeze([
  * gaited breeds, null for non-gaited — and is therefore NOT in this required
  * set; its presence/nullness is governed by isGaitedBreed below.)
  *
- * Exported (Equoria-4xwj1) so the source-completeness sentinel
- * (breedSourceGaitsTemperament.sentinel.test.mjs) asserts the 312
- * backend/data/breeds/*.txt source files against the SAME list this runtime
- * validator uses, rather than duplicating the four strings (which would
- * re-introduce the drift class the sentinel exists to catch). Sibling of
+ * Exported (Equoria-4xwj1) as the single list of core gaits; never
+ * duplicate the four strings elsewhere. Sibling of
  * expectedConformationRegions (Equoria-9cpop).
  *
  * @type {readonly string[]}

@@ -3,10 +3,9 @@
  * (Equoria-puj1e.5, docs/features/admin-time-back.md "Rulebook", invariant 7).
  *
  * Generated from the 2026-10-06 owner-approved code survey and re-checked
- * against the schema on 2026-11-18. A field that is in the schema but in none
- * of these lists fails timeBackClassification.sentinel.test.mjs, so a new
- * DateTime column cannot ship without someone deciding whether an outage gives
- * its time back.
+ * against the schema on 2026-11-18. Every DateTime field in the schema belongs
+ * in exactly one of these lists: when a new DateTime column ships, decide
+ * whether an outage gives its time back and add it here.
  *
  * - pastEvent (rule 1): an anchor whose elapsed time drives play. Moved by the
  *   pause; a value inside the window lands on the window's end.

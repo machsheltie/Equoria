@@ -21,10 +21,8 @@
 //     mock-call detection, comment skipping). Only the DATA (patterns, tokens,
 //     directory scopes, exemption markers) is shared.
 //   - Where a token list is conceptually shared with the bash library
-//     (the frontend-mock token set, the bypass-header token set), a
-//     cross-language equality sentinel test asserts byte-equivalence so the two
-//     representations cannot silently drift (see
-//     backend/__tests__/scripts/doctrineScanPatterns.sentinel.test.mjs).
+//     (the frontend-mock token set, the bypass-header token set), keep the two
+//     representations byte-equivalent so they cannot silently drift.
 // =============================================================================
 
 // -----------------------------------------------------------------------------
@@ -127,10 +125,6 @@ export const frontendMockExemptionMarker = 'doctrine-allow: frontend-mock-storyb
 // widen or narrow any check's scanned file-set. The per-check predicates below
 // (in each check file) reproduce that check's original skip/include logic
 // verbatim, so the union of files visited is identical pre- and post-refactor.
-// The scope-preservation sentinel
-// (backend/__tests__/scripts/doctrineScanPatterns.sentinel.test.mjs) proves an
-// in-scope planted violation is still caught AND an out-of-scope planted
-// violation is still ignored, for every check.
 //
 // Parameters:
 //   roots        : string[]            — absolute directory roots to scan
@@ -236,8 +230,8 @@ function walkInto(dir, out, skipDir, includeFile, includePlantArtifacts) {
 //      check-no-frontend-mocks, …) therefore never collect a marker-named
 //      file, even if a permissive includeFile predicate would. Previously
 //      this exclusion was NOT applied at the walkFiles level because the
-//      consumers' sentinel-positive tests
-//      (doctrineScanPatterns.sentinel.test.mjs, Equoria-4iudq/ml7jj) planted
+//      consumers' sentinel-positive tests (Equoria-4iudq/ml7jj, deleted with
+//      every sentinel suite under owner ruling q384) planted
 //      `*_DO_NOT_COMMIT_*` violations and asserted the check FIRES on them.
 //      Those plants were renamed to non-marker basenames under Equoria-70pb9
 //      so the proofs still exercise real detection (a violation under a
@@ -257,27 +251,19 @@ export function isPlantArtifactBasename(name) {
 }
 
 // -----------------------------------------------------------------------------
-// Reserved scratch / plant basename tokens used by sibling scripts-dir sentinels
-// (Equoria-27lqy)
+// Reserved scratch / plant basename tokens (Equoria-27lqy)
 // -----------------------------------------------------------------------------
 //
 // isPlantArtifactBasename() above only matches the UPPERCASE marker convention
-// (DO_NOT_COMMIT / PLANTED). But several scripts-dir sentinels plant transient
-// fixtures into the REAL backend tree under NON-marker, lowercase scratch names
-// (so their own detection proofs run on production-realistically-named files):
+// (DO_NOT_COMMIT / PLANTED). The planting test suites that once wrote transient
+// fixtures into the REAL tree under NON-marker, lowercase scratch names (the
+// tokens listed below) were deleted with every sentinel suite under owner
+// ruling q384 (2026-11-18). The tokens stay reserved so a scratch directory
+// left behind by an interrupted older run is still skipped, never judged.
 //
-//   - moduleBarrelBoundaryEslint.sentinel.test.mjs → `_v8l96Sentinel*.mjs`
-//     under backend/modules/**
-//   - doctrineScanPatterns.sentinel.test.mjs       → `__doctrineJestPlant_*`
-//     under backend/** (and frontend/, tests/)
-//   - doctrineScanVanishedFile.sentinel.test.mjs   → `_q7lqzVanishedScanScratch/`
-//     under backend/__tests__/
-//   - checkNoPlaceholderTests.sentinel.test.mjs    → `__planted_*_fefh2_*` under
-//     backend/__tests__/
-//
-// An IN-PROCESS tree-walking sentinel (e.g. noCommonJsInMjs / noDeprecatedDbIndexImport)
-// that walks backend/**/*.mjs can enumerate one of these foreign transients at
-// the instant a sibling has it on disk, then (a) read content that the foreign
+// An IN-PROCESS tree-walking scanner that walks backend/**/*.mjs can
+// enumerate one of these foreign transients at the instant a sibling has it
+// on disk, then (a) read content that the foreign
 // suite deliberately authored to trip a DIFFERENT gate, or (b) crash with ENOENT
 // when the sibling deletes it between the walk and the read. Either way the
 // real, clean repo source is falsely reported as in-violation — a foreign
@@ -307,35 +293,35 @@ export function isPlantArtifactBasename(name) {
 // inventions), so the exclusion cannot hide a genuine CommonJS / db-index
 // violation in a committed file.
 const reservedScratchPlantTokens = [
-  '__doctrineJestPlant', // doctrineScanPatterns.sentinel.test.mjs
-  '_v8l96Sentinel', // moduleBarrelBoundaryEslint.sentinel.test.mjs
-  '_q7lqzVanishedScanScratch', // doctrineScanVanishedFile.sentinel.test.mjs (dir name)
-  '__planted_', // checkNoPlaceholderTests.sentinel.test.mjs
+  '__doctrineJestPlant',
+  '_v8l96Sentinel',
+  '_q7lqzVanishedScanScratch',
+  '__planted_',
   'SentinelPlant', // generic convention reservation (any camelCase ...SentinelPlant name)
-  '_ws4graphplant_', // moduleDependencyGraphDoctrine.sentinel.test.mjs (its own gate exempts it via ownTokens)
-  '_ws4hnplant_', // horseNameGatedDoctrine.sentinel.test.mjs (its gate walks via walkFiles: unaffected)
+  '_ws4graphplant_',
+  '_ws4hnplant_',
   // Equoria-rfv9j: the remaining in-tree planters' scratch names, so foreign scanners
   // and the gate runner's one-time discovery skip them. None of these planters' own
   // checks consults this predicate (their checks use walkFiles/isPlantArtifactBasename
   // or their own walks), so each planter still sees its own plant.
-  '_silentCatchDoctrineSentinel', // silentCleanupCatchDoctrine.sentinel.test.mjs (dir)
-  '_consoleLogSentinelScratch', // noConsoleLogInTestsDirs.sentinel.test.mjs (dir)
-  '_deepPrismaImportSentinelScratch', // noDeepPrismaClientImportInTests.sentinel.test.mjs (dir)
-  '_fileSizeDoctrineSentinel', // fileSizeThresholdDoctrine.sentinel.test.mjs (dirs)
-  '__ml7jjInscope70pb9__', // doctrineScanPatterns.sentinel.test.mjs
-  '__ml7jjOos70pb9__', // doctrineScanPatterns.sentinel.test.mjs
-  '__1lk00UtcdobPlant_', // utcDateOnlyFixturesDoctrine.sentinel.test.mjs (its check walks via walkFiles: unaffected)
+  '_silentCatchDoctrineSentinel',
+  '_consoleLogSentinelScratch',
+  '_deepPrismaImportSentinelScratch',
+  '_fileSizeDoctrineSentinel',
+  '__ml7jjInscope70pb9__',
+  '__ml7jjOos70pb9__',
+  '__1lk00UtcdobPlant_',
   // Quality Gate run 40798452605: the camelCase check walked into
   // frontend/src/_frontendSwallowedCatchSentinel/ while that suite deleted it
   // ("skipped vanished file"). These in-tree plant directories were never listed;
   // none of their own checks consults this predicate, so each still sees its plant.
   // Each is the directory name (camelCase since Equoria-pjvp8.9).
-  '_frontendSwallowedCatchSentinel', // frontendSwallowedCatchDoctrine.sentinel.test.mjs
-  '_noNewRejectedUiDepsSentinel', // noNewRejectedUiDepsDoctrine.sentinel.test.mjs
-  '_noRadixImportsDoctrineSentinel', // noRadixImportsDoctrine.sentinel.test.mjs
-  '_noUnversionedApiDoctrineSentinel', // noUnversionedApiDoctrine.sentinel.test.mjs
-  '_becrmDoctrineSentinel', // noPrismaInRoutesDoctrine.sentinel.test.mjs
-  '_jzu4lDoctrineSentinel', // noUnsafeRawSqlDoctrine.sentinel.test.mjs
+  '_frontendSwallowedCatchSentinel',
+  '_noNewRejectedUiDepsSentinel',
+  '_noRadixImportsDoctrineSentinel',
+  '_noUnversionedApiDoctrineSentinel',
+  '_becrmDoctrineSentinel',
+  '_jzu4lDoctrineSentinel',
 ];
 
 export function isReservedScratchPlantPathSegment(name, ownTokens = []) {
