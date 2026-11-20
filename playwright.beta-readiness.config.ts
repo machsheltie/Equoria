@@ -2,11 +2,16 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { assertE2eTestDatabase } from './tests/e2e/helpers/e2eTestStack.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, 'backend', '.env.test') });
+
+// Equoria-8w3ax.2: refuse to run unless DATABASE_URL is a local test database,
+// never the owner's game database. The readiness backend below inherits it.
+assertE2eTestDatabase(process.env);
 
 const emailCaptureFile = path.resolve(
   __dirname,

@@ -40,8 +40,9 @@ import { test, expect, type Page } from '@playwright/test';
 import { randomBytes } from 'crypto';
 import { skipGuidedTourAfterWizard } from './helpers/guidedTour';
 import { confirmEmailViaApi } from './helpers/emailConfirmation';
+import { e2eBackendUrl } from './helpers/e2eTestStack.mjs';
 
-const BACKEND = 'http://localhost:3001';
+const BACKEND = e2eBackendUrl();
 const FRONTEND = 'http://localhost:3000';
 const suitePrefix = 'profedit_e2e';
 

@@ -4,6 +4,7 @@ import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isCommittedTestSecret } from './backend/utils/runtimeSecretPolicy.mjs';
+import { assertE2eTestDatabase, resolveE2eBackendPort } from './tests/e2e/helpers/e2eTestStack.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,21 @@ const { parsed: envTest = {} } = dotenv.config({
 for (const [key, value] of Object.entries(envTest)) {
   if (!presetEnvKeys.has(key) && isCommittedTestSecret(value)) delete process.env[key];
 }
+
+// Equoria-8w3ax.2: the owner's dev backend (backend/.env) listens on 3001 and
+// uses her game database. Refuse to run unless DATABASE_URL is a local test
+// database (tests/e2e/helpers/e2eTestStack.mjs). This runs in the runner and
+// in every worker; the backend started below inherits this same DATABASE_URL,
+// which its env.beta cannot override.
+assertE2eTestDatabase(process.env);
+
+// Equoria-8w3ax.2: the E2E backend's port — 3101 on a laptop, so it never
+// collides with (or is mistaken for) the dev backend on 3001; 3001 in CI as
+// before; EQUORIA_BACKEND_PORT overrides both. Set on process.env so the Vite
+// proxy (frontend/vite.config.ts), every worker and the specs that call the
+// backend directly (e2eBackendUrl) all use the same port.
+process.env.EQUORIA_BACKEND_PORT = resolveE2eBackendPort(process.env);
+const backendPort = process.env.EQUORIA_BACKEND_PORT;
 
 // Equoria-jz9v2 calibration, applied locally as in CI: the e2e-tests job in
 // .github/workflows/test.yml sets E2E_RATE_LIMIT_MAX=100000 so one client
@@ -82,17 +98,18 @@ export default defineConfig({
       // backend/env.beta (no leading dot, matches env.test naming) and enforces
       // real CSRF + real rate-limit middleware.
       // Cross-platform: Windows uses set, Unix uses inline env assignment.
-      // EQUORIA_BACKEND_PORT (default 3001) lets the stack run when 3001 is
-      // occupied by another local app — reuseExistingServer otherwise "reuses"
-      // a foreign server whose /health happens to answer 200 and every API
-      // call 404s (hit during Equoria-o5hub.1 baseline capture). The vite
-      // proxy reads the same variable.
+      // The port is backendPort (above): 3101 locally, 3001 in CI, or
+      // EQUORIA_BACKEND_PORT. The vite proxy reads the same variable.
       command:
         process.platform === 'win32'
-          ? `set "PORT=${process.env.EQUORIA_BACKEND_PORT ?? '3001'}" && set "NODE_ENV=beta" && node backend/server.mjs`
-          : `PORT=${process.env.EQUORIA_BACKEND_PORT ?? '3001'} NODE_ENV=beta node backend/server.mjs`,
-      url: `http://localhost:${process.env.EQUORIA_BACKEND_PORT ?? '3001'}/health`,
-      reuseExistingServer: !process.env.CI,
+          ? `set "PORT=${backendPort}" && set "NODE_ENV=beta" && node backend/server.mjs`
+          : `PORT=${backendPort} NODE_ENV=beta node backend/server.mjs`,
+      url: `http://localhost:${backendPort}/health`,
+      // Never reuse (Equoria-8w3ax.2): a server Playwright did not start may be
+      // the dev backend on the game database, or a foreign app whose /health
+      // answers 200 (Equoria-o5hub.1). If the port is taken Playwright stops
+      // with "already used" instead of testing against it.
+      reuseExistingServer: false,
       stdout: 'pipe',
       stderr: 'pipe',
       timeout: 60000,
@@ -100,12 +117,17 @@ export default defineConfig({
     {
       command: 'npm --prefix frontend run dev',
       url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
+      // Never reuse (Equoria-8w3ax.2): a dev frontend already on 3000 proxies
+      // /api to the dev backend on 3001 and the game database. Stop it first.
+      reuseExistingServer: false,
       stdout: 'pipe',
       stderr: 'pipe',
       timeout: 60000,
       env: {
         ...process.env,
+        // Equoria-8w3ax.2: every API call goes through the Vite proxy to the
+        // E2E backend, even if frontend/.env names another API origin.
+        VITE_API_URL: '',
         // Story 21S-2 (finalized): VITE_E2E_TEST removed. The frontend now
         // fetches a real CSRF token for every mutation — Playwright exercises
         // the full CSRF round trip under NODE_ENV=beta just like production.

@@ -2,28 +2,17 @@ import { chromium, expect, type FullConfig } from '@playwright/test';
 import { startSessionKeepAlive } from './helpers/sessionKeepAlive';
 import { skipGuidedTourAfterWizard } from './helpers/guidedTour';
 import { confirmEmailInBrowser } from './helpers/emailConfirmation';
-import { fileURLToPath } from 'url';
-import path from 'path';
+import { assertE2eTestDatabase, loadE2ePrisma } from './helpers/e2eTestStack.mjs';
 
-// ── Prisma client resolution (mirrors tests/e2e/fixtures/coatGenotypeHorses.ts) ──
+// ── Prisma client ──
 // The conformation-entry seed (Equoria-6yu1m) writes directly through Prisma
 // because the public show/health/assignment shapes the entry flow needs
 // (early runDate, fresh feed/vet dates) are not
-// expressible through the HTTP API alone. Resolve prismaClient.mjs from the
-// worktree root so this works regardless of Playwright's launch cwd.
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// global-setup.ts lives at tests/e2e/ → two levels up is the worktree root.
-const projectRoot = path.resolve(__dirname, '..', '..');
-const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
-
+// expressible through the HTTP API alone. loadE2ePrisma() hands out the shared
+// client only after DATABASE_URL passed the test-database guard
+// (Equoria-8w3ax.2), so these writes can never reach the owner's game.
 async function getPrisma(): Promise<Record<string, unknown>> {
-  const mod = await import(/* @vite-ignore */ prismaClientPath);
-  const client = mod.default;
-  if (!client) {
-    throw new Error('Could not resolve prisma client from packages/database/prismaClient.mjs');
-  }
-  return client;
+  return (await loadE2ePrisma()) as Record<string, unknown>;
 }
 
 // Story 21-8 AC1 (Equoria-4m96): credentials are no longer written to
@@ -45,6 +34,10 @@ export function stopGlobalSessionKeepAlive(): void {
 }
 
 async function globalSetup(config: FullConfig) {
+  // Equoria-8w3ax.2: before the first registration or show is created, refuse
+  // any DATABASE_URL that is not a local test database. playwright.config.ts
+  // already checked it; this keeps the setup safe under any other config.
+  assertE2eTestDatabase(process.env);
   const { baseURL, storageState } = config.projects[0].use;
   const browser = await chromium.launch();
   const page = await browser.newPage();

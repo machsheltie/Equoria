@@ -2,6 +2,8 @@
 // EXCEPTION (Story 21S-3, 2026-04-17): added NODE_ENV=beta branch for
 // production-parity Playwright runs. The live beta profile and its tests now
 // own this behavior; the dated sprint proposal is archived.
+// EXCEPTION (Equoria-8w3ax.2, 2026-11-20): the beta and beta-readiness test
+// profiles refuse the local game database (utils/testProfileDatabasePolicy.mjs).
 
 import path from 'path';
 import fs from 'fs';
@@ -11,6 +13,7 @@ import {
   getSecretValidationError,
   isDeployableEnvironment,
 } from '../utils/runtimeSecretPolicy.mjs';
+import { testProfileDatabaseRefusal } from '../utils/testProfileDatabasePolicy.mjs';
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -63,6 +66,14 @@ if (isDeployableEnvironment(nodeEnv)) {
       problematicVars.push(`${secretName} (${secretError})`);
     }
   }
+}
+
+const testProfileRefusal = testProfileDatabaseRefusal({
+  nodeEnv,
+  databaseUrl: process.env.DATABASE_URL,
+});
+if (testProfileRefusal) {
+  problematicVars.push(`DATABASE_URL (${testProfileRefusal})`);
 }
 
 // Always check for missing/problematic vars, regardless of NODE_ENV

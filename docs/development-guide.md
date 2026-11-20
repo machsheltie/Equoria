@@ -79,6 +79,12 @@ npm run test:db:setup
 
 Every backend Jest run refuses to start, before any test touches the database, unless its database is local (localhost, 127.0.0.1 or ::1), named `*_test` or a sharded-gate lane (`equoria_lane_*`), and not the database `backend/.env` uses. Remote hosts (Supabase, Railway) are always refused. The guard is `backend/tests/config/testDatabaseGuard.mjs`; it runs in both Jest global setups and in the shared test environment, so CI (`equoria_test` on its localhost service) and the gate's lanes pass through it too.
 
+Playwright uses the same database and the same guard (Equoria-8w3ax.2). Both Playwright configs refuse to load, before any server starts or any test writes, unless `DATABASE_URL` passes it; the E2E global setup checks again before its direct Prisma writes (`tests/e2e/helpers/e2eTestStack.mjs`). Playwright starts its own servers and never reuses one that is already running:
+
+- On the laptop, `npm run test:e2e` runs its backend on port **3101**, so your dev backend can stay up on 3001. The E2E frontend still needs port 3000, so stop the dev frontend first; if 3000 (or 3101) is taken, Playwright stops with "already used" rather than testing against a server it did not start. CI keeps port 3001. `EQUORIA_BACKEND_PORT` overrides the backend port; the Vite proxy and the specs that call the backend directly follow it.
+- `npm run test:e2e:beta-readiness` still runs its backend on 3001, so stop the dev backend for it.
+- A server started with `NODE_ENV=beta` or `beta-readiness` refuses to start on the database `backend/.env` names (`backend/utils/testProfileDatabasePolicy.mjs`). If your ignored `backend/env.beta` still names `equoria`, change its `DATABASE_URL` to `equoria_test`; Playwright runs are unaffected either way, because the backend they start inherits the test `DATABASE_URL`.
+
 Local runs also check free memory first. `test:backend:targeted` needs 1536 MB free and `test:backend:full` 3072 MB (checked once the gate admits the run). Below that a run waits up to 60 seconds for memory to come back, then refuses with a message instead of starting. `EQUORIA_TEST_MIN_FREE_MB` and `EQUORIA_TEST_MEMORY_WAIT_SECONDS` override the limits (`backend/scripts/test-memory-preflight.mjs`). Worker and heap limits are unchanged. After an interrupted run, `npm --prefix backend run test:reap` stops orphaned Jest workers.
 
 ## Source ownership

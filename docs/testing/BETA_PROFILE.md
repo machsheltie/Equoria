@@ -2,7 +2,7 @@
 
 **Status:** Active operational reference
 
-**Updated:** 2026-10-23
+**Updated:** 2026-11-20
 
 Equoria has two Playwright server profiles. They share real authentication,
 CSRF, ownership, and database behavior, but they serve different test lanes and
@@ -44,6 +44,14 @@ Current precedence is:
    - `beta` loads ignored `backend/env.beta`, falling back to
      `backend/env.test` only when `env.beta` is absent;
    - `beta-readiness` loads ignored `backend/env.beta-readiness`.
+4. Both Playwright configs refuse to load unless the resulting `DATABASE_URL`
+   is a local test database (`tests/e2e/helpers/e2eTestStack.mjs`, the
+   backend test guard's rules), and a `beta` or `beta-readiness` server
+   refuses the database `backend/.env` (the local game) names
+   (`backend/utils/testProfileDatabasePolicy.mjs`, Equoria-8w3ax.2).
+5. Neither config reuses a running backend. The broad suite's backend listens
+   on 3101 locally and 3001 in CI (`EQUORIA_BACKEND_PORT` overrides), and its
+   frontend on 3000 is never reused either; the readiness backend is on 3001.
 
 There is no automatic `.env.beta.local` loader. Do not create one expecting it
 to be read. For persistent local configuration, copy the safe example to the

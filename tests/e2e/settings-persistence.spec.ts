@@ -18,15 +18,16 @@
  * - No bypass headers (x-test-bypass-auth, x-test-skip-csrf, x-test-user, …) // doctrine-allow: bypass-header-literal
  * - No test.skip on any step including the reload-verify step
  * - Real authenticated session (register/login via API)
- * - Backend at http://localhost:3001, frontend at http://localhost:3000
+ * - Backend at e2eBackendUrl() (3101 locally, 3001 in CI), frontend at http://localhost:3000
  */
 
 import { test, expect } from '@playwright/test';
 import { randomBytes } from 'crypto';
 import { skipGuidedTourAfterWizard } from './helpers/guidedTour';
 import { confirmEmailViaApi } from './helpers/emailConfirmation';
+import { e2eBackendUrl } from './helpers/e2eTestStack.mjs';
 
-const BACKEND = 'http://localhost:3001';
+const BACKEND = e2eBackendUrl();
 const FRONTEND = 'http://localhost:3000';
 const suitePrefix = 'setpref_e2e';
 

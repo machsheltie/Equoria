@@ -7,15 +7,16 @@
  * Uses only production-path network calls. No bypass headers, no test.skip,
  * no route interception for auth — 21R doctrine compliant.
  *
- * Backend is at http://localhost:3001 (NODE_ENV=beta webServer).
+ * Backend is the NODE_ENV=beta webServer at e2eBackendUrl() (3101 locally, 3001 in CI).
  * Frontend is at http://localhost:3000.
  */
 
 import { test, expect } from '@playwright/test';
 import { randomBytes } from 'crypto';
 import { confirmEmailViaApi } from './helpers/emailConfirmation';
+import { e2eBackendUrl } from './helpers/e2eTestStack.mjs';
 
-const BACKEND = 'http://localhost:3001';
+const BACKEND = e2eBackendUrl();
 const suitePrefix = 'seslife_e2e';
 
 test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
