@@ -63,7 +63,7 @@ manual migrations, source modules, or additional Markdown authorities.
 | `packages/database/` | Prisma schema/client, database lifecycle, and canonical migrations                                         | Shared database runtime and migrations created through the Prisma-owned path            | A second migration hierarchy, feature UI, or copied schema documentation                     |
 | `tests/`             | Configured cross-package integration tests, root sentinels, helpers, and Playwright E2E                    | Verification that genuinely spans owners or is selected by root test configuration      | Product code, generated screenshots/reports, or a duplicate package-local test suite         |
 | `scripts/`           | Repository-wide doctrine, preflight, audit, session, and evidence automation                               | Reusable automation serving more than one package or a root workflow                    | One-off repair scripts, product runtime code, test-result dumps, or documentation souvenirs  |
-| `docs/`              | Approved durable contracts, decisions, runbooks, legal text, and compatibility stubs                       | Only document classes admitted by `DOCUMENTATION.md` and indexed by `docs/README.md`    | Status mirrors, generated inventories, speculative plans, source copies, or active code/data |
+| `docs/`              | Approved durable contracts, decisions, runbooks, and legal text                                            | Only document classes admitted by `DOCUMENTATION.md` and indexed by `docs/README.md`    | Status mirrors, generated inventories, speculative plans, source copies, or active code/data |
 
 ### Backend routing
 

@@ -76,8 +76,7 @@ task response—not a new Markdown souvenir.
 | `docs/audits/`                | The exact current findings path required by `AGENTS.md`, only while an audit is active                                       | permanent status reports or parallel backlogs                               |
 | `docs/testing/`               | Narrow, cross-config operational test-profile references                                                                     | testing tutorials, coverage snapshots, copied commands                      |
 | `docs/legal/`                 | Owner-approved legal text                                                                                                    | engineering policy or speculative compliance claims                         |
-| `docs/product/`               | Compatibility stubs required by executable tests                                                                             | active product direction or a second PRD set                                |
-| `docs/*.md`                   | Cross-cutting operational references and test-required compatibility paths listed in `docs/README.md`                        | feature-local detail or uncategorized leftovers                             |
+| `docs/*.md`                   | Cross-cutting operational references listed in `docs/README.md`                                                              | feature-local detail or uncategorized leftovers                             |
 | `docs/.archive/`              | Retired originals awaiting external legacy extraction                                                                        | active context, fallback specifications, or templates                       |
 
 Do not create a new top-level documentation folder without updating this map,

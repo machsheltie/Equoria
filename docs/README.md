@@ -27,7 +27,6 @@ context.
 | [`testing/`](testing/)                             | Cross-config Playwright beta-profile reference                                                                                                                                                                                                                                             |
 | [`audits/`](audits/)                               | Reserved current findings location required by `AGENTS.md`; not ordinary context                                                                                                                                                                                                           |
 | [`legal/`](legal/)                                 | Legal text                                                                                                                                                                                                                                                                                 |
-| [`product/`](product/)                             | Test-required compatibility stubs; never product authority                                                                                                                                                                                                                                 |
 | [`.archive/`](.archive/)                           | Retired originals awaiting owner extraction; never active context                                                                                                                                                                                                                          |
 
 ## Cross-cutting operational references
@@ -44,19 +43,6 @@ context.
 `beta-signoff.yaml` is an executable-process record maintained by the beta
 readiness workflow. It is not a product roadmap or a standing claim that beta
 is ready.
-
-## Compatibility-only paths
-
-These files remain because executable doc-drift tests read their exact paths:
-
-- `architecture.md`
-- `project_context.md`
-- `product/PRD-02-Core-Features.md`
-- `product/PRD-08-Security-Architecture.md`
-
-They are intentionally tiny and non-authoritative. Do not load them for
-ordinary work, expand them into replacement documents, or infer that their old
-titles represent active document categories.
 
 ## What no longer lives here
 
