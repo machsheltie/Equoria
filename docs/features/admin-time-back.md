@@ -243,6 +243,12 @@ minutes. A hold must therefore be durable:
   hold or apply is refused (409 `jobsRunning`) and nothing changes. Undo takes
   the same barrier first (it does not need the jobs held), so no job body runs
   while it restores (Codex r2, 2026-11-19).
+- The show settlements that are not nightly jobs take the same barrier in
+  shared mode before any row lock (Equoria-puj1e.5.3): the admin's run of every
+  due show (`POST /api/v1/shows/execute`) for its whole run, and the Owner's
+  Run Show and test run of a quarantined show. None of them settles a show
+  while apply, undo or a hold change holds the barrier, and those wait for a
+  settlement already running. They do not read the hold.
 - Hold and release are admin actions recorded in the staff action log.
 - Both registries write `CronRunLog` rows. The admin manual triggers ("deliver
   overdue foals now", the owner's "age every horse now" and the trait-evaluation

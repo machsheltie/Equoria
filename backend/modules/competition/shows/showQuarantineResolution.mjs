@@ -33,7 +33,11 @@ import { createHash } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import logger from '../../../utils/logger.mjs';
-import { recordStaffActionTx, recordStaffFailure } from '../../staff/index.mjs';
+import {
+  recordStaffActionTx,
+  recordStaffFailure,
+  takeJobBarrierSharedTx,
+} from '../../staff/index.mjs';
 import { systemAccountBurn, systemAccountShowEscrow } from '../../economy/index.mjs';
 import {
   lockUserRowsTx,
@@ -222,6 +226,10 @@ async function settleQuarantinedInTx(
   showId,
   { expectedDigest, now, statGainRng, afterSettle },
 ) {
+  // The nightly-job barrier, shared, before any row lock (Equoria-puj1e.5.3): a
+  // time-back apply, undo or hold change holding it is waited out, and waits for
+  // this settlement in turn, so the show is never settled while apply moves dates.
+  await takeJobBarrierSharedTx(tx);
   const live = await loadQuarantinedShow(tx, showId);
   const plan = planQuarantinedSettlement(live);
   if (!plan.ordering) {
@@ -235,7 +243,7 @@ async function settleQuarantinedInTx(
   if (expectedDigest !== undefined && digest !== expectedDigest) {
     throw refusal('The show changed since its test run. Test run it again.', 409, 'testRunStale');
   }
-  // Lock order (Equoria-mwjst.2): the User rows it pays, ascending, FIRST, as
+  // Lock order (Equoria-mwjst.2): after the barrier, the User rows it pays, ascending, FIRST, as
   // the entry, the ridden payout and the conformation settlement take theirs;
   // then the show (its claim), then the horses, then the system accounts, and
   // the Monthly totals last of all (Equoria-mwjst.4).

@@ -15,8 +15,33 @@ import { authenticateToken, requireRole, requireStaffCheckin } from '../../../mi
 import { csrfProtection } from '../../../middleware/csrf.mjs';
 import { createShow, getShows, enterShow, getHostingStatus } from './showController.mjs';
 import { executeClosedShows } from './showExecutionService.mjs';
+import { withAdmission } from '../../../utils/cronLock.mjs';
+import { takeJobBarrierSharedTx } from '../../staff/index.mjs';
 
 const router = express.Router();
+
+/**
+ * The admin's run of every due show settles them as the nightly show job does,
+ * so it runs the way that job runs (Equoria-puj1e.5.3): inside a transaction
+ * that holds the nightly-job barrier in shared mode for the whole run, taken
+ * before any row lock. A time-back apply, undo or hold change that holds the
+ * barrier is waited out first (the shows due are read after it, on the dates it
+ * left), and waits for this run in turn. Without it a conformation settlement
+ * could claim a show and wait for a horse the apply held while the apply waited
+ * to move that show's dates: a deadlock. It does not read the hold.
+ */
+async function executeClosedShowsUnderBarrier(req, res, next) {
+  try {
+    await withAdmission(() => executeClosedShows(req, res), {
+      admit: async tx => {
+        await takeJobBarrierSharedTx(tx);
+        return true;
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 
 // Static routes before :id parameterised routes
 router.post('/create', createShow);
@@ -47,7 +72,7 @@ router.post(
   requireRole('admin'),
   requireStaffCheckin('admin'),
   csrfProtection,
-  executeClosedShows,
+  executeClosedShowsUnderBarrier,
 );
 
 router.get('/hosting', getHostingStatus);

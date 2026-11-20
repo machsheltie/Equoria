@@ -19,6 +19,15 @@
  *   - while apply holds the lock, no job body can be running or start.
  * The wait is bounded (holdLockWaitMs): past it the hold or apply is refused
  * with 'jobsRunning' and nothing changes.
+ *
+ * The show settlements that are not nightly jobs take the same barrier in
+ * shared mode before any row lock (takeJobBarrierSharedTx, Equoria-puj1e.5.3):
+ * the admin's run of every due show (POST /api/v1/shows/execute) for its whole
+ * run, as the nightly show job does, and the Owner's Run Show and test run of a
+ * quarantined show in their own transaction. So none of them settles a show
+ * while apply, undo or a hold change holds the barrier (apply moves open shows'
+ * dates), and those wait for a settlement already running. They do not read
+ * the hold: only the nightly jobs stop while it is on.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -71,9 +80,20 @@ async function isJobsHeld(client = prisma) {
  * Several jobs run side by side; only hold, release and apply exclude them.
  */
 export async function admitJobRunTx(tx) {
+  await takeJobBarrierSharedTx(tx);
+  return !(await isJobsHeld(tx));
+}
+
+/**
+ * Take the nightly-job barrier in shared mode on `tx`, held until that
+ * transaction ends: waits while hold, release, apply or undo holds it, and
+ * keeps them out until `tx` ends. Must be the transaction's first lock. For a
+ * show settlement that is not a nightly job (see the header); it does not read
+ * the hold.
+ */
+export async function takeJobBarrierSharedTx(tx) {
   // $executeRaw: pg_advisory_xact_lock_shared returns void, which $queryRaw cannot read.
   await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(${barrierKey}::bigint)`;
-  return !(await isJobsHeld(tx));
 }
 
 const isLockTimeout = error =>
