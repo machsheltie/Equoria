@@ -108,8 +108,9 @@ export async function settleEntryInTx(
 ) {
   const { horseId, userId, horseName, placement, riderId } = staged;
 
-  // Lock order (Equoria-ifnhc): the User rows it credits FIRST, as the entry does; after the
-  // escrow account, a winner entering another paid show deadlocked with this payout.
+  // Lock order (Equoria-ifnhc, mwjst.3): the User rows it credits, the show row (the guarded
+  // decrement), the horse, the escrow account: the entry's order (User first) and the conformation
+  // settlement's and Run Show's (horse before escrow account). Each one reversed deadlocked.
   await lockUserRowsTx(tx, payoutUserIds(show, staged, unpaidPrizeShare));
 
   // Equoria-law5w (owner ruling q52): a placement is paid only from the
@@ -118,6 +119,9 @@ export async function settleEntryInTx(
   // coins and its result records prizeWon 0. Only Seasonal Events may pay
   // unescrowed prizes, and they do not exist yet (Equoria-286xv).
   const paid = await takeEscrowedPrizeInTx(tx, show, prize, staged);
+
+  // The horse now, not at its winnings update (Equoria-mwjst.3); FOR NO KEY UPDATE, as it takes.
+  await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horseId} FOR NO KEY UPDATE`;
 
   // Create competition result (row shape owned by competitionResultRecord)
   await tx.competitionResult.create({
@@ -137,10 +141,8 @@ export async function settleEntryInTx(
       where: { id: userId },
       data: { money: { increment: paid } },
     });
-    // Equoria-xal4m: the horse's lifetime winnings (Horse.totalEarnings, read
-    // by the earnings leaderboard and horse pages) grow with the same prize,
-    // in the same tx, so totalEarnings == SUM(prizeWon) of its results.
-    // User before Horse, as everywhere (lock order).
+    // Equoria-xal4m: the horse's lifetime winnings (Horse.totalEarnings, leaderboard and horse
+    // pages) grow with the same prize in the same tx: totalEarnings == SUM(prizeWon) of results.
     await tx.horse.update({
       where: { id: horseId },
       data: { totalEarnings: { increment: paid } },
