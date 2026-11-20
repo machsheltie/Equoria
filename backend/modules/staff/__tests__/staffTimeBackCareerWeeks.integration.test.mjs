@@ -27,7 +27,9 @@ import { incrementWeeklyCareerWeeks } from '../../trainers/index.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { checkFreshCode, requestFreshCode } from '../services/staffFreshCodeService.mjs';
 import { setJobHold } from '../services/jobHoldService.mjs';
-import { applyTimeBack, previewTimeBack, undoTimeBack } from '../services/timeBackService.mjs';
+import { applyTimeBack, parseWindow, previewTimeBack, undoTimeBack } from '../services/timeBackService.mjs';
+import { applyCounterRuleTx, jobCounterRules, windowParams } from '../services/timeBackRules.mjs';
+import { tickOneStaff } from '../../../utils/staffCareerTicks.mjs';
 import {
   checkIn,
   createUserFactory,
@@ -317,5 +319,142 @@ describe('Time-back gives back only the career weeks a weekly pass added', () =>
     const undone = await post(undoUrl, owner, { code: await freshCode(owner, device, 'timeBackUndo') }, device);
     expect(undone.status).toBe(200);
     expect((await post(`${staffApi}/jobs/release`, owner, {}, device)).status).toBe(200);
+  }, 120_000);
+});
+
+/**
+ * Equoria-puj1e.5.1: each recorded career week is given back at most once, and
+ * an undo adds back exactly the weeks its apply took. These outages lie two
+ * hours in the past (inside the career-week record), so a weekly pass run now
+ * falls after them, like the Monday pass after an outage was given back. The
+ * outage's week is recorded through the passes' own recorder at the outage's
+ * time (tickOneStaff with its instant); the later week by the real pass.
+ */
+describe('A recorded career week is given back at most once', () => {
+  const twoHours = 2 * 3_600_000;
+  const second = 1000;
+
+  /** A whole minute two hours ago, never before the career-week record starts. */
+  async function outageMinute() {
+    const [{ completeSince }] = await prisma.$queryRaw`
+      SELECT "completeSince" FROM "staff_career_tick_ledger" WHERE "id" = 1`;
+    return toMinute(Math.max(Date.now() - twoHours, completeSince.getTime() + minute)).getTime();
+  }
+
+  const wall = (from, to) => ({ start: easternWall(new Date(from)), end: easternWall(new Date(to)) });
+
+  it('undo after a later week, then a corrected re-apply: the outage week comes off once, never twice', async () => {
+    const player = await makeUser('user');
+    const groom = await makeGroom(player.id, 9);
+    const rider = await makeRider(player.id, 9);
+    const trainer = await makeTrainer(player.id, 9);
+    const P = await outageMinute();
+    const weeks = async () => [
+      ...(await weeksOf('groom', [groom])),
+      ...(await weeksOf('rider', [rider])),
+      ...(await weeksOf('trainer', [trainer])),
+    ];
+
+    // 1. Each ages a week inside the outage window W: 9 -> 10.
+    for (const [kind, row] of [
+      ['groom', groom],
+      ['rider', rider],
+      ['trainer', trainer],
+    ]) {
+      expect(await tickOneStaff(prisma, kind, row.id, new Date(P + 30 * second))).toBe(1);
+    }
+    expect(await weeks()).toEqual([10, 10, 10]);
+    const W = wall(P, P + 2 * minute);
+    const before = await previewTimeBack(W);
+    expect(before.unprovableCounters).toEqual([]);
+    for (const key of counterKeys) {
+      expect(before.fields[key]).toBeGreaterThanOrEqual(1);
+    }
+
+    // 2. T1 gives the outage week back (10 -> 9); the Owner releases the hold.
+    const t1 = await applyHeld(W);
+    expect(await weeks()).toEqual([9, 9, 9]);
+    await setJobHold({ actor: owner, held: false });
+    // Every week recorded in W is given back now: the preview counts none.
+    const given = await previewTimeBack(W);
+    for (const key of counterKeys) {
+      expect(given.fields[key]).toBe(0);
+    }
+
+    // 3. Monday's pass ages them again (9 -> 10), after the outage.
+    const pass = await passInWindow('groomCareerProgression', () => processWeeklyCareerProgression(player.id));
+    expect(pass.outcome.result.processed).toBe(1);
+    expect(await tickOneStaff(prisma, 'rider', rider.id)).toBe(1);
+    expect(await tickOneStaff(prisma, 'trainer', trainer.id)).toBe(1);
+    expect(await weeks()).toEqual([10, 10, 10]);
+
+    // 4. Undoing T1 adds back the week it took, keeping Monday's: 11.
+    const undone = await undoTimeBack({ actor: owner, timeBackId: t1.id, proof: await ownerProof('timeBackUndo') });
+    expect(await weeks()).toEqual([11, 11, 11]);
+    expect(undone.reverseSummary.skippedRows['Groom.careerWeeks'] ?? []).not.toContain(String(groom.id));
+
+    // 5. T2 over a corrected window overlapping W gives the outage week back
+    // once (11 -> 10), never a second time on top of T1's (old code: 10 -> 9).
+    const t2 = await applyHeld(wall(P, P + 3 * minute));
+    expect(await weeks()).toEqual([10, 10, 10]);
+    expect(await changesOf(t2.id, 'grooms', [groom])).toEqual([
+      { rowId: String(groom.id), oldValue: 11, newValue: 10 },
+    ]);
+
+    // Undoing T2 too leaves every week they really worked: 11.
+    await undoAndRelease(t2.id);
+    expect(await weeks()).toEqual([11, 11, 11]);
+  }, 120_000);
+
+  it('two overlapping give-backs never take the same recorded week twice', async () => {
+    const player = await makeUser('user');
+    const groom = await makeGroom(player.id, 8);
+    const P = await outageMinute();
+    // Two weeks recorded: one in both windows, one only in the second.
+    await tickOneStaff(prisma, 'groom', groom.id, new Date(P + 30 * second));
+    await tickOneStaff(prisma, 'groom', groom.id, new Date(P + 2 * minute + 30 * second));
+    expect(await weeksOf('groom', [groom])).toEqual([10]);
+    const A = wall(P, P + 2 * minute);
+    const B = wall(P + minute, P + 4 * minute);
+    const groomRule = jobCounterRules.find(r => r.key === 'Groom.careerWeeks');
+
+    // The service refuses an overlapping apply; this checks the counter rule
+    // itself, so a second time-back over the same weeks gives none of them back.
+    const giveBack = async input => {
+      const window = parseWindow(input);
+      const record = await prisma.timeBack.create({
+        data: {
+          windowStart: window.start,
+          windowEnd: window.end,
+          pauseSeconds: Math.round(window.pauseMs / 1000),
+          appliedById: owner.id,
+          summary: {},
+        },
+      });
+      await prisma.$transaction(tx => applyCounterRuleTx(tx, record.id, groomRule, windowParams(window)));
+      return record;
+    };
+
+    const first = await giveBack(A);
+    expect(await weeksOf('groom', [groom])).toEqual([9]);
+    expect((await previewTimeBack(A)).fields['Groom.careerWeeks']).toBe(0);
+
+    // B overlaps A: only the week A did not cover comes off.
+    const overlapping = await giveBack(B);
+    expect(await weeksOf('groom', [groom])).toEqual([8]);
+    expect(await changesOf(overlapping.id, 'grooms', [groom])).toEqual([
+      { rowId: String(groom.id), oldValue: 9, newValue: 8 },
+    ]);
+
+    // A again: both of its weeks are already given back.
+    const again = await giveBack(A);
+    expect(await weeksOf('groom', [groom])).toEqual([8]);
+    expect(await changesOf(again.id, 'grooms', [groom])).toEqual([]);
+
+    // Undoing each adds back exactly what it took, in any order.
+    for (const record of [first, again, overlapping]) {
+      await undoTimeBack({ actor: owner, timeBackId: record.id, proof: await ownerProof('timeBackUndo') });
+    }
+    expect(await weeksOf('groom', [groom])).toEqual([10]);
   }, 120_000);
 });

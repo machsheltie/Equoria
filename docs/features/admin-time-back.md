@@ -3,7 +3,7 @@
 - **Status:** Active contract — implemented 2026-11-18 (Equoria-puj1e.5); the
   newer clocks move too since owner ruling q383 (2026-11-18)
 - **Owner:** Project owner (Stacey)
-- **Last verified:** 2026-11-19 (career-week evidence, undo barrier)
+- **Last verified:** 2026-11-20 (each career week given back at most once)
 - **Load only when:** designing, planning, implementing, or reviewing the admin
   "give time back after an outage" operation, the durable nightly-job hold, or
   the overdue-only foaling control
@@ -128,6 +128,19 @@ staff member keeps its weeks (its retirement stands). The run log is no longer
 evidence: it is written after the pass commits, a failed insert is swallowed,
 and a rider/trainer pass that fails half-way logs `error`.
 
+Each recorded week is given back at most once (Equoria-puj1e.5.1, 2026-11-20).
+Apply marks every week it gives back with a `time_back_changes` row (table
+`staff_career_ticks`, the week's id, field `givenBack`); a week marked by a
+time-back that has not been undone is never given back again, by an overlapping
+window or after an undo and re-apply, and the preview counts only weeks not yet
+given back. Undo of a career count adds back exactly the weeks its apply took,
+to whatever the count holds now (weeks worked since stay), instead of restoring
+the old value only when the count is unchanged; once the time-back is undone its
+weeks may be given back by a later, corrected time-back. Example: a groom ages
+9 to 10 in the outage, T1 gives it back (9), Monday's pass ages it (10), undoing
+T1 gives 11, and a corrected T2 over the outage gives 10: one outage week off,
+never two.
+
 The record is complete from the moment its migration ran
 (`staff_career_tick_ledger.completeSince`; nothing before it was recorded). A
 window that starts earlier cannot prove which staff aged, so apply leaves all
@@ -251,8 +264,9 @@ minutes. A hold must therefore be durable:
    changes on the page.
 5. **Release jobs.**
 
-**Reverse** restores recorded old values only where the field still holds the
-value the time-back wrote; values changed by play since then are left alone and
+**Reverse** adds back the career weeks the time-back took (rule 3) and restores
+every other recorded old value only where the field still holds the value the
+time-back wrote; values changed by play since then are left alone and
 listed — every one the undo did not restore, including a value play set back to
 exactly its pre-time-back value (Codex r2 #8). It needs its own fresh emailed code, is recorded and linked to the
 original, and runs once.
@@ -297,7 +311,9 @@ Real database and real admin HTTP path (role, CSRF, MFA); no mocks.
 - Career weeks come back only where a pass recorded adding them: not for an
   inactive groom, a failed increment, or trainers after a half-failed pass; a
   pass with no run-log row still counts; a window before the record leaves the
-  counts alone and names them (`staffTimeBackCareerWeeks.integration.test.mjs`).
+  counts alone and names them; a week is never given back twice — not after an
+  undo, a later pass and a re-apply over an overlapping window, nor by two
+  overlapping give-backs (`staffTimeBackCareerWeeks.integration.test.mjs`).
 - A held job skips after a simulated restart, including `showScheduler` and
   Registry B jobs.
 - Overdue foaling foals only past-due mares; the fast-forward endpoint is gone.

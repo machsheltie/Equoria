@@ -174,6 +174,13 @@ export const movedFieldRules = Object.freeze(
  * increment; backend/utils/staffCareerTicks.mjs), never a week the pass did not
  * add (Codex r2 #2/#3). A retired staff member keeps its weeks: its retirement
  * stands, like every other irreversible effect.
+ *
+ * Each recorded week is given back at most once (Equoria-puj1e.5.1): apply
+ * marks every week it gives back with one time_back_changes row (table
+ * `staff_career_ticks`, the week's id, field `givenBack`), and a week marked by
+ * a time-back that has not been undone is never given back again. Undo adds
+ * back exactly the weeks its apply took (`counter: true` below), whatever the
+ * count is now, and its marks stop counting once the time-back is undone.
  */
 export const jobCounterRules = Object.freeze(
   [
@@ -226,6 +233,7 @@ export const restorableColumns = Object.freeze([
     column: r.column,
     id: 'id',
     type: 'int',
+    counter: true,
   })),
   ...derivedRules.map(r => ({ ...r, id: 'id' })),
 ]);
@@ -335,29 +343,72 @@ export async function countFieldRule(client, rule, w) {
   return n;
 }
 
+const tickTable = 'staff_career_ticks';
+const givenBackField = 'givenBack';
+
+/**
+ * The weeks one counter's pass recorded inside the window that no standing
+ * (not undone) time-back has given back yet: rows ("id", "staffId").
+ */
+function openTicks(rule, w) {
+  return Prisma.sql`
+    SELECT tk."id", tk."staffId" FROM "staff_career_ticks" tk
+    WHERE tk."staffKind" = ${rule.staffKind} AND tk."tickedAt" >= ${w.s} AND tk."tickedAt" < ${w.e}
+      AND NOT EXISTS (
+        SELECT 1 FROM "time_back_changes" g JOIN "time_backs" b ON b."id" = g."timeBackId"
+        WHERE g."tableName" = ${tickTable} AND g."field" = ${givenBackField}
+          AND g."rowId" = tk."id"::text AND b."reversedAt" IS NULL
+      )`;
+}
+
 /**
  * The rows of one counter that the weekly pass aged inside the window, with
- * how many weeks it added to each, as FROM-clause SQL over aliases t and k.
+ * how many of those weeks are not yet given back, as FROM-clause SQL over
+ * aliases t and k.
  */
 function tickedRows(rule, w) {
   return Prisma.sql`
     ${ident(rule.table)} t
     JOIN (
-      SELECT "staffId", count(*)::int AS weeks FROM "staff_career_ticks"
-      WHERE "staffKind" = ${rule.staffKind} AND "tickedAt" >= ${w.s} AND "tickedAt" < ${w.e}
-      GROUP BY "staffId"
+      SELECT o."staffId", count(*)::int AS weeks FROM (${openTicks(rule, w)}) o
+      GROUP BY o."staffId"
     ) k ON k."staffId" = t."id"
     WHERE t."retired" = false AND t.${ident(rule.column)} > 0`;
 }
 
-/** Give back the career weeks one counter's pass recorded inside the window. */
-export function applyCounterRuleTx(tx, timeBackId, rule, w) {
+/**
+ * Give back the career weeks one counter's pass recorded inside the window and
+ * not yet given back: one statement lowers each row, records the change, and
+ * marks every week it gave back as given back by this time-back.
+ */
+export async function applyCounterRuleTx(tx, timeBackId, rule, w) {
   const col = Prisma.sql`t.${ident(rule.column)}`;
-  const select = Prisma.sql`
-    SELECT t."id" AS rid, ${col} AS old, GREATEST(${col} - k.weeks, 0) AS nv
-    FROM ${tickedRows(rule, w)}
-    FOR UPDATE OF t`;
-  return updateAndRecordTx(tx, timeBackId, rule, select);
+  const column = ident(rule.column);
+  const [{ changed }] = await tx.$queryRaw`
+    WITH target AS (
+      SELECT t."id" AS rid, ${col} AS old, GREATEST(${col} - k.weeks, 0) AS nv
+      FROM ${tickedRows(rule, w)}
+      FOR UPDATE OF t
+    ),
+    upd AS (
+      UPDATE ${ident(rule.table)} u SET ${column} = target.nv
+      FROM target WHERE u."id" = target.rid
+      RETURNING u."id" AS rid, target.old AS old, u.${column} AS new
+    ),
+    counted AS (
+      INSERT INTO "time_back_changes" ("timeBackId", "tableName", "rowId", "field", "oldValue", "newValue")
+      SELECT ${timeBackId}, ${rule.table}, upd.rid::text, ${rule.column}, to_jsonb(upd.old), to_jsonb(upd.new)
+      FROM upd
+      RETURNING 1
+    ),
+    given AS (
+      INSERT INTO "time_back_changes" ("timeBackId", "tableName", "rowId", "field", "oldValue", "newValue")
+      SELECT ${timeBackId}, ${tickTable}, o."id"::text, ${givenBackField}, NULL, 'true'::jsonb
+      FROM (${openTicks(rule, w)}) o JOIN upd ON upd.rid = o."staffId"
+      RETURNING 1
+    )
+    SELECT (SELECT count(*)::int FROM counted) AS changed, (SELECT count(*)::int FROM given) AS marked`;
+  return { key: rule.key, changed };
 }
 
 /** How many counter rows giving the weeks back would change. */
@@ -418,8 +469,14 @@ export async function countHorsesUnretired(client, w) {
  * holds the value the time-back wrote. Returns restored and skipped counts and
  * up to 50 skipped row ids: every recorded row the undo did not restore (play
  * changed it since, even back to its old value, or it is gone).
+ *
+ * A career-week counter (`counter`) instead gets back exactly the weeks the
+ * apply took from it, added to whatever it holds now (weeks gained since stay).
  */
-export async function restoreColumnTx(tx, timeBackId, { table, column, id = 'id', type }) {
+export async function restoreColumnTx(tx, timeBackId, { table, column, id = 'id', type, counter }) {
+  if (counter) {
+    return restoreCounterTx(tx, timeBackId, { table, column });
+  }
   const cast = Prisma.raw(type);
   const pk = ident(id);
   const changes = Prisma.sql`
@@ -444,6 +501,34 @@ export async function restoreColumnTx(tx, timeBackId, { table, column, id = 'id'
       RETURNING u.${pk}::text AS "rowId"
     )
     SELECT (SELECT count(*)::int FROM upd) AS restored,
+      ARRAY(
+        SELECT c."rowId" FROM c WHERE c."rowId" NOT IN (SELECT "rowId" FROM upd)
+        ORDER BY c."rowId" LIMIT 50
+      ) AS "skippedRows"`;
+  return { restored, skipped: total - restored, skippedRows };
+}
+
+/**
+ * Undo one career-week counter: add back to each row the weeks this time-back
+ * took from it (recorded old minus new), never lowering a value and touching
+ * only rows the apply changed. A row that is gone, or that the addition would
+ * overflow, is skipped and listed. The weeks' given-back marks stop counting
+ * when the time-back is marked undone, so a later time-back may give them back.
+ */
+async function restoreCounterTx(tx, timeBackId, { table, column }) {
+  const col = ident(column);
+  const [{ total, restored, skippedRows }] = await tx.$queryRaw`
+    WITH c AS (
+      SELECT "rowId", (("oldValue" #>> '{}')::int - ("newValue" #>> '{}')::int)::bigint AS taken
+      FROM "time_back_changes"
+      WHERE "timeBackId" = ${timeBackId} AND "tableName" = ${table} AND "field" = ${column}
+    ),
+    upd AS (
+      UPDATE ${ident(table)} u SET ${col} = (u.${col} + c.taken)::int
+      FROM c WHERE u."id" = c."rowId"::int AND c.taken > 0 AND u.${col} + c.taken <= 2147483647
+      RETURNING u."id"::text AS "rowId"
+    )
+    SELECT (SELECT count(*)::int FROM c) AS total, (SELECT count(*)::int FROM upd) AS restored,
       ARRAY(
         SELECT c."rowId" FROM c WHERE c."rowId" NOT IN (SELECT "rowId" FROM upd)
         ORDER BY c."rowId" LIMIT 50

@@ -11,8 +11,10 @@
  * and the staff action log entry. Undo restores each recorded value only where
  * the field still holds what the time-back wrote, once, with its own fresh code,
  * and never while a job body runs. Career weeks are given back only where the
- * weekly pass recorded adding them inside the window; a window the record does
- * not cover leaves them alone and names them (unprovableCounters).
+ * weekly pass recorded adding them inside the window, each recorded week at most
+ * once while the time-back that gave it back stands; undo adds back exactly the
+ * weeks its apply took. A window the record does not cover leaves them alone and
+ * names them (unprovableCounters).
  *
  * Bank weeks fully inside the outage are given back as owed weekly claims
  * (owner ruling 2026-10-12, timeBackBankClaims.mjs); undo removes the unpaid ones.
@@ -338,7 +340,8 @@ export async function applyTimeBack({ actor, input, proof }, now = new Date()) {
 /**
  * Undo an applied time-back once. Restores each recorded old value only where
  * the field still holds the value the time-back wrote; the rest are left alone
- * and counted. Like apply, it first takes the nightly-job barrier exclusively,
+ * and counted. Career weeks are added back (the weeks the apply took), and the
+ * weeks it gave back may be given back again by a later time-back. Like apply, it first takes the nightly-job barrier exclusively,
  * so no job body runs while it restores (refused with 409 jobsRunning after the
  * bounded wait); it does not need the jobs held.
  * @param {{ actor: object, timeBackId: number, proof: object }} params
