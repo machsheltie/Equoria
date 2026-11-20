@@ -28,6 +28,10 @@
     {
       "regex": "^[a-z][a-z0-9_]*_seq$",
       "reason": "Postgres sequence names generated for serial columns (SQL layer)"
+    },
+    {
+      "regex": "^(EDNRB_O|PMEL_Z|TBX3_D|TRPM1_LP|RFWD3_PATN1|MBTPS2_BR1|STX17_G[23]|KIT_(SB1|TO|W[0-9]+(_E667D|_L674P|_W[0-9]+)?)|(MITF|PAX3)_SW[0-9]+|HPS5_EDXW[0-9]*|KIT_W|_SW)$",
+      "reason": "genetic variant and haplotype IDs in gene_allele notation (gene symbol + allele symbol, whose letter case carries dominance), kept like the locus keys by owner ruling q400 (2026-11-20)"
     }
   ],
   "tokens": {
