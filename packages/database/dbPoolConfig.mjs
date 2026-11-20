@@ -19,8 +19,8 @@ export const getPoolConfig = (env = process.env) => {
     // Test mode (Equoria-6s3fl): 3 per worker — the SAME size as production.
     // The previous value of 1 was chosen to keep chained/overlapping Jest runs
     // under a believed "~25 max_connections" ceiling. That ceiling was a stale
-    // Railway-era assumption that does NOT hold: the canonical test DB is local
-    // (postgresql://…@localhost:5432/equoria, max_connections=100), and CI runs
+    // Railway-era assumption that does NOT hold: the test DB is local
+    // (postgresql://…@localhost:5432/equoria_test, max_connections=100), and CI runs
     // each shard against its OWN isolated postgres:15 service (also
     // max_connections=100, never shared across shards). Worst realistic load —
     // 6 workers (50% of 12 cores) × 3 overlapping runs × 1 conn = 18 — was

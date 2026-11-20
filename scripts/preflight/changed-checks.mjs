@@ -57,6 +57,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parsePushRefs } from './candidate-state.mjs';
+import { assertFreeMemory } from '../../backend/scripts/test-memory-preflight.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const zeroSha = /^0+$/;
@@ -461,6 +462,27 @@ function runStep(label, argv, cwd, log) {
 const relTo = (pkg, files) => files.map((f) => f.slice(pkg.length + 1));
 const lintBatchSize = 100;
 
+/**
+ * True when no test runner is about to start (nothing to wait for) or free
+ * memory meets the targeted threshold; false, after logging why, when the
+ * machine is too low on memory to start Jest. Fails closed on a bad override.
+ */
+export async function memoryAllowsTests(
+  testFileCount,
+  { log, env = process.env, assertFree = assertFreeMemory }
+) {
+  if (testFileCount === 0) {
+    return true;
+  }
+  try {
+    await assertFree('targeted', { env, log });
+    return true;
+  } catch (error) {
+    log(`REFUSED: ${error.message}`);
+    return false;
+  }
+}
+
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const log = (msg) => console.error(`[pre-push] changed-checks: ${msg}`);
@@ -603,6 +625,20 @@ async function main() {
           log
         ) && ok;
     }
+  }
+
+  // Free-memory preflight (Equoria-8w3ax.1): the same check `npm run
+  // test:backend:targeted` runs before Jest, with the same thresholds and
+  // EQUORIA_TEST_MIN_FREE_MB / EQUORIA_TEST_MEMORY_WAIT_SECONDS overrides. The
+  // hook runs the targeted profile (serial, 1536 MB heap) plus two Vitest
+  // workers, never the sharded gate, so it uses the targeted threshold. Only
+  // when a test runner is about to start: a lint-only push does not wait.
+  if (
+    !(await memoryAllowsTests(chosen.backend.selected.length + chosen.frontend.selected.length, {
+      log,
+    }))
+  ) {
+    return 1;
   }
 
   // 2. Backend tests: serial, the targeted profile, real test database.

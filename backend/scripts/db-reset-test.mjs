@@ -4,7 +4,9 @@
  * Usage: npm run db:reset:test
  *
  * Reads DATABASE_URL from backend/.env.test, validates it is a localhost
- * connection (refuses to run against remote/production hosts), then:
+ * connection (refuses to run against remote/production hosts) and that the
+ * test-database guard (tests/config/testDatabaseGuard.mjs, Equoria-8w3ax)
+ * accepts it: a local database named *_test, never the game's database. Then:
  *   1. Terminates all active connections to the database
  *   2. Drops the database
  *   3. Creates a fresh database
@@ -12,6 +14,7 @@
  *
  * Idempotent: safe to run repeatedly. Run this when the local DB falls into
  * an inconsistent state (missing columns, schema drift vs migrations).
+ * It does NOT seed: run `npm run test:db:setup` afterwards for the seed data.
  *
  * Equoria-djb0
  */
@@ -24,6 +27,7 @@ import path from 'path';
 // `createRequire(import.meta.url) + require('pg')` bridge was a gratuitous
 // CJS dependency and violated ES_MODULES_REQUIREMENTS.md.
 import pg from 'pg';
+import { assertTestDatabaseUrl, readGameDatabaseUrls } from '../tests/config/testDatabaseGuard.mjs';
 const { Client } = pg;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -91,24 +95,31 @@ async function main() {
 
   // ---------------------------------------------------------------------------
   // Safety guard #2 (Equoria-c3kb6): hard-block the canonical DB name.
-  // The Equoria project policy (CLAUDE.md Rule 2 "REAL DB ONLY. No test
-  // database.") points .env.test at the CANONICAL local DB named "equoria".
-  // The localhost check above is therefore NOT sufficient — the canonical DB IS
-  // on localhost. This script must refuse to wipe the canonical "equoria"
-  // database under any circumstance; running it would destroy live game data.
-  // If you genuinely need to reset, rename the canonical DB or point
-  // DATABASE_URL at a SEPARATE test DB first.
+  // The game's local database is named "equoria" and is on localhost, so the
+  // localhost check above is NOT sufficient. This script must refuse to wipe
+  // it under any circumstance; running it would destroy live game data.
+  // Tests use the separate local database equoria_test (Equoria-8w3ax).
   // ---------------------------------------------------------------------------
   const canonicalDbNames = ['equoria'];
   if (canonicalDbNames.includes(dbName.toLowerCase())) {
     console.error(
       'ERROR: db:reset:test refuses to drop the canonical Equoria database ' +
         `("${dbName}").\n` +
-        'CLAUDE.md Rule 2 ("REAL DB ONLY") points .env.test at this DB; ' +
-        'dropping it would WIPE live user/horse/show/groom/transaction data.\n' +
-        'See Equoria-c3kb6 incident report. If you need a fresh DB, point ' +
-        'DATABASE_URL at a SEPARATE database first.',
+        'This is the game database; dropping it would WIPE live ' +
+        'user/horse/show/groom/transaction data.\n' +
+        'See Equoria-c3kb6 incident report. Point DATABASE_URL in ' +
+        'backend/.env.test at equoria_test first.',
     );
+    process.exit(1);
+  }
+
+  // Safety guard #2b (Equoria-8w3ax): the same guard every test run passes
+  // through. Only a local *_test (or disposable lane) database that is not the
+  // one backend/.env uses may be dropped here.
+  try {
+    assertTestDatabaseUrl(dbUrl, { gameUrls: readGameDatabaseUrls() });
+  } catch (error) {
+    console.error(`ERROR: db:reset:test ${error.message}`);
     process.exit(1);
   }
 
@@ -173,6 +184,7 @@ async function main() {
     await countClient.end();
 
     console.log(`\n✅ "${dbName}" reset complete — ${rows[0].n} migrations applied.`);
+    console.log('   No seed data yet: run `npm run test:db:setup` to add it.');
   } // end resetDatabase
 
   await resetDatabase();
