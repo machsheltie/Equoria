@@ -231,6 +231,10 @@ describe('Time-back gives back only the career weeks a weekly pass added', () =>
   it('a pass whose run-log row was never written is still given back', async () => {
     const player = await makeUser('user');
     const groom = await makeGroom(player.id, 6);
+    // The earlier scenario's groom pass may have started in this same minute,
+    // inside this window: remove this suite's earlier run logs so the only run
+    // the window could show is this pass's own.
+    await prisma.cronRunLog.deleteMany({ where: { id: { in: made.runLogs } } });
 
     const pass = await passInWindow('groomCareerProgression', () => processWeeklyCareerProgression(player.id));
     expect(pass.outcome.result.processed).toBe(1);
