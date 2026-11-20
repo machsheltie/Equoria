@@ -238,11 +238,13 @@ minutes. A hold must therefore be durable:
   taking its own lock, inside that lock's transaction, holding the nightly-job
   barrier lock in shared mode until its body ends. Hold, release and time-back
   apply take the barrier exclusively first, so a hold never commits while a job
-  body is mid-run, a job that has not yet read the hold waits and then skips,
-  and no job runs during apply. If a job is still running after 10 seconds, the
-  hold or apply is refused (409 `jobsRunning`) and nothing changes. Undo takes
-  the same barrier first (it does not need the jobs held), so no job body runs
-  while it restores (Codex r2, 2026-11-19).
+  body is mid-run, a job that starts after the hold commits skips, and no job
+  runs during apply. A job that starts while the hold, apply or undo is still
+  waiting runs normally, and the hold, apply or undo waits for it too (owner
+  q398, 2026-11-20; Equoria-puj1e.5.2). If jobs are still running after 10
+  seconds, the hold, apply or undo is refused (409 `jobsRunning`) and nothing
+  changes. Undo takes the same barrier first (it does not need the jobs held),
+  so no job body runs while it restores (Codex r2, 2026-11-19).
 - The show settlements that are not nightly jobs take the same barrier in
   shared mode before any row lock (Equoria-puj1e.5.3): the admin's run of every
   due show (`POST /api/v1/shows/execute`) for its whole run, and the Owner's

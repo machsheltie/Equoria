@@ -14,11 +14,16 @@
  * finished. Hold, release and time-back apply take the same lock EXCLUSIVELY
  * (lockJobHoldTx) before they read or change the hold. So:
  *   - a hold cannot commit while any job body is mid-run: it waits for it;
- *   - a job that has not yet read the hold waits for the hold to commit, then
- *     reads "held" and records 'skipped-held';
- *   - while apply holds the lock, no job body can be running or start.
- * The wait is bounded (holdLockWaitMs): past it the hold or apply is refused
- * with 'jobsRunning' and nothing changes.
+ *   - while hold, apply or undo is still WAITING, it is not in the lock queue:
+ *     it retries the lock without waiting (Postgres would queue every new
+ *     shared request behind a waiting exclusive one, each holding a pooled
+ *     connection; Equoria-puj1e.5.2). A job that starts during that wait is
+ *     admitted, runs normally, and the hold waits for it too (owner q398);
+ *   - once the hold has the lock, a job that has not yet read the hold waits
+ *     for the hold to commit, then reads "held" and records 'skipped-held';
+ *   - while apply or undo holds the lock, no job body can be running or start.
+ * The wait is bounded (holdLockWaitMs): past it the hold, apply or undo is
+ * refused with 'jobsRunning' and nothing changes.
  *
  * The show settlements that are not nightly jobs take the same barrier in
  * shared mode before any row lock (takeJobBarrierSharedTx, Equoria-puj1e.5.3):
@@ -38,8 +43,10 @@ import { recordStaffActionTx } from './staffActionLogService.mjs';
 const controlId = 1;
 const maxReasonLength = 500;
 const barrierKey = jobNameToLockKey('nightlyJobBarrier');
-/** How long hold, release or apply waits for a running job before refusing. */
+/** How long hold, release, apply or undo waits for running jobs before refusing. */
 const holdLockWaitMs = 10_000;
+/** How often a waiting hold, release, apply or undo tries the barrier again. */
+const barrierRetryMs = 50;
 /** setJobHold's transaction outlives the bounded wait (Prisma's default is 5s). */
 const holdTxTimeoutMs = holdLockWaitMs + 20_000;
 
@@ -96,30 +103,30 @@ export async function takeJobBarrierSharedTx(tx) {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(${barrierKey}::bigint)`;
 }
 
-const isLockTimeout = error =>
-  error?.meta?.code === '55P03' || /55P03|lock timeout/i.test(String(error?.message ?? ''));
-
 /**
  * Take the barrier exclusively, waiting at most holdLockWaitMs for running jobs
- * to finish. Must be the transaction's first lock. The transaction's own
- * lock_timeout is put back afterwards, so later statements wait as before.
+ * to finish. Must be the transaction's first lock. It only ever TRIES the lock:
+ * a blocking exclusive request would make every new shared admission queue
+ * behind it (Equoria-puj1e.5.2), so instead jobs that start meanwhile run, and
+ * this waits for them too, within the same bound.
  */
 async function excludeJobRunsTx(tx) {
-  const [{ previous }] = await tx.$queryRaw`SELECT current_setting('lock_timeout') AS previous`;
-  await tx.$queryRaw`SELECT set_config('lock_timeout', ${String(holdLockWaitMs)}, true)`;
-  try {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${barrierKey}::bigint)`;
-  } catch (error) {
-    if (isLockTimeout(error)) {
+  const deadline = Date.now() + holdLockWaitMs;
+  for (;;) {
+    const [{ taken }] =
+      await tx.$queryRaw`SELECT pg_try_advisory_xact_lock(${barrierKey}::bigint) AS taken`;
+    if (taken === true) {
+      return;
+    }
+    if (Date.now() >= deadline) {
       throw new JobHoldError(
         'A nightly job is running right now. Try again in a minute, once it finishes.',
         409,
         'jobsRunning',
       );
     }
-    throw error;
+    await new Promise(resolve => setTimeout(resolve, barrierRetryMs));
   }
-  await tx.$queryRaw`SELECT set_config('lock_timeout', ${previous}, true)`;
 }
 
 /**
