@@ -16,6 +16,7 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 import {
   staffApi,
   checkIn,
+  createTargetFactory,
   createUserFactory,
   post,
   preparePost,
@@ -31,6 +32,7 @@ const staffBellTypes = ['staffTicket', 'staffTicketUpdate'];
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stbellto');
+const { makePost, removeTargets } = createTargetFactory('StaffBellTo');
 
 let admin;
 let adminDevice;
@@ -47,6 +49,7 @@ beforeAll(async () => {
   cleanup.add(() => prisma.staffCheckinCode.deleteMany({ where: { userId: scope() } }), 'checkin codes');
   cleanup.add(() => prisma.staffTrustedDevice.deleteMany({ where: { userId: scope() } }), 'devices');
   cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: scope() } }), 'refresh tokens');
+  cleanup.add(() => removeTargets(), 'posts');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: scope() } }), 'users');
 
   startEmailCapture();
@@ -130,6 +133,54 @@ describe('A filer who is no longer a moderator', () => {
     expect([200, 201]).toContain(change.status);
     expect((await prisma.user.findUnique({ where: { id: mod.id } })).role).toBe('user');
     expect(await staffBells(mod.id)).toEqual([]);
+  });
+});
+
+// Equoria-eo4hx: a filing and a filer's reply tell every admin and the owner.
+// An admin account removed while that write runs (in CI, another suite's
+// fixture admin being cleaned up) must leave the ticket working: it is passed
+// over, not a foreign-key failure and a 500.
+describe('An admin account removed while the admins are being told', () => {
+  const removedWhileWaiting = async send => {
+    const leaving = await makeUser('admin');
+    const [res] = await raceUnderLock(tx => tx.user.delete({ where: { id: leaving.id } }), [send]);
+    return { res, leaving };
+  };
+
+  it('still files the ticket and tells the admins who remain', async () => {
+    const mod = await makeUser('moderator');
+    const modDevice = await checkIn(mod);
+    const subject = await makePost(await makeUser('user'));
+    const send = await preparePost(
+      TICKETS,
+      mod,
+      { targetType: 'post', targetId: String(subject.id), category: 'Needs the admin', note: `n ${uid()}` },
+      modDevice,
+    );
+
+    const { res, leaving } = await removedWhileWaiting(send);
+
+    expect(res.status).toBe(201);
+    const ticketId = res.body.ticket.id;
+    expect(await prisma.staffTicket.count({ where: { id: ticketId } })).toBe(1);
+    const told = await prisma.notification.findMany({ where: { userId: admin.id, type: 'staffTicket' } });
+    expect(told.filter(n => n.payload.ticketId === ticketId)).toHaveLength(1);
+    expect(await prisma.notification.count({ where: { userId: leaving.id } })).toBe(0);
+    expect(await prisma.emailOutbox.count({ where: { recipientId: leaving.id } })).toBe(0);
+  });
+
+  it("still saves the filer's reply and tells the admins who remain", async () => {
+    const { mod, ticket } = await filedTicket();
+    const modDevice = await checkIn(mod);
+    const send = await preparePost(`${TICKETS}/${ticket.id}/replies`, mod, { body: 'More detail.' }, modDevice);
+
+    const { res, leaving } = await removedWhileWaiting(send);
+
+    expect(res.status).toBe(201);
+    expect(await prisma.staffTicketReply.count({ where: { ticketId: ticket.id, authorId: mod.id } })).toBe(1);
+    const told = await prisma.notification.findMany({ where: { userId: admin.id, type: 'staffTicketUpdate' } });
+    expect(told.filter(n => n.payload.ticketId === ticket.id)).toHaveLength(1);
+    expect(await prisma.notification.count({ where: { userId: leaving.id } })).toBe(0);
   });
 });
 

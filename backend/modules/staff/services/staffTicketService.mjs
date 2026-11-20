@@ -63,6 +63,18 @@ async function filerStillStaff(tx, filedById) {
   return Boolean(row) && hasCapability(row.role, 'ticket.file');
 }
 
+/**
+ * Everyone who resolves tickets: admins and the owner (Equoria-4tleh). Their
+ * bells and emails point at these rows, and each insert would take this same
+ * FOR KEY SHARE lock on its own; taking it here, in id order, means an account
+ * deleted while the write runs is waited for and then left out, instead of
+ * failing the whole ticket on the foreign key (Equoria-eo4hx).
+ */
+const lockedTicketResolvers = tx => tx.$queryRaw`
+  SELECT id, email, "emailVerified" FROM "User"
+  WHERE role = ANY(${[...rolesWithCapability('ticket.resolve')]})
+  ORDER BY id FOR KEY SHARE`;
+
 /** Tickets a moderator did not file read as missing, not forbidden. */
 const visibleWhere = (staff, id) => (seesAll(staff) ? { id } : { id, ...ownedBy(staff) });
 
@@ -180,11 +192,7 @@ export async function fileTicket(staff, { targetType, targetId, targetUsername, 
     const created = await tx.staffTicket.create({
       data: { filedById: staff.id, targetType, targetId: resolvedId, category, note },
     });
-    // Everyone who resolves tickets: admins and the owner (Equoria-4tleh).
-    const adminRows = await tx.user.findMany({
-      where: { role: { in: [...rolesWithCapability('ticket.resolve')] } },
-      select: { id: true, email: true, emailVerified: true },
-    });
+    const adminRows = await lockedTicketResolvers(tx);
     const details = {
       ticketId: created.id,
       category,
@@ -294,12 +302,7 @@ export async function addReply(staff, id, body) {
     // filer (filedById null) has no one to tell.
     let recipients = [];
     if (ticket.filedById !== null && staff.id === ticket.filedById) {
-      recipients = (
-        await tx.user.findMany({
-          where: { role: { in: [...rolesWithCapability('ticket.resolve')] } },
-          select: { id: true },
-        })
-      ).map(row => row.id);
+      recipients = (await lockedTicketResolvers(tx)).map(row => row.id);
     } else if (await filerStillStaff(tx, ticket.filedById)) {
       recipients = [ticket.filedById];
     }
