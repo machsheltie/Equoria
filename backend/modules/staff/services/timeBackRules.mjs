@@ -111,6 +111,11 @@ const fieldRules = Object.freeze([
     key: 'FoalDevelopment.finalDayEvaluatedAt',
     table: 'foal_development',
     column: 'finalDayEvaluatedAt',
+    // Owner ruling q391 (2026-11-20, Equoria-oyayo): a foal that finished its
+    // last development day inside the outage is set back, so the nightly pass
+    // evaluates the final day again. That evaluation grants nothing (q98); it
+    // only marks the foal finished.
+    clearInWindow: true,
   },
   // Rule 2: pending deadlines.
   { key: 'Horse.trainingCooldown', table: 'horses', column: 'trainingCooldown' },
@@ -295,7 +300,9 @@ function fieldExpressions(rule, w) {
     newValue = Prisma.sql`CASE WHEN ${col} <= ${sd} THEN ${col} + ${w.days}::int ELSE ${ed} END`;
     condition = Prisma.sql`${col} IS NOT NULL AND ${col} < ${ed}`;
   } else if (rule.rule === 'pastEvent') {
-    newValue = Prisma.sql`CASE WHEN ${col} <= ${w.s} THEN ${col} + ${w.pause} ELSE ${w.e} END`;
+    // An event inside the window lands on its end, or is undone (clearInWindow).
+    const inWindow = rule.clearInWindow ? Prisma.sql`NULL` : w.e;
+    newValue = Prisma.sql`CASE WHEN ${col} <= ${w.s} THEN ${col} + ${w.pause} ELSE ${inWindow} END`;
     condition = Prisma.sql`${col} IS NOT NULL AND ${col} < ${w.e}`;
   } else {
     newValue = rule.weekly ? inGameWeeks(col, w.weeks) : Prisma.sql`${col} + ${w.pause}`;

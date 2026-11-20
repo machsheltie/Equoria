@@ -346,8 +346,10 @@ describe('Outage time-back (Owner, fresh code each time)', () => {
     // q383 clocks. Hunger and free-agent time are past events (rule 1).
     expect(f.hungerSince).toEqual(plus(foal.hungerSince, pauseMs));
     expect(el.hungerSince).toEqual(plus(elder.hungerSince, pauseMs));
-    // A final development day evaluated inside the window lands on its end.
-    expect((await reloadDev(foal.id)).finalDayEvaluatedAt).toEqual(E);
+    // Owner ruling q391 (2026-11-20, Equoria-oyayo): a final development day
+    // evaluated inside the window is set back, so the nightly pass runs it again
+    // (staffTimeBackFoalFinalDay covers the re-run).
+    expect((await reloadDev(foal.id)).finalDayEvaluatedAt).toBeNull();
     expect((await reloadDev(ancient.id)).finalDayEvaluatedAt).toEqual(plus(S, pauseMs - day));
     const [rk, rr] = await Promise.all([riderKept.id, riderRehired.id].map(reloadRider));
     expect(rk.freeAgentSince).toEqual(plus(riderKept.freeAgentSince, pauseMs));

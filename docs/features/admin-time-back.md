@@ -107,7 +107,10 @@ time back too, the same as every other game clock.**
 - Rule 1: `Horse.hungerSince` (hunger), `Rider.freeAgentSince` (time in the
   riders-for-hire pool), `RiderRetirementSchedule.noticeSentAt` (a rider's
   retirement notice), `FoalDevelopment.finalDayEvaluatedAt` (a foal's final
-  development day).
+  development day). Owner ruling q391 (2026-11-20): a foal that finished its
+  final development day inside the outage is set back (the value is cleared,
+  not moved to `E`), so the next nightly pass evaluates that day again; undo
+  puts the old value back unless the day has been evaluated again since.
 - Rule 2: `Rider.feeUnpaidSince` (a rider's unpaid pay week; like the groom's,
   moved in whole weeks only), `HallOfFameRound.startsAt` / `endsAt` (voting
   rounds and run-offs not yet decided, `closedAt` null).
