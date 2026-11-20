@@ -278,9 +278,13 @@ export async function lockUserRowTx(tx, userId) {
 }
 
 /**
- * Lock several players' User rows, in ascending id order (the order the
- * owner's Run Show takes them), so two settlements that pay the same players
- * never take them crosswise (Equoria-ifnhc). Null ids and repeats are skipped.
+ * Lock several players' User rows, in ascending id order, so two settlements
+ * that pay the same players never take them crosswise (Equoria-ifnhc). The
+ * ridden placement payout and the owner's Run Show both lock through this, each
+ * before its show row and horses (Run Show only since Equoria-mwjst.2: it used
+ * to claim the show first and lock the players FOR UPDATE, which deadlocked with
+ * a conformation settlement holding one of their horses). Null ids and repeats
+ * are skipped.
  *
  * @param {import('@prisma/client').Prisma.TransactionClient} tx
  * @param {Array<string|null|undefined>} userIds

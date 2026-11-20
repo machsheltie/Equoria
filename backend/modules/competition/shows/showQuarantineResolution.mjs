@@ -35,7 +35,11 @@ import AppError from '../../../errors/AppError.mjs';
 import logger from '../../../utils/logger.mjs';
 import { recordStaffActionTx, recordStaffFailure } from '../../staff/index.mjs';
 import { systemAccountBurn, systemAccountShowEscrow } from '../../economy/index.mjs';
-import { refundUnpaidPrizeShareInTx, settleShowFeeEscrowInTx } from './showEscrowTx.mjs';
+import {
+  lockUserRowsTx,
+  refundUnpaidPrizeShareInTx,
+  settleShowFeeEscrowInTx,
+} from './showEscrowTx.mjs';
 import { announceSettledEntry, settleEntryInTx } from './showExecutionService.mjs';
 import { scoreOrdering, scoringHorseSelect } from './showOrdering.mjs';
 import {
@@ -151,13 +155,15 @@ function settlementUserIds(show, plan) {
   return [...userIds].sort();
 }
 
-/** Lock every row the settlement writes or counts (lock order: User, Horse, then system accounts). */
-async function lockSettlementRows(tx, userIds, plan) {
-  for (const id of userIds) {
-    await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${id} FOR UPDATE`;
-  }
+/**
+ * Lock the horses and system accounts the settlement writes or counts, after
+ * its User rows and its show claim (Equoria-mwjst.2). FOR NO KEY UPDATE, the
+ * lock the payout's own horse updates take (they change no key column): a row
+ * that only references the horse, such as a conformation result, is not held up.
+ */
+async function lockHorseAndAccountRows(tx, plan) {
   for (const horseId of plan.pending.map(p => p.staged.horseId).sort((a, b) => a - b)) {
-    await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horseId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT "id" FROM "horses" WHERE "id" = ${horseId} FOR NO KEY UPDATE`;
   }
   for (const name of [systemAccountBurn, systemAccountShowEscrow].sort()) {
     await tx.$queryRaw`SELECT "name" FROM "system_accounts" WHERE "name" = ${name} FOR UPDATE`;
@@ -228,6 +234,16 @@ async function settleQuarantinedInTx(
   if (expectedDigest !== undefined && digest !== expectedDigest) {
     throw refusal('The show changed since its test run. Test run it again.', 409, 'testRunStale');
   }
+  // Lock order (Equoria-mwjst.2): the User rows it pays, ascending, FIRST, as
+  // the entry, the ridden payout and the conformation settlement take theirs;
+  // then the show (its claim), then the horses, then the system accounts.
+  // FOR NO KEY UPDATE, as an UPDATE of money takes: a conformation settlement
+  // holding one of these players' horses still gets the key-share lock its
+  // result rows take on the player. With FOR UPDATE, taken after the claim,
+  // Run Show held the player and waited for the horse while the settlement held
+  // the horse and waited for the player: a deadlock.
+  const userIds = settlementUserIds(live, plan);
+  await lockUserRowsTx(tx, userIds);
   // The guard: only one run can flip quarantined -> completed.
   const claimed = await tx.show.updateMany({
     where: { id: showId, status: 'quarantined' },
@@ -236,8 +252,7 @@ async function settleQuarantinedInTx(
   if (claimed.count !== 1) {
     throw refusal('This show was already run', 409, 'showNotQuarantined');
   }
-  const userIds = settlementUserIds(live, plan);
-  await lockSettlementRows(tx, userIds, plan);
+  await lockHorseAndAccountRows(tx, plan);
   const coinsBefore = await countCoins(tx, userIds, showId);
 
   // Equoria-law5w: what each placing was really paid (escrow only).
