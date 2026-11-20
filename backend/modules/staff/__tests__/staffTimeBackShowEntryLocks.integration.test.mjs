@@ -50,6 +50,8 @@ import {
   actionCodesFor,
   easternWall,
   freshCode,
+  gameWideSuiteLock,
+  gameWideSuiteWaitMs,
   restoreHold,
   snapshotHold,
   toMinute,
@@ -72,6 +74,10 @@ let device;
 let csrf;
 let barrierClient;
 const made = { grooms: [], assignments: [], logs: [], rounds: [] };
+
+const suiteLock = gameWideSuiteLock();
+// First: one game-wide suite at a time (gameWideSuiteLock).
+beforeAll(() => suiteLock.take(), gameWideSuiteWaitMs);
 
 beforeAll(async () => {
   holdBefore = await snapshotHold();
@@ -130,6 +136,9 @@ afterAll(async () => {
   }
   await cleanup.run();
 }, 120_000);
+
+// Last: the next game-wide suite may start.
+afterAll(() => suiteLock.release());
 
 beforeEach(() => startEmailCapture());
 
