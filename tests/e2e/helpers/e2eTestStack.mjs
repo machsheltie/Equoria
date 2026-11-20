@@ -19,6 +19,7 @@
  *
  * Plain .mjs (not .ts) so backend Jest can exercise it directly.
  */
+import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
@@ -70,4 +71,54 @@ export async function loadE2ePrisma() {
     throw new Error('Could not resolve the prisma client from packages/database/prismaClient.mjs');
   }
   return mod.default;
+}
+
+/** Port the E2E frontend (Vite dev server) uses. */
+export const e2eFrontendPort = '3000';
+
+/** True when something accepts connections on `port` (any address that answers localhost). */
+export function isPortInUse(port, { timeoutMs = 1000 } = {}) {
+  const attempt = (host) =>
+    new Promise((resolve) => {
+      const socket = net.connect({ port: Number(port), host });
+      const finish = (inUse) => {
+        socket.destroy();
+        resolve(inUse);
+      };
+      socket.setTimeout(timeoutMs, () => finish(false));
+      socket.once('connect', () => finish(true));
+      socket.once('error', () => finish(false));
+    });
+  return Promise.all([attempt('127.0.0.1'), attempt('::1')]).then((answers) =>
+    answers.some(Boolean)
+  );
+}
+
+/**
+ * The E2E ports that something already holds. Playwright starts its own
+ * backend and frontend and never reuses a running one, so a held port is
+ * somebody else's server (on a laptop usually the dev backend or dev frontend):
+ * the caller must refuse to start, never stop that process.
+ */
+export async function findBusyE2ePorts(env = process.env, options = {}) {
+  const wanted = [
+    { role: 'E2E backend', port: resolveE2eBackendPort(env) },
+    { role: 'E2E frontend', port: e2eFrontendPort },
+  ];
+  const busy = [];
+  for (const entry of wanted) {
+    if (await isPortInUse(entry.port, options)) {
+      busy.push(entry);
+    }
+  }
+  return busy;
+}
+
+/** The refusal printed when findBusyE2ePorts() returns anything. */
+export function describeBusyE2ePorts(busy) {
+  const list = busy.map(({ role, port }) => `port ${port} (${role})`).join(', ');
+  return (
+    `Cannot start the E2E stack: ${list} already in use by a process this run did not start. ` +
+    'Stop that process yourself (this script never kills it) or set EQUORIA_BACKEND_PORT to a free port.'
+  );
 }

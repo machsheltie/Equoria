@@ -20,15 +20,8 @@
  * runs inside the backend process.
  */
 
-import { fileURLToPath } from 'url';
-import path from 'path';
+import { loadE2ePrisma } from '../helpers/e2eTestStack.mjs';
 import { randomUUID } from 'crypto';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// tests/e2e/fixtures/ -> three levels up is the worktree root.
-const projectRoot = path.resolve(__dirname, '..', '..', '..');
-const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
 
 const dayMs = 24 * 60 * 60 * 1000;
 const showNamePrefix = 'E2E-PrizeHistory-';
@@ -46,8 +39,7 @@ type PrismaSubset = {
 // Dynamic import so this stays a plain TypeScript module without ambient
 // declarations for the backend's .mjs exports (the feedHistory pattern).
 async function getPrisma(): Promise<PrismaSubset> {
-  const mod = await import(/* @vite-ignore */ prismaClientPath);
-  const prisma = mod.default as Partial<PrismaSubset> | undefined;
+  const prisma = (await loadE2ePrisma()) as Partial<PrismaSubset> | undefined;
   if (!prisma?.show) {
     throw new Error('Could not resolve prisma from packages/database/prismaClient.mjs');
   }

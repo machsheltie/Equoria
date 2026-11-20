@@ -21,14 +21,7 @@
  * runs inside the backend process. This only touches the row it is given.
  */
 
-import { fileURLToPath } from 'url';
-import path from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// tests/e2e/fixtures/ -> three levels up is the worktree root.
-const projectRoot = path.resolve(__dirname, '..', '..', '..');
-const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
+import { loadE2ePrisma } from '../helpers/e2eTestStack.mjs';
 
 const dayMs = 24 * 60 * 60 * 1000;
 const backdateDays = 2;
@@ -44,8 +37,7 @@ type HorseDelegate = {
 // declarations for the backend's .mjs exports (the coatGenotypeHorses pattern).
 // The delegate is returned whole so updateMany keeps its Prisma `this`.
 async function getHorseDelegate(): Promise<HorseDelegate> {
-  const mod = await import(/* @vite-ignore */ prismaClientPath);
-  const horse = (mod.default as { horse?: HorseDelegate } | undefined)?.horse;
+  const horse = ((await loadE2ePrisma()) as { horse?: HorseDelegate } | undefined)?.horse;
   if (!horse || typeof horse.updateMany !== 'function') {
     throw new Error('Could not resolve prisma.horse from packages/database/prismaClient.mjs');
   }

@@ -25,6 +25,7 @@
 
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { assertE2eTestDatabase } from '../helpers/e2eTestStack.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +49,8 @@ type CreateFoalFromPregnancy = (_args: {
 // Dynamic import so this stays a plain TypeScript module without ambient
 // declarations for the backend's .mjs exports (the coatGenotypeHorses pattern).
 async function getCreateFoalFromPregnancy(): Promise<CreateFoalFromPregnancy> {
+  // The service uses the shared Prisma client directly; refuse a non-test database first.
+  assertE2eTestDatabase(process.env);
   const mod = await import(/* @vite-ignore */ foalingServicePath);
   const fn = (mod as { createFoalFromPregnancy?: CreateFoalFromPregnancy }).createFoalFromPregnancy;
   if (typeof fn !== 'function') {

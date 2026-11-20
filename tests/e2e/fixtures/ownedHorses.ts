@@ -100,6 +100,7 @@ import { expect } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import type { AuthedSession } from '../helpers/api';
+import { loadE2ePrisma } from '../helpers/e2eTestStack.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -152,7 +153,6 @@ type CreateHorseFromRequestFn = (
   _userId: string
 ) => Promise<{ status: number; body: { success: boolean; message?: string; data?: CreatedHorse } }>;
 
-const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
 const breedProfileLoaderPath = path.join(
   projectRoot,
   'backend',
@@ -174,16 +174,16 @@ let breedProfilesLoaded: Promise<number> | null = null;
  */
 function ensureBreedProfilesLoaded(): Promise<number> {
   breedProfilesLoaded ??= (async () => {
-    const prismaMod = await import(/* @vite-ignore */ prismaClientPath);
+    const prisma = await loadE2ePrisma();
     const loaderMod = await import(/* @vite-ignore */ breedProfileLoaderPath);
     const preload = (loaderMod as { preloadBreedProfiles?: PreloadBreedProfilesFn })
       .preloadBreedProfiles;
-    if (typeof preload !== 'function' || !prismaMod.default) {
+    if (typeof preload !== 'function' || !prisma) {
       throw new Error(
-        `Could not resolve preloadBreedProfiles from ${breedProfileLoaderPath} or prisma from ${prismaClientPath}`
+        `Could not resolve preloadBreedProfiles from ${breedProfileLoaderPath} or the test prisma client`
       );
     }
-    const count = await preload(prismaMod.default);
+    const count = await preload(prisma);
     if (count === 0) {
       throw new Error(
         'No breed profiles in the test database: run `npm run seed:breeds` after `npm run seed`.'

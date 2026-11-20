@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { assertE2eTestDatabase } from './tests/e2e/helpers/e2eTestStack.mjs';
+import { assertE2eTestDatabase, resolveE2eBackendPort } from './tests/e2e/helpers/e2eTestStack.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +12,12 @@ dotenv.config({ path: path.resolve(__dirname, 'backend', '.env.test') });
 // Equoria-8w3ax.2: refuse to run unless DATABASE_URL is a local test database,
 // never the owner's game database. The readiness backend below inherits it.
 assertE2eTestDatabase(process.env);
+
+// Equoria-8w3ax.3: the backend's port is the one playwright.config.ts uses: 3001 in
+// CI, 3101 on a laptop (never the dev backend's 3001), or EQUORIA_BACKEND_PORT.
+// Exported so the Vite dev server (its /api proxy reads it) targets the same backend.
+process.env.EQUORIA_BACKEND_PORT = resolveE2eBackendPort(process.env);
+const backendPort = process.env.EQUORIA_BACKEND_PORT;
 
 const emailCaptureFile = path.resolve(
   __dirname,
@@ -53,7 +59,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'node backend/server.mjs',
-      url: 'http://localhost:3001/health',
+      url: `http://localhost:${backendPort}/health`,
       // Always start fresh so EMAIL_CAPTURE_FILE reflects the current run.
       // Stale backends from earlier sessions can hold the old env and silently
       // drop email capture, causing latestCapturedEmail() to hang.
@@ -63,7 +69,7 @@ export default defineConfig({
       timeout: 90000,
       env: {
         ...process.env,
-        PORT: '3001',
+        PORT: backendPort,
         NODE_ENV: 'beta-readiness',
         EMAIL_CAPTURE_FILE: emailCaptureFile,
       },
@@ -71,7 +77,9 @@ export default defineConfig({
     {
       command: 'npm --prefix frontend run dev',
       url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
+      // Never reuse (Equoria-8w3ax.3): a dev frontend already on 3000 proxies /api to
+      // the dev backend and the game database.
+      reuseExistingServer: false,
       stdout: 'pipe',
       stderr: 'pipe',
       timeout: 90000,

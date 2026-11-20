@@ -13,14 +13,7 @@
  * runs inside the backend process.
  */
 
-import { fileURLToPath } from 'url';
-import path from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// tests/e2e/fixtures/ -> three levels up is the worktree root.
-const projectRoot = path.resolve(__dirname, '..', '..', '..');
-const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
+import { loadE2ePrisma } from '../helpers/e2eTestStack.mjs';
 
 type ClubTx = {
   clubElection: { deleteMany: (_a: { where: { clubId: number } }) => Promise<{ count: number }> };
@@ -31,8 +24,7 @@ type PrismaSubset = ClubTx & {
 };
 
 async function getPrisma(): Promise<PrismaSubset> {
-  const mod = await import(/* @vite-ignore */ prismaClientPath);
-  const prisma = mod.default as Partial<PrismaSubset> | undefined;
+  const prisma = (await loadE2ePrisma()) as Partial<PrismaSubset> | undefined;
   if (!prisma?.club || !prisma?.clubElection || !prisma?.$transaction) {
     throw new Error('Could not resolve prisma from packages/database/prismaClient.mjs');
   }

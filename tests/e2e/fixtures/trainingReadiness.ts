@@ -23,14 +23,7 @@
  * the one horse it is given.
  */
 
-import { fileURLToPath } from 'url';
-import path from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// tests/e2e/fixtures/ -> three levels up is the worktree root.
-const projectRoot = path.resolve(__dirname, '..', '..', '..');
-const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
+import { loadE2ePrisma } from '../helpers/e2eTestStack.mjs';
 
 type PrismaSubset = {
   horse: {
@@ -52,8 +45,7 @@ type PrismaSubset = {
 // declarations for the backend's .mjs exports (the feedHistory pattern). The
 // client is returned whole so each delegate keeps its Prisma `this`.
 async function getPrisma(): Promise<PrismaSubset> {
-  const mod = await import(/* @vite-ignore */ prismaClientPath);
-  const client = mod.default as PrismaSubset | undefined;
+  const client = (await loadE2ePrisma()) as PrismaSubset | undefined;
   if (!client?.horse || !client.trainer || !client.trainerAssignment) {
     throw new Error('Could not resolve prisma client from packages/database/prismaClient.mjs');
   }

@@ -166,23 +166,21 @@ run_gate "Module tests (backend/modules/*/__tests__)" bash -c "cd backend && npm
 # ---------------------------------------------------------------------------
 # GATE 5 — E2E beta readiness route coverage (production-parity)
 # ---------------------------------------------------------------------------
-# Pre-flight: kill any stale server on port 3001 so playwright.beta-readiness.config.ts
-# can start a fresh backend with the correct EMAIL_CAPTURE_FILE env var.
-# reuseExistingServer:false is intentional — a stale backend from a prior dev
-# session silently drops email capture, causing latestCapturedEmail() to hang.
+# Pre-flight: the readiness config starts its own backend (CI: port 3001; a laptop:
+# 3101, or EQUORIA_BACKEND_PORT — tests/e2e/helpers/e2eTestStack.mjs resolves it)
+# and its own frontend on 3000, and never reuses a running server
+# (reuseExistingServer:false: a stale backend silently drops email capture, so
+# latestCapturedEmail() hangs). On a laptop whatever already holds those ports is
+# the owner's dev backend or frontend, so this gate only LOOKS. It never kills a
+# process it did not start (Equoria-8w3ax.3); a held port fails the gate with a message.
 echo "${BOLD}[5/10] E2E Readiness Gate — Full Beta Route Coverage${RESET}"
-printf "  Pre-flight: clearing port 3001 for fresh backend start ...\n"
-if command -v lsof &>/dev/null; then
-  lsof -ti:3001 | xargs -r kill -9 2>/dev/null || true
-elif command -v fuser &>/dev/null; then
-  fuser -k 3001/tcp 2>/dev/null || true
-elif [[ "$OSTYPE" == "msys"* ]] || [[ "$OSTYPE" == "cygwin"* ]] || [[ -n "$WINDIR" ]]; then
-  # Windows/Git Bash: use netstat + taskkill
-  PID=$(netstat -ano 2>/dev/null | awk '/[: ]3001 .*LISTENING/ {print $5; exit}' | tr -d '[:space:]')
-  [[ -n "$PID" && "$PID" != "0" ]] && taskkill /F /PID "$PID" 2>/dev/null || true
+printf "  Pre-flight: checking the E2E ports are free ...\n"
+if PORT_REFUSAL=$(node tests/e2e/helpers/e2ePortPreflight.mjs 2>&1); then
+  run_gate "Playwright beta-readiness suite" bash -c "npm run test:e2e:beta-readiness 2>&1"
+else
+  printf "  %s\n" "$PORT_REFUSAL"
+  gate_fail "Playwright beta-readiness suite" "$PORT_REFUSAL"
 fi
-sleep 1
-run_gate "Playwright beta-readiness suite" bash -c "npm run test:e2e:beta-readiness 2>&1"
 
 # ---------------------------------------------------------------------------
 # GATE 6 — Security scan: no HTTP test-cleanup routes
@@ -225,9 +223,9 @@ fi
 echo "${BOLD}[8/10] Bypass Header Scan — E2E Tests + API Client${RESET}"
 printf "  Running: Check E2E specs and api-client for bypass headers ...\n"
 # Scan regex defined in scripts/lib/beta-readiness-scans.sh (single source).
-# Guard files (tests/e2e/readiness/support/prodParity.ts and
-# production-parity.guard.spec.ts) intentionally contain bypass-header
-# literals as data; each such line carries
+# The guard file tests/e2e/readiness/support/prodParity.ts intentionally contains
+# bypass-header literals as data (production-parity.guard.spec.ts holds none since
+# the q390 sweep); each such line carries
 # '// doctrine-allow: bypass-header-literal' and is filtered out by the
 # library function. Equoria-sgu8 (21R-CI-3).
 if equoria_scan_bypass_headers; then

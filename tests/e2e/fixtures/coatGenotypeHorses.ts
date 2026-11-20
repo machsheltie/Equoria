@@ -34,22 +34,15 @@
  *   });
  */
 
-import { fileURLToPath } from 'url';
-import path from 'path';
+import { loadE2ePrisma } from '../helpers/e2eTestStack.mjs';
 
 // Resolve the project's prismaClient.mjs from the worktree root so this
 // fixture works regardless of cwd at Playwright launch time.
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '..', '..', '..');
-const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
 
 // Dynamic import so this file remains a TypeScript module without an
 // ambient declaration for the .mjs default export.
 async function getPrisma(): Promise<Record<string, unknown>> {
-  const mod = await import(/* @vite-ignore */ prismaClientPath);
-  // prismaClient.mjs exports the PrismaClient instance as its default export.
-  const client = mod.default;
+  const client = await loadE2ePrisma();
   if (!client) {
     throw new Error('Could not resolve prisma client from packages/database/prismaClient.mjs');
   }
