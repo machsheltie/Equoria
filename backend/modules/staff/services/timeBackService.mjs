@@ -30,6 +30,8 @@ import { unruledFields } from './timeBackClassification.mjs';
 import {
   countOwedWeeklyClaims,
   grantOwedWeeklyClaimsTx,
+  lockApplyAccountsTx,
+  lockUndoAccountsTx,
   owedClaimsSummaryKey,
   removeOwedWeeklyClaimsTx,
 } from './timeBackBankClaims.mjs';
@@ -278,6 +280,9 @@ export async function applyTimeBack({ actor, input, proof }, now = new Date()) {
           'timeBackOverlaps',
         );
       }
+      // Every account it writes, the Owner's (code check) included, in one
+      // ascending-id pass before any other row (Equoria-puj1e.5.4).
+      await lockApplyAccountsTx(tx, actor.id, window);
       const owner = await consumeFreshCodeTx(tx, actor, proof);
       const horsesUnretired = await countHorsesUnretired(tx, w);
       const runs = await jobRunsInWindow(tx, window);
@@ -369,8 +374,10 @@ export async function undoTimeBack({ actor, timeBackId, proof }) {
           'timeBackAlreadyUndone',
         );
       }
+      // Accounts first, the Owner's included, in one ascending-id pass
+      // (Equoria-puj1e.5.4), in the order apply and a show entry take them.
+      await lockUndoAccountsTx(tx, actor.id, timeBackId);
       const owner = await consumeFreshCodeTx(tx, actor, proof);
-      // Accounts first, in the order apply and a show entry take them.
       const owed = await removeOwedWeeklyClaimsTx(tx, timeBackId);
       const restored = {};
       const skipped = {};

@@ -90,6 +90,54 @@ function owedCondition(week) {
 }
 
 /**
+ * Lock every account an apply or undo writes, the Owner's own included, in one
+ * ascending-id pass before any of them (Equoria-puj1e.5.4). The Owner's code
+ * check locks her account (lockAccountTx, FOR UPDATE); taken first, it held her
+ * while the grant waited for an owed player whose id sorts before hers, and a
+ * payment between the two held that player while it waited for her. The
+ * players are locked FOR NO KEY UPDATE, the Owner FOR UPDATE as her code check
+ * does, so the later code check and grant or removal only re-take locks already
+ * held. The owed set can only shrink while the apply waits (claims and ledger
+ * rows only remove players from it), so nothing outside this pass is locked later.
+ * @param {object} tx
+ * @param {string} ownerId
+ * @param {object} players SQL condition on alias u choosing the players
+ */
+async function lockAccountsInIdOrderTx(tx, ownerId, players) {
+  const side = cmp => Prisma.sql`
+    SELECT u."id" FROM "User" u
+    WHERE (${players}) AND u."id" COLLATE "C" ${Prisma.raw(cmp)} ${ownerId}
+    ${lockOrder} FOR NO KEY UPDATE OF u`;
+  await tx.$queryRaw(side('<'));
+  await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${ownerId} FOR UPDATE`;
+  await tx.$queryRaw(side('>'));
+}
+
+/** Apply: the Owner and every player owed a claim for a week inside `window`. */
+export function lockApplyAccountsTx(tx, ownerId, window) {
+  const weeks = bankWeeksInside(window.start, window.end);
+  const players =
+    weeks.length === 0
+      ? Prisma.sql`FALSE`
+      : Prisma.join(
+          weeks.map(week => Prisma.sql`(${owedCondition(week)})`),
+          ' OR ',
+        );
+  return lockAccountsInIdOrderTx(tx, ownerId, players);
+}
+
+/** Undo: the Owner and every player this time-back granted an owed claim. */
+export function lockUndoAccountsTx(tx, ownerId, timeBackId) {
+  return lockAccountsInIdOrderTx(
+    tx,
+    ownerId,
+    Prisma.sql`u."id" IN (
+      SELECT "rowId" FROM "time_back_changes"
+      WHERE "timeBackId" = ${timeBackId} AND "tableName" = 'User' AND "field" = ${owedWeeklyClaimsKey})`,
+  );
+}
+
+/**
  * How many owed claims an apply would grant now (preview; reads only).
  * @param {object} client prisma or a transaction
  * @param {{ start: Date, end: Date }} window

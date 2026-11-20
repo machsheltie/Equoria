@@ -61,7 +61,11 @@ column is a key), so a player write that only references a row — a show entry
 naming the horse — is not held up by it. They take player accounts first (owed
 bank claims), then horses, shows, then grooms: the order a show entry takes its
 account, its show and its groom, so the two never deadlock
-(Equoria-puj1e.5.2).
+(Equoria-puj1e.5.2). The accounts are locked in one pass in ascending id order,
+the order every payment between two players takes them, and the Owner's own
+account (locked for her emailed-code check) takes its place in that pass, so a
+payment between her and an owed player cannot deadlock with apply or undo
+(Equoria-puj1e.5.4).
 
 | Rule                   | Applies to                                          | New value                                                                |
 | ---------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
