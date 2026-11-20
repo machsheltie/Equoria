@@ -291,6 +291,11 @@ export async function applyTimeBack({ actor, input, proof }, now = new Date()) {
           summary: {},
         },
       });
+      // Lock order (Equoria-puj1e.5.2): player accounts first, then horses,
+      // shows, then grooms, as a show entry takes its account, then its show,
+      // then its groom. Granting the owed claims last held the shows while it
+      // waited for an account that an entry held while waiting for its show.
+      const owedClaims = await grantOwedWeeklyClaimsTx(tx, record.id, window);
       const fields = {};
       for (const rule of movedFieldRules) {
         fields[rule.key] = ruleIsIdle(rule, w)
@@ -305,7 +310,7 @@ export async function applyTimeBack({ actor, input, proof }, now = new Date()) {
       for (const derived of await applyDerivedRulesTx(tx, record.id, w)) {
         fields[derived.key] = derived.changed;
       }
-      fields[owedClaimsSummaryKey] = await grantOwedWeeklyClaimsTx(tx, record.id, window);
+      fields[owedClaimsSummaryKey] = owedClaims;
       const summary = {
         pauseDays: w.days,
         fields,
@@ -365,6 +370,8 @@ export async function undoTimeBack({ actor, timeBackId, proof }) {
         );
       }
       const owner = await consumeFreshCodeTx(tx, actor, proof);
+      // Accounts first, in the order apply and a show entry take them.
+      const owed = await removeOwedWeeklyClaimsTx(tx, timeBackId);
       const restored = {};
       const skipped = {};
       const skippedRows = {};
@@ -376,7 +383,6 @@ export async function undoTimeBack({ actor, timeBackId, proof }) {
           skippedRows[column.key] = outcome.skippedRows;
         }
       }
-      const owed = await removeOwedWeeklyClaimsTx(tx, timeBackId);
       restored[owedClaimsSummaryKey] = owed.restored;
       skipped[owedClaimsSummaryKey] = owed.skipped;
       const log = await recordStaffActionTx(tx, {

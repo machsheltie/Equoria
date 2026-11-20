@@ -3,7 +3,8 @@
 - **Status:** Active contract — implemented 2026-11-18 (Equoria-puj1e.5); the
   newer clocks move too since owner ruling q383 (2026-11-18)
 - **Owner:** Project owner (Stacey)
-- **Last verified:** 2026-11-20 (each career week given back at most once)
+- **Last verified:** 2026-11-20 (each career week given back at most once; apply
+  and reverse lock rows in a show entry's order)
 - **Load only when:** designing, planning, implementing, or reviewing the admin
   "give time back after an outage" operation, the durable nightly-job hold, or
   the overdue-only foaling control
@@ -54,6 +55,13 @@ Each row is updated by a database-side expression over its **current** value,
 so a player action committing during apply is never overwritten or shifted
 twice. Raw SQL must bind instants as UTC explicitly (non-UTC DB sessions shift
 raw `Date` binds — Equoria-7uphu).
+
+Apply and reverse lock the rows they change `FOR NO KEY UPDATE` (no moved
+column is a key), so a player write that only references a row — a show entry
+naming the horse — is not held up by it. They take player accounts first (owed
+bank claims), then horses, shows, then grooms: the order a show entry takes its
+account, its show and its groom, so the two never deadlock
+(Equoria-puj1e.5.2).
 
 | Rule                   | Applies to                                          | New value                                                                |
 | ---------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -306,6 +314,8 @@ Real database and real admin HTTP path (role, CSRF, MFA); no mocks.
 - Apply refuses without a hold, without MFA, for a non-admin, for an overlapping
   window, a future end, and a window over 30 days.
 - A player action during apply is neither overwritten nor double-shifted.
+- A show entry during apply over the same horse, show or account finishes and
+  so does the apply (`staffTimeBackShowEntryLocks.integration.test.mjs`).
 - Reverse restores, skips values changed by play, and cannot run twice; it
   waits for a running job body.
 - Career weeks come back only where a pass recorded adding them: not for an

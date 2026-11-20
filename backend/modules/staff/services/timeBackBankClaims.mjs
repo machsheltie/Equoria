@@ -104,7 +104,7 @@ export async function grantOwedWeeklyClaimsTx(tx, timeBackId, window) {
     const claim = JSON.stringify({ timeBackId, weekStart: week.start.toISOString() });
     granted += await tx.$executeRaw`
       WITH target AS (
-        SELECT u."id" AS rid FROM "User" u WHERE ${owedCondition(week)} FOR UPDATE OF u
+        SELECT u."id" AS rid FROM "User" u WHERE ${owedCondition(week)} FOR NO KEY UPDATE OF u
       ),
       upd AS (
         UPDATE "User" u
@@ -141,7 +141,7 @@ export async function removeOwedWeeklyClaimsTx(tx, timeBackId) {
   const [{ removed }] = await tx.$queryRaw`
     WITH target AS (
       SELECT u."id", ${owedList} AS owed FROM "User" u
-      WHERE u."id" IN (${recorded}) FOR UPDATE OF u
+      WHERE u."id" IN (${recorded}) FOR NO KEY UPDATE OF u
     ),
     cut AS (
       SELECT target."id",

@@ -9,6 +9,13 @@
  * writes its own value) and never shifted twice (a value already at or after
  * the window's end is left alone).
  *
+ * The row lock is FOR NO KEY UPDATE, the lock an UPDATE of these columns takes
+ * (no moved column is a key), never FOR UPDATE (Equoria-puj1e.5.2): a player
+ * write that only references a locked row, such as a show entry naming the
+ * horse, takes a key-share lock on it, which FOR UPDATE blocked. A show entry
+ * holding its show then waited for the apply's horse while the apply waited for
+ * the show: a deadlock.
+ *
  * Instants are bound as ISO text and cast through timestamptz to UTC, never as
  * raw Date binds (a non-UTC session shifts those, Equoria-7uphu). Calendar
  * columns (`@db.Date`) move by the pause rounded to whole days, read on the
@@ -309,8 +316,8 @@ export function ruleIsIdle(rule, w) {
 
 /**
  * Lock, update and record one rule's rows: returns how many values changed.
- * `select` yields (rid, old, nv) rows from alias t; the rows are locked FOR
- * UPDATE OF t and their new values are recomputed on the locked version.
+ * `select` yields (rid, old, nv) rows from alias t; the rows are locked FOR NO
+ * KEY UPDATE OF t and their new values are recomputed on the locked version.
  */
 async function updateAndRecordTx(tx, timeBackId, { table, column, key, id = 'id' }, select) {
   const pk = ident(id);
@@ -331,7 +338,7 @@ export function applyFieldRuleTx(tx, timeBackId, rule, w) {
   const { newValue, condition } = fieldExpressions(rule, w);
   const select = Prisma.sql`
     SELECT t.${ident(rule.id)} AS rid, t.${ident(rule.column)} AS old, ${newValue} AS nv
-    FROM ${ident(rule.table)} t WHERE ${condition} FOR UPDATE OF t`;
+    FROM ${ident(rule.table)} t WHERE ${condition} FOR NO KEY UPDATE OF t`;
   return updateAndRecordTx(tx, timeBackId, rule, select);
 }
 
@@ -388,7 +395,7 @@ export async function applyCounterRuleTx(tx, timeBackId, rule, w) {
     WITH target AS (
       SELECT t."id" AS rid, ${col} AS old, GREATEST(${col} - k.weeks, 0) AS nv
       FROM ${tickedRows(rule, w)}
-      FOR UPDATE OF t
+      FOR NO KEY UPDATE OF t
     ),
     upd AS (
       UPDATE ${ident(rule.table)} u SET ${column} = target.nv
@@ -434,7 +441,7 @@ export async function applyDerivedRulesTx(tx, timeBackId, w) {
     Prisma.sql`
       SELECT t."id" AS rid, t."age" AS old, ${ageExpr} AS nv FROM "horses" t
       WHERE t."id" IN (${moved}) AND t."age" IS DISTINCT FROM ${ageExpr}
-      FOR UPDATE OF t`,
+      FOR NO KEY UPDATE OF t`,
   );
   const ageDays = Prisma.sql`GREATEST(${today} - h."dateOfBirth", 0)`;
   const day = await updateAndRecordTx(
@@ -445,7 +452,7 @@ export async function applyDerivedRulesTx(tx, timeBackId, w) {
       SELECT t."id" AS rid, t."currentDay" AS old, ${ageDays} AS nv
       FROM "foal_development" t JOIN "horses" h ON h."id" = t."foalId"
       WHERE t."foalId" IN (${moved}) AND t."currentDay" > ${ageDays}
-      FOR UPDATE OF t`,
+      FOR NO KEY UPDATE OF t`,
   );
   return [age, day];
 }
@@ -493,7 +500,7 @@ export async function restoreColumnTx(tx, timeBackId, { table, column, id = 'id'
     locked AS (
       SELECT u.${pk} AS "lockedId" FROM ${ident(table)} u JOIN c ON u.${pk}::text = c."rowId"
       WHERE u.${ident(column)} IS NOT DISTINCT FROM (c."newValue" #>> '{}')::${cast}
-      FOR UPDATE OF u
+      FOR NO KEY UPDATE OF u
     ),
     upd AS (
       UPDATE ${ident(table)} u SET ${ident(column)} = (c."oldValue" #>> '{}')::${cast}
