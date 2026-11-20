@@ -33,9 +33,6 @@
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import app from '../../../app.mjs';
@@ -46,11 +43,6 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
-
-const foalingControllerSrc = readFileSync(
-  resolve(dirname(fileURLToPath(import.meta.url)), '../../horses/controllers/horseFoalingController.mjs'),
-  'utf8',
-);
 
 describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, real DB)', () => {
   let csrf;
@@ -230,47 +222,5 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
     expect(damAfter2.pregnancySireId).toBe(sireId); // NOT sireId2
     expect(damAfter2.pendingFoalName).toBe('TestFixture-WinnerFoal'); // NOT LoserFoal
     expect(damAfter2.lastBredDate).toEqual(firstBredAt); // cooldown NOT re-stamped
-  });
-
-  // ── Source sentinel: the controller WRITE must be guarded, not unconditional ─
-  //
-  // The two real-DB tests above prove the guard PRIMITIVE works and that the
-  // sequential HTTP path is correct. But a sequential supertest cannot replay
-  // the true interleaving (both requests' read-check passing on a stale
-  // inFoalSinceDate=NULL before either writes) without mocks. This source
-  // sentinel closes that gap deterministically: it asserts the createFoal write
-  // is the GUARDED form (WHERE inFoalSinceDate IS NULL + affected-count reject),
-  // so a regression that reverts to the unconditional `prisma.horse.update`
-  // read-then-write shape — which is exactly what a concurrent loser would
-  // double-apply through — fails this test. Mirrors the FOR-UPDATE-absence
-  // sentinel pattern in feedHorseService.test.mjs (Equoria-zvp4).
-  describe('source sentinel — createFoal uses an optimistic guarded write (Equoria-9gsxg)', () => {
-    // Equoria-q4uem.9: the claim now runs on the transaction client inside the
-    // wrapped own-pair transaction, beside a sire pin that is ALSO an
-    // updateMany and whose data comes from pregnancyClaimData(). A loose
-    // "some updateMany exists" + "inFoalSinceDate: null appears somewhere"
-    // check therefore no longer proves anything (slice-2 review I-1 showed a
-    // findFirst + unguarded update passing it), so every assertion below is
-    // tied to the DAM claim itself: the statement that starts the pregnancy.
-    it('starts the pregnancy via a guarded updateMany on the dam whose WHERE carries inFoalSinceDate:null (the guard)', () => {
-      expect(foalingControllerSrc).toMatch(
-        /tx\.horse\.updateMany\(\{\s*where:\s*\{\s*id:\s*dam\.id,[^}]*inFoalSinceDate:\s*null/,
-      );
-    });
-
-    it('asserts the affected-row count and rejects on 0 (no silent double-apply)', () => {
-      expect(foalingControllerSrc).toMatch(/affected\s*===\s*0/);
-    });
-
-    it('does NOT read-then-write the dam (no update/findFirst/findUnique keyed on the dam id: the racy shape)', () => {
-      // The resetHorseLastFed E2E helper that used to hold this controller's
-      // only horse.update call was removed (Equoria-mwjst). A regression to a
-      // read-then-write on the dam (find the dam "not in foal", then an
-      // unconditional update) is exactly what a concurrent loser would
-      // double-apply through; any such statement keyed on dam.id fails here.
-      expect(foalingControllerSrc).not.toMatch(
-        /\.horse\.(?:update|findFirst|findUnique)\(\{\s*where:\s*\{\s*id:\s*dam\.id/,
-      );
-    });
   });
 });

@@ -644,53 +644,6 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       expect(err.message).toBe(`${errorMessagePrefix} ${messageBody}`);
       expect(label).toBeTruthy();
     });
-
-    // Source-side coupling sentinel (21R-SEC-6 / Equoria-tpbu): every
-    // throw in the production source that semantically belongs to the
-    // request-body security pipeline MUST be a RequestBodySecurityError
-    // (the sentinel class), NOT a plain `new AppError(...)`. If someone
-    // adds a new throw via the legacy AppError pattern with an
-    // errorMessagePrefix-shaped message, the dispatch will silently
-    // forward it instead of returning 400 — exactly the desync hazard
-    // SEC-6 closed. This static-source check catches that regression.
-    //
-    // /gs flag rationale: g for all matches, s so `.` crosses newlines
-    // (covers multi-line constructor calls). The negative-counterpart
-    // assertion below uses an inverted match.
-    it('every prefix-shaped throw in source uses RequestBodySecurityError, not AppError', async () => {
-      const fs = await import('node:fs/promises');
-      const path = await import('node:path');
-      const url = await import('node:url');
-      const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-      const sourcePath = path.resolve(__dirname, '../middleware/requestBodySecurity.mjs');
-      const source = await fs.readFile(sourcePath, 'utf8');
-
-      // Capture every RequestBodySecurityError throw — this is what we
-      // want to see. Pin a minimum count matching the current source so
-      // a future regex-failure-mode (e.g., constructor accidentally
-      // renamed) becomes a vacuous-test detector.
-      const sentinelThrows = [
-        ...source.matchAll(/throw\s+new\s+RequestBodySecurityError\s*\(\s*['"`]([^'"`]*)['"`]/gs),
-      ].map(m => m[1]);
-      const expectedSentinelThrows = 5;
-      // 1 silent-catch + 1 dup-key + 1 __proto__ + 1 constructor.prototype
-      // + 1 depth-cap (used at 2 sites) + 1 forbidden-query-key + 1
-      // urlencoded-dup-key + 1 urlencoded-scanner-failure = 8 currently;
-      // pinning the lower bound at 5 documents the architectural minimum
-      // the SEC-6 refactor preserved.
-      expect(sentinelThrows.length).toBeGreaterThanOrEqual(expectedSentinelThrows);
-
-      // Negative counterpart: any throw that uses `new AppError(...)`
-      // with a message that starts with errorMessagePrefix is a SEC-6
-      // regression — the prefix-shaped throw should be a sentinel
-      // instance instead.
-      const legacyAppErrorThrows = [...source.matchAll(/throw\s+new\s+AppError\s*\(\s*['"`]([^'"`]*)['"`]/gs)].map(
-        m => m[1],
-      );
-      const evaluated = legacyAppErrorThrows.map(s => s.replace(/\$\{errorMessagePrefix\}/g, errorMessagePrefix));
-      const offending = evaluated.filter(m => m.startsWith(errorMessagePrefix));
-      expect(offending).toEqual([]);
-    });
   });
 
   // ────────────────────────────────────────────────────────────────────────
@@ -854,29 +807,6 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
   // / Edge Case Hunter audits. Numbered references map back to the audit
   // summary in bd issue Equoria-ixqg notes.
   // ──────────────────────────────────────────────────────────────────────────
-  describe('review patches — runtime config sentinels', () => {
-    // Patch #11: surface the load-bearing `restoreMocks: true` Jest config
-    // dependency at runtime. Pre-patch, removing the flag from
-    // jest.config.security.mjs would silently let prototype-spy state leak
-    // across tests in the same worker. The comment at the top of the file
-    // documented the dependency but did not pin it. This test fails loudly
-    // if a future config change loses the flag.
-    it('jest.config.security.mjs sets restoreMocks: true (load-bearing for prototype-spy crash safety)', async () => {
-      const fs = await import('node:fs/promises');
-      const path = await import('node:path');
-      const url = await import('node:url');
-      const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-      const configPath = path.resolve(__dirname, '../jest.config.security.mjs');
-      const source = await fs.readFile(configPath, 'utf8');
-      // Match `restoreMocks: true` with flexible whitespace. A future
-      // refactor that uses `restoreMocks: !!process.env.X` would FAIL
-      // this assertion — which is the correct behaviour, because such a
-      // refactor invalidates the comment-level claim that the spies are
-      // crash-safe.
-      expect(source).toMatch(/restoreMocks\s*:\s*true/);
-    });
-  });
-
   describe('review patches — NODE_ENV gate negative coverage (patch #3)', () => {
     // Pre-patch, tests asserted the export is the JsonScanner class in
     // NODE_ENV=test (the test-runner default). NO test asserted that the

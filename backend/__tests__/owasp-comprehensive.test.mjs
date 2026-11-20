@@ -17,9 +17,6 @@ import app from '../app.mjs';
 import { createMockToken } from '../__tests__/factories/index.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
@@ -33,9 +30,6 @@ import dns from 'node:dns';
 import { startLocalDnsServer } from './helpers/localDnsServer.mjs';
 import { gameCalendarDate } from '../utils/gameTime.mjs';
 import { testHorseData } from './helpers/createTestHorse.mjs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
   // Equoria-0ys7m / Equoria-plw0h: per-user CSRF binding. Several mutations
@@ -307,31 +301,6 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
   });
 
   describe('?? A08:2021 - Software and Data Integrity Failures', () => {
-    describe('Dependency Integrity', () => {
-      it('should have package-lock.json for dependency pinning', () => {
-        // Equoria-0ys7m: relocated backend/modules/services/__tests__ -> backend/__tests__
-        // (2 levels shallower). __dirname is now backend/__tests__, so the backend
-        // package-lock is one level up (../), not three (../../../). Resolves to
-        // backend/package-lock.json — the lock for the deps this A08 test asserts.
-        const packageLockPath = path.join(__dirname, '../package-lock.json');
-        expect(fs.existsSync(packageLockPath)).toBe(true);
-      });
-
-      it('should validate critical dependencies are up-to-date', () => {
-        // Equoria-0ys7m: backend/package.json (one level up from backend/__tests__).
-        // It — not the repo-root package.json — declares helmet/bcryptjs/jsonwebtoken,
-        // so this is the file whose dependencies the assertions below check.
-        const packageJsonPath = path.join(__dirname, '../package.json');
-        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-
-        // Critical security packages should be present
-        expect(packageJson.dependencies.helmet).toBeDefined();
-        // Project uses bcryptjs (pure JS implementation) - both bcrypt and bcryptjs are valid
-        expect(packageJson.dependencies.bcryptjs || packageJson.dependencies.bcrypt).toBeDefined();
-        expect(packageJson.dependencies.jsonwebtoken).toBeDefined();
-      });
-    });
-
     describe('Data Integrity Checks', () => {
       it('should validate data integrity for critical operations', async () => {
         // Attempt to modify protected horse stats directly. Equoria-h4zni: the

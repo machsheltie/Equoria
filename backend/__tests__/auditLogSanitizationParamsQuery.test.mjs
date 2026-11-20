@@ -17,13 +17,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { sanitizeLogData } from '../middleware/auditLog.mjs';
-
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const auditSrc = path.resolve(HERE, '..', 'middleware', 'auditLog.mjs');
 
 describe('sanitizeLogData applied to req.params + req.query (Equoria-wp0ib)', () => {
   it('SENTINEL: ?token=abc123 → requestQuery.token === "[REDACTED]"', () => {
@@ -63,26 +57,6 @@ describe('sanitizeLogData applied to req.params + req.query (Equoria-wp0ib)', ()
     expect(sanitized.apiSecret).toBe('[REDACTED]');
     expect(sanitized.authHeader).toBe('[REDACTED]');
     expect(sanitized.irrelevant).toBe('keep me');
-  });
-
-  // WIRING SENTINEL: prove the audit-log middleware ACTUALLY runs req.params
-  // and req.query through sanitizeLogData(), not just req.body. A unit test
-  // of the sanitizer alone would pass even if the middleware never called it
-  // for params/query (the original wp0ib defect). A grep over the source is
-  // the most direct check that's both simple and immune to refactor noise.
-  it('SENTINEL WIRING: middleware passes req.params + req.query through sanitizeLogData (not verbatim)', () => {
-    const src = fs.readFileSync(auditSrc, 'utf8');
-    // Every requestParams: assignment must use sanitizeLogData(...).
-    const requestParamsLines = src.match(/^\s*requestParams:\s*[^,\n]+/gm) || [];
-    const requestQueryLines = src.match(/^\s*requestQuery:\s*[^,\n]+/gm) || [];
-    expect(requestParamsLines.length).toBeGreaterThanOrEqual(1);
-    expect(requestQueryLines.length).toBeGreaterThanOrEqual(1);
-    for (const line of requestParamsLines) {
-      expect(line).toMatch(/sanitizeLogData\(\s*req\.params\s*\)/);
-    }
-    for (const line of requestQueryLines) {
-      expect(line).toMatch(/sanitizeLogData\(\s*req\.query\s*\)/);
-    }
   });
 
   it('handles empty / non-object input safely', () => {

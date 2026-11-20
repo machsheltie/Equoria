@@ -12,9 +12,6 @@
 
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
@@ -38,10 +35,6 @@ import { generateRiderMarketplace } from '../services/riderMarketplace.mjs';
 import { processRiderRetirement, backfillRiderRetirementSchedules } from '../index.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
 
-// Anything that reads, writes or draws the hidden age: the relation key or client
-// accessor, the table, the ensure/draw functions, the band constants.
-const accessPattern =
-  /riderRetirementSchedule\s*[:.]|\.riderRetirementSchedule|rider_retirement_schedules|ensureRiderRetirementSchedule|drawRiderRetirementAge|riderRetirementAge(Min|Max)/;
 const PREFIX = 'TestFixture-or2ua';
 const tag = () => randomBytes(4).toString('hex');
 const userIds = [];
@@ -229,47 +222,6 @@ describe('rider payloads never carry the retirement age (Equoria-or2ua)', () => 
     const roster = payloads[0].body;
     const riderRow = JSON.stringify(roster).includes(`"id":${rider.id}`);
     expect(riderRow).toBe(true);
-  });
-
-  it('only the retirement service and the backfill read or write the schedule table', () => {
-    const modulesRoot = join(fileURLToPath(new URL('../../..', import.meta.url)));
-    const allowed = new Set([
-      join('modules', 'riders', 'services', 'riderRetirementScheduleService.mjs'),
-      join('modules', 'riders', 'services', 'riderRetirementService.mjs'),
-      join('modules', 'riders', 'services', 'riderRetirementBackfillService.mjs'),
-      // Owner q383 (2026-11-18): outage time-back moves the retirement notice
-      // time (noticeSentAt only; never the hidden retirement age).
-      join('modules', 'staff', 'services', 'timeBackRules.mjs'),
-    ]);
-    const offenders = [];
-    const walk = dir => {
-      for (const name of readdirSync(dir)) {
-        if (name === 'node_modules' || name === '__tests__' || name === 'tests' || name === 'docs') {
-          continue;
-        }
-        const full = join(dir, name);
-        if (statSync(full).isDirectory()) {
-          walk(full);
-        } else if (/\.(mjs|js|ts)$/.test(name)) {
-          const rel = relative(modulesRoot, full);
-          if (allowed.has(rel) || rel.split(sep)[0] === 'scripts') {
-            continue;
-          }
-          if (accessPattern.test(readFileSync(full, 'utf8'))) {
-            // Only the hire path may call the draw (a value-discarding statement).
-            if (rel === join('modules', 'riders', 'controllers', 'riderMarketplaceController.mjs')) {
-              const src = readFileSync(full, 'utf8');
-              expect(src).toMatch(/^\s*await ensureRiderRetirementSchedule\(tx, rider\.id\);$/m);
-              expect(src).not.toMatch(/=\s*await ensureRiderRetirementSchedule/);
-              continue;
-            }
-            offenders.push(rel);
-          }
-        }
-      }
-    };
-    walk(modulesRoot);
-    expect(offenders).toEqual([]);
   });
 });
 

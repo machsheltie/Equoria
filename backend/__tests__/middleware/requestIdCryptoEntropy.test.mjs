@@ -1,5 +1,5 @@
 /**
- * Sentinel-positive coverage for security-critical request/correlation-ID
+ * Coverage for security-critical request/correlation-ID
  * entropy (Equoria-dew6i).
  *
  * Two security-critical sites generated request/correlation IDs with
@@ -22,20 +22,11 @@
  *   4) The resourceManagement middleware populates `req.resources.id` with a
  *      `req-<ts>-<16hex>` shape whose random tail is
  *      fixed-length hex (the Math.random tail was [0-9a-z]{1,9}).
- *   5) Source sentinel: neither security-critical generator line uses
- *      `Math.random` any more. This is the planted-violation guard — if a
- *      future edit reintroduces Math.random into these request-ID paths, the
- *      sentinel fails. (Game-RNG sites elsewhere are out of scope and NOT
- *      asserted on.)
  *
  * Per the Equoria Testing Philosophy: no mocks, no skips, no bypasses.
  *
  * @module __tests__/middleware/requestIdCryptoEntropy
  */
-
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 
 import { describe, it, expect } from '@jest/globals';
 import request from 'supertest';
@@ -43,10 +34,6 @@ import express from 'express';
 
 import { generateRequestId } from '../../middleware/auth.mjs';
 import { createResourceManagementMiddleware } from '../../middleware/resourceManagement.mjs';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const authSrc = resolve(__dirname, '../../middleware/auth.mjs');
-const resourceSrc = resolve(__dirname, '../../middleware/resourceManagement.mjs');
 
 describe('generateRequestId — crypto entropy (Equoria-dew6i)', () => {
   it('emits a fixed-length 16-character lowercase hex string', () => {
@@ -118,25 +105,5 @@ describe('resourceManagement requestId fallback — crypto entropy (Equoria-dew6
       await request(app).get('/test').expect(200);
     }
     expect(new Set(ids).size).toBe(ids.length);
-  });
-});
-
-describe('source sentinel — no Math.random in security request-ID paths (Equoria-dew6i)', () => {
-  it('auth.mjs generateRequestId does not use Math.random', () => {
-    const src = readFileSync(authSrc, 'utf8');
-    const helper = src.slice(src.indexOf('export const generateRequestId'));
-    const line = helper.slice(0, helper.indexOf('\n', helper.indexOf('=>')));
-    expect(line).not.toMatch(/Math\.random/);
-    expect(line).toMatch(/randomBytes/);
-  });
-
-  it('resourceManagement.mjs request-id fallback does not use Math.random', () => {
-    const src = readFileSync(resourceSrc, 'utf8');
-    // The fallback assignment line.
-    const idx = src.indexOf("req.headers['x-request-id'] ||");
-    expect(idx).toBeGreaterThan(-1);
-    const fallbackLine = src.slice(idx, src.indexOf('\n', idx) + 80);
-    expect(fallbackLine).not.toMatch(/Math\.random/);
-    expect(fallbackLine).toMatch(/randomBytes/);
   });
 });

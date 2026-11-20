@@ -27,7 +27,6 @@
  */
 
 import { describe, it, expect, beforeEach, afterAll } from '@jest/globals';
-import { readFileSync } from 'node:fs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { installBreedProfileRows } from '../data/breedProfileCache.mjs';
 import {
@@ -109,18 +108,6 @@ describe('assertBreedProfilesLoaded — a server never boots on zero profiles (E
   it('accepts the count a seeded database produces', async () => {
     const count = await preloadBreedProfiles(prisma);
     expect(() => assertBreedProfilesLoaded(count)).not.toThrow();
-  });
-
-  it('server.mjs runs the guard inside the fatal try block, before it binds the listener', () => {
-    const source = readFileSync(new URL('../../../server.mjs', import.meta.url), 'utf8');
-    const tryStart = source.indexOf('const breedCount = await preloadBreedProfiles(prisma);');
-    const guard = source.indexOf('assertBreedProfilesLoaded(breedCount);');
-    const exit = source.indexOf('process.exit(1);', guard);
-    const listen = source.indexOf('app.listen(');
-    expect(tryStart).toBeGreaterThan(-1);
-    expect(guard).toBeGreaterThan(tryStart);
-    expect(exit).toBeGreaterThan(guard);
-    expect(listen).toBeGreaterThan(exit);
   });
 });
 

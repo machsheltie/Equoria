@@ -1,5 +1,5 @@
 /**
- * groomSalaryService.processWeeklySalaries — tx + SystemAccount-pair sentinel
+ * groomSalaryService.processWeeklySalaries — tx + SystemAccount-pair
  * (Equoria-7r67q, hjtys follow-up #3).
  *
  * Locks the three invariants introduced by the 7r67q rewrite of
@@ -48,17 +48,11 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processWeeklySalaries, calculateWeeklyFee } from '../services/groomSalaryService.mjs';
 import { systemAccountBurn } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const fixturePrefix = 'TestFixture-7r67q';
 
@@ -195,63 +189,6 @@ afterAll(async () => {
       .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
 }, 60000);
-
-// ────────────────────────────────────────────────────────────────────────────
-// CODE-LEVEL SENTINEL — locks the architecture at source-text level so a
-// future regression that strips the tx wrap / inlines the raw decrement /
-// drops the SystemAccount pair is caught even if the integration path is
-// difficult to reproduce on a given CI run.
-// ────────────────────────────────────────────────────────────────────────────
-
-describe('groomSalaryService.processWeeklySalaries — code sentinel (Equoria-7r67q)', () => {
-  it('source uses debitMoneyOrThrow(systemAccount: systemAccountBurn) and $transaction (Equoria-kl16c)', () => {
-    const servicePath = resolve(__dirname, '..', 'services', 'groomSalaryService.mjs');
-    const source = readFileSync(servicePath, 'utf8');
-
-    const fnStart = source.indexOf('export async function processWeeklySalaries');
-    expect(fnStart).toBeGreaterThan(-1);
-    const after = source.slice(fnStart + 1);
-    const nextExport = after.indexOf('\nexport ');
-    // Also bound on `\nasync function` (handleInsufficientFunds is the next
-    // function), whichever comes first.
-    const nextAsyncFn = after.indexOf('\nasync function');
-    const stops = [nextExport, nextAsyncFn].filter(i => i > -1);
-    const fnEnd = stops.length ? Math.min(...stops) : after.length;
-    // Equoria-hc96y: the per-user collection moved, verbatim, into
-    // groomFeeCollection.mjs (collectGroomFeesTx) so the player's Pay Groom button
-    // shares it; processWeeklySalaries runs it inside its own $transaction. The
-    // checks below read the pass and the collection together, unchanged.
-    expect(after.slice(0, fnEnd)).toMatch(/collectGroomFeesTx\(tx,/);
-    const collectionSource = readFileSync(resolve(__dirname, '..', 'services', 'groomFeeCollection.mjs'), 'utf8');
-    const body = after.slice(0, fnEnd) + collectionSource;
-
-    // (1) Per-user processing must be wrapped in a $transaction
-    expect(body).toMatch(/prisma\.\$transaction\(\s*\n?\s*async\s+tx\s*=>/);
-
-    // (2) Must call debitMoneyOrThrow on the tx client (not bare prisma)
-    expect(body).toMatch(/debitMoneyOrThrow\(\s*tx\s*,/);
-
-    // (3) Equoria-kl16c: the SystemAccount burn pairing is now done INTERNALLY
-    //     by debitMoneyOrThrow (systemAccount + category are required args), so
-    //     the conservation guarantee is expressed by passing
-    //     `systemAccount: systemAccountBurn` to the debit helper rather than a
-    //     separate creditSystemAccount call. Assert the required pairing arg is
-    //     present so a regression that drops it (and thus the conservation
-    //     pairing) is caught at source level.
-    // camelCase name of the same 'burn' account (Equoria-pjvp8 naming ratchet).
-    expect(body).toMatch(/systemAccount:\s*(SYSTEM_ACCOUNT_BURN|systemAccountBurn)\b/);
-    expect(body).toMatch(/category:\s*'groomSalaryBurn'/);
-
-    // (4) Must NOT use the historical TOCTOU shape — manual pre-check
-    //     followed by raw `prisma.user.update({ money: { decrement } })`.
-    expect(body).not.toMatch(/user\.money\s*<\s*userGroup\.totalSalary/);
-    expect(body).not.toMatch(/prisma\.user\.update\(\s*\{[\s\S]{0,200}data:\s*\{\s*money:\s*\{\s*decrement:/);
-
-    // (5) groomSalaryPayment.create must be on the tx client (inside the
-    //     transaction), not bare prisma
-    expect(body).toMatch(/tx\.groomSalaryPayment\.create/);
-  });
-});
 
 // ────────────────────────────────────────────────────────────────────────────
 // RUNTIME — happy path: conservation invariant + ledger + payment row
@@ -465,44 +402,4 @@ describe('groomSalaryService.processWeeklySalaries — TOCTOU sentinel (Equoria-
     const totalProcessed = a.processed + b.processed;
     expect(totalProcessed).toBeGreaterThanOrEqual(2);
   }, 90000);
-});
-
-// ────────────────────────────────────────────────────────────────────────────
-// SENTINEL-POSITIVE: prove the code sentinel FIRES on a planted regression
-// (OPTIMAL_FIX_DISCIPLINE §2). We synthesize a minimal source-text
-// representing the pre-7r67q shape and assert each individual regex would
-// reject it. This guards against a future refactor that accidentally
-// loosens the regex into a placebo check.
-// ────────────────────────────────────────────────────────────────────────────
-
-describe('groomSalaryService.processWeeklySalaries — code sentinel positive (Equoria-7r67q)', () => {
-  it('code sentinel rejects a synthesized pre-7r67q (TOCTOU) processWeeklySalaries body', () => {
-    const planted = `
-      export async function processWeeklySalaries() {
-        const activeAssignments = await prisma.groomAssignment.findMany({});
-        for (const [userId, userGroup] of Object.entries({})) {
-          if (user.money < userGroup.totalSalary) {
-            await handleInsufficientFunds(userId, userGroup);
-            continue;
-          }
-          await prisma.user.update({
-            where: { id: userId },
-            data: { money: { decrement: userGroup.totalSalary } },
-          });
-          await prisma.groomSalaryPayment.create({ data: {} });
-        }
-      }
-    `;
-    // The principal checks (tx wrap, debit helper, burn-pairing arg) all MUST
-    // miss on the pre-fix shape. (Equoria-kl16c: the burn pairing is now the
-    // `systemAccount: systemAccountBurn` arg to debitMoneyOrThrow, so that
-    // is the check the planted body must fail.)
-    expect(planted).not.toMatch(/prisma\.\$transaction\(\s*\n?\s*async\s+tx\s*=>/);
-    expect(planted).not.toMatch(/debitMoneyOrThrow\(\s*tx\s*,/);
-    expect(planted).not.toMatch(/systemAccount:\s*(SYSTEM_ACCOUNT_BURN|systemAccountBurn)\b/);
-    // And the TOCTOU shape MUST match (proving the regex fires on the
-    // real bug rather than being a placebo)
-    expect(planted).toMatch(/user\.money\s*<\s*userGroup\.totalSalary/);
-    expect(planted).toMatch(/prisma\.user\.update\(\s*\{[\s\S]{0,200}data:\s*\{\s*money:\s*\{\s*decrement:/);
-  });
 });

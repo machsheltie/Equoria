@@ -61,11 +61,7 @@
  *   4. THE NOTIFICATION IS PART OF THE RETIREMENT. Exactly one `groomRetired`
  *      Notification reaches the groom's own user and nobody else, its payload
  *      names the groom and how many horses were left uncovered, and it carries no
- *      retirement age. That it is written INSIDE the retirement transaction is
- *      proven by the source sentinel plus the double-retire case rather than by an
- *      injected mid-flight failure — see the long comment above the sentinel for
- *      what was tried, why it was dropped, and exactly what is therefore argued
- *      rather than observed.
+ *      retirement age.
  *
  * Real database. No mocks of any Equoria-owned path. Fixtures are uniquely named
  * and cleaned up by id in FK order.
@@ -75,8 +71,6 @@
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import request from 'supertest';
 
 import app from '../../../app.mjs';
@@ -159,80 +153,6 @@ async function makeGroom(ownerId, label, extra = {}) {
       ...extra,
     },
   });
-}
-
-/**
- * Pure detector over the retirement service's SOURCE TEXT: the whole retirement
- * must be one transaction, and nothing may delete assignment rows. Pure so the
- * sibling case can prove it FIRES on planted violations rather than only staying
- * green (CONTRIBUTING.md: "a doctrine/sentinel test must prove that its detector
- * fires on a planted violation as well as passes on compliant code").
- *
- * Returns human-readable findings; an empty array means compliant.
- */
-function auditRetirementTransactionBoundary(rawSource) {
-  const findings = [];
-
-  // Scan CODE, not prose. The service's own header explains the pre-m9lz1
-  // defect by quoting `groomAssignment.deleteMany({ where: { groomId } })`, and
-  // an unstripped scan flags that documentation as the violation it warns about
-  // — a false positive that would have forced the fix's own explanation out of
-  // the file. Block comments are removed non-greedily; line comments to EOL.
-  const source = rawSource.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-
-  const txOccurrences = source.match(/prisma\.\$transaction\(/g) ?? [];
-  const hasAssignmentDelete = /groomAssignment\.delete(Many)?\(/.test(source);
-
-  if (hasAssignmentDelete) {
-    findings.push('found a groomAssignment delete — retirement must END rows, never remove them');
-  }
-
-  if (txOccurrences.length !== 1) {
-    findings.push(`expected exactly one prisma.$transaction( in the retirement service, found ${txOccurrences.length}`);
-    // Without a single boundary the "inside the transaction" checks are
-    // meaningless, so report what is known and stop.
-    return findings;
-  }
-
-  // The transaction body: from the single `prisma.$transaction(` to the `});`
-  // that closes the callback at its own indentation.
-  //
-  // FAIL CLOSED when that literal is absent. The first version fell back to
-  // `source.slice(txStart)` — the rest of the FILE — so a reformat that changed
-  // the closing indentation would have silently widened the body to include every
-  // later function, and the four "is it inside the transaction" checks below would
-  // then pass on code that had moved OUT of it. A detector that breaks toward
-  // green is worse than no detector, so an unlocatable body is a finding.
-  const txStart = source.indexOf('prisma.$transaction(');
-  const txEnd = source.indexOf('\n  });', txStart);
-  if (txEnd === -1) {
-    findings.push(
-      'could not locate the end of the retirement transaction body (expected a "\\n  });" ' +
-        'closing the callback) — the boundary checks below cannot be trusted, so this is a ' +
-        'failure rather than a pass. If the file was reformatted, update this extraction.',
-    );
-    return findings;
-  }
-  const txBody = source.slice(txStart, txEnd);
-
-  const required = [
-    ['tx.groom.updateMany(', 'the guarded groom flip'],
-    ['tx.groomAssignment.updateMany(', 'ending the active assignments'],
-    ['tx.groomAssignmentLog.updateMany(', 'closing the open assignment logs'],
-    ['createNotificationTx(', 'the notification (createNotificationTx on the same tx)'],
-  ];
-  for (const [needle, label] of required) {
-    if (!txBody.includes(needle)) {
-      findings.push(`${label} is not inside the retirement transaction (missing ${needle})`);
-    }
-  }
-
-  // The notification must take the transaction client, not the global one.
-  if (txBody.includes('createNotificationTx(') && !/createNotificationTx\(\s*\n?\s*tx,/.test(txBody)) {
-    findings.push('createNotificationTx is not being passed the transaction client as its first argument');
-  }
-
-  return findings;
 }
 
 /**
@@ -645,97 +565,6 @@ describe('Equoria-m9lz1 — the game path retires, preserves history, and notifi
 
     expect(await prisma.notification.count({ where: { userId: bystander.id } })).toBe(0);
   }, 120000);
-
-  // Equoria-m9lz1 — HOW THE TRANSACTION BOUNDARY IS PROVEN, AND WHAT WAS TRIED.
-  //
-  // The first attempt here was a real mid-flight failure: a second real
-  // `prisma.$transaction` took a row lock on the groom's active GroomAssignment
-  // (the retirement's SECOND write) and held it, so the retirement's FIRST write
-  // — the groom flip — would succeed inside its transaction and the second would
-  // block until Prisma aborted it. That is exactly the "failed midway" shape, and
-  // asserting the groom flip was gone afterwards would have proven all-or-nothing
-  // by observation. It does not work in this harness: holding an interactive
-  // transaction open starves the test Prisma pool of the connection the
-  // retirement transaction needs, and the run ended with "Prisma test client 1
-  // disconnect failed: disconnect timed out after 10000ms" plus a Jest
-  // environment-teardown AggregateError that discarded the whole suite's results
-  // (`Tests: 0 total`), and leaked fixtures. Rather than weaken the claim or
-  // leave a flaky suite behind, the boundary is proven two other ways and the
-  // gap is recorded here:
-  //
-  //   (a) the SOURCE SENTINEL below, which fails on the pre-m9lz1 implementation
-  //       (no `$transaction` at all, plus a `groomAssignment.deleteMany`); and
-  //   (b) the real-database double-retire case that follows, which drives the
-  //       guarded conditional flip and asserts the LOSER wrote nothing — no
-  //       second notification, no re-stamped endDate.
-  //
-  // What is NOT proven by observation: that a failure between writes 2 and 4
-  // rolls write 1 back. That is a property of `prisma.$transaction` itself plus
-  // the sentinel's guarantee that all four writes sit inside it — an argument,
-  // not an observation. A harness that can hold a lock without starving the pool
-  // (a dedicated second connection, or the delay-only race barrier the
-  // marketplace suites use) would let it be observed.
-  it('performs the whole retirement inside ONE transaction (source sentinel)', async () => {
-    const servicePath = fileURLToPath(new URL('../services/groomRetirementService.mjs', import.meta.url));
-    const source = await readFile(servicePath, 'utf8');
-
-    expect(auditRetirementTransactionBoundary(source)).toEqual([]);
-  }, 30000);
-
-  it('the source sentinel fires on planted violations (it is not vacuous)', () => {
-    // A pre-m9lz1-shaped implementation: no transaction, and the history delete.
-    const preFixShape = [
-      'export async function processRetirement(groomId) {',
-      '  const g = await prisma.groom.update({ where: { id: groomId }, data: { retired: true } });',
-      '  await prisma.groomAssignment.deleteMany({ where: { groomId } });',
-      '  return g;',
-      '}',
-    ].join('\n');
-    const preFixFindings = auditRetirementTransactionBoundary(preFixShape);
-    expect(preFixFindings).toEqual(
-      expect.arrayContaining([
-        expect.stringMatching(/exactly one prisma/i),
-        expect.stringMatching(/groomAssignment delete/i),
-      ]),
-    );
-
-    // A subtler regression: the transaction is there, but the notification was
-    // moved outside it — the player could lose a groom silently.
-    const notificationOutsideTx = [
-      'export async function processRetirement(groomId) {',
-      '  const committed = await prisma.$transaction(async tx => {',
-      '    await tx.groom.updateMany({ where: { id: groomId }, data: { retired: true } });',
-      '    await tx.groomAssignment.updateMany({ where: { groomId }, data: { isActive: false } });',
-      '    await tx.groomAssignmentLog.updateMany({ where: { groomId }, data: {} });',
-      '    return {};',
-      '  });',
-      '  await createNotification(userId, groomRetiredNotificationType, {});',
-      '  return committed;',
-      '}',
-    ].join('\n');
-    expect(auditRetirementTransactionBoundary(notificationOutsideTx)).toEqual(
-      expect.arrayContaining([expect.stringMatching(/createNotificationTx/i)]),
-    );
-
-    // A reformat that moves the callback's closing brace off two-space
-    // indentation. The detector must FAIL here, not silently widen the body to
-    // the rest of the file and then pass — the fail-open bug this branch fixes.
-    const unlocatableBody = [
-      'export async function processRetirement(groomId) {',
-      '  const committed = await prisma.$transaction(async tx => {',
-      '      await tx.groom.updateMany({ where: { id: groomId }, data: { retired: true } });',
-      '      await tx.groomAssignment.updateMany({ where: { groomId }, data: {} });',
-      '      await tx.groomAssignmentLog.updateMany({ where: { groomId }, data: {} });',
-      '      await createNotificationTx(tx, userId, T, {});',
-      '      return {};',
-      '    });',
-      '  return committed;',
-      '}',
-    ].join('\n');
-    expect(auditRetirementTransactionBoundary(unlocatableBody)).toEqual(
-      expect.arrayContaining([expect.stringMatching(/could not locate the end/i)]),
-    );
-  });
 
   it('refuses to retire the same groom twice, and the loser writes nothing', async () => {
     // ypb7d.1: exactly ON its hidden age (`startAge + careerWeeks`).

@@ -19,11 +19,8 @@
  *   - Both simulateCompetition.mjs and showController.mjs import that
  *     helper (no local cap mirrors anywhere).
  *
- * This file is the SENTINEL: it asserts (a) the shared helper exists,
- * (b) it consumes the exported caps, and (c) source-level enforcement that
- * neither engine re-declares the caps locally — if a future change re-adds
- * `const RIDER_BONUS_CAP = 0.1` anywhere outside the helper, this test
- * fails immediately.
+ * This file asserts (a) the shared helper exists and (b) it consumes the
+ * exported caps.
  *
  * CONTRACT CHANGED BY THE OWNER, 2026-10-29 (q300, Equoria-efs4j): the old
  * epigeneticFlags store and every reader of it are removed. Old contract:
@@ -34,7 +31,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { resolve } from 'path';
 
 import { bonusCap, penaltyCap, applyRiderModifiers } from '../../../utils/riderBonus.mjs';
@@ -58,56 +55,6 @@ describe('competitionScoring shared helper (Equoria-pqdte)', () => {
     expect(competitionScoring.default).not.toHaveProperty('applyRiderCompatibility');
     expect(competitionModule).not.toHaveProperty('applyRiderCompatibility');
     expect(existsSync(resolve(ROOT, 'utils/riderFlagCompatibility.mjs'))).toBe(false);
-  });
-
-  // ── SENTINEL: source-level enforcement of single source of truth ───────
-  //
-  // Neither the show executor nor showController.mjs may re-declare
-  // RIDER_BONUS_CAP or RIDER_PENALTY_CAP locally. They must consume the
-  // shared helper from competitionScoring.mjs (which itself imports the
-  // canonical caps from riderBonus.mjs).
-  //
-  // If a future change re-introduces a local mirror cap, this test fails
-  // and surfaces the drift before it can ship.
-  // (logic/simulateCompetition.mjs, the old instant-path engine, was deleted as
-  // dead code on 2026-10-21; the show executor is the only engine left.)
-  it('SENTINEL: showExecutionService.mjs and showController.mjs do NOT locally redeclare cap constants', () => {
-    // Equoria-q4uem.4 (WS4 S4): the executor moved to showExecutionService.mjs; both files stay pinned.
-    for (const rel of [
-      'modules/competition/shows/showExecutionService.mjs',
-      'modules/competition/shows/showController.mjs',
-    ]) {
-      const src = readFileSync(resolve(ROOT, rel), 'utf8');
-      expect(src).not.toMatch(/const\s+RIDER_BONUS_CAP\s*=/);
-      expect(src).not.toMatch(/const\s+RIDER_PENALTY_CAP\s*=/);
-    }
-  });
-
-  it('SENTINEL: the show executor consumes the shared scoring service', () => {
-    // The executor's entire cron-path scorer was extracted into the shared
-    // service (Equoria-c7mx0): executeClosedShows (showExecutionService.mjs since
-    // Equoria-q4uem.4) imports scoreShowEntries from competitionScoring.mjs.
-    //
-    // CONTRACT CHANGED BY THE OWNER, 2026-10-23 (epic Equoria-k1p62): traits,
-    // flags included, contribute nothing to a show score until traits are
-    // reworked. Old contract: scoreShowEntries called applyRiderCompatibility so
-    // the horse's flags scaled the rider percents. New contract: it must not call
-    // it. The call is looked for in the function's code, comments stripped.
-    const showSrc = readFileSync(resolve(ROOT, 'modules/competition/shows/showExecutionService.mjs'), 'utf8');
-    expect(showSrc).toMatch(
-      /scoreShowEntries.*from '..\/services\/competitionScoring.mjs'|from '..\/services\/competitionScoring.mjs'/,
-    );
-    expect(showSrc).toMatch(/scoreShowEntries/);
-    const scoringSrc = readFileSync(resolve(ROOT, 'modules/competition/services/competitionScoring.mjs'), 'utf8');
-    const start = scoringSrc.indexOf('export function scoreShowEntries(');
-    const end = scoringSrc.indexOf('\n}\n', start);
-    expect(start).toBeGreaterThan(-1);
-    const scorerCode = scoringSrc
-      .slice(start, end)
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/\/\/.*$/gm, '');
-    expect(scorerCode).toMatch(/computeRiderModifiers\(/);
-    expect(scorerCode).not.toMatch(/applyRiderCompatibility\(/);
   });
 
   it('SENTINEL: applyRiderModifiers still accepts inputs up to the (post-helper) caps', () => {

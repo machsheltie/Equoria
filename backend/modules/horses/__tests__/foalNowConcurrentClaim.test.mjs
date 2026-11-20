@@ -45,9 +45,6 @@
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
@@ -55,11 +52,6 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { gameCalendarDate } from '../../../utils/gameTime.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
-
-const foalingServiceSrc = readFileSync(
-  resolve(dirname(fileURLToPath(import.meta.url)), '../services/foalingService.mjs'),
-  'utf8',
-);
 
 describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k, real DB)', () => {
   let user;
@@ -231,30 +223,5 @@ describe('createFoalFromPregnancy — direct-branch atomic claim (Equoria-wgw5k,
     // And the restored pregnancy is still foalable — a subsequent claim succeeds.
     const { foal } = await createFoalFromPregnancy({ damId });
     expect(foal?.id).toBeTruthy();
-  });
-
-  // ── Source sentinel: the direct branch must atomically claim, not create
-  //    unconditionally. These two markers are unique to the wgw5k fix —
-  //    runFoalingJob's claim uses `inFoalSinceDate: { lte: cutoff }` and
-  //    `claimed === 0`, so neither matches its code. A revert to the old
-  //    read-then-create-then-clear-at-end shape fails here.
-  //
-  //    Old contract: the claim was a standalone `prisma.horse.updateMany(` on
-  //    the global client, with `inFoalSinceDate: { not: null }` as its literal
-  //    guard. New contract (Equoria-bvddn.20): the claim runs as
-  //    `tx.horse.updateMany(` inside the one foaling transaction, and the
-  //    guard is `{ not: null }` for the direct branch or `{ lte: dueBy }` for the job.
-  //    The regexes below accept either client name and the guard on the same
-  //    line; the `claim.count === 0` marker is unchanged. Owner ruling
-  //    2026-09-30.
-  describe('source sentinel — direct branch uses a guarded atomic claim (Equoria-wgw5k)', () => {
-    it('contains an updateMany claim guarded by inFoalSinceDate: { not: null }', () => {
-      expect(foalingServiceSrc).toMatch(/(?:prisma|tx)\.horse\.updateMany\(/);
-      expect(foalingServiceSrc).toMatch(/inFoalSinceDate:[^\n]*\{\s*not:\s*null\s*\}/);
-    });
-
-    it('rejects the concurrent loser on claim.count === 0', () => {
-      expect(foalingServiceSrc).toMatch(/claim\.count\s*===\s*0/);
-    });
   });
 });

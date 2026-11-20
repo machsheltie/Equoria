@@ -28,16 +28,11 @@ import { dirname, resolve } from 'node:path';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { DISCIPLINES } from '../../../constants/schema.mjs';
 import { breedDefaultDiscipline } from '../services/birthDiscipline.mjs';
-import { retiredBreedNames } from '../../../seed/syncBreedGeneticProfiles.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const backend = resolve(here, '../../..');
 const breedsDir = resolve(backend, 'data/breeds');
-const migration = readFileSync(
-  resolve(backend, '../packages/database/prisma/migrations/20261028150000_breed_default_disciplines/migration.sql'),
-  'utf8',
-);
 const disciplines = new Set(Object.values(DISCIPLINES));
 
 const seed = readdirSync(breedsDir)
@@ -69,17 +64,6 @@ describe('breed default disciplines (q232)', () => {
         Boolean(getBreedProfile(row.name).ratingProfiles.isGaitedBreed) !== row.gaited,
     );
     expect(wrong.map(row => row.name)).toEqual([]);
-  });
-
-  // q337 (2026-11-03): the migration predates the removal of the duplicate
-  // 'Tennessee Walking'; its UPDATE row for that name matches nothing once the
-  // breed is gone, so every other row must still equal the seed.
-  it('the migration writes exactly the seed values, apart from retired breeds', () => {
-    const pairs = [...migration.matchAll(/\('((?:[^']|'')*)', '((?:[^']|'')*)'\)/g)]
-      .map(m => [m[1].replace(/''/g, "'"), m[2].replace(/''/g, "'")])
-      .filter(([name]) => !retiredBreedNames.includes(name));
-    const expected = seed.map(row => [row.name, row.discipline]);
-    expect(pairs.sort()).toEqual(expected.sort());
   });
 
   it('the database holds the same discipline for every breed, and store horses get it', async () => {

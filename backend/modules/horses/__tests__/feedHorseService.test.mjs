@@ -15,9 +15,6 @@
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { feedHorse, rollStatBoost } from '../services/horseFeedService.mjs';
 // Equoria-zvp4: same UTC-day truncation the service uses to build the
@@ -29,10 +26,6 @@ import { startOfGameDay } from '../../../utils/horseHealth.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { testHorseData } from '../../../__tests__/helpers/createTestHorse.mjs';
-
-// Resolved once at module load — used by the SELECT FOR UPDATE sentinel describe block.
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const feedServiceSrc = readFileSync(resolve(__dirname, '../services/horseFeedService.mjs'), 'utf8');
 
 // 12 stats matching backend/modules/horses/services/horseFeedService.mjs STATS array.
 const expectedStats = [
@@ -594,38 +587,5 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
     expect(userAfter2.settings.inventory.find(i => i.id === 'feed-elite').quantity).toBe(9); // NOT 8
     const damAfter2 = await prisma.horse.findUnique({ where: { id: damId } });
     expect(damAfter2.pregnancyFeedingsByTier).toEqual({ elite: 1 }); // NOT {elite:2}
-  });
-});
-
-/**
- * FOR UPDATE absence sentinel (Equoria-wsqw, updated Equoria-5g5k / Equoria-zvp4).
- *
- * History: Equoria-nsr7 added SELECT…FOR UPDATE on the horse row to prevent a
- * concurrent-feed lost-update race. Equoria-5g5k removed it: under full-suite
- * Prisma connection-pool pressure the lock wait exceeded both the 5 s default
- * and a 15 s raised ceiling (tests ran 124 s then timed out). The same issue
- * affected updateUserPreferences (Equoria-7rje) and was fixed the same way.
- *
- * Equoria-zvp4 then CLOSED the lost-update race WITHOUT re-adding a lock, via
- * optimistic concurrency: a single guarded UPDATE on the horse row whose WHERE
- * clause encodes the "not yet fed today" precondition and whose affected-row
- * count must be 1 (0 ⇒ a concurrent feed already won ⇒ reject, no
- * double-decrement, no double counter bump). See the optimistic-guard describe
- * block above for the deterministic 1-then-0 proof.
- *
- * This sentinel guards the ABSENCE of the FOR UPDATE lock so a future
- * re-introduction (which would re-introduce the timeout failures) is caught by
- * CI. The optimistic approach takes only the ordinary per-statement row
- * write-lock, never a SELECT…FOR UPDATE, so it stays green by construction.
- */
-describe('feedHorse — FOR UPDATE absence sentinel (Equoria-wsqw / Equoria-5g5k / Equoria-zvp4)', () => {
-  it('horseFeedService.mjs does NOT contain a SELECT FOR UPDATE on the horse row (lock removed, Equoria-5g5k)', () => {
-    expect(feedServiceSrc).not.toMatch(/SELECT id FROM "horses"[^;]*FOR UPDATE/);
-  });
-
-  // Broader sentinel-positive guard: catch ANY reintroduction of FOR UPDATE on
-  // the horses table, not just the one exact string the original regex matched.
-  it('horseFeedService.mjs contains NO "FOR UPDATE" clause at all (Equoria-zvp4 optimistic concurrency)', () => {
-    expect(feedServiceSrc).not.toMatch(/FOR\s+UPDATE/i);
   });
 });

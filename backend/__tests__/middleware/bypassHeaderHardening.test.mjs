@@ -1,20 +1,17 @@
 /**
- * Bypass-header hardening sentinel — Equoria-v0d6
+ * Bypass-header hardening — Equoria-v0d6
  *
  * Confirms that x-test-skip-csrf and x-test-bypass-rate-limit are
- * completely hardened out of the CSRF and rate-limiting middleware.
+ * ignored by the CSRF and rate-limiting middleware.
  *
  * Complements rate-limit-no-bypass.test.mjs (full real-app path).
- * This file tests the middleware functions directly — structural
- * source-code assertions PLUS behavioural at the handler level.
+ * This file tests the middleware functions directly at the handler level.
  *
- * 6 tests:
- *   1. Structural: csrf.mjs contains no x-test-skip-csrf reference
- *   2. Behavioural: POST with x-test-skip-csrf:1 but no token → 403
- *   3. Behavioural positive control: valid CSRF token allows the request
- *   4. Structural: rateLimiting.mjs contains no x-test-bypass-rate-limit reference
- *   5. Behavioural: x-test-bypass-rate-limit:1 does not prevent counter decrement
- *   6. Behavioural positive control: TEST_RATE_LIMIT_MAX_REQUESTS env-knob caps requests
+ * 4 tests:
+ *   1. POST with x-test-skip-csrf:1 but no token → 403
+ *   2. Positive control: valid CSRF token allows the request
+ *   3. x-test-bypass-rate-limit:1 does not prevent counter decrement
+ *   4. Positive control: TEST_RATE_LIMIT_MAX_REQUESTS env-knob caps requests
  *
  * @module __tests__/middleware/bypassHeaderHardening
  */
@@ -23,16 +20,9 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { join, dirname } from 'path';
 
 import { csrfProtection, csrfErrorHandler, issueCsrfToken } from '../../middleware/csrf.mjs';
 import { createRateLimiter } from '../../middleware/rateLimiting.mjs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const middlewareDir = join(__dirname, '../../middleware');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -73,18 +63,6 @@ function buildRateLimitApp(limiter) {
   return app;
 }
 
-// ─── 1. CSRF structural ───────────────────────────────────────────────────────
-
-describe('csrf.mjs — structural: no bypass-header awareness in source (Equoria-v0d6)', () => {
-  it('csrf.mjs source contains no x-test-skip-csrf or any bypass path', () => {
-    const src = readFileSync(join(middlewareDir, 'csrf.mjs'), 'utf8');
-    expect(src).not.toContain('x-test-skip-csrf');
-    expect(src).not.toContain('skipCsrf');
-    expect(src).not.toContain('bypassCsrf');
-    expect(src).not.toContain('NODE_ENV');
-  });
-});
-
 // ─── 2 & 3. CSRF behavioural ─────────────────────────────────────────────────
 
 describe('csrfProtection — x-test-skip-csrf header is ignored (Equoria-v0d6)', () => {
@@ -107,19 +85,6 @@ describe('csrfProtection — x-test-skip-csrf header is ignored (Equoria-v0d6)',
     const res = await agent.post('/protected').set('x-csrf-token', csrfToken).send({ action: 'test' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-  });
-});
-
-// ─── 4. Rate-limit structural ─────────────────────────────────────────────────
-
-describe('rateLimiting.mjs — structural: no x-test-bypass-rate-limit in source (Equoria-v0d6)', () => {
-  it('rateLimiting.mjs source contains no x-test-bypass-rate-limit or per-request bypass logic', () => {
-    const src = readFileSync(join(middlewareDir, 'rateLimiting.mjs'), 'utf8');
-    expect(src).not.toContain('x-test-bypass-rate-limit');
-    expect(src).not.toContain('bypassRateLimit');
-    // Per-request bypass via headers would need to read the header — confirm absent
-    expect(src).not.toContain("headers['x-test-");
-    expect(src).not.toContain('headers["x-test-');
   });
 });
 

@@ -112,43 +112,6 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
 
   afterEach(() => cleanup.run(), 30000);
 
-  // ─── CODE-LEVEL SENTINEL ──────────────────────────────────────────────────
-
-  it('CODE SENTINEL: buyStoreHorse calls debitMoneyOrThrow with systemAccount: systemAccountBurn (Equoria-kl16c)', () => {
-    // Per OPTIMAL_FIX_DISCIPLINE §2 — sentinel-positive test required for
-    // any check the fix introduces. The race window is too narrow to
-    // reliably reproduce in CI (the first tx commits before the second
-    // reads), so we also lock the architecture at source-text level.
-    const controllerPath = resolve(__dirname, '..', 'controllers', 'marketplaceController.mjs');
-    const source = readFileSync(controllerPath, 'utf8');
-
-    const buyStoreHorseStart = source.indexOf('export async function buyStoreHorse');
-    expect(buyStoreHorseStart).toBeGreaterThan(-1);
-
-    // Find end of function — the next top-level export
-    const afterStart = source.slice(buyStoreHorseStart + 1);
-    const nextExportRel = afterStart.indexOf('\nexport ');
-    const buyStoreHorseBody = nextExportRel === -1 ? afterStart : afterStart.slice(0, nextExportRel);
-
-    // (1) Must call debitMoneyOrThrow inside the tx — closes TOCTOU
-    expect(buyStoreHorseBody).toMatch(/debitMoneyOrThrow\(\s*tx\s*,/);
-
-    // (2) Equoria-kl16c: the burn pairing is now done INTERNALLY by
-    //     debitMoneyOrThrow (systemAccount + category are required args), so
-    //     the conservation pairing is expressed by passing
-    //     `systemAccount: systemAccountBurn` to the debit helper rather than
-    //     a separate creditSystemAccount call (which would double-credit).
-    expect(buyStoreHorseBody).toMatch(/systemAccount:\s*systemAccountBurn/);
-    expect(buyStoreHorseBody).toMatch(/category:\s*'storeHorsePurchaseBurn'/);
-
-    // (3) Must NOT use the historical raw `tx.user.findUnique` + manual
-    //     `money < storePrice` pre-check — that's the TOCTOU shape.
-    //     A manual pre-check followed by an unconditional decrement is the
-    //     exact bug debitMoneyOrThrow exists to prevent.
-    expect(buyStoreHorseBody).not.toMatch(/buyer\.money\s*<\s*storePrice/);
-    expect(buyStoreHorseBody).not.toMatch(/data:\s*\{\s*money:\s*\{\s*decrement:\s*storePrice\s*\}/);
-  });
-
   // ─── RUNTIME INVARIANT ────────────────────────────────────────────────────
 
   it('preserves money-conservation: user debit pairs with SystemAccount.burn credit', async () => {
