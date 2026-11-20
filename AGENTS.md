@@ -9,8 +9,8 @@ projects) + Playwright (`playwright.config.ts`, beta gate:
 ## Commands
 
 - Backend tests: `npm run test:backend:targeted -- <path-to-test>` while
-  working; full suite: `npm run test:backend:full` (sharded, what pre-push
-  runs). The serial `npm run test:backend` runs out of memory on the dev
+  working; full suite: `npm run test:backend:full` (sharded; GitHub runs
+  the full gate, pre-push runs only the changed tests). The serial `npm run test:backend` runs out of memory on the dev
   machine before it finishes.
 - Frontend tests: `npm run test:frontend` · Types: `npm run typecheck`
 - Lint: `npm run lint` · E2E: `npm run test:e2e:beta-readiness`

@@ -89,7 +89,8 @@ product-direction work. Skip ceremonial plans for a small obvious change.
 - Change an existing test only when the owner has explicitly changed the
   behavior it specifies. State the old contract and new ruling before editing.
 - Test Equoria-owned behavior through real code. Backend integration tests use
-  the real test database and narrowly owned fixtures. Do not mock Prisma,
+  the local test database (`equoria_test`), never the game database, and
+  narrowly owned fixtures. Do not mock Prisma,
   internal services, repositories, application state, or the primary API to
   bypass behavior.
 - Mock only a genuine third-party network boundary when no safe sandbox is
@@ -169,7 +170,7 @@ planning output. Retrieve the smallest relevant source when needed.
 - Types: `npm run typecheck`
 - Lint: `npm run lint`
 - Doctrine: `bash scripts/doctrine-checks/run-all.sh` (includes `check-module-dependency-graph.mjs`, the module boundary gate; also runs pre-push)
-- Orphan cleanup/check: `npm run test:reap`
+- Orphan cleanup/check: `npm --prefix backend run test:reap`
 
 Use live package scripts as authority. Run checks sequentially and only in
 proportion to the change.
