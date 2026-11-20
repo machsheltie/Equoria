@@ -40,7 +40,14 @@ import {
   stopEmailCapture,
   uid,
 } from './helpers/staffFixtures.mjs';
-import { actionCodesFor, freshCode, restoreHold, snapshotHold } from './helpers/timeBackFixtures.mjs';
+import {
+  actionCodesFor,
+  freshCode,
+  gameWideSuiteLock,
+  gameWideSuiteWaitMs,
+  restoreHold,
+  snapshotHold,
+} from './helpers/timeBackFixtures.mjs';
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('sttbdst');
@@ -67,6 +74,10 @@ let owner;
 let device;
 let applied;
 const made = { riderId: null, groomId: null };
+
+const suiteLock = gameWideSuiteLock();
+// First: one game-wide suite at a time (gameWideSuiteLock).
+beforeAll(() => suiteLock.take(), gameWideSuiteWaitMs);
 
 beforeAll(async () => {
   holdBefore = await snapshotHold();
@@ -130,6 +141,9 @@ afterAll(async () => {
   }
   await cleanup.run();
 }, 120_000);
+
+// Last: the next game-wide suite may start.
+afterAll(() => suiteLock.release());
 
 beforeEach(() => startEmailCapture());
 

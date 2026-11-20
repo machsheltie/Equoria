@@ -44,6 +44,8 @@ import {
   actionCodesFor,
   easternWall,
   freshCode,
+  gameWideSuiteLock,
+  gameWideSuiteWaitMs,
   restoreHold,
   snapshotHold,
   toMinute,
@@ -60,6 +62,10 @@ const counterKeys = ['Groom.careerWeeks', 'Rider.careerWeeks', 'Trainer.careerWe
 let holdBefore;
 let owner;
 const made = { grooms: [], riders: [], trainers: [], runLogs: [] };
+
+const suiteLock = gameWideSuiteLock();
+// First: one game-wide suite at a time (gameWideSuiteLock).
+beforeAll(() => suiteLock.take(), gameWideSuiteWaitMs);
 
 beforeAll(async () => {
   holdBefore = await snapshotHold();
@@ -88,6 +94,9 @@ beforeAll(async () => {
 }, 60_000);
 
 afterAll(() => cleanup.run(), 120_000);
+
+// Last: the next game-wide suite may start.
+afterAll(() => suiteLock.release());
 
 beforeEach(async () => {
   startEmailCapture();
@@ -164,11 +173,33 @@ const changesOf = (timeBackId, tableName, rows) =>
     select: { rowId: true, oldValue: true, newValue: true },
   });
 
+/** Since when the career-week record is complete (the ledger's one row), in ms. */
+async function recordStartMs() {
+  const [{ completeSince }] = await prisma.$queryRaw`
+    SELECT "completeSince" FROM "staff_career_tick_ledger" WHERE "id" = 1`;
+  return completeSince.getTime();
+}
+
+/**
+ * A window starts on a whole minute, and only a window starting inside the
+ * career-week record gives career weeks back. On a database migrated this very
+ * minute (CI migrates just before the run) the record began after this
+ * minute's start: wait for the next minute, so the pass's window lies inside it.
+ */
+async function untilRecordCoversThisMinute() {
+  const from = Math.ceil((await recordStartMs()) / minute) * minute;
+  const wait = from - Date.now();
+  if (wait > 0) {
+    await new Promise(resolve => setTimeout(resolve, wait));
+  }
+}
+
 /**
  * Run one weekly pass through a real monitor, and give back the window of
  * minutes around it: from the minute it started to two minutes after it ended.
  */
 async function passInWindow(jobName, body) {
+  await untilRecordCoversThisMinute();
   const before = Date.now();
   const outcome = await new CronJobMonitor().runWithHeartbeat(jobName, body, { applyLock: true }).then(
     result => ({ result }),
@@ -328,21 +359,25 @@ describe('Time-back gives back only the career weeks a weekly pass added', () =>
 
 /**
  * Equoria-puj1e.5.1: each recorded career week is given back at most once, and
- * an undo adds back exactly the weeks its apply took. These outages lie two
- * hours in the past (inside the career-week record), so a weekly pass run now
- * falls after them, like the Monday pass after an outage was given back. The
- * outage's week is recorded through the passes' own recorder at the outage's
- * time (tickOneStaff with its instant); the later week by the real pass.
+ * an undo adds back exactly the weeks its apply took. The outage's week is
+ * recorded through the passes' own recorder at the outage's time (tickOneStaff
+ * with its instant); the later week by the real pass, run now.
+ *
+ * The outage lies a few minutes ahead of now, and the service is called with a
+ * clock a minute past the last window's end (its `now` parameter, as above).
+ * Only a window inside the career-week record gives weeks back, and on a
+ * database migrated moments before the run (CI) no window in the past is; one
+ * ahead of now always is. The real pass, run now, is recorded before the
+ * outage and outside every window: like the Monday pass, a week no time-back
+ * of the outage covers.
  */
 describe('A recorded career week is given back at most once', () => {
-  const twoHours = 2 * 3_600_000;
   const second = 1000;
 
-  /** A whole minute two hours ago, never before the career-week record starts. */
-  async function outageMinute() {
-    const [{ completeSince }] = await prisma.$queryRaw`
-      SELECT "completeSince" FROM "staff_career_tick_ledger" WHERE "id" = 1`;
-    return toMinute(Math.max(Date.now() - twoHours, completeSince.getTime() + minute)).getTime();
+  /** The outage's first whole minute (at least two minutes from now) and the service's clock. */
+  function outage() {
+    const P = toMinute(Date.now() + 3 * minute).getTime();
+    return { P, clock: new Date(P + 5 * minute) };
   }
 
   const wall = (from, to) => ({ start: easternWall(new Date(from)), end: easternWall(new Date(to)) });
@@ -352,7 +387,7 @@ describe('A recorded career week is given back at most once', () => {
     const groom = await makeGroom(player.id, 9);
     const rider = await makeRider(player.id, 9);
     const trainer = await makeTrainer(player.id, 9);
-    const P = await outageMinute();
+    const { P, clock } = outage();
     const weeks = async () => [
       ...(await weeksOf('groom', [groom])),
       ...(await weeksOf('rider', [rider])),
@@ -369,23 +404,23 @@ describe('A recorded career week is given back at most once', () => {
     }
     expect(await weeks()).toEqual([10, 10, 10]);
     const W = wall(P, P + 2 * minute);
-    const before = await previewTimeBack(W);
+    const before = await previewTimeBack(W, clock);
     expect(before.unprovableCounters).toEqual([]);
     for (const key of counterKeys) {
       expect(before.fields[key]).toBeGreaterThanOrEqual(1);
     }
 
     // 2. T1 gives the outage week back (10 -> 9); the Owner releases the hold.
-    const t1 = await applyHeld(W);
+    const t1 = await applyHeld(W, clock);
     expect(await weeks()).toEqual([9, 9, 9]);
     await setJobHold({ actor: owner, held: false });
     // Every week recorded in W is given back now: the preview counts none.
-    const given = await previewTimeBack(W);
+    const given = await previewTimeBack(W, clock);
     for (const key of counterKeys) {
       expect(given.fields[key]).toBe(0);
     }
 
-    // 3. Monday's pass ages them again (9 -> 10), after the outage.
+    // 3. Monday's pass ages them again (9 -> 10), after the give-back.
     const pass = await passInWindow('groomCareerProgression', () => processWeeklyCareerProgression(player.id));
     expect(pass.outcome.result.processed).toBe(1);
     expect(await tickOneStaff(prisma, 'rider', rider.id)).toBe(1);
@@ -399,7 +434,7 @@ describe('A recorded career week is given back at most once', () => {
 
     // 5. T2 over a corrected window overlapping W gives the outage week back
     // once (11 -> 10), never a second time on top of T1's (old code: 10 -> 9).
-    const t2 = await applyHeld(wall(P, P + 3 * minute));
+    const t2 = await applyHeld(wall(P, P + 3 * minute), clock);
     expect(await weeks()).toEqual([10, 10, 10]);
     expect(await changesOf(t2.id, 'grooms', [groom])).toEqual([
       { rowId: String(groom.id), oldValue: 11, newValue: 10 },
@@ -413,7 +448,7 @@ describe('A recorded career week is given back at most once', () => {
   it('two overlapping give-backs never take the same recorded week twice', async () => {
     const player = await makeUser('user');
     const groom = await makeGroom(player.id, 8);
-    const P = await outageMinute();
+    const { P, clock } = outage();
     // Two weeks recorded: one in both windows, one only in the second.
     await tickOneStaff(prisma, 'groom', groom.id, new Date(P + 30 * second));
     await tickOneStaff(prisma, 'groom', groom.id, new Date(P + 2 * minute + 30 * second));
@@ -425,7 +460,7 @@ describe('A recorded career week is given back at most once', () => {
     // The service refuses an overlapping apply; this checks the counter rule
     // itself, so a second time-back over the same weeks gives none of them back.
     const giveBack = async input => {
-      const window = parseWindow(input);
+      const window = parseWindow(input, clock);
       const record = await prisma.timeBack.create({
         data: {
           windowStart: window.start,
@@ -441,7 +476,7 @@ describe('A recorded career week is given back at most once', () => {
 
     const first = await giveBack(A);
     expect(await weeksOf('groom', [groom])).toEqual([9]);
-    expect((await previewTimeBack(A)).fields['Groom.careerWeeks']).toBe(0);
+    expect((await previewTimeBack(A, clock)).fields['Groom.careerWeeks']).toBe(0);
 
     // B overlaps A: only the week A did not cover comes off.
     const overlapping = await giveBack(B);

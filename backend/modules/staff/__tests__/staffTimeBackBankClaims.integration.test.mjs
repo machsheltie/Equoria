@@ -41,7 +41,15 @@ import {
   stopEmailCapture,
   uid,
 } from './helpers/staffFixtures.mjs';
-import { actionCodesFor, easternWall, freshCode, restoreHold, snapshotHold } from './helpers/timeBackFixtures.mjs';
+import {
+  actionCodesFor,
+  easternWall,
+  freshCode,
+  gameWideSuiteLock,
+  gameWideSuiteWaitMs,
+  restoreHold,
+  snapshotHold,
+} from './helpers/timeBackFixtures.mjs';
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('sttbbank');
@@ -70,6 +78,10 @@ const unpaidKey = 'Rider.feeUnpaidSince';
 const settingsOf = async user => (await prisma.user.findUnique({ where: { id: user.id } })).settings;
 const moneyOf = async user => (await prisma.user.findUnique({ where: { id: user.id } })).money;
 const owedOf = async user => (await settingsOf(user)).owedWeeklyClaims;
+
+const suiteLock = gameWideSuiteLock();
+// First: one game-wide suite at a time (gameWideSuiteLock).
+beforeAll(() => suiteLock.take(), gameWideSuiteWaitMs);
 
 beforeAll(async () => {
   holdBefore = await snapshotHold();
@@ -162,6 +174,9 @@ afterAll(async () => {
   }
   await cleanup.run();
 }, 120_000);
+
+// Last: the next game-wide suite may start.
+afterAll(() => suiteLock.release());
 
 beforeEach(() => startEmailCapture());
 

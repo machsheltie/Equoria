@@ -38,6 +38,8 @@ import {
   actionCodesFor,
   easternWall,
   freshCode,
+  gameWideSuiteLock,
+  gameWideSuiteWaitMs,
   restoreHold,
   snapshotHold,
   toMinute,
@@ -72,6 +74,10 @@ let roundChanged;
 let roundClosed;
 // Far past every Hall of Fame suite's synthetic weeks, so no round runner closes it.
 const farEnd = new Date(Date.UTC(2200, 0, 1));
+
+const suiteLock = gameWideSuiteLock();
+// First: one game-wide suite at a time (gameWideSuiteLock).
+beforeAll(() => suiteLock.take(), gameWideSuiteWaitMs);
 
 beforeAll(async () => {
   holdBefore = await snapshotHold();
@@ -222,6 +228,9 @@ afterAll(async () => {
   }
   await cleanup.run();
 }, 120_000);
+
+// Last: the next game-wide suite may start.
+afterAll(() => suiteLock.release());
 
 beforeEach(() => startEmailCapture());
 

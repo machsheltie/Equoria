@@ -5,9 +5,38 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { expect } from '@jest/globals';
+import pg from 'pg';
 import prisma from '../../../../../packages/database/prismaClient.mjs';
+import { jobNameToLockKey } from '../../../../utils/cronLock.mjs';
 import { gameDateParts } from '../../../../utils/gameTime.mjs';
 import { post, staffApi } from './staffFixtures.mjs';
+
+const gameWideSuiteKey = jobNameToLockKey('gameWideTestSuites');
+
+/**
+ * One at a time for the suites that change the whole game at once: they hold
+ * the nightly jobs (the one game_control row) or give time back (every
+ * matching row of every player). Two side by side on one database (CI runs a
+ * second Jest worker against it) release each other's hold and give back each
+ * other's weeks. Each such suite takes this lock first, in its first
+ * beforeAll, and releases it last in afterAll. It is a Postgres session lock
+ * on its own connection; ending the session releases it, even a lock still
+ * being waited for, so a suite that dies never leaves it taken.
+ */
+export function gameWideSuiteLock() {
+  let client = null;
+  return {
+    async take() {
+      client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+      await client.connect();
+      await client.query('SELECT pg_advisory_lock($1::bigint)', [String(gameWideSuiteKey)]);
+    },
+    release: () => client?.end(),
+  };
+}
+
+/** How long a suite may wait for another to finish before it fails. */
+export const gameWideSuiteWaitMs = 300_000;
 
 /** The fresh one-time codes the email service captured for this address. */
 export function actionCodesFor(email) {

@@ -26,12 +26,16 @@ import {
   stopEmailCapture,
   uid,
 } from './helpers/staffFixtures.mjs';
-import { restoreHold, snapshotHold } from './helpers/timeBackFixtures.mjs';
+import { gameWideSuiteLock, gameWideSuiteWaitMs, restoreHold, snapshotHold } from './helpers/timeBackFixtures.mjs';
 
 const cleanup = createCleanupTracker();
 const { makeUser, createdUserIds } = createUserFactory('stjobhold');
 const probeJob = `timeBackHoldProbe${uid()}`;
 let holdBefore;
+
+const suiteLock = gameWideSuiteLock();
+// First: one game-wide suite at a time (gameWideSuiteLock).
+beforeAll(() => suiteLock.take(), gameWideSuiteWaitMs);
 
 beforeAll(async () => {
   holdBefore = await snapshotHold();
@@ -48,6 +52,9 @@ beforeAll(async () => {
 });
 
 afterAll(() => cleanup.run(), 60_000);
+
+// Last: the next game-wide suite may start.
+afterAll(() => suiteLock.release());
 
 beforeEach(() => startEmailCapture());
 
