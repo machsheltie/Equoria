@@ -59,6 +59,16 @@ export function bankWeeksInside(start, end) {
 }
 
 const instant = date => Prisma.sql`${date.toISOString()}::timestamptz`;
+
+/**
+ * The order grant and removal lock the User rows in (Equoria-puj1e.5.3):
+ * ascending id, compared code unit by code unit as lockUserRowsTx and every
+ * other two-player path sorts them (COLLATE "C", whatever the database's
+ * collation). Without it the rows were locked in table-scan order, so a grant
+ * holding a later player while it waited for an earlier one deadlocked with a
+ * payment between the two that held the earlier one and waited for the later.
+ */
+const lockOrder = Prisma.sql`ORDER BY u."id" COLLATE "C"`;
 const owedList = Prisma.sql`(CASE WHEN jsonb_typeof(u."settings" -> ${owedWeeklyClaimsKey}::text) = 'array'
   THEN u."settings" -> ${owedWeeklyClaimsKey}::text ELSE '[]'::jsonb END)`;
 
@@ -104,7 +114,8 @@ export async function grantOwedWeeklyClaimsTx(tx, timeBackId, window) {
     const claim = JSON.stringify({ timeBackId, weekStart: week.start.toISOString() });
     granted += await tx.$executeRaw`
       WITH target AS (
-        SELECT u."id" AS rid FROM "User" u WHERE ${owedCondition(week)} FOR NO KEY UPDATE OF u
+        SELECT u."id" AS rid FROM "User" u WHERE ${owedCondition(week)}
+        ${lockOrder} FOR NO KEY UPDATE OF u
       ),
       upd AS (
         UPDATE "User" u
@@ -141,7 +152,7 @@ export async function removeOwedWeeklyClaimsTx(tx, timeBackId) {
   const [{ removed }] = await tx.$queryRaw`
     WITH target AS (
       SELECT u."id", ${owedList} AS owed FROM "User" u
-      WHERE u."id" IN (${recorded}) FOR NO KEY UPDATE OF u
+      WHERE u."id" IN (${recorded}) ${lockOrder} FOR NO KEY UPDATE OF u
     ),
     cut AS (
       SELECT target."id",
