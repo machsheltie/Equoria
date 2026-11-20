@@ -17,6 +17,11 @@
  * These genotypes cause embryonic death or severe disease and must never appear
  * in a live foal's genotype. The reroll mechanism prevents them.
  *
+ * Owner ruling q394 (2026-11-20): the game has no foal deaths or aborted
+ * foals; a combination that would kill the foal re-rolls. Two-copy W15, W19
+ * and W20 horses live, so they are not listed. Whites with no known live
+ * two-copy horse stay listed until the owner rules otherwise.
+ *
  * Sources (PRD-02 §3.3):
  *   - O/O        : Lethal White Overo Syndrome (Frame Overo)
  *   - W5/W5 etc. : Embryonic lethal dominant white homozygotes
@@ -25,15 +30,7 @@
  */
 export const lethalCombinations = {
   O_FrameOvero: new Set(['O/O']),
-  W_DominantWhite: new Set([
-    'W5/W5',
-    'W10/W10',
-    'W13/W13',
-    'W15/W15',
-    'W19/W19',
-    'W20/W20',
-    'W22/W22',
-  ]),
+  W_DominantWhite: new Set(['W5/W5', 'W10/W10', 'W13/W13', 'W22/W22']),
   SW_SplashWhite: new Set([
     'SW3/SW3',
     'SW4/SW4',

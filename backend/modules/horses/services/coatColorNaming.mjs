@@ -34,12 +34,11 @@ function copies(pair, allele) {
 }
 
 /**
- * Dun shows with a D allele, and with the nd1/nd2 compound (pseudo-dun, kept as
- * dun; the odds question is the owner's, see the mapping doc).
+ * Dun shows only with a true dun allele. nd1 and nd2 are non-dun, so nd1/nd2
+ * is not a dun (owner ruling q395, 2026-11-20).
  */
 function isDunActive(dunPair) {
-  const parts = alleles(dunPair);
-  return parts.includes('D') || (parts.includes('nd1') && parts.includes('nd2'));
+  return alleles(dunPair).includes('D');
 }
 
 /** EDXW other than n/n acts as a working Extension allele (Equoria-1set). */

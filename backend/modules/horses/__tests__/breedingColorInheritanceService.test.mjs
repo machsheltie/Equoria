@@ -138,8 +138,18 @@ describe('isLethalCombination', () => {
     expect(isLethalCombination('O_FrameOvero', 'n/n')).toBe(false);
   });
 
-  it('identifies W20/W20 as lethal for W_DominantWhite', () => {
-    expect(isLethalCombination('W_DominantWhite', 'W20/W20')).toBe(true);
+  // Owner ruling q394 (2026-11-20): only combinations that would kill the foal
+  // are re-rolled. Real horses with two copies of W15, W19 or W20 live.
+  it('does NOT flag the viable two-copy whites W15, W19 and W20 as lethal', () => {
+    for (const pair of ['W15/W15', 'W19/W19', 'W20/W20']) {
+      expect([pair, isLethalCombination('W_DominantWhite', pair)]).toEqual([pair, false]);
+    }
+  });
+
+  it('still re-rolls dominant whites with no known live two-copy horse', () => {
+    for (const pair of ['W5/W5', 'W10/W10', 'W13/W13', 'W22/W22']) {
+      expect([pair, isLethalCombination('W_DominantWhite', pair)]).toEqual([pair, true]);
+    }
   });
 
   it('does NOT flag W20/w as lethal', () => {
@@ -651,12 +661,18 @@ describe('inheritColorGenotype — alternate-allowed-allele fallback (Equoria-tr
 // ---------------------------------------------------------------------------
 
 describe('inheritLocus — reroll exhaustion fallback (Equoria-xb5k)', () => {
-  it('W_DominantWhite W20/w × W20/w → fallback returns W20/w (carrier form)', () => {
-    // Force all 100 rerolls to lethal by always picking index 0 (W20)
+  it('W_DominantWhite W13/w × W13/w → fallback returns W13/w (carrier form)', () => {
+    // Force all 100 rerolls to lethal by always picking index 0 (W13)
     const alwaysFirst = deterministicRng([0.1]);
-    const result = inheritLocus('W_DominantWhite', 'W20/w', 'W20/w', alwaysFirst);
-    expect(result).toBe('W20/w');
+    const result = inheritLocus('W_DominantWhite', 'W13/w', 'W13/w', alwaysFirst);
+    expect(result).toBe('W13/w');
     expect(isLethalCombination('W_DominantWhite', result)).toBe(false);
+  });
+
+  // Owner ruling q394 (2026-11-20): two-copy W20 horses live, so nothing re-rolls.
+  it('W_DominantWhite W20/w × W20/w can give a W20/W20 foal', () => {
+    const alwaysFirst = deterministicRng([0.1]);
+    expect(inheritLocus('W_DominantWhite', 'W20/w', 'W20/w', alwaysFirst)).toBe('W20/W20');
   });
 
   it('SW_SplashWhite SW3/n × SW3/n → fallback returns SW3/n', () => {

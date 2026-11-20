@@ -154,12 +154,11 @@ describe('calculatePhenotype — Dun dilutions', () => {
     );
   });
 
-  it('nd1/nd2 pseudo-dun on Bay → Bay Dun (P-5)', () => {
-    expect(calculatePhenotype(buildGenotype({ D_Dun: 'nd1/nd2' })).colorName).toBe('Bay Dun');
-  });
-
-  it('nd1/nd2 pseudo-dun + Cr/n on Bay → Dunskin (P-5; Equoria-egh7 canonical name)', () => {
-    expect(calculatePhenotype(buildGenotype({ D_Dun: 'nd1/nd2', Cr_Cream: 'Cr/n' })).colorName).toBe('Dunskin');
+  it('nd1/nd2 is not a dun (owner q395): bay and buckskin keep their non-dun names', () => {
+    expect(calculatePhenotype(buildGenotype({ D_Dun: 'nd1/nd2' })).colorName).toBe('Standard Bay');
+    const nonDun = calculatePhenotype(buildGenotype({ Cr_Cream: 'Cr/n' })).colorName;
+    expect(nonDun).not.toMatch(/dun/i);
+    expect(calculatePhenotype(buildGenotype({ D_Dun: 'nd1/nd2', Cr_Cream: 'Cr/n' })).colorName).toBe(nonDun);
   });
 });
 
