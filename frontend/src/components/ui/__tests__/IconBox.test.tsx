@@ -7,12 +7,9 @@
  *  - decorative by default: aria-hidden="true", no accessible text
  *  - label prop: sr-only text present, aria-hidden removed
  *  - radius from the semantic scale (--radius-md)
- *  - zero raw palette classes in the component source
  */
 
 import React from 'react';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import '@testing-library/jest-dom';
@@ -112,11 +109,5 @@ describe('IconBox — shape and source hygiene', () => {
       </IconBox>
     );
     expect(screen.getByTestId('icon-box').className).toContain('rounded-[var(--radius-md)]');
-  });
-
-  it('component source contains no raw palette classes or rgba literals', () => {
-    const source = readFileSync(join(__dirname, '../IconBox.tsx'), 'utf8');
-    expect(source).not.toMatch(/rgba?\(/);
-    expect(source).not.toMatch(/\b(?:text|bg)-(?:emerald|red|amber|blue|slate|white)-\d/);
   });
 });

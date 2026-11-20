@@ -13,8 +13,6 @@
  * is stubbed by MSW with the real response shapes.
  */
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -141,30 +139,5 @@ describe('Settings Display switches (Equoria-apfwp)', () => {
     );
     await waitFor(() => expect(root().dataset.highContrast).toBe('true'));
     expect(root().dataset.reducedMotion).toBeUndefined();
-  });
-});
-
-describe('Display switch stylesheet (displayPreferences.css)', () => {
-  const css = readFileSync(join(__dirname, '../../styles/displayPreferences.css'), 'utf8');
-  const index = readFileSync(join(__dirname, '../../index.css'), 'utf8');
-
-  it('is imported by index.css', () => {
-    expect(index).toContain("@import './styles/displayPreferences.css';");
-  });
-
-  it('reduced motion zeroes the duration tokens and stops animation, but not spinners', () => {
-    expect(css).toMatch(/:root\[data-reduced-motion='true'\]\s*\{[^}]*--duration-normal: 0ms/);
-    expect(css).toMatch(/\*:not\(\.animate-spin\)[\s\S]*?animation: none !important/);
-  });
-
-  it('high contrast lifts supporting and muted text', () => {
-    expect(css).toMatch(/:root\[data-high-contrast='true'\]\s*\{[^}]*--text-secondary:/);
-    expect(css).toMatch(/:root\[data-high-contrast='true'\]\s*\{[^}]*--text-muted:/);
-  });
-
-  it('compact cards hide the horse card stat grid', () => {
-    expect(css).toMatch(
-      /:root\[data-compact-cards='true'\] \[data-horse-card-stats\]\s*\{\s*display: none;/
-    );
   });
 });

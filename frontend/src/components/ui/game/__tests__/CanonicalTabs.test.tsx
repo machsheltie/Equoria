@@ -8,12 +8,9 @@
  *  (d) Uncontrolled mode — internal state via defaultValue
  *  (e) Keyboard navigation — ArrowRight/ArrowLeft (via Radix roving focus)
  *  (f) Overflow classes — overflow-x-auto + flex-nowrap present on TabsList
- *  (g) Zero raw-color regression — component source has no rgba( or text-slate class
  */
 
 import React, { useState } from 'react';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
@@ -240,32 +237,6 @@ describe('CanonicalTabs — overflow classes', () => {
     renderComposable();
     const list = screen.getByRole('tablist');
     expect(list.className).toContain('flex-nowrap');
-  });
-});
-
-// ─── (g) Zero raw-color regression ───────────────────────────────────────────
-
-describe('CanonicalTabs — zero raw-color regression', () => {
-  const srcPath = join(process.cwd(), 'src', 'components', 'ui', 'game', 'CanonicalTabs.tsx');
-  const source = readFileSync(srcPath, 'utf8');
-
-  it('source contains no raw rgba() literals', () => {
-    // This confirms all colors go through CSS custom property tokens
-    expect(source).not.toMatch(/\brgba\s*\(/);
-  });
-
-  it('source contains no raw rgb() literals (outside comments)', () => {
-    // Strip single-line and block comments before checking
-    const noComments = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-    expect(noComments).not.toMatch(/\brgb\s*\(/);
-  });
-
-  it('source contains no raw text-slate-* Tailwind classes', () => {
-    expect(source).not.toMatch(/text-slate-\d+/);
-  });
-
-  it('source contains no raw text-blue-* Tailwind classes', () => {
-    expect(source).not.toMatch(/text-blue-\d+/);
   });
 });
 

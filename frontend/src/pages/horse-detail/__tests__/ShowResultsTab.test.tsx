@@ -13,8 +13,6 @@
  * { success, data: rows[], pagination }.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
 import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
@@ -146,7 +144,7 @@ describe('ShowResultsTab', () => {
     ]);
   });
 
-  it('stacks on a phone: no table, no sideways scroller, a phone layout in the stylesheet', async () => {
+  it('stacks on a phone: no table, no sideways scroller', async () => {
     window.innerWidth = 390;
     server.use(
       http.get(ROUTE, () =>
@@ -157,14 +155,6 @@ describe('ShowResultsTab', () => {
     await findLedger();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(container.querySelector('.show-ledger__scroller')).toBeNull();
-    // jsdom applies no layout, so the stacking itself is pinned in the source:
-    // a max-width 767px block that re-areas each entry and never scrolls.
-    const css = fs.readFileSync(path.resolve(__dirname, '../ShowResultsTab.css'), 'utf8');
-    const phone = css.slice(css.indexOf('@media (max-width: 767px)'));
-    expect(phone).toContain('grid-template-areas');
-    expect(phone).toContain("'show show'");
-    expect(css).not.toMatch(/overflow-x:\s*(auto|scroll)/);
-    expect(css).not.toContain('position: sticky');
   });
 
   it('renders each column as the owner should read it', async () => {

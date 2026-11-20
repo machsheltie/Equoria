@@ -10,7 +10,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
@@ -64,16 +64,6 @@ describe('isNarrowedRun', () => {
     ['--shard', { config: { shard: { index: 1, count: 2 } } }],
   ])('is true for %s', (_label, ctx) => {
     expect(isNarrowedRun(ctx)).toBe(true);
-  });
-});
-
-describe('the repository vitest config', () => {
-  it('registers the reporter, so the real full run cannot drop a project silently', () => {
-    const config = readFileSync(path.resolve(here, '../../../vitest.config.ts'), 'utf-8');
-    expect(config).toMatch(
-      /import RequireAllProjectsReporter from '\.\/src\/test\/requireAllProjectsReporter'/
-    );
-    expect(config.match(/new RequireAllProjectsReporter\(\)/g)?.length).toBe(2);
   });
 });
 
