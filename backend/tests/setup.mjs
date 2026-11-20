@@ -67,10 +67,10 @@ try {
   console.warn('⚠️  Could not validate environment variables:', error.message);
 }
 
-// DATABASE_URL must be set; the specific DB name is now configurable via
-// .env.test (the equoria_test sidecar DB had falsified migration history,
-// so the project switched to running tests against the canonical equoria
-// DB directly — see commit 73a5f075).
+// DATABASE_URL must be set. Locally it names the separate equoria_test
+// database (created by `npm run test:db:setup`), never the game database;
+// tests/config/testDatabaseGuard.mjs refuses anything else before a test
+// file runs (Equoria-8w3ax).
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set. Check .env.test configuration.');
 }

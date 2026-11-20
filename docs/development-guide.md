@@ -1,7 +1,7 @@
 # Equoria Development Guide
 
 **Status:** active command and local-setup index
-**Last verified:** 2026-09-16
+**Last verified:** 2026-11-20
 
 This guide helps a developer start and verify the repository. It does not define product behavior, player-facing design, architecture, test philosophy, or current project status. `AGENTS.md`, `CLAUDE.md`, package scripts, environment templates, and live configuration take precedence.
 
@@ -65,7 +65,21 @@ npm run test:e2e:beta-readiness
 bash scripts/doctrine-checks/run-all.sh
 ```
 
-Use the targeted backend command while working. `test:backend:full` is the full suite: eight shards over two serial lanes, each lane on its own disposable database, and it is what the pre-push hook runs. The plain serial `npm run test:backend` runs out of its 1536 MB heap on the dev machine before it reports. Use package scripts rather than reconstructing long Jest/Vitest/Playwright command lines from old reports.
+Use the targeted backend command while working. `test:backend:full` is the full suite: eight shards over two serial lanes, each lane on its own disposable database. The pre-push hook runs only the changed tests; the full gate runs on GitHub. The plain serial `npm run test:backend` runs out of its 1536 MB heap on the dev machine before it reports. Use package scripts rather than reconstructing long Jest/Vitest/Playwright command lines from old reports.
+
+## Local test database
+
+Backend tests create, change and delete rows, so they never use the game database. `backend/.env.test` points `DATABASE_URL` at a separate local database, `equoria_test`, on the same local PostgreSQL (`backend/.env.test.example` shows the shape). Create and migrate it once, and again after pulling new migrations:
+
+```bash
+npm run test:db:setup
+```
+
+`backend/scripts/test-db-setup.mjs` creates the database if it is missing (it never drops anything), applies migrations with `prisma migrate deploy`, and loads the breed seed data the suite needs. It is safe to repeat.
+
+Every backend Jest run refuses to start, before any test touches the database, unless its database is local (localhost, 127.0.0.1 or ::1), named `*_test` or a sharded-gate lane (`equoria_lane_*`), and not the database `backend/.env` uses. Remote hosts (Supabase, Railway) are always refused. The guard is `backend/tests/config/testDatabaseGuard.mjs`; it runs in both Jest global setups and in the shared test environment, so CI (`equoria_test` on its localhost service) and the gate's lanes pass through it too.
+
+Local runs also check free memory first. `test:backend:targeted` needs 1536 MB free and `test:backend:full` 3072 MB (checked once the gate admits the run). Below that a run waits up to 60 seconds for memory to come back, then refuses with a message instead of starting. `EQUORIA_TEST_MIN_FREE_MB` and `EQUORIA_TEST_MEMORY_WAIT_SECONDS` override the limits (`backend/scripts/test-memory-preflight.mjs`). Worker and heap limits are unchanged. After an interrupted run, `npm --prefix backend run test:reap` stops orphaned Jest workers.
 
 ## Source ownership
 

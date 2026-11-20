@@ -16,6 +16,7 @@ import { promisify } from 'util';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { assertTestDatabaseUrl, readGameDatabaseUrls } from './testDatabaseGuard.mjs';
 
 const execAsync = promisify(exec);
 
@@ -27,6 +28,9 @@ export default async function globalSetup() {
   try {
     // 1. Load test environment variables
     await loadTestEnvironment();
+    // Equoria-8w3ax: the steps below reset and migrate DATABASE_URL; refuse
+    // anything that is not a local test database first.
+    assertTestDatabaseUrl(process.env.DATABASE_URL, { gameUrls: readGameDatabaseUrls() });
 
     // 2. Initialize test database
     await initializeDatabase();

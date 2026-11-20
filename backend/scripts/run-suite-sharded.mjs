@@ -111,6 +111,7 @@ import {
   resolveExitStatus,
 } from './gate-lock.mjs';
 import { buildOwnershipSteps } from './gate-ownership-steps.mjs';
+import { assertFreeMemory } from './test-memory-preflight.mjs';
 import {
   batchModeBatches,
   canonicalPassBatches,
@@ -440,6 +441,8 @@ async function main() {
   });
 
   try {
+    // Equoria-8w3ax: once admitted, refuse to start on a machine short of memory.
+    await assertFreeMemory('full', { log: line => console.log(line) });
     discoverAndPlan();
     startAll = Date.now();
     if (LANES > 1) {

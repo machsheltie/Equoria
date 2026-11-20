@@ -17,6 +17,7 @@
     "test:backend:ci": "npm --prefix backend run test:backend:ci",
     "test:backend:targeted": "npm --prefix backend run test:backend:targeted --",
     "test:backend:diagnostic": "npm --prefix backend run test:backend:diagnostic --",
+    "test:db:setup": "npm --prefix backend run test:db:setup",
     "test:unit": "node --experimental-vm-modules --max-old-space-size=1536 node_modules/jest/bin/jest.js --selectProjects unit --maxWorkers=2",
     "test:e2e": "playwright test",
     "test:e2e:beta-readiness": "playwright test --config=playwright.beta-readiness.config.ts",

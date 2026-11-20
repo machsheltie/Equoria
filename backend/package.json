@@ -17,6 +17,7 @@
     "pretest:backend:ci": "node -e \"require('node:fs').mkdirSync('test-results', { recursive: true })\"",
     "test:backend:ci": "node --experimental-vm-modules --max-old-space-size=4096 node_modules/jest/bin/jest.js --maxWorkers=2 --workerIdleMemoryLimit=1500MB --ci --forceExit --json --outputFile=test-results/jest-results.json",
     "test:backend:ci:serial": "node --experimental-vm-modules --max-old-space-size=4096 node_modules/jest/bin/jest.js --maxWorkers=1 --workerIdleMemoryLimit=1500MB --ci --forceExit --json --outputFile=test-results/jest-results.json",
+    "pretest:backend:targeted": "node scripts/test-memory-preflight.mjs --profile=targeted",
     "test:backend:targeted": "node --experimental-vm-modules --max-old-space-size=1536 node_modules/jest/bin/jest.js --runInBand",
     "test:backend:diagnostic": "node scripts/diagnose-full-suite.mjs",
     "verify:gate-admission": "node scripts/verify-gate-admission.mjs",
@@ -55,6 +56,7 @@
     "validate-env": "node scripts/validate-environment.mjs",
     "validate-pipeline": "node scripts/test-pipeline-validation.mjs",
     "db:reset:test": "node scripts/db-reset-test.mjs",
+    "test:db:setup": "node scripts/test-db-setup.mjs",
     "posttest": "node scripts/reap-orphan-jest.mjs",
     "test:reap": "node scripts/reap-orphan-jest.mjs"
   },

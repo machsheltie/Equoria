@@ -27,6 +27,7 @@
 import v8 from 'node:v8';
 import { TestEnvironment as NodeEnvironment } from 'jest-environment-node';
 import { cleanupPrismaInstances } from '../../../packages/database/prismaTestLifecycle.mjs';
+import { guardTestDatabase } from './testDatabaseGuard.mjs';
 
 // Second, independent retainer (Equoria-k09r9, heap-snapshot retainer path
 // 2026-09-14): V8's compilation cache keeps each compiled script together with
@@ -205,6 +206,9 @@ export default class PrismaCleanupEnvironment extends NodeEnvironment {
 
   async setup() {
     await super.setup();
+    // Equoria-8w3ax: every backend config, worker and lane passes here before a
+    // test file runs; refuse any database that is not a local test database.
+    guardTestDatabase();
     this.global[breedProfileRowsGlobal] = await readBreedProfileRowsJson();
   }
 

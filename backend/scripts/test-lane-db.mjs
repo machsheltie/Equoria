@@ -152,7 +152,7 @@ function adminUrl(env = process.env) {
   return url.toString();
 }
 
-async function withAdmin(env, fn) {
+export async function withAdmin(env, fn) {
   const client = new Client({ connectionString: adminUrl(env), connectionTimeoutMillis: 10000 });
   await client.connect();
   try {
@@ -351,6 +351,34 @@ async function resyncSequences(databaseUrl) {
   }
 }
 
+/**
+ * Bring an existing database up to date: the full migration chain
+ * (`prisma migrate deploy`, never reset), the canonical seed, then sequence
+ * resync. Every step is idempotent, so it serves a fresh lane and a re-run
+ * against the persistent local test database (scripts/test-db-setup.mjs)
+ * alike. Returns { migrations } (applied count).
+ */
+export async function provisionDatabase({ name, url, log = () => {}, signal }) {
+  log(`[lane] ${name}: prisma migrate deploy`);
+  await runPrisma(['migrate', 'deploy'], url, signal);
+  throwIfCancelled(signal, `before seeding ${name}`);
+  log(`[lane] ${name}: seeding canonical data`);
+  await runSeed(url, signal);
+  throwIfCancelled(signal, `before resyncing ${name}`);
+  const sequences = await resyncSequences(url);
+  log(`[lane] ${name}: ${sequences} sequences resynced`);
+  const client = new Client({ connectionString: url });
+  await client.connect();
+  try {
+    const { rows } = await client.query(
+      'SELECT COUNT(*)::int AS n FROM "_prisma_migrations" WHERE finished_at IS NOT NULL',
+    );
+    return { migrations: rows[0].n };
+  } finally {
+    await client.end();
+  }
+}
+
 export async function listLaneDatabases(env = process.env, runId = null) {
   const rows = await withAdmin(env, client =>
     client.query('SELECT datname FROM pg_database WHERE datname LIKE $1 ORDER BY datname', [
@@ -398,25 +426,7 @@ export async function createLaneDatabase({
     // for it, stop here: launching migration/seeds would be continued work
     // after cancellation. The catch below drops what was just created.
     throwIfCancelled(signal, `after creating ${name}`);
-    log(`[lane] ${name}: prisma migrate deploy`);
-    await runPrisma(['migrate', 'deploy'], url, signal);
-    throwIfCancelled(signal, `before seeding ${name}`);
-    log(`[lane] ${name}: seeding canonical data`);
-    await runSeed(url, signal);
-    throwIfCancelled(signal, `before resyncing ${name}`);
-    const sequences = await resyncSequences(url);
-    log(`[lane] ${name}: ${sequences} sequences resynced`);
-    const client = new Client({ connectionString: url });
-    await client.connect();
-    let migrations;
-    try {
-      const { rows } = await client.query(
-        'SELECT COUNT(*)::int AS n FROM "_prisma_migrations" WHERE finished_at IS NOT NULL',
-      );
-      migrations = rows[0].n;
-    } finally {
-      await client.end();
-    }
+    const { migrations } = await provisionDatabase({ name, url, log, signal });
     log(`[lane] ${name}: ready (${migrations} migrations applied)`);
     return { name, migrations };
   } catch (error) {

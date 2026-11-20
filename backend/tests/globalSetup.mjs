@@ -13,12 +13,17 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { guardTestDatabase } from './config/testDatabaseGuard.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default async function globalSetup() {
   console.info('🧹 Running global setup — cleaning leftover test data...');
+
+  // Equoria-8w3ax: refuse any database that is not a local test database
+  // BEFORE the cleanup below deletes a single row.
+  guardTestDatabase();
 
   try {
     // Do NOT override — env vars set by CI (or the harness) must take
