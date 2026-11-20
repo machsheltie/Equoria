@@ -51,7 +51,6 @@ These files remain because executable doc-drift tests read their exact paths:
 
 - `architecture.md`
 - `project_context.md`
-- `SECURITY_ASSESSMENT_REPORT.md`
 - `product/PRD-02-Core-Features.md`
 - `product/PRD-08-Security-Architecture.md`
 

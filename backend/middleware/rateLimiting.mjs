@@ -19,7 +19,7 @@
  * 🔐 SECURITY BENEFITS:
  * - Prevents brute force attacks across server restarts
  * - Consistent enforcement in distributed systems
- * - Defense in depth: security/economy limiters fail CLOSED on Redis-down (see `failClosed:` flags + shouldFailClosed below); full per-limiter posture in .claude/rules/SECURITY.md §4
+ * - Defense in depth: security/economy limiters fail CLOSED on Redis-down (see `failClosed:` flags + shouldFailClosed below); per-limiter contract in docs/api-contracts-backend/rate-limiting.md
  * - DDoS protection at application layer
  *
  * @module middleware/rateLimiting

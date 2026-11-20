@@ -21,7 +21,7 @@ Load this file only when changing security controls, security tests, security CI
 
 | Concern                            | Authority                                                             |
 | ---------------------------------- | --------------------------------------------------------------------- |
-| Security operating rules           | `.claude/rules/SECURITY.md`                                           |
+| Rate-limit behavior                | `docs/api-contracts-backend/rate-limiting.md`                         |
 | Security test selection/thresholds | `backend/jest.config.security.mjs`                                    |
 | Security test command              | `backend/package.json`                                                |
 | Security test inventory            | Current files selected by `backend/jest.config.security.mjs`          |

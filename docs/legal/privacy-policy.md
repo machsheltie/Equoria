@@ -88,8 +88,8 @@ break their pedigrees and histories, so accounts stay.
 - Server-side security logging records selected sensitive actions; its coverage
   and retention are implementation-specific.
 
-Current technical detail is in `.claude/rules/SECURITY.md`, live security
-source/tests, and `docs/SECURITY_TESTING.md`.
+Current technical detail is in the live security
+source/tests and `docs/SECURITY_TESTING.md`.
 
 ---
 

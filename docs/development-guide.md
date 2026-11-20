@@ -110,7 +110,7 @@ Local runs also check free memory first. `test:backend:targeted` needs 1536 MB f
 - Do not weaken, skip, bypass, or replace a real-path test to obtain a green result.
 - Do not treat a mock-backed test as backend integration or beta-readiness evidence.
 
-The shared authentication limiter currently permits **200 failed** attempts per 15-minute window and skips successful requests. `backend/middleware/rateLimiting.mjs`, `.claude/rules/SECURITY.md`, and the drift sentinel own that fact.
+The shared authentication limiter currently permits **200 failed** attempts per 15-minute window and skips successful requests. `backend/middleware/rateLimiting.mjs` and `docs/api-contracts-backend/rate-limiting.md` own that fact.
 
 ## Troubleshooting discipline
 

@@ -1,10 +1,10 @@
 # Retired PRD-08 — Compatibility Stub
 
-The substantive PRD was retired to the dated `docs/.archive` handoff. This path remains only because a legacy documentation-drift sentinel reads it.
+The substantive PRD was retired to the dated `docs/.archive` handoff. This path is a compatibility stub with no active consumer.
 
-It is not security or product authority. Use `.claude/rules/SECURITY.md`, live controls, and current tests. Compatibility fact: the shared auth limiter permits **200 failed** attempts per 15-minute window and skips successful requests; implementation and its sentinel own that value.
+It is not security or product authority. Use `docs/api-contracts-backend/rate-limiting.md`, live controls, and current tests. Compatibility fact: the shared auth limiter permits **200 failed** attempts per 15-minute window and skips successful requests; `backend/middleware/rateLimiting.mjs` owns that value.
 
-The following rows exist only for the legacy source-text sentinel. The enforced contract is `docs/api-contracts-backend/rate-limiting.md` and `backend/middleware/rateLimiting.mjs`.
+The following rows are compatibility notes only. The enforced contract is `docs/api-contracts-backend/rate-limiting.md` and `backend/middleware/rateLimiting.mjs`.
 
 | Compatibility key | Limit      | Window     |
 | ----------------- | ---------- | ---------- |

@@ -96,5 +96,5 @@ Pause further mutation and escalate if expected counts diverge, migration status
 - JWT signing-secret rotation
 - Permission to raise rate limits, disable controls, mutate production, or perform rollback
 
-Use `.claude/rules/SECURITY.md`, current schema/migrations, official vendor
+Use `docs/SECURITY_TESTING.md`, current schema/migrations, official vendor
 guidance, and platform configuration for those concerns.

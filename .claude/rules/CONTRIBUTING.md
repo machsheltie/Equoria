@@ -96,9 +96,9 @@ copy a command, threshold, path, or pattern without checking its current source.
   table-wide `deleteMany()` or assume fixture ordering/count dominance.
 - Horse fixtures created through raw Prisma calls must include the current
   canonical color fields, normally through `fixtureColor()`. Prefer the live
-  `createTestHorse()` helper for new tests. ESLint and fixture sentinels own the
-  exact allowed shape.
-- A doctrine/sentinel test must prove that its detector fires on a planted
+  `createTestHorse()` helper for new tests. The ESLint rule
+  `no-raw-test-horse-create` owns the exact allowed shape.
+- A doctrine check script must prove that its detector fires on a planted
   violation as well as passes on compliant code. A check that only stays green
   can be vacuous.
 
@@ -119,8 +119,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
 }
 ```
 
-Never construct `file://` URLs manually. The destructive-script sentinel owns
-the full detection boundary.
+Never construct `file://` URLs manually.
 
 ## File-size ratchet
 

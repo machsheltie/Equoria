@@ -180,7 +180,7 @@ Root Orchestrator
 **Skills:**
 
 - `/security-guide` (automatically loaded)
-- Security documentation in `.claude/rules/SECURITY.md`
+- Security documentation in `docs/SECURITY_TESTING.md` and `docs/api-contracts-backend/rate-limiting.md`
 
 **MCPs:** Inherits from parent
 

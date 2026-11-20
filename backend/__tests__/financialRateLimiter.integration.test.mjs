@@ -7,7 +7,7 @@
  * global 100/15min apiLimiter. The economy-abuse threat (coin-grind /
  * mass-purchase / transaction-flood scripts) is the rationale — see the
  * limiter's doc-comment in backend/middleware/rateLimiting.mjs and
- * .claude/rules/SECURITY.md.
+ * docs/api-contracts-backend/rate-limiting.md.
  *
  * This suite proves, against the REAL test DB with REAL JWT auth + REAL
  * CSRF and the REAL middleware chain (no mocks, no bypass headers):
