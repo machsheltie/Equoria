@@ -28,7 +28,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, createTestShow, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { executeConformationShow } from '../services/conformationShowService.mjs';
-import { addHorseMonthlyTotals } from '../../../utils/monthlyTotals.mjs';
 import {
   createBarrierClient,
   holdLock,
@@ -132,6 +131,69 @@ async function money(userId) {
   return Number(row.money);
 }
 
+/**
+ * Hold the settlement after it locks its horses and before it locks its grooms:
+ * a second client inserts the settlement's own result row (showId, horseId),
+ * uncommitted, so the settlement's result insert waits on that row's unique
+ * key. Released, the second client rolls back and the settlement goes on.
+ * The row's key-share lock on `horse` is compatible with the settlement's FOR
+ * NO KEY UPDATE, but would hold a FOR UPDATE horse lock at that horse.
+ * (The Monthly totals row this used to hold is written after the grooms and the
+ * escrow account since Equoria-mwjst.4.)
+ */
+async function holdResultRow(show, horse) {
+  const rollback = new Error('barrier rollback');
+  let release;
+  let armed;
+  let pid;
+  const released = new Promise(r => {
+    release = r;
+  });
+  const ready = new Promise(r => {
+    armed = r;
+  });
+  const held = barrierClient
+    .$transaction(
+      async tx => {
+        pid = Number((await tx.$queryRaw`SELECT pg_backend_pid()::int AS pid`)[0].pid);
+        await tx.competitionResult.create({
+          data: {
+            horseId: horse.id,
+            showId: show.id,
+            score: 0,
+            placement: 1,
+            discipline: 'conformation',
+            runDate: new Date(),
+            showName: show.name,
+          },
+        });
+        armed();
+        await released;
+        throw rollback;
+      },
+      { maxWait: 20000, timeout: 120000 },
+    )
+    .then(
+      () => {
+        throw new Error('barrier transaction committed');
+      },
+      error => {
+        if (error !== rollback) {
+          throw error;
+        }
+      },
+    );
+  await Promise.race([ready, held.then(() => Promise.reject(new Error('barrier ended before it was armed')))]);
+  return {
+    pid,
+    waitForQueued: (count, timeoutMs) => waitForBlockedSessions(barrierClient, pid, count, timeoutMs),
+    release: async () => {
+      release();
+      await held;
+    },
+  };
+}
+
 /** Start a settlement and capture its outcome instead of throwing. */
 function settle(showId, now) {
   return executeConformationShow(showId, { now }).then(
@@ -195,18 +257,23 @@ describe('conformation settlement vs entry deadlocks (Equoria-qc7cx)', () => {
     const horse = await makeHorse(owner, 'horse');
     await assign(owner, groom, horse);
 
+    // A second entrant (another player's horse, created after, so its id sorts
+    // after the shared horse's): the barrier holds its result row.
+    const { user: rival, token: rivalToken } = await makePlayer('rival');
+    const rivalGroom = await makeGroom(rival, 'rivalGroom');
+    const rivalHorse = await makeHorse(rival, 'rivalHorse');
+    await assign(rival, rivalGroom, rivalHorse);
+
     const settlingShow = await makeShow(host.id);
     expect((await enterHttp(token, horse, groom, settlingShow)).status).toBe(201);
+    expect((await enterHttp(rivalToken, rivalHorse, rivalGroom, settlingShow)).status).toBe(201);
     const nextShow = await makeShow(host.id);
     const settleAt = new Date(new Date(settlingShow.closeDate).getTime() + 1000);
-    // The horse's monthly totals row, which the settlement writes after it
-    // locks the horse and before it locks the groom.
-    await addHorseMonthlyTotals(prisma, horse.id, { shows: 1 }, settleAt);
-
-    const barrier = await holdLock(
-      barrierClient,
-      tx => tx.$queryRaw`SELECT "horseId" FROM "horse_monthly_totals" WHERE "horseId" = ${horse.id} FOR UPDATE`,
-    );
+    // Hold the settlement with the shared horse locked and before the grooms:
+    // on the rival's result row (its unique key), or, under the old FOR UPDATE,
+    // on the rival's horse, which the barrier's row references and which the
+    // settlement locks after the shared horse.
+    const barrier = await holdResultRow(settlingShow, rivalHorse);
     let settling;
     let entering;
     let entryWhileHeld;
@@ -224,7 +291,7 @@ describe('conformation settlement vs entry deadlocks (Equoria-qc7cx)', () => {
     const [settled, entry] = await Promise.all([settling, entering]);
 
     expect(settled.error).toBeUndefined();
-    expect(settled.results.map(r => r.horseId)).toEqual([horse.id]);
+    expect(settled.results.map(r => r.horseId).sort((a, b) => a - b)).toEqual([horse.id, rivalHorse.id]);
     expect(entry.status).toBe(201);
     // The horse lock no longer holds up an entry that only references the horse.
     expect(entryWhileHeld).toBe('finished');
@@ -233,7 +300,7 @@ describe('conformation settlement vs entry deadlocks (Equoria-qc7cx)', () => {
     expect(closed.feeEscrow).toBe(0);
     expect(await prisma.showEntry.count({ where: { showId: nextShow.id, horseId: horse.id } })).toBe(1);
     expect(await money(owner.id)).toBe(startingMoney - 2 * entryFee);
-    expect(await money(host.id)).toBe(startingMoney + entryFee);
+    expect(await money(host.id)).toBe(startingMoney + 2 * entryFee);
   }, 90000);
 
   it('a groom presenting in a show at its close, entered with another horse into it: both finish', async () => {

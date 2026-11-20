@@ -14,7 +14,13 @@
  *     first write of the settlement transaction), so nothing counts twice.
  *
  * Lock order: player rows, then horse rows, each in ascending id order, so two
- * settlements that touch the same owners and horses cannot deadlock.
+ * settlements that touch the same owners and horses cannot deadlock. A show
+ * settlement writes them LAST, once it holds every coin row it moves (the show
+ * escrow and burn accounts, User money), and its results' totals once for the
+ * whole transaction (Equoria-mwjst.4): written before the escrow account, a conformation
+ * settlement held an owner's row while it waited for the account a ridden
+ * payout held while it waited for that row; written placing by placing, Run
+ * Show took two owners' rows crosswise to a conformation settlement.
  *
  * Categories — player: xp, earnings, wins, shows.
  *              horse: points, earnings, wins, shows, disciplineWins:<discipline>.
@@ -115,12 +121,16 @@ export async function recordSettledResultTotals(db, results, at) {
 /**
  * {@link recordSettledResultTotals} for one settled ridden entry: `staged` is the
  * staged placement ({ horseId, userId, placement }), `show` the settled show.
+ * With `deferTo` (an array), the result is added to it instead, for a caller
+ * that settles several placings in one transaction and records them all at
+ * once, at its end (Run Show, Equoria-mwjst.4).
  */
-export function recordRiddenResultTotals(db, { show, staged, prize, now }) {
+export async function recordRiddenResultTotals(db, { show, staged, prize, now }, deferTo = null) {
   const { horseId, userId: ownerId, placement } = staged;
-  return recordSettledResultTotals(
-    db,
-    [{ horseId, ownerId, placement, prize, discipline: show.discipline }],
-    now,
-  );
+  const result = { horseId, ownerId, placement, prize, discipline: show.discipline };
+  if (deferTo) {
+    deferTo.push(result);
+    return;
+  }
+  await recordSettledResultTotals(db, [result], now);
 }

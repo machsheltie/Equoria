@@ -104,13 +104,13 @@ export async function settleEntryInTx(
   tx,
   show,
   staged,
-  { prize, unpaidPrizeShare, now, statGainRng },
+  { prize, unpaidPrizeShare, now, statGainRng, deferTotalsTo = null },
 ) {
   const { horseId, userId, horseName, placement, riderId } = staged;
 
-  // Lock order (Equoria-ifnhc, mwjst.3): the User rows it credits, the show row (the guarded
-  // decrement), the horse, the escrow account: the entry's order (User first) and the conformation
-  // settlement's and Run Show's (horse before escrow account). Each one reversed deadlocked.
+  // Lock order (Equoria-ifnhc, mwjst.3, mwjst.4): the User rows it credits, the show row (the
+  // guarded decrement), the horse, the escrow account, the Monthly totals last, as the entry, the
+  // conformation settlement and Run Show take theirs. Each one reversed deadlocked.
   await lockUserRowsTx(tx, payoutUserIds(show, staged, unpaidPrizeShare));
 
   // Equoria-law5w (owner ruling q52): a placement is paid only from the
@@ -204,8 +204,8 @@ export async function settleEntryInTx(
   });
   // Equoria-q4uem.10 (owner ruling R6): the result records what it awarded.
   await recordProgressionOnResult(tx, { showId: show.id, horseId }, progression);
-  // Equoria-y3nia: the Monthly boards, after the result create (a replay is refused first).
-  await recordRiddenResultTotals(tx, { show, staged, prize: paid, now });
+  // Equoria-y3nia: the Monthly boards, after the result create and the coins (Equoria-mwjst.4).
+  await recordRiddenResultTotals(tx, { show, staged, prize: paid, now }, deferTotalsTo);
   return paid;
 }
 

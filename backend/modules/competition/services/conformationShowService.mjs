@@ -378,7 +378,8 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
         // Lock order (Equoria-mwjst.1, Codex #2; Equoria-qc7cx): the entry takes
         // the player's User row, then the show, then the Groom row, then the
         // escrow account; this settlement takes the show (its claim) before the
-        // horses and the grooms, and the escrow account last. The only User row
+        // horses and the grooms, then the escrow account, and writes the Monthly
+        // totals last of all (Equoria-mwjst.4). The only User row
         // this settlement writes is the creator's (the fee credit), so it is locked
         // FIRST, before the claim, the horses and the grooms. Taken last, a
         // creator entering their groom elsewhere while it presents here
@@ -489,20 +490,6 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
           })),
         });
 
-        // Equoria-y3nia: the Monthly boards, after the results are created (a
-        // duplicate settlement is refused by the [showId, horseId] unique first).
-        await recordSettledResultTotals(
-          tx,
-          placed.map(({ horse, placement }) => ({
-            horseId: horse.id,
-            ownerId: horse.userId,
-            placement,
-            prize: 0,
-            discipline: 'conformation',
-          })),
-          now,
-        );
-
         const results = placed.map(({ horse, finalScore, placement, reward }) => {
           const after = rewarded.get(horse.id);
           return {
@@ -540,6 +527,24 @@ export async function executeConformationShow(showId, { now = new Date() } = {})
         // burn account) on the SAME transaction as the results, so a show is
         // never paid out without being scored, or scored without being paid.
         await settleShowFeeEscrowInTx(tx, showId);
+
+        // Equoria-y3nia: the Monthly boards, after the results are created (a
+        // duplicate settlement is refused by the [showId, horseId] unique first)
+        // and LAST, after the escrow account (Equoria-mwjst.4): a ridden payout
+        // takes the escrow account and then its owner's totals. Written before
+        // the fee settlement, this held an owner's totals row while it waited for
+        // the escrow account a payout to that owner held: a deadlock.
+        await recordSettledResultTotals(
+          tx,
+          placed.map(({ horse, placement }) => ({
+            horseId: horse.id,
+            ownerId: horse.userId,
+            placement,
+            prize: 0,
+            discipline: 'conformation',
+          })),
+          now,
+        );
 
         return results;
       },

@@ -50,6 +50,7 @@ import {
 import { readStagedOrdering } from '../services/competitionScoring.mjs';
 import { recordShowFailure } from './showFailureLog.mjs';
 import { deployedCommitSha } from '../../../utils/deployedCommitSha.mjs';
+import { recordSettledResultTotals } from '../../../utils/monthlyTotals.mjs';
 
 /** The one owner-only capability behind every quarantine tool. */
 export const quarantineResolveCapability = 'shows.quarantine.resolve';
@@ -236,7 +237,8 @@ async function settleQuarantinedInTx(
   }
   // Lock order (Equoria-mwjst.2): the User rows it pays, ascending, FIRST, as
   // the entry, the ridden payout and the conformation settlement take theirs;
-  // then the show (its claim), then the horses, then the system accounts.
+  // then the show (its claim), then the horses, then the system accounts, and
+  // the Monthly totals last of all (Equoria-mwjst.4).
   // FOR NO KEY UPDATE, as an UPDATE of money takes: a conformation settlement
   // holding one of these players' horses still gets the key-share lock its
   // result rows take on the player. With FOR UPDATE, taken after the claim,
@@ -257,12 +259,14 @@ async function settleQuarantinedInTx(
 
   // Equoria-law5w: what each placing was really paid (escrow only).
   const paidByHorse = new Map();
+  const settledTotals = [];
   for (const { staged, prize } of plan.pending) {
     const paid = await settleEntryInTx(tx, live, staged, {
       prize,
       unpaidPrizeShare: plan.unpaidPrizeShare,
       now,
       statGainRng,
+      deferTotalsTo: settledTotals,
     });
     paidByHorse.set(staged.horseId, paid);
   }
@@ -274,6 +278,10 @@ async function settleQuarantinedInTx(
     });
   }
   await settleShowFeeEscrowInTx(tx, showId);
+  // The Monthly totals of every placing at once, after the coins, owners then horses in ascending
+  // id order, as the conformation settlement writes its own (Equoria-mwjst.4). Written placing by
+  // placing, two owners' rows were taken crosswise to that settlement's.
+  await recordSettledResultTotals(tx, settledTotals, now);
   await clearStagedOrdering(showId, tx);
   if (afterSettle) {
     await afterSettle(tx);
